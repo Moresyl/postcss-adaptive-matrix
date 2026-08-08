@@ -1,0 +1,64 @@
+{
+  "name": "postcss-adaptive-matrix",
+  "version": "0.1.0",
+  "description": "Multi-profile, accessible and container-aware responsive design compiler for PostCSS 8.",
+  "keywords": [
+    "postcss",
+    "responsive",
+    "adaptive",
+    "viewport",
+    "container-query",
+    "mobile",
+    "desktop",
+    "px-to-vw"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js",
+      "require": "./dist/runtime.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run typecheck && npm run test:coverage && npm run build",
+    "pack:check": "npm pack --dry-run"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4.0"
+  },
+  "dependencies": {
+    "postcss-value-parser": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "postcss": "^8.5.26",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  }
+}

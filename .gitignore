@@ -1,0 +1,6 @@
+.firecrawl/
+node_modules/
+dist/
+coverage/
+*.tgz
+

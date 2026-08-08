@@ -1,0 +1,38 @@
+#app {
+  min-height: 100dvh;
+  padding: calc(20px + var(--adaptive-safe-top)) 16px;
+}
+
+.hero {
+  display: grid;
+  gap: 16px;
+  min-height: 240px;
+  padding: 24px;
+  border: 1px solid #dbe3f0;
+  border-radius: 20px;
+}
+
+.hero__title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 40px;
+}
+
+@adaptive pc {
+  #app {
+    padding: 48px 64px;
+  }
+
+  .hero {
+    grid-template-columns: 560px 1fr;
+    gap: 48px;
+    min-height: 560px;
+    padding: 64px;
+    border-radius: 32px;
+  }
+
+  .hero__title {
+    font-size: 64px;
+    line-height: 76px;
+  }
+}
