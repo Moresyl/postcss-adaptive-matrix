@@ -99,6 +99,45 @@ describe('findContinuityIssues', () => {
     ).toEqual([])
   })
 
+  it('reads a negative length by its distance from zero', () => {
+    // An overhang is drawn bigger by going further from zero, and the compiler
+    // scales it that way, so a negative length's formula falls as the viewport
+    // grows. Comparing raw values inverted the check for every one of them: the
+    // wider canvas asking for a deeper overhang was reported...
+    const deeper = check(`
+      .a { margin-left: clamp(-20.48px, -4.26667vw, -13.65333px) }
+      @media (min-width: 768px) {
+        .a { margin-left: clamp(-53.33333px, -2.77778vw, -28.44444px) }
+      }
+    `)
+    expect(deeper).toEqual([])
+
+    // ...while the overhang all but vanishing at the breakpoint was not.
+    const collapsing = check(`
+      .a { margin-left: clamp(-20.48px, -4.26667vw, -13.65333px) }
+      @media (min-width: 768px) {
+        .a { margin-left: clamp(-5.33333px, -0.27778vw, -2.84444px) }
+      }
+    `)
+    expect(collapsing).toHaveLength(1)
+    expect(collapsing[0]!.below.px).toBeCloseTo(-20.48, 1)
+    expect(collapsing[0]!.above.px).toBeCloseTo(-2.84, 1)
+  })
+
+  it('says nothing when the value changes sign across the breakpoint', () => {
+    // Zero is a boundary the compiler never crosses on its own, so meeting one
+    // here means the two canvases were written with different intents — and
+    // which of them is wrong is not something this can know.
+    expect(
+      check(`
+        .a { margin-left: clamp(-20.48px, -4.26667vw, -13.65333px) }
+        @media (min-width: 768px) {
+          .a { margin-left: clamp(2.13px, 0.27778vw, 4.27px) }
+        }
+      `),
+    ).toEqual([])
+  })
+
   it('compares shorthand components one by one', () => {
     const issues = check(`
       .a { margin: 10px 40px }

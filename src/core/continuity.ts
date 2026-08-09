@@ -228,7 +228,23 @@ export function findContinuityIssues(root: Root): ContinuityIssue[] {
           rootFontSize: ROOT_FONT_SIZE,
         })
         if (lowPx === null || highPx === null) continue
-        if (highPx >= lowPx - EPSILON) continue
+        // Compared by magnitude, not by value. A negative length — an overhang,
+        // a pulled-in gutter — is drawn *bigger* by moving further from zero,
+        // and the compiler scales it that way: `-16px` on a 375 canvas becomes
+        // `clamp(-20.48px, -4.26667vw, -13.65333px)`, which falls as the
+        // viewport grows. Reading that as a step backwards inverted the check
+        // for every negative length: `-20.48px → -28.44px`, the wider canvas
+        // asking for a deeper overhang, was reported, while `-20.48px →
+        // -2.84px`, where the overhang all but vanishes at the breakpoint, was
+        // not. For non-negative values `|a| < |b|` and `a < b` agree, so this
+        // leaves the ordinary case exactly as it was.
+        //
+        // A sign change is left alone. Zero is a boundary the compiler does not
+        // cross on its own, so meeting one here means the two canvases were
+        // written with different intents, and which of them is wrong is not
+        // something this can know.
+        if (lowPx < 0 !== highPx < 0) continue
+        if (Math.abs(highPx) >= Math.abs(lowPx) - EPSILON) continue
 
         const identity = `${key}|${low.order}|${high.order}|${index}`
         const already = byTransition.get(identity)

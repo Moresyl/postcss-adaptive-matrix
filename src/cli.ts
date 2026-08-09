@@ -287,15 +287,20 @@ function report(
   // is about the step between them.
   const round = (value: number) => `${Math.round(value * 100) / 100}px`
   for (const issue of issues) {
+    // A negative length is drawn bigger by moving away from zero, so "smaller"
+    // would describe the wrong direction for an overhang or a pulled-in gutter
+    // — and the number on the right is the larger one.
+    const negative = issue.below.px < 0
     lines.push(
       `  ${c.yellow('shrinks')} ${c.cyan(issue.selector)} ${issue.prop} ` +
-        `gets smaller at ${issue.breakpoint}px: ` +
+        `${negative ? 'falls back toward zero' : 'gets smaller'} at ${issue.breakpoint}px: ` +
         `${round(issue.below.px)} ${c.dim('→')} ${round(issue.above.px)}`,
     )
     lines.push(
       c.dim(
         `          ${issue.below.value} → ${issue.above.value}. ` +
-          'Widening the window makes this smaller — the two canvases disagree here.',
+          `Widening the window makes this ${negative ? 'shallower' : 'smaller'}` +
+          ' — the two canvases disagree here.',
       ),
     )
   }

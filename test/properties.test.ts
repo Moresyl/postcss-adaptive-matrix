@@ -54,7 +54,7 @@ function converted(css: string): string | null {
 const DESIGN_WIDTHS = [320, 375, 414, 750, 828, 1024, 1440, 1920, 2560]
 const MIN_WIDTHS = [280, 320, 360, 768, 1024]
 const SPANS = [120, 200, 480, 896, 1536]
-const VALUES = [1, 2, 4, 12, 16, 20, 32, 48, 100, 187.5, 375]
+const VALUES = [1, 2, 4, 12, 16, 20, 32, 48, 100, 187.5, 375, -4, -16, -48]
 const PROPERTIES = ['width', 'font-size', 'margin-top', 'letter-spacing', 'border-radius']
 
 interface Generated {
@@ -110,20 +110,24 @@ describe('properties that hold for every canvas', () => {
     }
   })
 
-  it('never gets smaller as the viewport gets wider', async () => {
+  it('never moves closer to zero as the viewport gets wider', async () => {
     // The breakpoint-continuity check is only complete because of this: if no
-    // single formula can shrink, a shrinking length must come from crossing
-    // into a canvas that disagrees. That reasoning is worth checking rather
-    // than assuming.
+    // single formula can move toward zero, a length that does must come from
+    // crossing into a canvas that disagrees. Checking it rather than assuming
+    // it is the point — the first version of this claim said "never gets
+    // smaller", which is false for every negative length, and the check built
+    // on it was inverted for all of them.
     for (const row of await sample(2024, 250)) {
       let previous = Number.NEGATIVE_INFINITY
       for (let width = 200; width <= 3000; width += 25) {
         const actual = evaluateLength(row.compiled, { ...CONTEXT, width })
         expect(actual, `${row.label} at ${width}px`).not.toBeNull()
-        expect(actual!, `${row.label} at ${width}px`).toBeGreaterThanOrEqual(
+        expect(Math.abs(actual!), `${row.label} at ${width}px`).toBeGreaterThanOrEqual(
           previous - 0.001,
         )
-        previous = actual!
+        // A formula never changes sign, so magnitude is the whole story.
+        expect(Math.sign(actual!) === Math.sign(row.value) || actual === 0).toBe(true)
+        previous = Math.abs(actual!)
       }
     }
   })
