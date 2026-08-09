@@ -7,7 +7,7 @@
 
 一个面向多端设计系统的 PostCSS 8 响应式编译器。同一项目可以让 App/H5 按一套设计宽度开发，让 PC 按另一套设计宽度开发，并在各自区间内连续自适应。
 
-它吸收了 `postcss-px-to-viewport-8-plugin` 的低迁移成本和 `postcss-mobile-forever` 的多屏、限宽思想，但核心模型不再是“把所有端都缩放成同一张移动端设计稿”，而是：
+它不是把所有端粗暴缩放成同一张设计稿，而是以多画布、多区间和明确的端口语义作为核心模型：
 
 - App 与 PC 拥有独立设计画布，例如 `375` 与 `1440`；
 - 每个画布拥有独立断点、流体区间、单位和容器查询；
@@ -89,9 +89,9 @@ export default {
 
 这意味着开发者仍然按照设计稿写熟悉的 `px`；编译器负责把它转换成连续、有限、有语义的多端尺寸。
 
-## 为什么不是再做一个 px → vw
+## 为什么需要多画布响应式编译
 
-| 能力 | px-to-viewport-8 | mobile-forever | adaptive-matrix |
+| 能力 | 传统单端转换 | 单画布多屏方案 | adaptive-matrix |
 | --- | --- | --- | --- |
 | PostCSS 8 | 是 | 是 | 是 |
 | App/PC 独立设计宽度 | 否 | 否，单移动画布缩放 | 是 |
@@ -106,7 +106,7 @@ export default {
 
 ### 渐进迁移
 
-不写任何新语法。普通 CSS 全部由 `defaultProfile` 转换，适合从 px-to-viewport、pxtorem 或旧 H5 工程迁移。
+不写任何新语法。普通 CSS 全部由 `defaultProfile` 转换，适合从传统单位转换方案或旧 H5 工程渐进迁移。
 
 ```css
 .button { min-height: 44px; }
@@ -227,7 +227,7 @@ module.exports = {
 - [App + PC 工作流](./docs/app-pc-workflow.md)
 - [完整配置参考](./docs/configuration.md)
 - [架构与转换公式](./docs/architecture.md)
-- [从两个参考插件迁移](./docs/migration.md)
+- [旧项目迁移指南](./docs/migration.md)
 - [发布与兼容性](./docs/release.md)
 - [完整示例](./examples/app-pc/)
 

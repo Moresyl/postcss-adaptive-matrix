@@ -1,6 +1,6 @@
 # 迁移指南
 
-## 从 postcss-px-to-viewport-8-plugin 迁移
+## 从传统 px → vw 方案迁移
 
 最小迁移：
 
@@ -39,16 +39,16 @@ adaptiveMatrix({
 
 原插件的 `landscape` 不再是全局开关。新增 `landscape` profile，并给它明确媒体查询，使横屏可以拥有自己的设计宽度和缩放区间。
 
-## 从 postcss-mobile-forever 迁移
+## 从单画布多屏限宽方案迁移
 
-mobile-forever 的核心是假设只有一套移动端设计稿，再生成桌面与横屏比例。adaptive-matrix 允许 App 和 PC 各自拥有设计画布，因此迁移时先决定：
+传统单画布方案通常假设只有一套移动端设计稿，再生成桌面与横屏比例。adaptive-matrix 允许 App 和 PC 各自拥有设计画布，因此迁移时先决定：
 
 1. PC 仍展示居中的移动版：只用 app profile，并配置 `rootMaxWidth`。
 2. PC 有独立设计稿：使用 `appPcPreset`，将 PC 差异放进 `@adaptive pc`。
 
 常见映射：
 
-| mobile-forever | adaptive-matrix |
+| 传统配置语义 | adaptive-matrix |
 | --- | --- |
 | `viewportWidth` | App profile `designWidth` |
 | `maxDisplayWidth` | App `fluid.maxWidth` + `rootMaxWidth` |
