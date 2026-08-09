@@ -2,13 +2,17 @@
 
 ## 编译流程
 
-1. 根据文件路径执行 `include` / `exclude`。
-2. 普通规则选择 `defaultProfile`；`@adaptive name` 切换到指定 profile。
-3. 使用 PostCSS AST 遍历声明，属性和值经过过滤器。
-4. 使用 `postcss-value-parser` 解析值，跳过字符串和 URL 函数。
-5. 把目标长度转换成有界流体表达式。
-6. 把 `@adaptive` 改写为 `@media` 或 `@container`。
-7. 如显式启用，最后追加低优先级根布局基础层。
+1. 插件初始化时把 `libraries` 展开成路由，追加在 `routes` 之后。
+2. 根据文件路径执行 `include` / `exclude`。
+3. 为每条规则解析归属画布，优先级见[配置参考](./configuration.md#adaptiveroute)：`@adaptive` > 属性名路由 > 选择器路由 > 文件路由 > `defaultProfile`。
+4. 使用 PostCSS AST 遍历声明，属性和值经过过滤器。
+5. 使用 `postcss-value-parser` 解析值，跳过字符串和 URL 函数。
+6. 把目标长度转换成有界流体表达式。
+7. 规则内声明处理完毕后，若启用 `fixedContainingBlock` 且该规则自身声明了 `position: fixed`，修正其行内轴 inset 与宽度。
+8. 把 `@adaptive` 改写为 `@media` 或 `@container`。
+9. 如显式启用，最后追加低优先级根布局基础层。
+
+第 7 步在第 6 步之后，因此它包裹的是换算后的流体值而不是原始像素。
 
 ## 普通长度
 
@@ -43,9 +47,18 @@ Profile 的 `query.type` 为 `container` 时，`@adaptive` 输出 `@container`�
 
 - `url()`、`local()`、`format()`；
 - 引号字符串；
-- 默认的 CSS 自定义属性；
+- 默认的 CSS 自定义属性（被组件库 `tokenPrefix` 认领的除外——认领本身即是开关）；
 - 小于 `minPixelValue` 的值；
 - 不超过 `hairline` 的绝对值；
 - 过滤器或注释明确排除的内容。
 
-编译器不猜测设计意图，不自动移动侧栏、不重写 fixed 定位，也不注入 JavaScript。复杂布局应由 CSS Grid、Flexbox、容器查询和明确的端口规则表达。
+## fixed 修正的边界
+
+`fixedContainingBlock` 是唯一一处编译器改写定位的地方，它刻意做得很窄：
+
+- 需要显式开启（`appPcPreset` 在建立居中列时默认开启，因为那正是问题出现的配置）；
+- 只处理**规则自身**声明了 `position: fixed` 的情况。从其它规则继承定位无法静态观察，按选择器组合去推测会制造隐藏的运行时耦合；
+- 只处理行内轴；
+- 只在值为 `0` 或 `100%` 这类无歧义形态上做替换，其余一律用 `calc()` 叠加，且幂等。
+
+除此之外，编译器不猜测设计意图，不自动移动侧栏，也不注入 JavaScript。复杂布局应由 CSS Grid、Flexbox、容器查询和明确的端口规则表达。

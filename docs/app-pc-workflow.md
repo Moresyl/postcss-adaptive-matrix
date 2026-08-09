@@ -43,24 +43,27 @@
 - 根布局使用 `inline-size: 100%`；
 - 默认水平居中；
 - App 与 PC 在各自流体上限停止增长；
-- 注入安全区变量。
+- 注入安全区变量；
+- 发布根列宽与留白变量，并据此修正 `position: fixed`。
+
+最后一条值得单独说明：页面一旦成为居中的列，固定定位元素会退回以视口为包含块，底部导航栏就贴到了窗口两端。`appPcPreset` 默认修正这一点，不需要时传 `fixedContainingBlock: false`。
 
 若现有项目已经管理根容器，省略 `rootSelector` 即可，插件不会注入全局 CSS。
 
 ## 第三方组件库
 
-通过文件名动态返回设计宽度：
+不需要配置。组件库按自己的设计画布换算，桌面端组件库保留像素，主题 token 按名字识别并走文字混合公式——详见 [配置参考](./configuration.md#libraries)。
+
+需要覆盖时用 `extends`：
 
 ```js
-profiles: {
-  app: {
-    designWidth: ({ file }) => file.includes('vant') ? 375 : 750,
-    fluid: { minWidth: 320, maxWidth: 480 },
-  },
-}
+adaptiveMatrix({
+  ...appPcPreset({ rootSelector: '#app' }),
+  libraries: [{ extends: 'vant', designWidth: 750 }],
+})
 ```
 
-也可使用 `exclude: /node_modules/`、`selectorExclude` 或三种注释指令精细控制。
+仍然可用的兜底手段：`routes` 显式改派、`exclude: /node_modules/`、`selectorExclude`，以及三种注释指令。
 
 ## 验收尺寸
 
