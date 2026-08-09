@@ -1,0 +1,7 @@
+@ADAPTIVE pc {
+  .a { width: 720px }
+}
+
+@Adaptive app {
+  .b { width: 187.5px }
+}

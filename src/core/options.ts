@@ -105,6 +105,16 @@ export function resolveOptions(
   if (!options.propList.length) {
     throw new Error('[postcss-adaptive-matrix] propList cannot be empty.')
   }
+  // A list of nothing but exclusions can never match, so the plugin would run
+  // over every stylesheet and convert none of it — the same outcome as an empty
+  // list, reached by a much likelier route. `['!border*']` reads like "convert
+  // everything except borders" and has to be written `['*', '!border*']`.
+  if (options.propList.every((entry) => entry.startsWith('!'))) {
+    throw new Error(
+      '[postcss-adaptive-matrix] propList contains only exclusions, so it matches nothing. ' +
+        `Add '*' to convert the rest: ['*', ${options.propList.map((entry) => `'${entry}'`).join(', ')}].`,
+    )
+  }
   for (const [name, profile] of Object.entries(authored)) {
     validateProfile(name, profile)
   }

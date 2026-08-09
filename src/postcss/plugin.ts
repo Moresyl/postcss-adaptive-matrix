@@ -107,6 +107,17 @@ interface ProcessorContext {
   converter: Converter
   propertyMatches: (property: string) => boolean
   correctsFixed: boolean
+  /**
+   * `options.atRuleName` folded to lower case, ready to compare against a
+   * likewise-folded `AtRule.name`.
+   *
+   * At-keywords are ASCII case-insensitive in CSS, so a browser reads
+   * `@ADAPTIVE pc` as the same rule as `@adaptive pc`. Matching exactly would
+   * leave that block unrecognised — and an unrecognised at-rule is not a
+   * no-op: browsers drop the whole thing, so the styles inside disappear with
+   * nothing reported. Folded once here rather than per node.
+   */
+  atRuleName: string
 }
 
 function transformDeclaration(
@@ -212,15 +223,22 @@ function unknownProfile(
   const available = Object.keys(context.options.profiles).filter(
     (profile) => !profile.startsWith(LIBRARY_PROFILE_PREFIX),
   )
-  const message =
-    `Unknown adaptive profile "${name}". Available profiles: ${available.join(', ')}. ` +
-    `The @${context.options.atRuleName} block is left as authored, which means browsers will drop it entirely. ` +
-    `Set unknownProfile: 'error' to fail the build instead.`
+  const lead = `Unknown adaptive profile "${name}". Available profiles: ${available.join(', ')}.`
+
+  // Only the warning describes the surviving at-rule and offers `error`: under
+  // `error` the build stops here, so neither sentence is true, and telling
+  // someone to switch on the setting they already switched on reads like the
+  // message was written for a different situation.
   if (context.options.unknownProfile === 'error') {
-    throw atRule.error(message, { plugin: PLUGIN_NAME })
+    throw atRule.error(lead, { plugin: PLUGIN_NAME })
   }
   if (context.options.unknownProfile === 'warn') {
-    context.result.warn(message, { node: atRule, plugin: PLUGIN_NAME })
+    context.result.warn(
+      `${lead} The @${context.options.atRuleName} block is left as authored, ` +
+        'which means browsers will drop it entirely. ' +
+        "Set unknownProfile: 'error' to fail the build instead.",
+      { node: atRule, plugin: PLUGIN_NAME },
+    )
   }
 }
 
@@ -305,7 +323,7 @@ function processContainer(
       continue
     }
     if (node.type !== 'atrule') continue
-    if (node.name === context.options.atRuleName) {
+    if (node.name.toLowerCase() === context.atRuleName) {
       // Nested in a rule, `@adaptive` wraps that rule's own declarations; at the
       // root it wraps rules. Passing the flag down keeps both readings correct.
       transformAdaptiveAtRule(node, context, declarations)
@@ -353,6 +371,7 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
   const resolver = createProfileResolver(options)
   const converter = createConverter(options)
   const correctsFixed = wantsFixedCorrection(options)
+  const atRuleName = options.atRuleName.toLowerCase()
 
   return {
     postcssPlugin: PLUGIN_NAME,
@@ -364,6 +383,7 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
         root,
         resolver.forFile(file),
         {
+          atRuleName,
           converter,
           correctsFixed,
           file,

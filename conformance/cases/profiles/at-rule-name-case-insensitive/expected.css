@@ -1,0 +1,7 @@
+@media (min-width: 768px) {
+  .a { width: clamp(512px, 50vw, 960px) }
+}
+
+@media (max-width: 767.98px) {
+  .b { width: clamp(160px, 50vw, 240px) }
+}

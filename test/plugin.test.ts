@@ -164,6 +164,38 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('@adaptive watch')
   })
 
+  it('does not tell an unknown profile error to enable the mode it is already in', async () => {
+    const failure = await process('@adaptive watch { .a { width: 20px } }', {
+      unknownProfile: 'error',
+    }).catch((error: unknown) => (error as Error).message)
+
+    expect(failure).toContain('Unknown adaptive profile "watch"')
+    // The build stopped here, so nothing was "left as authored" and there is no
+    // setting left to turn on.
+    expect(failure).not.toContain('unknownProfile')
+    expect(failure).not.toContain('left as authored')
+  })
+
+  it('recognises the at-rule whatever its case, as a browser would', async () => {
+    // At-keywords are ASCII case-insensitive. Matching exactly would leave
+    // `@ADAPTIVE` unrecognised, and browsers discard an at-rule they do not
+    // know along with its contents — the block would vanish, silently.
+    const result = await process('@ADAPTIVE pc { .a { width: 100px } }')
+
+    expect(result.css).not.toContain('ADAPTIVE')
+    expect(result.css).toContain('@media (min-width: 768px)')
+    expect(result.warnings()).toHaveLength(0)
+  })
+
+  it('rejects a propList that is nothing but exclusions', async () => {
+    // Matches no property at all, so the plugin would convert nothing anywhere
+    // — and `['!border*']` is a very natural way to write "everything but
+    // borders".
+    await expect(process('.a { width: 10px }', { propList: ['!border*'] })).rejects.toThrow(
+      /only exclusions.*'\*', '!border\*'/s,
+    )
+  })
+
   it('can unwrap profiles without a query', async () => {
     const result = await process('@adaptive raw { .a { width: 20px } }', {
       defaultProfile: 'raw',
