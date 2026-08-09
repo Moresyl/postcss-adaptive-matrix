@@ -136,6 +136,29 @@ export default {
 
 已经自己管理根容器的项目省略 `rootSelector` 即可，插件不会注入任何全局 CSS。
 
+### 组件化项目要指定注入位置
+
+这段基础样式是全局的，但 PostCSS 一次只看见一个文件，没有跨文件去重的余地。所以默认每个被处理的文件都会拿到一份。
+
+只有一份全局样式表的项目，这正是想要的。Vue / Svelte 项目则相反：**每个组件的 `<style>` 块都是独立的一个文件**，默认行为等于给 150 个组件各塞一份安全区变量和根列规则。
+
+指到入口样式表上，就只注入一次：
+
+```js
+appPcPreset({
+  rootSelector: '#app',
+  rootInjectTo: 'src/styles/main',   // 字符串按「包含」匹配
+})
+```
+
+也接受正则和函数，规则与 `include` 一致。直接写 `root` 时对应字段是 `root.injectTo`。
+
+匹配不上不会报错，只是一份都不注入。用[命令行](./cli.md)确认一下最稳妥——入口文件应当出现 `+ inline-size 100%` 这类新增声明：
+
+```bash
+npx adaptive-matrix src/styles/main.css -c postcss.config.mjs
+```
+
 ## 组件库
 
 不需要配置。内置的 11 个主流库按各自设计画布换算，桌面端组件库保留真实像素，主题 token 按名字识别并走文字混合公式。完整清单与覆盖方式见[组件库适配](./libraries.md)。

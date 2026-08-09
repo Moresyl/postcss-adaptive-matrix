@@ -41,6 +41,7 @@ export function appPcPreset(
           // preset is precisely the configuration in which a fixed element
           // stops agreeing with the page it sits on.
           fixedContainingBlock: options.fixedContainingBlock ?? true,
+          ...(options.rootInjectTo ? { injectTo: options.rootInjectTo } : {}),
         }
       : false,
   }

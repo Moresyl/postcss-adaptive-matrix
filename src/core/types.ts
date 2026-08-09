@@ -112,6 +112,21 @@ export interface RootFoundationOptions {
    * measuring themselves against the whole viewport instead.
    */
   fixedContainingBlock?: boolean
+  /**
+   * Which files receive the foundation. Defaults to all of them.
+   *
+   * The foundation is global CSS, but PostCSS sees one file at a time and has
+   * no way to dedupe across them. A project with a single stylesheet wants a
+   * copy in that one file, which is why the default is unrestricted. A Vue or
+   * Svelte project is the opposite case: every component's `<style>` block is
+   * its own file, so the default leaves a copy of the safe-area variables and
+   * the root column rules in every component.
+   *
+   * Point this at the entry stylesheet to emit it exactly once. Matching works
+   * like `include`: a string is a substring test, a regular expression is
+   * tested against the path, a function decides for itself.
+   */
+  injectTo?: FileMatcher | FileMatcher[]
 }
 
 export interface AdaptiveMatrixOptions {
@@ -180,6 +195,8 @@ export interface AppPcPresetOptions {
    * elements measured against the viewport.
    */
   fixedContainingBlock?: boolean
+  /** Restricts the root foundation to matching files. See `RootFoundationOptions.injectTo`. */
+  rootInjectTo?: FileMatcher | FileMatcher[]
 }
 
 /** A profile together with how it was selected. */

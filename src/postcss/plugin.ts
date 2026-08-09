@@ -329,7 +329,14 @@ function shouldProcessFile(
   return true
 }
 
-function appendFoundation(root: Root, options: ResolvedAdaptiveMatrixOptions): void {
+function appendFoundation(
+  root: Root,
+  file: string,
+  options: ResolvedAdaptiveMatrixOptions,
+): void {
+  if (options.root && options.root.injectTo && !matchesFile(options.root.injectTo, file)) {
+    return
+  }
   const css = buildFoundationCss(options)
   if (!css) return
   const foundation = postcss.parse(css, { from: root.source?.input.file })
@@ -367,7 +374,7 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
         },
         false,
       )
-      appendFoundation(root, options)
+      appendFoundation(root, file, options)
     },
   }
 }

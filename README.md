@@ -173,7 +173,7 @@ src/styles/app.css
 | | |
 | --- | --- |
 | [快速上手与双设计稿工作流](./docs/getting-started.md) | 从安装到 App/PC 双稿协作 |
-| [构建工具集成](./docs/integration.md) | Vite、Nuxt、Webpack、Taro，以及三个静默出错的点 |
+| [构建工具集成](./docs/integration.md) | Vite、Nuxt、Webpack、Taro，以及四个静默出错的点 |
 | [命令行预览](./docs/cli.md) | `npx adaptive-matrix`：不用构建就能看到换算结果 |
 | [组件库适配](./docs/libraries.md) | 内置清单、匹配方式、覆盖与扩展 |
 | [配置参考](./docs/configuration.md) | 全部选项、类型与默认值 |

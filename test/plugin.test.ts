@@ -191,6 +191,42 @@ describe('presets and foundation', () => {
     expect(result.css).toContain('max-inline-size: 1920px')
   })
 
+  it('confines the foundation to matching files when injectTo is set', async () => {
+    // Every component <style> block is its own file. Without a way to narrow
+    // this, a 150-component project ships 150 copies of the same global CSS.
+    const options = appPcPreset({ rootSelector: '#app', rootInjectTo: 'styles/main' })
+    const entry = await process('.a { width: 10px }', options, '/project/src/styles/main.css')
+    const component = await process(
+      '.a { width: 10px }',
+      options,
+      '/project/src/views/home/index.vue?vue&type=style&index=0&lang.scss',
+    )
+
+    expect(entry.css).toContain(':where(#app)')
+    expect(component.css).not.toContain(':where(#app)')
+    // The narrowing is about the foundation only; conversion still happens.
+    expect(component.css).toContain('clamp(')
+  })
+
+  it('injects into every file when injectTo is omitted', async () => {
+    const options = appPcPreset({ rootSelector: '#app' })
+    for (const file of ['/project/src/a.css', '/project/src/b.css']) {
+      const result = await process('.a { width: 10px }', options, file)
+      expect(result.css).toContain(':where(#app)')
+    }
+  })
+
+  it('accepts a regular expression or a predicate for injectTo', async () => {
+    for (const injectTo of [/main\.css$/, (file: string) => file.endsWith('main.css')]) {
+      const options = { root: { selector: '#app', injectTo } }
+      const entry = await process('.a { width: 10px }', options, '/project/src/main.css')
+      const other = await process('.a { width: 10px }', options, '/project/src/other.css')
+
+      expect(entry.css).toContain(':where(#app)')
+      expect(other.css).not.toContain(':where(#app)')
+    }
+  })
+
   it('exposes the named preset collection', () => {
     expect(presets.appPc).toBe(appPcPreset)
     expect(appPcPreset({ container: true, rootSelector: '.shell' }).root).toMatchObject({

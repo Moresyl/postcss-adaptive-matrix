@@ -122,10 +122,25 @@ interface RootFoundationOptions {
   safeAreaVariables?: boolean
   layer?: string | false
   fixedContainingBlock?: boolean
+  injectTo?: FileMatcher | FileMatcher[]
 }
 ```
 
 默认不注入全局样式。只有显式配置 `root` 或在 `appPcPreset` 传 `rootSelector` 才启用。
+
+### injectTo
+
+限定哪些文件接收这段基础样式，默认全部。
+
+基础样式是全局的，而 PostCSS 一次只看见一个文件，无法跨文件去重。单一样式表的项目正需要默认行为；Vue / Svelte 项目里每个组件的 `<style>` 块都是独立文件，默认就变成了每个组件一份。
+
+```js
+root: { selector: '#app', injectTo: 'src/styles/main' }
+```
+
+匹配方式与 `include` 相同：字符串按包含判断，正则按路径测试，函数自行决定。`appPcPreset` 的对应字段是 `rootInjectTo`。
+
+匹配不上不报错，只是一份都不注入——用[命令行预览](./cli.md)确认入口文件里出现了新增声明。
 
 ### fixedContainingBlock
 

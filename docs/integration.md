@@ -87,7 +87,7 @@ const config = {
 
 ---
 
-## 三个静默出错的点
+## 四个静默出错的点
 
 ### 1. 插件顺序
 
@@ -127,6 +127,21 @@ routes: [{ profile: 'mobile', file: [/\.mobile\.scss$/] }]     // SFC 匹配不�
 ```
 
 Windows 与 POSIX 的分隔符不同，所以用 `[\\/]` 而不是 `/`。
+
+### 4. 组件化项目的根容器基础样式会逐文件重复
+
+配了 `rootSelector` / `root` 之后，插件会追加一段全局基础样式。它是全局的，但 PostCSS 一次只看见一个文件，没有跨文件去重的余地——所以默认**每个文件各一份**。
+
+Vue / Svelte 里每个组件的 `<style>` 块都是独立文件，于是 150 个组件就是 150 份安全区变量和根列规则。不报错，只是产物白白变大。
+
+```js
+appPcPreset({
+  rootSelector: '#app',
+  rootInjectTo: 'src/styles/main',   // 只注入入口这一份
+})
+```
+
+反过来，匹配不上就一份都没有，同样不报错。用 `npx adaptive-matrix src/styles/main.css` 确认入口文件里出现了新增声明。
 
 ---
 
