@@ -1,6 +1,6 @@
 {
   "name": "postcss-adaptive-matrix",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-canvas responsive CSS compiler for PostCSS 8: one design width per design file, bounded fluid sizing, zoom-accessible text, and out-of-the-box component library adaptation.",
   "keywords": [
     "postcss",
@@ -54,6 +54,10 @@
   "engines": {
     "node": ">=18"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -62,7 +66,8 @@
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
     "check": "npm run typecheck && npm run test:coverage && npm run build",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "prepublishOnly": "npm run check"
   },
   "peerDependencies": {
     "postcss": "^8.4.0"
