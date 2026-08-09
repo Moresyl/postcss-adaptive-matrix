@@ -1,5 +1,10 @@
 # postcss-adaptive-matrix
 
+[![CI](https://github.com/Moresyl/postcss-adaptive-matrix/actions/workflows/ci.yml/badge.svg)](https://github.com/Moresyl/postcss-adaptive-matrix/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/postcss-adaptive-matrix.svg)](https://www.npmjs.com/package/postcss-adaptive-matrix)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![PostCSS 8](https://img.shields.io/badge/PostCSS-8-dd3a0a.svg)](https://postcss.org/)
+
 一个面向多端设计系统的 PostCSS 8 响应式编译器。同一项目可以让 App/H5 按一套设计宽度开发，让 PC 按另一套设计宽度开发，并在各自区间内连续自适应。
 
 它吸收了 `postcss-px-to-viewport-8-plugin` 的低迁移成本和 `postcss-mobile-forever` 的多屏、限宽思想，但核心模型不再是“把所有端都缩放成同一张移动端设计稿”，而是：
@@ -247,3 +252,5 @@ npm run pack:check
 ## License
 
 MIT
+
+欢迎阅读[贡献指南](./CONTRIBUTING.md)并参与开发。安全问题请按照[安全策略](./SECURITY.md)私下报告。

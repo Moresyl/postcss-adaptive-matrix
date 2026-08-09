@@ -13,6 +13,15 @@
     "px-to-vw"
   ],
   "license": "MIT",
+  "author": "Moresyl and contributors",
+  "homepage": "https://github.com/Moresyl/postcss-adaptive-matrix#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Moresyl/postcss-adaptive-matrix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Moresyl/postcss-adaptive-matrix/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
