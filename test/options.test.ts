@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { convertLength, round } from '../src/convert.js'
-import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/matchers.js'
-import { resolveOptions } from '../src/options.js'
+import { convertLength, round } from '../src/core/convert.js'
+import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
+import { resolveOptions } from '../src/core/options.js'
 
 describe('configuration validation', () => {
   it('rejects missing profiles and invalid numeric ranges', () => {

@@ -1,0 +1,6 @@
+{
+  "description": "preserveOriginal keeps the source declaration as a fallback",
+  "options": {
+    "preserveOriginal": true
+  }
+}

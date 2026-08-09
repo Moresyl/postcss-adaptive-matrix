@@ -1,0 +1,6 @@
+{
+  "description": "fontFluidity 1 makes text scale with the viewport like any other length",
+  "options": {
+    "fontFluidity": 1
+  }
+}

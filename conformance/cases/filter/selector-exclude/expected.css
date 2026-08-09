@@ -1,0 +1,5 @@
+.skip-me { width: 50px }
+
+.legacy { width: 50px }
+
+.card { width: clamp(42.66667px, 13.33333vw, 64px) }

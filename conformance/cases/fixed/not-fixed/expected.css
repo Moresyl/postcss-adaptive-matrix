@@ -1,0 +1,31 @@
+.sticky-bar {
+  position: sticky;
+  left: 0;
+}
+
+.panel {
+  position: absolute;
+  left: 0;
+}
+
+@layer adaptive-matrix {
+  :where(#app) {
+    inline-size: 100%;
+    margin-inline: auto;
+  }
+
+  :root {
+    --adaptive-root-width: 100vw;
+    --adaptive-root-gutter: max(0px, (100vw - var(--adaptive-root-width)) / 2);
+  }
+
+  @media (min-width: 768px) {
+    :where(#app) {
+      max-inline-size: 600px;
+    }
+
+    :root {
+      --adaptive-root-width: 600px;
+    }
+  }
+}

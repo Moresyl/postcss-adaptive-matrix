@@ -1,0 +1,11 @@
+:root {
+  --van-padding-md: clamp(6.82667px, 2.13333vw, 12.8px);
+}
+
+.van-button {
+  height: clamp(18.77333px, 5.86667vw, 35.2px);
+}
+
+.page-hero {
+  height: clamp(18.77333px, 5.86667vw, 35.2px);
+}

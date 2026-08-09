@@ -1,0 +1,10 @@
+{
+  "description": "The root can declare itself a named container",
+  "options": {
+    "root": {
+      "selector": "#app",
+      "container": true,
+      "containerName": "shell"
+    }
+  }
+}

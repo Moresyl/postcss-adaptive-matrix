@@ -1,0 +1,4 @@
+.card {
+  padding: clamp(8.53333px, 2.66667vw, 12.8px) clamp(17.06667px, 5.33333vw, 25.6px) clamp(25.6px, 8vw, 38.4px) clamp(34.13333px, 10.66667vw, 51.2px);
+  border-radius: clamp(3.41333px, 1.06667vw, 5.12px) clamp(6.82667px, 2.13333vw, 10.24px);
+}

@@ -1,0 +1,10 @@
+{
+  "description": "layer: false emits the foundation without a cascade layer",
+  "options": {
+    "root": {
+      "selector": "#app",
+      "layer": false,
+      "safeAreaVariables": false
+    }
+  }
+}

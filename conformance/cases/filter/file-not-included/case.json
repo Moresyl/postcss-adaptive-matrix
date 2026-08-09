@@ -1,0 +1,9 @@
+{
+  "description": "A file outside include is skipped completely",
+  "from": "/project/lib/widget.css",
+  "options": {
+    "include": {
+      "$regex": "src"
+    }
+  }
+}

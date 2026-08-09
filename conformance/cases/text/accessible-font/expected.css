@@ -1,0 +1,5 @@
+.card {
+  font-size: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem);
+  line-height: clamp(1.423rem, calc(0.975rem + 2.24vw), 1.647rem);
+  letter-spacing: clamp(0.11858rem, calc(0.08125rem + 0.18667vw), 0.13725rem);
+}

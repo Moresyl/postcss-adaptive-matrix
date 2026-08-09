@@ -1,0 +1,8 @@
+{
+  "description": "An opt-in root emits a centered base, safe-area variables and per-profile caps",
+  "options": {
+    "root": {
+      "selector": "#app"
+    }
+  }
+}

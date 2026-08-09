@@ -1,16 +1,22 @@
 {
   "name": "postcss-adaptive-matrix",
   "version": "0.1.0",
-  "description": "Multi-profile, accessible and container-aware responsive design compiler for PostCSS 8.",
+  "description": "Multi-canvas responsive CSS compiler for PostCSS 8: one design width per design file, bounded fluid sizing, zoom-accessible text, and out-of-the-box component library adaptation.",
   "keywords": [
     "postcss",
+    "postcss-plugin",
     "responsive",
     "adaptive",
     "viewport",
+    "clamp",
+    "fluid-typography",
     "container-query",
+    "design-tokens",
+    "component-library",
     "mobile",
     "desktop",
-    "px-to-vw"
+    "px-to-vw",
+    "accessibility"
   ],
   "license": "MIT",
   "author": "Moresyl and contributors",
@@ -53,6 +59,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "conformance:update": "tsx scripts/update-conformance.ts",
+    "bench": "tsx bench/index.ts",
     "check": "npm run typecheck && npm run test:coverage && npm run build",
     "pack:check": "npm pack --dry-run"
   },
@@ -67,6 +75,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "postcss": "^8.5.26",
     "tsup": "^8.5.1",
+    "tsx": "^4.23.11",
     "typescript": "^5.9.3",
     "vitest": "^4.1.10"
   }

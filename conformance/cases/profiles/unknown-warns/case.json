@@ -1,0 +1,6 @@
+{
+  "description": "An unknown profile warns once and leaves the block untouched",
+  "warnings": [
+    "Unknown adaptive profile \"watch\""
+  ]
+}

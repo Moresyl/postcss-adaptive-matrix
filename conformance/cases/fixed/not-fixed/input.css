@@ -1,0 +1,9 @@
+.sticky-bar {
+  position: sticky;
+  left: 0;
+}
+
+.panel {
+  position: absolute;
+  left: 0;
+}

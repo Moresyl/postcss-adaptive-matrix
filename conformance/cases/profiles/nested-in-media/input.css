@@ -1,0 +1,7 @@
+@media print {
+  .a { width: 187.5px }
+}
+
+@supports (display: grid) {
+  .b { gap: 20px }
+}

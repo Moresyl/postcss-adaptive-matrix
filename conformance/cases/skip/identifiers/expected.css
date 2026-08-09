@@ -1,0 +1,5 @@
+.grid-16px {
+  grid-template-areas: "a16px b";
+  font-family: Px16, sans-serif;
+  animation-name: slide-16px;
+}

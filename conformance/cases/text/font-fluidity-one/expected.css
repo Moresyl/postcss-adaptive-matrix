@@ -1,0 +1,3 @@
+.card {
+  font-size: clamp(0.85333rem, 4.26667vw, 1.28rem);
+}

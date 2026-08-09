@@ -1,0 +1,8 @@
+/* header */
+.a {
+
+  width : clamp(160px, 50vw, 240px);
+
+  /* note */
+  height:clamp(76.8px, 24vw, 115.2px)
+}

@@ -1,0 +1,17 @@
+.tabbar {
+  position: fixed;
+  left: 0;
+}
+
+@layer adaptive-matrix {
+  :where(#app) {
+    inline-size: 100%;
+    margin-inline: auto;
+  }
+
+  @media (min-width: 768px) {
+    :where(#app) {
+      max-inline-size: 600px;
+    }
+  }
+}

@@ -1,0 +1,7 @@
+.card {
+  padding: clamp(17.06667px, 5.33333vw, 25.6px);
+
+  & .title { font-size: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem) }
+
+  &:hover { padding: clamp(20.48px, 6.4vw, 30.72px) }
+}

@@ -1,0 +1,11 @@
+{
+  "description": "selectorExclude matches by substring or regex",
+  "options": {
+    "selectorExclude": [
+      "skip-me",
+      {
+        "$regex": "^\\.legacy"
+      }
+    ]
+  }
+}

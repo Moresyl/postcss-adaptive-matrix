@@ -1,0 +1,9 @@
+{
+  "description": "A file inside include converts normally",
+  "from": "/project/src/widget.css",
+  "options": {
+    "include": {
+      "$regex": "src"
+    }
+  }
+}

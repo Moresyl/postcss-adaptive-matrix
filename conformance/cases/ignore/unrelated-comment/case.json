@@ -1,0 +1,3 @@
+{
+  "description": "Comments that are not directives survive untouched"
+}

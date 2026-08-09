@@ -1,0 +1,11 @@
+.toolbar {
+  gap: 12px;
+}
+
+@adaptive app {
+  .hero { width: 187.5px }
+}
+
+@adaptive pc {
+  .hero { width: 720px }
+}

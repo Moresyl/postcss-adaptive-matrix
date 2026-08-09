@@ -1,0 +1,6 @@
+{
+  "description": "transformCustomProperties opts custom properties into conversion",
+  "options": {
+    "transformCustomProperties": true
+  }
+}

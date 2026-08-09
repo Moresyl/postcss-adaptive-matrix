@@ -1,0 +1,21 @@
+{
+  "description": "A fixed element is offset into the centred root column, and the block axis is left alone",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "profiles": {
+      "app": {
+        "designWidth": 375,
+        "fluid": { "minWidth": 320, "maxWidth": 480 },
+        "query": "(max-width: 767.98px)"
+      },
+      "pc": {
+        "designWidth": 1440,
+        "fluid": { "minWidth": 768, "maxWidth": 1920 },
+        "query": "(min-width: 768px)",
+        "rootMaxWidth": 600
+      }
+    },
+    "root": { "selector": "#app", "safeAreaVariables": false, "fixedContainingBlock": true }
+  }
+}

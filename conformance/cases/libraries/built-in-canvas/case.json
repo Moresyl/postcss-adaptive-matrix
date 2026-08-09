@@ -1,0 +1,10 @@
+{
+  "description": "A built-in library converts on its own authoring canvas, not the project's",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 600 } }
+    },
+    "libraries": ["vant"]
+  }
+}

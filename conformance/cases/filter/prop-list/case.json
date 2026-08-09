@@ -1,0 +1,10 @@
+{
+  "description": "propList supports the include/exclude glob grammar",
+  "options": {
+    "propList": [
+      "*",
+      "!padding",
+      "!margin-*"
+    ]
+  }
+}

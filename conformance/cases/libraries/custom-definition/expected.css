@@ -1,0 +1,11 @@
+:root {
+  --ik-gutter: clamp(20.48px, 6.4vw, 38.4px);
+}
+
+.ik-panel {
+  padding: clamp(20.48px, 6.4vw, 38.4px);
+}
+
+.page-hero {
+  padding: clamp(10.24px, 3.2vw, 19.2px);
+}

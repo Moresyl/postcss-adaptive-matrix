@@ -1,0 +1,6 @@
+.a {
+  width: clamp(17.06667px, 5.33333vw, 25.6px);
+  padding: 20px;
+  margin-left: 20px;
+  margin: clamp(17.06667px, 5.33333vw, 25.6px);
+}

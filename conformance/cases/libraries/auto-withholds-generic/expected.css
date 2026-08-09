@@ -1,0 +1,11 @@
+.n-column {
+  height: clamp(18.77333px, 5.86667vw, 35.2px);
+}
+
+.q-span {
+  height: clamp(18.77333px, 5.86667vw, 35.2px);
+}
+
+.at-badge {
+  height: clamp(18.77333px, 5.86667vw, 35.2px);
+}

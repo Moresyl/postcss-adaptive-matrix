@@ -1,0 +1,36 @@
+.tabbar {
+  position: fixed;
+  left: var(--adaptive-root-gutter);
+  right: var(--adaptive-root-gutter);
+  bottom: 0;
+  width: min(100%, var(--adaptive-root-width));
+  height: clamp(42.66667px, 13.33333vw, 64px);
+}
+
+.drawer {
+  position: fixed;
+  left: calc(clamp(17.06667px, 5.33333vw, 25.6px) + var(--adaptive-root-gutter));
+  top: 0;
+}
+
+@layer adaptive-matrix {
+  :where(#app) {
+    inline-size: 100%;
+    margin-inline: auto;
+  }
+
+  :root {
+    --adaptive-root-width: 100vw;
+    --adaptive-root-gutter: max(0px, (100vw - var(--adaptive-root-width)) / 2);
+  }
+
+  @media (min-width: 768px) {
+    :where(#app) {
+      max-inline-size: 600px;
+    }
+
+    :root {
+      --adaptive-root-width: 600px;
+    }
+  }
+}

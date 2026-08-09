@@ -1,0 +1,7 @@
+{
+  "description": "unitToConvert retargets the compiler at a different source unit",
+  "options": {
+    "unitToConvert": "rem",
+    "hairline": 0
+  }
+}

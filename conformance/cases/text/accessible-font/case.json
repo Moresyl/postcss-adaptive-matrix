@@ -1,0 +1,3 @@
+{
+  "description": "Text properties mix rem with the viewport unit so browser zoom keeps working"
+}

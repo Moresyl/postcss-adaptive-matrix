@@ -1,0 +1,12 @@
+{
+  "description": "A file route applies when the dependency still has its own stylesheet",
+  "from": "/project/node_modules/vendor-ui/es/button.css",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } },
+      "vendor": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    },
+    "routes": [{ "profile": "vendor", "file": { "$regex": "node_modules[\\\\/]vendor-ui" } }]
+  }
+}

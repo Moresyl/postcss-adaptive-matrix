@@ -1,0 +1,9 @@
+{
+  "description": "A prefix short enough to collide with application code is not claimed until the library is named",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 600 } }
+    }
+  }
+}

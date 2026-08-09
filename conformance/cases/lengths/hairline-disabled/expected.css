@@ -1,0 +1,4 @@
+.card {
+  border: clamp(0.85333px, 0.26667vw, 1.28px) solid;
+  outline: clamp(0.42667px, 0.13333vw, 0.64px) dashed;
+}

@@ -1,0 +1,7 @@
+{
+  "description": "minPixelValue holds small lengths back from conversion",
+  "options": {
+    "minPixelValue": 12,
+    "hairline": 0
+  }
+}

@@ -1,0 +1,11 @@
+.toolbar {
+  gap: clamp(10.24px, 3.2vw, 15.36px);
+}
+
+@media (max-width: 767.98px) {
+  .hero { width: clamp(160px, 50vw, 240px) }
+}
+
+@media (min-width: 768px) {
+  .hero { width: clamp(512px, 50vw, 960px) }
+}

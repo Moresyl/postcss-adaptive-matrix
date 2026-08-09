@@ -1,0 +1,12 @@
+.el-button {
+  height: 32px;
+  padding: 8px 15px;
+}
+
+:root {
+  --el-font-size-base: 14px;
+}
+
+.page-hero {
+  height: 32px;
+}

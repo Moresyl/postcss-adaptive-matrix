@@ -1,0 +1,6 @@
+{
+  "description": "fontFluidity 0 pins text to a purely static rem size",
+  "options": {
+    "fontFluidity": 0
+  }
+}

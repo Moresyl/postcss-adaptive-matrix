@@ -1,0 +1,11 @@
+:root {
+  --van-font-size-md: 14px;
+  --van-cell-font-size: 14px;
+  --van-line-height-md: 20px;
+  --van-padding-md: 16px;
+  --brand-gap: 16px;
+}
+
+.van-cell {
+  font-size: 14px;
+}

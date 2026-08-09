@@ -1,0 +1,11 @@
+:root {
+  --van-padding-md: 16px;
+}
+
+.van-button {
+  height: 44px;
+}
+
+.page-hero {
+  height: 44px;
+}

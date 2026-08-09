@@ -1,0 +1,8 @@
+{
+  "description": "An explicit propList converts nothing else",
+  "options": {
+    "propList": [
+      "width"
+    ]
+  }
+}

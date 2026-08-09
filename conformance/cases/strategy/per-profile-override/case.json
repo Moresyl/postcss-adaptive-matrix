@@ -1,0 +1,17 @@
+{
+  "description": "A profile may override the global strategy and unit",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": {
+        "designWidth": 375,
+        "fluid": {
+          "minWidth": 320,
+          "maxWidth": 480
+        },
+        "strategy": "viewport",
+        "unit": "vi"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+.card {
+  border: 1px solid;
+  outline: .5px dashed;
+  box-shadow: 0 1px clamp(1.70667px, 0.53333vw, 2.56px);
+}

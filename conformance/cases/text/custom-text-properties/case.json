@@ -1,0 +1,8 @@
+{
+  "description": "textProperties redefines which declarations get the accessible treatment",
+  "options": {
+    "textProperties": [
+      "width"
+    ]
+  }
+}

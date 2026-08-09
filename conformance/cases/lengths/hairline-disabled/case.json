@@ -1,0 +1,6 @@
+{
+  "description": "hairline: 0 lets sub-pixel values convert like any other length",
+  "options": {
+    "hairline": 0
+  }
+}

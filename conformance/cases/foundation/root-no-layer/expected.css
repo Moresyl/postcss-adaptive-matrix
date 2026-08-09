@@ -1,0 +1,18 @@
+.a { width: clamp(8.53333px, 2.66667vw, 12.8px) }
+
+:where(#app) {
+  inline-size: 100%;
+  margin-inline: auto;
+}
+
+@media (max-width: 767.98px) {
+  :where(#app) {
+    max-inline-size: 480px;
+  }
+}
+
+@media (min-width: 768px) {
+  :where(#app) {
+    max-inline-size: 1920px;
+  }
+}

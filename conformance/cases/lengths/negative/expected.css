@@ -1,0 +1,4 @@
+.card {
+  margin: clamp(-12.8px, -2.66667vw, -8.53333px);
+  inset: clamp(-25.6px, -5.33333vw, -17.06667px) auto auto clamp(-6.4px, -1.33333vw, -4.26667px);
+}

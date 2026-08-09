@@ -1,0 +1,10 @@
+{
+  "description": "A library authored in real pixels is left alone while the page around it scales",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 600 } }
+    },
+    "libraries": ["element-plus"]
+  }
+}

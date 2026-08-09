@@ -1,0 +1,11 @@
+{
+  "description": "An authored route outranks a library entry, since a route is a decision and a library is a default",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 600 } }
+    },
+    "routes": [{ "profile": false, "selector": [".van-icon"] }],
+    "libraries": ["vant"]
+  }
+}

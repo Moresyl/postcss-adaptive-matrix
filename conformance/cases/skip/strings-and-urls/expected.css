@@ -1,0 +1,5 @@
+.icon {
+  content: "16px";
+  background: url('/16px/icon.png');
+  src: local("Font 16px"), format("woff2");
+}

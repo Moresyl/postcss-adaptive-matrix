@@ -1,0 +1,11 @@
+{
+  "description": "A selector route sends a dependency's own class prefix to its authoring canvas",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } },
+      "vendor": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    },
+    "routes": [{ "profile": "vendor", "selector": [".vd-"] }]
+  }
+}

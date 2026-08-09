@@ -1,0 +1,10 @@
+{
+  "description": "valueExclude leaves matching declaration values untouched",
+  "options": {
+    "valueExclude": [
+      {
+        "$regex": "99px"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "description": "atRuleName renames the authoring directive",
+  "options": {
+    "atRuleName": "canvas"
+  }
+}

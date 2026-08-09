@@ -1,0 +1,6 @@
+{
+  "description": "precision controls the number of retained decimals",
+  "options": {
+    "precision": 2
+  }
+}

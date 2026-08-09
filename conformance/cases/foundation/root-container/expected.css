@@ -1,0 +1,28 @@
+.a { width: clamp(8.53333px, 2.66667vw, 12.8px) }
+
+@layer adaptive-matrix {
+  :where(#app) {
+    inline-size: 100%;
+    margin-inline: auto;
+    container: shell / inline-size;
+  }
+
+  :root {
+    --adaptive-safe-top: env(safe-area-inset-top, 0px);
+    --adaptive-safe-right: env(safe-area-inset-right, 0px);
+    --adaptive-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --adaptive-safe-left: env(safe-area-inset-left, 0px);
+  }
+
+  @media (max-width: 767.98px) {
+    :where(#app) {
+      max-inline-size: 480px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :where(#app) {
+      max-inline-size: 1920px;
+    }
+  }
+}

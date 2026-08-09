@@ -1,0 +1,6 @@
+{
+  "description": "unknownProfile: ignore stays silent and still leaves the block untouched",
+  "options": {
+    "unknownProfile": "ignore"
+  }
+}

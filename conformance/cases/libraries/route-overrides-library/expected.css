@@ -1,0 +1,7 @@
+.van-icon {
+  width: 16px;
+}
+
+.van-button {
+  width: clamp(13.65333px, 4.26667vw, 25.6px);
+}

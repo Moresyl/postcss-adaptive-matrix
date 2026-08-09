@@ -1,0 +1,21 @@
+{
+  "description": "A container profile emits @container and container-relative units",
+  "options": {
+    "defaultProfile": "panel",
+    "profiles": {
+      "panel": {
+        "designWidth": 800,
+        "fluid": {
+          "minWidth": 400,
+          "maxWidth": 1200
+        },
+        "unit": "cqi",
+        "query": {
+          "type": "container",
+          "name": "workspace",
+          "condition": "(min-width: 400px)"
+        }
+      }
+    }
+  }
+}

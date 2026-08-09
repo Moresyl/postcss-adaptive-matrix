@@ -1,0 +1,10 @@
+{
+  "description": "center: false drops the auto inline margin",
+  "options": {
+    "root": {
+      "selector": "#app",
+      "center": false,
+      "safeAreaVariables": false
+    }
+  }
+}

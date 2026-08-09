@@ -1,0 +1,17 @@
+{
+  "description": "An in-house kit is described inline, matching by class and by token prefix",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 750, "fluid": { "minWidth": 320, "maxWidth": 600 } }
+    },
+    "libraries": [
+      {
+        "name": "internal-kit",
+        "designWidth": 375,
+        "prefix": "ik-",
+        "tokenPrefix": "--ik-"
+      }
+    ]
+  }
+}

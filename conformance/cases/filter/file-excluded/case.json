@@ -1,0 +1,9 @@
+{
+  "description": "A file matching exclude is skipped completely",
+  "from": "/project/src/vendor/widget.css",
+  "options": {
+    "exclude": {
+      "$regex": "vendor"
+    }
+  }
+}

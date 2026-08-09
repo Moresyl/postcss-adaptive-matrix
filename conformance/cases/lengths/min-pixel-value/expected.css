@@ -1,0 +1,4 @@
+.card {
+  gap: 8px;
+  padding: clamp(20.48px, 6.4vw, 30.72px);
+}

@@ -1,0 +1,4 @@
+.a {
+  transform: translate(clamp(8.53333px, 2.66667vw, 12.8px), calc(100% - clamp(17.06667px, 5.33333vw, 25.6px)));
+  width: calc(100% - clamp(27.30667px, 8.53333vw, 40.96px));
+}
