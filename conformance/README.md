@@ -1,5 +1,8 @@
 # Conformance Suite
 
+> 本文档使用英文，因为这套用例是给**其它语言的实现**做验收用的规范，而不是本项目的使用说明。
+> 使用说明请见 [docs/](../docs/)。
+
 A language-neutral description of what this compiler must produce.
 
 Every case is plain data — CSS text and JSON. Nothing in this directory imports

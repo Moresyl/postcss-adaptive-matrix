@@ -1,5 +1,7 @@
 # 配置参考
 
+全部选项、类型与默认值。上手请先读[快速上手](./getting-started.md)。
+
 ## 顶层配置
 
 | 配置 | 默认值 | 说明 |
@@ -47,6 +49,21 @@ interface AdaptiveRoute {
 
 一条路由声明了几条通道，就要几条同时命中。想让类名和文件各自独立生效，写成两条路由。
 
+按目录划分两套互不响应的端口，是最常见的用法：
+
+```js
+adaptiveMatrix({
+  defaultProfile: 'pc',
+  profiles: {
+    pc:     { designWidth: 1920, fluid: { minWidth: 1280, maxWidth: 2560 } },
+    mobile: { designWidth: 750,  fluid: { minWidth: 320,  maxWidth: 600  } },
+  },
+  routes: [{ profile: 'mobile', file: [/[\\/]mobile[\\/]/] }],
+})
+```
+
+两张画布在同一个插件实例里判定，因此不会互相覆盖，也不需要为每一端各挂一次插件——同一段 CSS 只会被换算一次，先命中的画布就是最终结果。
+
 判定优先级从高到低：
 
 1. 外层 `@adaptive <profile>`——作者已经明确指定；
@@ -61,8 +78,8 @@ interface AdaptiveRoute {
 
 ```ts
 type LibraryEntry =
-  | string                                          // 内置名称
-  | LibraryAdaptation                               // 完整定义
+  | string                                              // 内置名称
+  | LibraryAdaptation                                   // 完整定义
   | (Partial<LibraryAdaptation> & { extends: string })  // 基于内置项修改
 
 libraries?: LibraryEntry[] | 'auto' | false
@@ -72,52 +89,7 @@ libraries?: LibraryEntry[] | 'auto' | false
 
 条目展开成若干条路由，追加在 `routes` 之后——显式路由永远优先。
 
-### 自动模式下被保留的前缀
-
-`naive-ui`（`.n-`）、`quasar`（`.q-`）、`taro-ui`（`.at-`）的前缀确实是官方前缀，但也和普通业务类名难以区分。自动模式下这三项**只按文件路径匹配**；显式写出库名即表示该前缀在当前代码库中安全，此时前缀通道恢复：
-
-```js
-adaptiveMatrix({ libraries: ['vant', 'naive-ui'] })
-```
-
-误命中是静默的——它会按错误画布缩放某个元素，或跳过本该缩放的元素。默认从严，是因为错误的适配比没有适配更难发现。
-
-### extends
-
-只修改内置条目的某一项，其余继承。`name` 也随之继承，诊断信息与派生画布名仍指向读者认得的那个库：
-
-```js
-adaptiveMatrix({
-  libraries: [{ extends: 'vant', designWidth: 750 }],
-})
-```
-
-## LibraryAdaptation
-
-```ts
-interface LibraryAdaptation {
-  name: string
-  designWidth: number | false
-  prefix?: string | string[]
-  tokenPrefix?: string | string[]
-  file?: FileMatcher | FileMatcher[]
-  basedOn?: string
-}
-```
-
-- `designWidth`：组件库自己的设计画布；`false` 表示保留像素。
-- `prefix`：类名前缀，不带点。`'van-'` 匹配 `.van-cell` 与 `.page .van-cell`，不匹配 `.caravan-slot`。
-- `tokenPrefix`：自定义属性前缀，如 `'--van-'`。被认领本身即是开关，因此不受 `transformCustomProperties` 约束——那个开关管的是你自己写的变量。
-- `basedOn`：借用哪张 profile 的流体区间、单位与策略，默认 `defaultProfile`。派生画布只替换 `designWidth`，因此它与页面在同一个视口宽度上停止增长。
-- `file`：构建产物仍然分文件时的兜底通道。
-
-名字含有文字属性词段的 token 会走 `rem + vw` 混合公式：`--van-font-size-md` 与 `--van-cell-font-size` 都识别为字号。若按普通长度输出纯 `vw`，组件库文字将不再响应浏览器缩放。
-
-内置库可从 `BUILT_IN_LIBRARIES` 读取：
-
-```js
-import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
-```
+内置清单、匹配通道、覆盖与扩展方式见 [组件库适配](./libraries.md)。
 
 ## Profile
 

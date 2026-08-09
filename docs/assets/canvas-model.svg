@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="446" viewBox="0 0 900 446" role="img" aria-labelledby="title desc">
+  <title id="title">多画布模型</title>
+  <desc id="desc">同一个 16px 来自三张不同的设计稿，因此被换算成三个不同的结果：页面画布 750 输出 clamp(6.82667px, 2.13333vw, 12.8px)，Vant 画布 375 输出 clamp(13.65333px, 4.26667vw, 25.6px)，Element Plus 按真实像素绘制因此保留 16px。</desc>
+
+  <style>
+    .bg     { fill: none }
+    .card   { fill: #ffffff; stroke: #d7dee6; stroke-width: 1.5 }
+    .band   { fill: #fff6f2; stroke: #f0b49a; stroke-width: 1.5 }
+    .h      { font: 600 15px system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #1f2933 }
+    .sub    { font: 400 12.5px system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #6b7783 }
+    .code   { font: 400 12.5px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; fill: #1f2933 }
+    .codem  { font: 400 12px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; fill: #b83208 }
+    .accent { font: 600 15px system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #b83208 }
+    .note   { font: 400 12px system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #6b7783 }
+    .arrow  { stroke: #a9b4c0; stroke-width: 1.6; fill: none }
+    .head   { fill: #a9b4c0 }
+    .rule   { stroke: #e6ebf0; stroke-width: 1 }
+
+    @media (prefers-color-scheme: dark) {
+      .card   { fill: #0d1117; stroke: #30363d }
+      .band   { fill: #1c1210; stroke: #7a3a22 }
+      .h      { fill: #e6edf3 }
+      .sub    { fill: #8b949e }
+      .code   { fill: #e6edf3 }
+      .codem  { fill: #ff9f7a }
+      .accent { fill: #ff9f7a }
+      .note   { fill: #8b949e }
+      .arrow  { stroke: #4d5762 }
+      .head   { fill: #4d5762 }
+      .rule   { stroke: #21262d }
+    }
+  </style>
+
+  <rect class="bg" width="900" height="446"/>
+
+  <!-- ── 输入：三张不同的设计稿 ── -->
+  <text class="note" x="30" y="26">输入 · 同一个值，三张设计稿</text>
+  <line class="rule" x1="30" y1="36" x2="870" y2="36"/>
+
+  <g>
+    <rect class="card" x="30" y="52" width="256" height="94" rx="10"/>
+    <text class="h"    x="50" y="80">你的页面</text>
+    <text class="sub"  x="50" y="101">750 设计稿</text>
+    <text class="code" x="50" y="128">padding: 16px</text>
+  </g>
+
+  <g>
+    <rect class="card" x="322" y="52" width="256" height="94" rx="10"/>
+    <text class="h"    x="342" y="80">Vant</text>
+    <text class="sub"  x="342" y="101">375 设计稿</text>
+    <text class="code" x="342" y="128">padding: 16px</text>
+  </g>
+
+  <g>
+    <rect class="card" x="614" y="52" width="256" height="94" rx="10"/>
+    <text class="h"    x="634" y="80">Element Plus</text>
+    <text class="sub"  x="634" y="101">无设计稿 · 真实像素</text>
+    <text class="code" x="634" y="128">padding: 16px</text>
+  </g>
+
+  <!-- ── 箭头：输入 → 编译器 ── -->
+  <g>
+    <path class="arrow" d="M158 146 L158 186"/>
+    <path class="head"  d="M158 194 l-5 -9 h10 z"/>
+    <path class="arrow" d="M450 146 L450 186"/>
+    <path class="head"  d="M450 194 l-5 -9 h10 z"/>
+    <path class="arrow" d="M742 146 L742 186"/>
+    <path class="head"  d="M742 194 l-5 -9 h10 z"/>
+  </g>
+
+  <!-- ── 编译器 ── -->
+  <rect class="band" x="30" y="200" width="840" height="60" rx="10"/>
+  <text class="accent" x="450" y="226" text-anchor="middle">postcss-adaptive-matrix</text>
+  <text class="note"   x="450" y="247" text-anchor="middle">按类名前缀、自定义属性前缀或文件路径判定归属，每张设计稿走自己的画布</text>
+
+  <!-- ── 箭头：编译器 → 输出 ── -->
+  <g>
+    <path class="arrow" d="M158 260 L158 300"/>
+    <path class="head"  d="M158 308 l-5 -9 h10 z"/>
+    <path class="arrow" d="M450 260 L450 300"/>
+    <path class="head"  d="M450 308 l-5 -9 h10 z"/>
+    <path class="arrow" d="M742 260 L742 300"/>
+    <path class="head"  d="M742 308 l-5 -9 h10 z"/>
+  </g>
+
+  <!-- ── 输出：三个不同的结果 ── -->
+  <text class="note" x="30" y="336">输出 · 各按所属画布换算</text>
+  <line class="rule" x1="30" y1="346" x2="870" y2="346"/>
+
+  <g>
+    <rect class="card" x="30" y="362" width="256" height="66" rx="10"/>
+    <text class="codem" x="46" y="386">clamp(6.82667px,</text>
+    <text class="codem" x="46" y="403">      2.13333vw, 12.8px)</text>
+    <text class="sub"   x="46" y="420">16 / 750 画布</text>
+  </g>
+
+  <g>
+    <rect class="card" x="322" y="362" width="256" height="66" rx="10"/>
+    <text class="codem" x="338" y="386">clamp(13.65333px,</text>
+    <text class="codem" x="338" y="403">      4.26667vw, 25.6px)</text>
+    <text class="sub"   x="338" y="420">16 / 375 画布</text>
+  </g>
+
+  <g>
+    <rect class="card" x="614" y="362" width="256" height="66" rx="10"/>
+    <text class="code" x="630" y="386">padding: 16px</text>
+    <text class="sub"  x="630" y="420">原样保留，不缩放才是正确适配</text>
+  </g>
+</svg>
