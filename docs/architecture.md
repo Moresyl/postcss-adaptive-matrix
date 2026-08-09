@@ -49,10 +49,38 @@ Profile 的 `query.type` 为 `container` 时，`@adaptive` 输出 `@container`�
 
 - `url()`、`local()`、`format()`；
 - 引号字符串；
+- 已含视口/容器单位的 `clamp()`、`min()`、`max()`——见下；
+- `@font-face`、`@page`、`@property`、`@counter-style` 里的声明——它们描述的是资源或页面盒子，不是元素。打印边距换成 `vw` 不是同一个边距；
 - 默认的 CSS 自定义属性（被组件库 `tokenPrefix` 认领的除外——认领本身即是开关）；
 - 小于 `minPixelValue` 的值；
 - 不超过 `hairline` 的绝对值；
 - 过滤器或注释明确排除的内容。
+
+## 幂等
+
+`clamp()` / `min()` / `max()` 内部只要已经出现视口或容器单位，里面的 `px` 就原样保留。
+
+这类表达式是**已经写好的有界流体值**——可能出自作者之手，也可能出自本插件上一趟。它的 `px` 是这个表达式自己的边界，不是从设计稿上量来的尺寸，再换算一次等于缩放两次。
+
+直接结果是产物幂等：同一段 CSS 跑一遍和跑三遍结果完全相同。插件在 PostCSS 链里被挂了两次、或者组件库预编译过又被消费方编译一次，都不会产生嵌套 `clamp`。
+
+范围刻意只限这三个函数。`calc(100vw - 32px)` 照常转换——那里的 `32px` 确实是设计稿尺寸，只是恰好挨着一个视口单位。
+
+## 嵌套
+
+原生 CSS 嵌套里，`@adaptive` 与条件组规则（`@media`、`@supports`、`@layer`、`@container`、`@scope`、`@starting-style`）内部的声明属于外层元素，照常转换：
+
+```css
+.card {
+  padding: 16px;          /* 默认画布 */
+
+  @adaptive pc {
+    padding: 32px;        /* pc 画布，并改写成 @media */
+  }
+}
+```
+
+插件没见过的 at-rule，内部的**规则**仍然会被处理，**直接声明**不会——未知语境下按元素样式处理是猜测。
 
 ## fixed 修正的边界
 

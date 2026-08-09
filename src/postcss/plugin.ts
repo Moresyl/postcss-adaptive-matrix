@@ -34,6 +34,27 @@ const IGNORE_NEXT = 'adaptive-ignore-next'
 const IGNORE_LINE = 'adaptive-ignore'
 const IGNORE_RULE = 'adaptive-ignore-rule'
 
+/**
+ * At-rules whose declarations style the element that encloses them.
+ *
+ * Under CSS nesting these wrap declarations belonging to the parent rule, so
+ * those declarations are converted like any other. Everything absent from this
+ * set — `@font-face`, `@page`, `@property`, `@counter-style` — describes a
+ * resource or a page box instead of an element, and its lengths are left alone:
+ * a print margin in `vw` is not the same margin.
+ *
+ * Rules nested inside an unlisted at-rule are still visited, which is why this
+ * gates declarations only.
+ */
+const NESTED_DECLARATION_CONTEXTS = new Set([
+  'container',
+  'layer',
+  'media',
+  'scope',
+  'starting-style',
+  'supports',
+])
+
 function isComment(node: ChildNode | undefined, text: string): node is Comment {
   return node?.type === 'comment' && node.text.trim() === text
 }
@@ -169,15 +190,7 @@ function transformRule(
   }
 
   const active = context.resolver.forSelector(inherited, rule.selector, context.file)
-  for (const node of [...rule.nodes]) {
-    if (node.type === 'decl') {
-      transformDeclaration(node, active, context)
-    } else if (node.type === 'rule') {
-      transformRule(node, active, context)
-    } else if (node.type === 'atrule' && node.nodes) {
-      processContainer(node, active, context)
-    }
-  }
+  processContainer(rule, active, context, true)
 
   if (context.correctsFixed) correctFixedRule(rule)
 }
@@ -228,6 +241,7 @@ function unwrapAtRule(atRule: AtRule): void {
 function transformAdaptiveAtRule(
   atRule: AtRule,
   context: ProcessorContext,
+  declarations: boolean,
 ): void {
   const profileName = atRule.params.trim() || context.options.defaultProfile
   const profile = context.options.profiles[profileName]
@@ -240,6 +254,7 @@ function transformAdaptiveAtRule(
     atRule,
     { name: profileName, profile, explicit: true, convert: true },
     context,
+    declarations,
   )
   const query = adaptiveQueryParams(profile)
   if (!query) {
@@ -252,21 +267,42 @@ function transformAdaptiveAtRule(
   if (!atRule.raws.afterName) atRule.raws.afterName = ' '
 }
 
+/**
+ * Walks a container, converting what belongs to `active`.
+ *
+ * `declarations` says whether a declaration found directly here styles an
+ * element. It is false at the root, where a bare declaration is not valid CSS,
+ * and inside at-rules that configure something other than an element — see
+ * `NESTED_DECLARATION_CONTEXTS`. Rules are visited either way, so an at-rule
+ * this plugin has never heard of still gets its contents converted.
+ */
 function processContainer(
   container: Container,
   active: ActiveProfile,
   context: ProcessorContext,
+  declarations: boolean,
 ): void {
   for (const node of [...(container.nodes ?? [])]) {
+    if (node.type === 'decl') {
+      if (declarations) transformDeclaration(node, active, context)
+      continue
+    }
     if (node.type === 'rule') {
       transformRule(node, active, context)
       continue
     }
     if (node.type !== 'atrule') continue
     if (node.name === context.options.atRuleName) {
-      transformAdaptiveAtRule(node, context)
+      // Nested in a rule, `@adaptive` wraps that rule's own declarations; at the
+      // root it wraps rules. Passing the flag down keeps both readings correct.
+      transformAdaptiveAtRule(node, context, declarations)
     } else if (node.nodes) {
-      processContainer(node, active, context)
+      processContainer(
+        node,
+        active,
+        context,
+        declarations && NESTED_DECLARATION_CONTEXTS.has(node.name.toLowerCase()),
+      )
     }
   }
 }
@@ -304,15 +340,20 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
       const file = root.source?.input.file ?? result.opts.from?.toString() ?? ''
       if (!shouldProcessFile(file, options)) return
       converter.beginFile()
-      processContainer(root, resolver.forFile(file), {
-        converter,
-        correctsFixed,
-        file,
-        options,
-        propertyMatches,
-        resolver,
-        result,
-      })
+      processContainer(
+        root,
+        resolver.forFile(file),
+        {
+          converter,
+          correctsFixed,
+          file,
+          options,
+          propertyMatches,
+          resolver,
+          result,
+        },
+        false,
+      )
       appendFoundation(root, options)
     },
   }

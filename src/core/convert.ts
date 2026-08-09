@@ -9,6 +9,13 @@ import type {
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
+/** The three functions whose whole purpose is to bound a fluid value. */
+const BOUNDING_FUNCTIONS = new Set(['clamp', 'min', 'max'])
+
+/** A number carrying any viewport- or container-relative unit. */
+const VIEWPORT_RELATIVE =
+  /(?:^|[^\w.-])-?(?:\d*\.\d+|\d+\.?\d*)(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\w-])/i
+
 /**
  * The unit pattern depends only on `unitToConvert`, so it is built once per
  * distinct unit instead of once per declaration.
@@ -224,6 +231,26 @@ function shouldSkipFunction(node: Node): boolean {
   )
 }
 
+/**
+ * True for a `clamp()`/`min()`/`max()` that already carries a viewport-relative
+ * term.
+ *
+ * Such an expression is bounded fluid sizing somebody already wrote — by hand,
+ * or by an earlier pass of this plugin over the same stylesheet. Its pixel
+ * terms are that expression's own bounds rather than measurements taken off a
+ * design canvas, so converting them would nest one conversion inside another
+ * and scale the value twice.
+ *
+ * Deliberately limited to the three bounding functions. `calc(100vw - 32px)`
+ * keeps converting, because there the pixel term really is a design
+ * measurement that happens to sit next to a viewport unit.
+ */
+function isAlreadyBounded(node: Node): boolean {
+  if (node.type !== 'function') return false
+  if (!BOUNDING_FUNCTIONS.has(node.value.toLowerCase())) return false
+  return VIEWPORT_RELATIVE.test(valueParser.stringify(node.nodes))
+}
+
 function convertResolvedValue(
   value: string,
   designWidth: number,
@@ -234,7 +261,7 @@ function convertResolvedValue(
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
   parsed.walk((node) => {
-    if (shouldSkipFunction(node)) return false
+    if (shouldSkipFunction(node) || isAlreadyBounded(node)) return false
     if (node.type !== 'word') return undefined
     node.value = node.value.replace(pattern, (match, prefix: string, number: string) => {
       const pixels = Number.parseFloat(number)

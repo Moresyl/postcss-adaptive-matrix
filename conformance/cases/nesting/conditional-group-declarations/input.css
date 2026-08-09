@@ -1,0 +1,15 @@
+.card {
+  padding: 16px;
+
+  @media print {
+    padding: 24px;
+  }
+
+  @supports (display: grid) {
+    gap: 12px;
+  }
+
+  @layer overrides {
+    margin: 8px;
+  }
+}

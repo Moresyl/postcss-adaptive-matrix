@@ -1,0 +1,10 @@
+{
+  "description": "Pixels inside a clamp/min/max that already carries a viewport-relative term are left alone, which is what makes the output idempotent",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    }
+  }
+}

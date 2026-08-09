@@ -1,0 +1,15 @@
+.card {
+  padding: clamp(13.65333px, 4.26667vw, 20.48px);
+
+  @media print {
+    padding: clamp(20.48px, 6.4vw, 30.72px);
+  }
+
+  @supports (display: grid) {
+    gap: clamp(10.24px, 3.2vw, 15.36px);
+  }
+
+  @layer overrides {
+    margin: clamp(6.82667px, 2.13333vw, 10.24px);
+  }
+}

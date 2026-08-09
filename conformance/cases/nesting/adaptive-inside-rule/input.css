@@ -1,0 +1,12 @@
+.card {
+  color: red;
+  padding: 16px;
+
+  @adaptive pc {
+    padding: 32px;
+
+    .badge {
+      inset-inline-start: 24px;
+    }
+  }
+}

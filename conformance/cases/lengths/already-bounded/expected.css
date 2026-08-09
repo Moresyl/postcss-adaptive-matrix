@@ -1,0 +1,16 @@
+.authored {
+  padding: clamp(10px, 4vw, 20px);
+  width: min(100vw, 400px);
+  height: max(5svw, 12px);
+  gap: clamp(10px, 4cqi, 20px);
+}
+
+.reprocessed {
+  padding: clamp(13.65333px, 4.26667vw, 20.48px);
+}
+
+.still-converted {
+  width: min(100%, clamp(341.33333px, 106.66667vw, 512px));
+  inline-size: calc(100vw - clamp(27.30667px, 8.53333vw, 40.96px));
+  margin: calc(100% - clamp(13.65333px, 4.26667vw, 20.48px));
+}

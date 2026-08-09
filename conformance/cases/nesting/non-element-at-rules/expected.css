@@ -1,0 +1,21 @@
+@page {
+  margin: 20px;
+}
+
+@font-face {
+  font-family: "Demo";
+  src: url("demo.woff2");
+  size-adjust: 100%;
+}
+
+@property --gap {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 16px;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(clamp(85.33333px, 26.66667vw, 128px));
+  }
+}

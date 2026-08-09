@@ -1,0 +1,11 @@
+{
+  "description": "A nested @adaptive block converts against its own canvas and is rewritten, exactly as at the root",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } },
+      "pc": { "designWidth": 1440, "fluid": { "minWidth": 1024, "maxWidth": 1920 }, "query": "(min-width: 768px)" }
+    }
+  }
+}

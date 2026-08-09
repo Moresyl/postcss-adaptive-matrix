@@ -1,0 +1,12 @@
+.card {
+  color: red;
+  padding: clamp(13.65333px, 4.26667vw, 20.48px);
+
+  @media (min-width: 768px) {
+    padding: clamp(22.75556px, 2.22222vw, 42.66667px);
+
+    .badge {
+      inset-inline-start: clamp(17.06667px, 1.66667vw, 32px);
+    }
+  }
+}
