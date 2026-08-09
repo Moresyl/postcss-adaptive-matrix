@@ -231,6 +231,30 @@ describe('runCli', () => {
     expect(err).toContain('must default-export an options object')
   })
 
+  it('fails on a config that forgot the default keyword', async () => {
+    // The failure this guards is silence: a module namespace object is still an
+    // object, so falling back to it once passed every check and ran with the
+    // built-in defaults. The header listed canvases, the diff looked right, and
+    // nothing said the file had not been read.
+    const config = join(directory, 'named.config.mjs')
+    await writeFile(config, 'export const options = { defaultProfile: "app" }', 'utf8')
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '-c', config, '--no-color'])).toBe(1)
+    expect(err).toContain('must default-export an options object')
+    expect(err).toContain('"options"')
+    expect(out).toBe('')
+  })
+
+  it('fails on a preset that was exported without being called', async () => {
+    const config = join(directory, 'uncalled.config.mjs')
+    await writeFile(config, 'export default function preset() { return {} }', 'utf8')
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '-c', config, '--no-color'])).toBe(1)
+    expect(err).toContain('default-exports a function')
+  })
+
   it('reports an invalid config before reading any stylesheet', async () => {
     const config = join(directory, 'invalid.config.mjs')
     await writeFile(

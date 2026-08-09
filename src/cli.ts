@@ -134,10 +134,29 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
     const detail = cause instanceof Error ? cause.message : String(cause)
     throw new CliError(`Could not load config ${path}: ${detail}`)
   }
+  // Deliberately no `?? loaded` fallback. A module namespace object is still an
+  // object, so falling back to it would pass every check below and then spread
+  // into the defaults as a bag of unknown keys — the run would succeed, the
+  // header would list the built-in canvases, and nothing would say the config
+  // was never read. Someone who passed `-c` asked for their file to be used.
   const module = loaded as { default?: unknown }
-  const options = module.default ?? loaded
+  const options = module.default
+  if (typeof options === 'function') {
+    // `export default appPcPreset` instead of `appPcPreset({ ... })` — the
+    // preset helpers are functions, and forgetting to call one is easy.
+    throw new CliError(
+      `Config ${path} default-exports a function. Call it and export the result: ` +
+        'export default appPcPreset({ ... }).',
+    )
+  }
   if (!options || typeof options !== 'object') {
-    throw new CliError(`Config ${path} must default-export an options object.`)
+    const named = Object.keys(loaded as object).filter((key) => key !== 'default')
+    throw new CliError(
+      `Config ${path} must default-export an options object` +
+        (named.length
+          ? `. It exports ${named.map((key) => `"${key}"`).join(', ')} but no default.`
+          : '.'),
+    )
   }
   return options as AdaptiveMatrixOptions
 }

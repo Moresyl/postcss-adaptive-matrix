@@ -208,9 +208,86 @@ function transformRule(
   }
 
   const active = context.resolver.forSelector(inherited, rule.selector, context.file)
+  warnOnSplitSelectorList(rule, inherited, active, context)
   processContainer(rule, active, context, true)
 
   if (context.correctsFixed) correctFixedRule(rule)
+}
+
+/**
+ * Splits a selector list on top-level commas.
+ *
+ * Commas also appear inside `:is()`, `:not()` and attribute values, where they
+ * separate arguments rather than selectors — so bracket depth has to be tracked
+ * rather than the string simply split.
+ */
+function splitSelectorList(selector: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let current = ''
+  for (const character of selector) {
+    if (character === '(' || character === '[') depth += 1
+    else if (character === ')' || character === ']') depth -= 1
+    else if (character === ',' && depth === 0) {
+      parts.push(current)
+      current = ''
+      continue
+    }
+    current += character
+  }
+  parts.push(current)
+  return parts.map((part) => part.trim()).filter(Boolean)
+}
+
+/**
+ * Warns when one rule's selector list spans two canvases.
+ *
+ * `.van-cell, .page-hero { padding: 16px }` has one declaration and therefore
+ * one answer, but the two halves want different ones: Vant draws on a 375
+ * canvas and the page may not. The first match wins, which means `.page-hero`
+ * is quietly scaled by Vant's canvas — a rule that reads as two independent
+ * statements silently behaves as one.
+ *
+ * Warning rather than splitting the rule: splitting is the right fix in the
+ * source, but doing it here would rewrite what an author reads back in the
+ * output, and the fix is not always mechanical. Naming the problem leaves the
+ * decision where it belongs.
+ *
+ * Commas inside `:is()`, `:not()` and attribute values are arguments, not
+ * selector boundaries, so they are not split — which means a genuinely mixed
+ * `:is(.van-cell, .page-hero)` goes unreported. Reaching inside functional
+ * pseudo-classes would need real specificity arithmetic to say anything useful
+ * about the fix, and a warning nobody can act on is worse than none.
+ */
+function warnOnSplitSelectorList(
+  rule: Rule,
+  inherited: ActiveProfile,
+  active: ActiveProfile,
+  context: ProcessorContext,
+): void {
+  // `explicit` means `@adaptive` already decided, and that beats every route.
+  if (inherited.explicit || !context.resolver.hasSelectorRoutes) return
+  if (!rule.selector.includes(',')) return
+
+  const parts = splitSelectorList(rule.selector)
+  if (parts.length < 2) return
+
+  const canvasOf = (part: string): string => {
+    const resolved = context.resolver.forSelector(inherited, part, context.file)
+    return resolved.convert ? resolved.name : '(not converted)'
+  }
+  const winner = active.convert ? active.name : '(not converted)'
+  const disagreeing = parts.filter((part) => canvasOf(part) !== winner)
+  if (!disagreeing.length) return
+
+  const [first] = disagreeing
+  context.result.warn(
+    `Selector list spans more than one canvas: "${first}" belongs to ` +
+      `${canvasOf(first!)} but the whole rule is compiled against ${winner}, ` +
+      'because one declaration can only have one result. ' +
+      'Split it into separate rules to give each selector its own canvas.',
+    { node: rule, plugin: PLUGIN_NAME },
+  )
 }
 
 function unknownProfile(
@@ -280,6 +357,22 @@ function transformAdaptiveAtRule(
   context: ProcessorContext,
   declarations: boolean,
 ): void {
+  const name = context.options.atRuleName
+  // `@adaptive pc;` — a canvas named but nothing given to it. Rewriting it the
+  // usual way produced a bodiless `@media (min-width: 768px);`, which is not
+  // valid CSS at all, while the rules the author meant to place on that canvas
+  // stayed on the inherited one. Neither half of that is recoverable here, so
+  // say what is missing and leave the node exactly as authored: an unknown
+  // at-rule parses cleanly and is dropped, where the `@media` did not.
+  if (!atRule.nodes) {
+    context.result.warn(
+      `@${name} ${atRule.params.trim()} has no block, so nothing is compiled ` +
+        `against that canvas. Give it one: @${name} ${atRule.params.trim()} { ... }.`,
+      { node: atRule, plugin: PLUGIN_NAME },
+    )
+    return
+  }
+
   const profileName = atRule.params.trim() || context.options.defaultProfile
   const profile = context.options.profiles[profileName]
   if (!profile) {

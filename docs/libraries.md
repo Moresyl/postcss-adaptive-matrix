@@ -82,6 +82,25 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 
 选择器高于文件路径，是因为选择器属于 CSS 本身，而路径只反映构建工具当时怎么摆放文件——打包器一旦把依赖内联进产物，路径就没了。属性名的理由相同且更强：主题 token 声明在 `:root` 上，除了名字之外不留任何来源痕迹。
 
+## 一条规则只能有一个结果
+
+选择器列表是有可能跨画布的：
+
+```css
+.van-cell, .page-hero { padding: 16px }
+```
+
+`.van-cell` 归 Vant 画布，`.page-hero` 归默认画布，但 `padding: 16px` 只有一个值可以输出——CSS 无法让同一条声明对列表里不同的选择器给出不同结果。编译器取第一个命中的画布编译整条规则，另一个选择器就拿到了不属于它的换算。
+
+这种情况会告警，并指出是哪个选择器落空了。拆成两条规则即可：
+
+```css
+.van-cell { padding: 16px }
+.page-hero { padding: 16px }
+```
+
+`:is()`、`:not()` 和属性值里的逗号是参数分隔符，不是选择器边界，不会被拆开——也因此 `:is(.van-cell, .page-hero)` 这种真正混合的写法查不出来。
+
 ## 主题 token
 
 名字含有文字属性词段的 token 走 `rem + vw` 混合公式，而不是普通长度的纯 `vw`：

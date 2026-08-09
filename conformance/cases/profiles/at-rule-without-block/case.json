@@ -1,0 +1,4 @@
+{
+  "description": "An @adaptive with no block is reported and left alone, never rewritten to a bodiless @media",
+  "warnings": ["has no block"]
+}

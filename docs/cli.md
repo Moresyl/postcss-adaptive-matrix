@@ -64,6 +64,8 @@ npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js src/app.css -c adaptive
 
 配置在读第一个样式文件之前就会被校验，所以 `defaultProfile` 写错、`fluid` 区间反了，报的是编译器自己的那句话，不会先刷一屏对照表再报错。
 
+`default` 漏写（`export const options = {...}`）或预设忘了调用（`export default appPcPreset` 而不是 `appPcPreset({...})`）都会直接报错。这两种写法此前会静默地用内置默认值跑完——表头照样列出画布，对照表看着也对，没有任何地方说过你的配置根本没被读到。
+
 ## 验证文件路由
 
 按路径判定画布是最容易配错、又最不容易发现的一项——写错了不报错，只是路由静默失效（见[构建工具集成](./integration.md#2-from-必须传)）。`--from` 就是用来在上线前把路由试一遍的：

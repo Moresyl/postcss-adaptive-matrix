@@ -228,6 +228,59 @@ describe('adaptiveMatrix', () => {
   })
 })
 
+describe('selector lists that span two canvases', () => {
+  // 750 rather than the default, so Vant's 375 canvas gives a different number
+  // and "which canvas won" is visible in the output.
+  const options = {
+    defaultProfile: 'app',
+    profiles: { app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 480 } } },
+  }
+
+  it('warns, and says which selector lost', async () => {
+    const result = await process('.van-cell, .page-hero { padding: 16px }', options)
+
+    // One declaration, one result: `.page-hero` is silently scaled by Vant's
+    // canvas. Writing the two rules separately gives each its own.
+    expect(result.warnings()).toHaveLength(1)
+    expect(result.warnings()[0]!.text).toContain('".page-hero" belongs to app')
+    expect(result.warnings()[0]!.text).toContain('compiled against library:vant')
+    expect(result.css).toContain('4.26667vw')
+  })
+
+  it('warns when the canvas that won does not convert at all', async () => {
+    // Element Plus draws in real pixels, so the whole rule keeps its 16px and
+    // the Vant half quietly stops scaling.
+    const result = await process('.van-cell, .el-input { padding: 16px }', options)
+
+    expect(result.warnings()[0]!.text).toContain('compiled against (not converted)')
+  })
+
+  it('stays quiet when every selector agrees', async () => {
+    for (const selector of ['.van-cell, .van-button', '.page-a, .page-b', '*, *::before']) {
+      const result = await process(`${selector} { padding: 16px }`, options)
+      expect(result.warnings(), selector).toHaveLength(0)
+    }
+  })
+
+  it('does not mistake an argument comma for a selector boundary', async () => {
+    for (const selector of ['.van-cell:not(.a, .b)', '[data-x="a,b"].van-cell']) {
+      const result = await process(`${selector} { padding: 16px }`, options)
+      expect(result.warnings(), selector).toHaveLength(0)
+    }
+  })
+
+  it('stays quiet when @adaptive already decided', async () => {
+    // An explicit canvas outranks every route, so there is no disagreement to
+    // report — the author has already answered the question.
+    const result = await process(
+      '@adaptive app { .van-cell, .page-hero { padding: 16px } }',
+      options,
+    )
+
+    expect(result.warnings()).toHaveLength(0)
+  })
+})
+
 describe('presets and foundation', () => {
   it('injects an opt-in centered root, safe-area variables, and profile caps', async () => {
     const result = await process('.a { width: 10px }', appPcPreset({ rootSelector: '#app' }))

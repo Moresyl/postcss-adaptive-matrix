@@ -21,6 +21,51 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ propList: [] })).toThrow('propList')
   })
 
+  it('rejects a unit that is not a scaling unit', () => {
+    // The one option where a typo yields *invalid* CSS rather than wrong CSS:
+    // `4.267vm` is not a length, so the browser drops the declaration and the
+    // element silently keeps whatever it inherited.
+    expect(() => resolveOptions({ unit: 'vm' as never })).toThrow(
+      /unit "vm" is not a scaling unit.*vw, vi, cqw, cqi/s,
+    )
+    expect(() =>
+      resolveOptions({
+        profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 }, unit: 'px' as never } },
+      }),
+    ).toThrow(/Profile "app" unit "px"/)
+    expect(() => resolveOptions({ unit: 'cqi' })).not.toThrow()
+  })
+
+  it('rejects an unknown strategy instead of quietly using clamp', () => {
+    expect(() => resolveOptions({ strategy: 'viewpoint' as never })).toThrow(
+      /strategy "viewpoint" is unknown.*clamp, viewport/s,
+    )
+    expect(() => resolveOptions({ strategy: 'viewport' })).not.toThrow()
+  })
+
+  it('rejects an empty unitToConvert, which would match no length at all', () => {
+    expect(() => resolveOptions({ unitToConvert: '' })).toThrow(/unitToConvert cannot be empty/)
+  })
+
+  it('rejects an atRuleName that CSS already defines', () => {
+    // Taking over `@media` would make every media block in the stylesheet read
+    // as naming a canvas. At-keywords are case-insensitive, so `MEDIA` is the
+    // same collision.
+    expect(() => resolveOptions({ atRuleName: 'media' })).toThrow(/is a CSS at-rule/)
+    expect(() => resolveOptions({ atRuleName: 'MEDIA' })).toThrow(/is a CSS at-rule/)
+    expect(() => resolveOptions({ atRuleName: 'container' })).toThrow(/is a CSS at-rule/)
+    expect(() => resolveOptions({ atRuleName: '' })).toThrow(/atRuleName cannot be empty/)
+    expect(() => resolveOptions({ atRuleName: 'canvas' })).not.toThrow()
+  })
+
+  it('rejects an empty root.selector, which compiles to an invalid :where()', () => {
+    // `:where()` with nothing inside is a parse error, so the whole foundation
+    // is discarded — safe-area variables and root cap included.
+    expect(() => resolveOptions({ root: { selector: '' } })).toThrow(/root.selector cannot be empty/)
+    expect(() => resolveOptions({ root: { selector: '   ' } })).toThrow(/root.selector cannot be empty/)
+    expect(() => resolveOptions({ root: { selector: '#app' } })).not.toThrow()
+  })
+
   it('rejects an invalid dynamic design width at conversion time', () => {
     const options = resolveOptions({
       defaultProfile: 'dynamic',

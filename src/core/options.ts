@@ -42,6 +42,52 @@ const DEFAULTS: Omit<
   unknownProfile: 'warn',
 }
 
+const SCALE_UNITS = new Set(['vw', 'vi', 'cqw', 'cqi'])
+const OUTPUT_STRATEGIES = new Set(['clamp', 'viewport'])
+
+/**
+ * At-keywords CSS already defines.
+ *
+ * Taking one of these over would make the compiler consume every `@media` in
+ * the stylesheet as though it named a canvas — every block warned about and
+ * rewritten. The type system cannot help here: `atRuleName` is a plain string,
+ * and the configuration is usually a `.mjs` file that nothing type-checks.
+ */
+const RESERVED_AT_RULES = new Set([
+  'charset', 'import', 'namespace', 'media', 'supports', 'document', 'page',
+  'font-face', 'font-feature-values', 'font-palette-values', 'keyframes',
+  'counter-style', 'property', 'layer', 'container', 'scope', 'starting-style',
+  'position-try', 'view-transition',
+])
+
+/**
+ * Rejects a unit or strategy the compiler cannot emit.
+ *
+ * `unit` is the one option where a typo produces *invalid* CSS rather than
+ * wrong CSS: `4.267vm` is not a length, so the browser drops the declaration
+ * and the element keeps whatever it inherited. Nothing reports that — not the
+ * build, not the console, not the page.
+ */
+function validateUnitAndStrategy(
+  where: string,
+  unit: string | undefined,
+  strategy: string | undefined,
+): void {
+  if (unit !== undefined && !SCALE_UNITS.has(unit)) {
+    throw new Error(
+      `[postcss-adaptive-matrix] ${where} unit "${unit}" is not a scaling unit. ` +
+        `Use one of: ${[...SCALE_UNITS].join(', ')}.`,
+    )
+  }
+  if (strategy !== undefined && !OUTPUT_STRATEGIES.has(strategy)) {
+    // Silently falling back to `clamp` would look like the setting worked.
+    throw new Error(
+      `[postcss-adaptive-matrix] ${where} strategy "${strategy}" is unknown. ` +
+        `Use one of: ${[...OUTPUT_STRATEGIES].join(', ')}.`,
+    )
+  }
+}
+
 function validateProfile(name: string, profile: AdaptiveProfile): void {
   if (!profile || typeof profile !== 'object') {
     throw new TypeError(
@@ -75,6 +121,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
       `[postcss-adaptive-matrix] Profile "${name}" fontFluidity must be between 0 and 1.`,
     )
   }
+  validateUnitAndStrategy(`Profile "${name}"`, profile.unit, profile.strategy)
 }
 
 export function resolveOptions(
@@ -108,6 +155,35 @@ export function resolveOptions(
   }
   if (!options.propList.length) {
     throw new Error('[postcss-adaptive-matrix] propList cannot be empty.')
+  }
+  validateUnitAndStrategy('Option', options.unit, options.strategy)
+  // An empty `unitToConvert` matches no length at all, so the plugin would walk
+  // the whole stylesheet and change nothing — indistinguishable from not having
+  // been registered.
+  if (!options.unitToConvert.trim()) {
+    throw new Error(
+      '[postcss-adaptive-matrix] unitToConvert cannot be empty; it names the unit to read, such as "px".',
+    )
+  }
+  const atRuleName = options.atRuleName.trim().toLowerCase()
+  if (!atRuleName) {
+    throw new Error(
+      '[postcss-adaptive-matrix] atRuleName cannot be empty; it names the directive that selects a canvas, such as "adaptive".',
+    )
+  }
+  if (RESERVED_AT_RULES.has(atRuleName)) {
+    throw new Error(
+      `[postcss-adaptive-matrix] atRuleName "${options.atRuleName}" is a CSS at-rule. ` +
+        `Every @${atRuleName} in the stylesheet would be read as naming a canvas and rewritten.`,
+    )
+  }
+  // `:where()` with nothing inside it is a parse error, so an empty selector
+  // does not produce a weak foundation — it produces one the browser discards
+  // whole, taking the safe-area variables and the root cap with it.
+  if (options.root && !options.root.selector.trim()) {
+    throw new Error(
+      '[postcss-adaptive-matrix] root.selector cannot be empty; it names the element that carries the layout, such as "#app".',
+    )
   }
   // A list of nothing but exclusions can never match, so the plugin would run
   // over every stylesheet and convert none of it — the same outcome as an empty

@@ -1,0 +1,2 @@
+@adaptive pc;
+.a { width: clamp(160px, 50vw, 240px) }
