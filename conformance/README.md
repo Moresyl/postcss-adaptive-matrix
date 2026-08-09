@@ -49,6 +49,24 @@ tagged object:
 An implementation without regex support may skip cases that use this form and
 must report them as skipped rather than passed.
 
+## The universal invariant
+
+Beyond matching `expected.css`, every case must satisfy one rule that has no
+fixture of its own:
+
+> Compiling `expected.css` again must return it byte for byte.
+
+It has no fixture because it is not a feature — it has to hold everywhere. A
+package that ships pre-compiled CSS goes through the consuming application's
+pipeline a second time, and a framework preset can register the compiler twice
+without saying so. Neither situation announces itself, so an implementation that
+is idempotent for the cases someone thought to write down is not idempotent.
+
+Three behaviours exist only to satisfy it: bounded expressions that already
+carry a viewport unit are left alone, ignore directives survive into the output,
+and the root foundation is introduced by a marker comment that suppresses a
+second injection.
+
 ## Deliberately out of scope
 
 Options that take a **callback** (`designWidth` as a function, function file

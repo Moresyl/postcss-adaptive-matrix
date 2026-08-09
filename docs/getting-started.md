@@ -175,6 +175,8 @@ height: 44px; /* adaptive-ignore */
 .widget { width: 300px }
 ```
 
+这三个注释会**保留在产物里**。被忽略的 `40px` 和没人管过的 `40px` 长得一模一样，注释一旦被吃掉，产物再过一遍编译（预编译的依赖被消费方再编译一次就是这种情况）就会把它换算了。注释本身会被任何压缩器去掉。
+
 范围更大的排除用 `propList`、`selectorExclude`、`valueExclude`、`exclude`，或用 `routes` 把某一片 CSS 改派到 `profile: false`。
 
 ## 验收尺寸

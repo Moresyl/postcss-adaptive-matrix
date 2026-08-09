@@ -1,4 +1,4 @@
 .a {
-  width: 40px;
+  width: 40px; /* adaptive-ignore */
   height: clamp(34.13333px, 10.66667vw, 51.2px);
 }

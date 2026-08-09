@@ -7,6 +7,22 @@ import type {
 
 const INDENT = '  '
 
+/**
+ * Comment text introducing the generated foundation.
+ *
+ * The foundation is the one part of the output the compiler writes rather than
+ * translates, and it has to survive being read back in. A second pass over
+ * already-compiled CSS — a pre-built package in `node_modules`, or the plugin
+ * registered twice by a framework preset — would otherwise rescale the
+ * foundation's own literal caps, because `max-inline-size: 480px` looks like
+ * any other authored length, and then append a second copy beneath it.
+ *
+ * A marker is the only signal that works for every configuration: the
+ * `@layer` wrapper is optional and renameable, and with `layer: false` the
+ * foundation is bare rules that nothing distinguishes structurally.
+ */
+export const FOUNDATION_MARKER = 'postcss-adaptive-matrix foundation'
+
 function queryDetails(profile: AdaptiveProfile): {
   type: 'media' | 'container'
   condition: string
@@ -103,7 +119,8 @@ export function buildFoundationCss(
 
   const layer = rootOptions.layer === undefined ? 'adaptive-matrix' : rootOptions.layer
   const body = rules.join('\n\n')
-  return layer ? `@layer ${layer} {\n${indent(body, 1)}\n}` : body
+  const wrapped = layer ? `@layer ${layer} {\n${indent(body, 1)}\n}` : body
+  return `/* ${FOUNDATION_MARKER} */\n${wrapped}`
 }
 
 export function adaptiveQueryParams(profile: AdaptiveProfile): {

@@ -91,6 +91,19 @@ describe('conformance suite', () => {
       if (!UPDATE) {
         expect(normalise(result.css)).toBe(normalise(testCase.expected))
       }
+
+      // Compiling the output again must return it unchanged. Stated once here
+      // rather than as its own fixture, because it has to hold for every case:
+      // a package that ships pre-compiled CSS goes through the consuming app's
+      // pipeline a second time, and so does anything a framework preset
+      // registers twice. Nothing about a second pass is announced, so the only
+      // way this stays true is to check it everywhere.
+      const again = await postcss([adaptiveMatrix(options)]).process(result.css, {
+        from: testCase.meta.from ?? '/project/src/app.css',
+      })
+      expect(normalise(again.css), `${testCase.id} is not idempotent`).toBe(
+        normalise(result.css),
+      )
     })
   }
 })

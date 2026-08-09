@@ -3,6 +3,7 @@
   left: 0;
 }
 
+/* postcss-adaptive-matrix foundation */
 @layer adaptive-matrix {
   :where(#app) {
     inline-size: 100%;

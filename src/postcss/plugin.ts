@@ -15,7 +15,11 @@ import {
   isFixedPositionValue,
   wantsFixedCorrection,
 } from '../core/fixed.js'
-import { adaptiveQueryParams, buildFoundationCss } from '../core/foundation.js'
+import {
+  FOUNDATION_MARKER,
+  adaptiveQueryParams,
+  buildFoundationCss,
+} from '../core/foundation.js'
 import { LIBRARY_PROFILE_PREFIX } from '../core/libraries.js'
 import {
   createPropertyMatcher,
@@ -60,28 +64,30 @@ function isComment(node: ChildNode | undefined, text: string): node is Comment {
   return node?.type === 'comment' && node.text.trim() === text
 }
 
+/*
+ * The directives are left in the output rather than consumed.
+ *
+ * A directive is the one instruction the author gives that has no trace in the
+ * result: an ignored `40px` is indistinguishable from a `40px` nobody thought
+ * about. Strip the comment and a second compile pass converts it — and a second
+ * pass is ordinary here, because this project tells you not to exclude
+ * `node_modules`, so a dependency that ships pre-compiled CSS gets processed
+ * again by whoever installs it. The author said don't touch this; that has to
+ * outlive one pass.
+ *
+ * The cost is a comment in the output, which every minifier drops and which is
+ * worth reading in a dev build anyway.
+ */
 function shouldIgnoreDeclaration(declaration: Declaration): boolean {
-  const previous = declaration.prev()
-  if (isComment(previous, IGNORE_NEXT)) {
-    previous.remove()
-    return true
-  }
+  if (isComment(declaration.prev(), IGNORE_NEXT)) return true
   const next = declaration.next()
-  if (
-    isComment(next, IGNORE_LINE) &&
-    !String(next.raws.before ?? '').includes('\n')
-  ) {
-    next.remove()
-    return true
-  }
-  return false
+  return (
+    isComment(next, IGNORE_LINE) && !String(next.raws.before ?? '').includes('\n')
+  )
 }
 
 function shouldIgnoreRule(rule: Rule): boolean {
-  const previous = rule.prev()
-  if (!isComment(previous, IGNORE_RULE)) return false
-  previous.remove()
-  return true
+  return isComment(rule.prev(), IGNORE_RULE)
 }
 
 /**
@@ -314,6 +320,11 @@ function processContainer(
   declarations: boolean,
 ): void {
   for (const node of [...(container.nodes ?? [])]) {
+    // Everything from here on is a foundation this plugin wrote on an earlier
+    // pass. It is always appended last, so stopping is enough — and it must
+    // stop, because the foundation's own `max-inline-size: 480px` is a literal
+    // cap, not a design-canvas length waiting to be scaled.
+    if (node.type === 'comment' && node.text === FOUNDATION_MARKER) return
     if (node.type === 'decl') {
       if (declarations) transformDeclaration(node, active, context)
       continue
@@ -355,12 +366,30 @@ function appendFoundation(
   if (options.root && options.root.injectTo && !matchesFile(options.root.injectTo, file)) {
     return
   }
+  // Already compiled once. Appending again would stack a second copy of every
+  // safe-area variable and root cap on top of an identical first.
+  if (root.nodes.some((node) => node.type === 'comment' && node.text === FOUNDATION_MARKER)) {
+    return
+  }
   const css = buildFoundationCss(options)
   if (!css) return
   const foundation = postcss.parse(css, { from: root.source?.input.file })
-  // Without this the generated base would be glued to the last authored rule.
-  if (foundation.first) foundation.first.raws.before = root.nodes.length ? '\n\n' : ''
+  // `Root.normalize` copies the preceding node's `before` onto every appended
+  // node, flattening the spacing `buildFoundationCss` laid out. Remembering
+  // each one and putting it back afterwards is the only way to keep that
+  // layout; setting anything up front is overwritten by the append itself.
+  const spacing = foundation.nodes.map((node) => node.raws.before)
+  const nodes = [...foundation.nodes]
+  if (!nodes.length) return
+
+  const separator = root.nodes.length ? '\n\n' : ''
   root.append(foundation.nodes)
+
+  nodes.forEach((node, index) => {
+    // A blank line keeps the generated base off the last authored rule. The
+    // marker then sits directly on top of what it marks.
+    node.raws.before = index === 0 ? separator : spacing[index]
+  })
 }
 
 export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (

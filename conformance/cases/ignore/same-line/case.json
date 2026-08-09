@@ -1,3 +1,3 @@
 {
-  "description": "A trailing adaptive-ignore skips its own line and is removed"
+  "description": "A trailing adaptive-ignore skips its own line, and the directive stays so a second pass honours it too"
 }

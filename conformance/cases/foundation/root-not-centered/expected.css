@@ -1,5 +1,6 @@
 .a { width: clamp(8.53333px, 2.66667vw, 12.8px) }
 
+/* postcss-adaptive-matrix foundation */
 @layer adaptive-matrix {
   :where(#app) {
     inline-size: 100%;

@@ -103,7 +103,23 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('height: 30px')
     expect(result.css).toContain('padding: 20px')
     expect(result.css).toContain('margin: 99px')
-    expect(result.css).not.toContain('adaptive-ignore')
+  })
+
+  it('keeps ignore directives, so they still apply on a second pass', async () => {
+    const source = [
+      '/* adaptive-ignore-rule */ .legacy { width: 50px }',
+      '.card { /* adaptive-ignore-next */ width: 40px; height: 30px; /* adaptive-ignore */ }',
+    ].join('\n')
+    const once = await process(source)
+    const twice = await postcss([adaptiveMatrix()]).process(once.css, {
+      from: '/project/src/app.css',
+    })
+
+    // Consuming the comment would leave the ignored pixels indistinguishable
+    // from pixels nobody thought about, and this project asks you *not* to
+    // exclude node_modules — so pre-compiled CSS gets a second pass routinely.
+    expect(once.css).toContain('adaptive-ignore-rule')
+    expect(twice.css).toBe(once.css)
   })
 
   it('can preserve the original fallback and transform custom properties', async () => {

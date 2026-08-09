@@ -5,6 +5,9 @@
 - 新增 `adaptive-matrix` 命令行预览：逐条声明的前后对照，`--from` 可在上线前验证文件路由，`--css` 输出完整产物且警告走 stderr。
 - 修正嵌套场景：`@media` / `@supports` / `@layer` / `@container` / `@scope` / `@starting-style` 内的声明现在会被换算，`@font-face` / `@page` / `@property` / `@counter-style` 内的长度保持原样。
 - 修正幂等性：已经带视口单位的 `clamp()` / `min()` / `max()` 不再被二次换算。
+- 修正根容器基础样式的幂等性：产物带 `/* postcss-adaptive-matrix foundation */` 标记，再编译一次既不会把 `max-inline-size: 480px` 这类固定上限当成设计稿尺寸缩放，也不会叠出第二份。
+- 忽略注释（`adaptive-ignore` 系列）不再从产物中删除。被忽略的值没有任何自身痕迹，注释一旦消失，第二趟编译就会把作者明确排除的尺寸换算掉；注释会被压缩器去掉，不影响上线体积。
+- 一致性套件对每一个样例增加幂等断言：产物再编译一遍必须原样返回。
 - 修正重复声明：同一规则内重复书写的声明现在每一条都会换算。此前只换算第一条，而层叠中生效的是最后一条，等于整条换算失效。
 - 支持带指数的数字：`1e2px` 就是 100px，此前被静默跳过；`min(1e2vw, 50px)` 也不再被误判为「没有视口单位」。
 - 修正 at-rule 大小写：`@ADAPTIVE` / `@Adaptive` 与 `@adaptive` 等价，与 CSS 对 at-keyword 的大小写不敏感一致。此前不被识别，整块会被浏览器丢弃且没有任何提示。

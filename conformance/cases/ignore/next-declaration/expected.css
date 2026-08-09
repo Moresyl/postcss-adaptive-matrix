@@ -1,4 +1,5 @@
 .a {
+  /* adaptive-ignore-next */
   width: 40px;
   height: clamp(34.13333px, 10.66667vw, 51.2px);
 }
