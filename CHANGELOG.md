@@ -1,6 +1,6 @@
 # Changelog
 
-## 未发布
+## 0.3.0
 
 - 新增 `adaptive-matrix` 命令行预览：逐条声明的前后对照，`--from` 可在上线前验证文件路由，`--css` 输出完整产物且警告走 stderr。
 - 修正嵌套场景：`@media` / `@supports` / `@layer` / `@container` / `@scope` / `@starting-style` 内的声明现在会被换算，`@font-face` / `@page` / `@property` / `@counter-style` 内的长度保持原样。
