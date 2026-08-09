@@ -1,4 +1,8 @@
-import { expandLibraries, resolveLibraries } from './libraries.js'
+import {
+  LIBRARY_PROFILE_PREFIX,
+  expandLibraries,
+  resolveLibraries,
+} from './libraries.js'
 import { appPcPreset } from './presets.js'
 import type {
   AdaptiveMatrixOptions,
@@ -116,6 +120,16 @@ export function resolveOptions(
     )
   }
   for (const [name, profile] of Object.entries(authored)) {
+    // `library:` belongs to the registry, and the expansion below overwrites
+    // whatever shares a name with it. Someone writing `'library:vant'` is
+    // trying to retune that canvas, and would get a profile that silently does
+    // nothing — so name the option that actually does it.
+    if (name.startsWith(LIBRARY_PROFILE_PREFIX)) {
+      throw new Error(
+        `[postcss-adaptive-matrix] Profile "${name}" uses the reserved "${LIBRARY_PROFILE_PREFIX}" prefix. ` +
+          `To retune an adapted library, use libraries: [{ extends: '${name.slice(LIBRARY_PROFILE_PREFIX.length)}', ... }].`,
+      )
+    }
     validateProfile(name, profile)
   }
 

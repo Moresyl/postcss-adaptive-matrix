@@ -117,6 +117,8 @@ adaptiveMatrix({
 })
 ```
 
+这是唯一的入口。每个库会合成一张名为 `library:<名字>` 的画布，`library:` 是保留前缀——在 `profiles` 里直接写 `'library:vant'` 会被合成结果覆盖，等于白写，所以这种配置直接报错并指回 `extends`。
+
 ## 添加未收录的库
 
 ```js

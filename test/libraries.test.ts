@@ -121,6 +121,19 @@ describe('registry invariants', () => {
     }
   })
 
+  it('rejects an authored profile in the registry namespace', () => {
+    // The expansion overwrites it, so it would be a profile that silently does
+    // nothing — and the person writing it clearly wanted to retune that canvas.
+    expect(() =>
+      resolveOptions({
+        profiles: {
+          app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } },
+          'library:vant': { designWidth: 1, fluid: { minWidth: 1, maxWidth: 2 } },
+        },
+      }),
+    ).toThrow(/reserved "library:" prefix.*extends: 'vant'/s)
+  })
+
   it('keeps class prefixes unambiguous across libraries', () => {
     // Nested prefixes would make routing depend on registry order: `.ant-` and
     // `.ant-mobile-` would both match the same selector, and the winner would be
