@@ -16,6 +16,7 @@ import {
   wantsFixedCorrection,
 } from '../core/fixed.js'
 import { adaptiveQueryParams, buildFoundationCss } from '../core/foundation.js'
+import { LIBRARY_PROFILE_PREFIX } from '../core/libraries.js'
 import {
   createPropertyMatcher,
   matchesAnyPattern,
@@ -205,10 +206,14 @@ function unknownProfile(
   // know along with everything inside it — so the block does not merely go
   // unconverted, it stops applying at all. That is worth spelling out at the
   // point someone reads the warning.
+  // The registry contributes one synthetic canvas per adapted library. Those
+  // are not names anyone writes by hand, so listing them here would push the
+  // two or three that are actually spellable off the end of the line.
+  const available = Object.keys(context.options.profiles).filter(
+    (profile) => !profile.startsWith(LIBRARY_PROFILE_PREFIX),
+  )
   const message =
-    `Unknown adaptive profile "${name}". Available profiles: ${Object.keys(
-      context.options.profiles,
-    ).join(', ')}. ` +
+    `Unknown adaptive profile "${name}". Available profiles: ${available.join(', ')}. ` +
     `The @${context.options.atRuleName} block is left as authored, which means browsers will drop it entirely. ` +
     `Set unknownProfile: 'error' to fail the build instead.`
   if (context.options.unknownProfile === 'error') {

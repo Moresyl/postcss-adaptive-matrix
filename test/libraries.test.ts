@@ -79,6 +79,94 @@ describe('automatic mode', () => {
   })
 })
 
+/**
+ * Properties every entry must hold, checked against the whole registry rather
+ * than a handful of named libraries.
+ *
+ * A bad entry here is the worst kind of bug this project can ship: it is silent,
+ * it fires on projects that configured nothing, and it misconverts somebody
+ * else's component library. The cases above pin down the entries that exist
+ * today; these pin down the ones nobody has written yet.
+ */
+describe('registry invariants', () => {
+  const all = BUILT_IN_LIBRARIES.map((name) => resolveLibrary(name))
+
+  it('lists libraries sorted and without duplicates', () => {
+    expect([...BUILT_IN_LIBRARIES]).toEqual([...BUILT_IN_LIBRARIES].sort())
+    expect(new Set(BUILT_IN_LIBRARIES).size).toBe(BUILT_IN_LIBRARIES.length)
+  })
+
+  it('names each entry after the key it is looked up by', () => {
+    for (const [index, library] of all.entries()) {
+      expect(library.name).toBe(BUILT_IN_LIBRARIES[index])
+    }
+  })
+
+  it('gives every entry a path match', () => {
+    // The path channel is the only one that works unattended for every library:
+    // prefixes can be withheld as too generic, and desktop kits ship no tokens.
+    for (const library of all) {
+      expect(library.file, library.name).toBeDefined()
+      const matchers = Array.isArray(library.file) ? library.file : [library.file]
+      expect(matchers.length, library.name).toBeGreaterThan(0)
+    }
+  })
+
+  it('declares a canvas that is either a real width or an explicit opt-out', () => {
+    for (const library of all) {
+      if (library.designWidth === false) continue
+      expect(typeof library.designWidth, library.name).toBe('number')
+      expect(library.designWidth as number, library.name).toBeGreaterThan(0)
+      expect(Number.isFinite(library.designWidth as number), library.name).toBe(true)
+    }
+  })
+
+  it('keeps class prefixes unambiguous across libraries', () => {
+    // Nested prefixes would make routing depend on registry order: `.ant-` and
+    // `.ant-mobile-` would both match the same selector, and the winner would be
+    // whichever happened to be declared first.
+    const prefixes = all.map((library) => library.prefix).filter(Boolean) as string[]
+    expect(new Set(prefixes).size).toBe(prefixes.length)
+    for (const a of prefixes) {
+      for (const b of prefixes) {
+        if (a !== b) expect(b.startsWith(a), `${b} starts with ${a}`).toBe(false)
+      }
+    }
+  })
+
+  it('keeps token prefixes unambiguous across libraries', () => {
+    const tokens = all.map((library) => library.tokenPrefix).filter(Boolean) as string[]
+    expect(new Set(tokens).size).toBe(tokens.length)
+    for (const a of tokens) {
+      for (const b of tokens) {
+        if (a !== b) expect(b.startsWith(a), `${b} starts with ${a}`).toBe(false)
+      }
+    }
+  })
+
+  it('never enables a prefix short enough to collide with application code', () => {
+    // Three characters is the line: `el-` and `at-` are recognisably a library,
+    // `n-` and `q-` are what anyone might name a utility class. Anything shorter
+    // has to be asked for by name, which is what autoPrefix: false expresses.
+    for (const library of autoLibraries()) {
+      if (library.prefix === undefined) continue
+      expect(library.prefix.length, library.name).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('offers every library in automatic mode, prefix or not', () => {
+    expect(autoLibraries().map((library) => library.name)).toEqual([...BUILT_IN_LIBRARIES])
+  })
+
+  it('gives each library a profile name that cannot collide with an authored one', () => {
+    // `@adaptive` names are identifiers; the colon makes the synthesised name
+    // unspellable, so no user profile can shadow a library canvas.
+    const names = all.map((library) => libraryProfileName(library))
+    expect(new Set(names).size).toBe(names.length)
+    for (const name of names) expect(name).toContain(':')
+  })
+})
+
 describe('extends', () => {
   it('corrects one field and inherits the rest', () => {
     const library = resolveLibrary({ extends: 'vant', designWidth: 750 })

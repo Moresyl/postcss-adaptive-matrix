@@ -45,12 +45,17 @@
     },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "adaptive-matrix": "./dist/cli.js"
+  },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/cli.js"
+  ],
   "engines": {
     "node": ">=18"
   },

@@ -199,9 +199,17 @@ export function resolveLibraries(
   return input.map(resolveLibrary)
 }
 
+/**
+ * Marks a profile as synthesised rather than authored.
+ *
+ * The colon is deliberate: it cannot appear in an `@adaptive` name, so a
+ * library canvas can never collide with one a user writes.
+ */
+export const LIBRARY_PROFILE_PREFIX = 'library:'
+
 /** Name of the profile synthesised for a library's own canvas. */
 export function libraryProfileName(library: LibraryAdaptation): string {
-  return `library:${library.name}`
+  return `${LIBRARY_PROFILE_PREFIX}${library.name}`
 }
 
 export interface LibraryExpansion {

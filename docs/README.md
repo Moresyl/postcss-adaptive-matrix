@@ -6,6 +6,7 @@
 | --- | --- |
 | 装上去，跑通第一个页面 | [快速上手](./getting-started.md) |
 | 接进 Vite / Nuxt / Webpack / Taro | [构建工具集成](./integration.md) |
+| 改完配置，先看看输出对不对 | [命令行预览](./cli.md) |
 | 项目里用了 Vant / Element Plus / antd… | [组件库适配](./libraries.md) |
 | 查某个选项叫什么、默认值是多少 | [配置参考](./configuration.md) |
 | 想知道数字是怎么算出来的 | [架构与转换公式](./architecture.md) |

@@ -150,7 +150,7 @@ UnoCSS、Tailwind 生成的工具类 CSS 会经过 PostCSS，因此同样会被�
 改完配置，跑一遍产物比看配置可靠：
 
 ```bash
-npx postcss src/styles/app.css --config . | head -40
+npx adaptive-matrix src/styles/app.css -c postcss.config.mjs
 ```
 
-或者在项目里写个一次性脚本，直接调插件比对前后。文档里每一段示例都是这么验的。
+输出是逐条声明的前后对照，不用启动构建、不用开浏览器。上面那个「`from` 必须传」的坑，也可以用 `--from` 先试一遍再上线。完整用法见[命令行预览](./cli.md)。

@@ -93,6 +93,7 @@ export default {
 | **固定定位修正** | 居中列布局下 `position: fixed` 不再贴到视口边 |
 | **容器查询** | `unit: 'cqi'` + `@container`，尺寸依赖容器而非窗口 |
 | **可选运行时** | VisualViewport 观察器，覆盖 WebView、软键盘与动态视口 |
+| **命令行预览** | 改完配置不用构建，一行命令看到逐条声明的换算结果 |
 | **工程化** | 完整 TypeScript 类型，ESM + CJS 双产物，语言无关一致性套件 |
 
 ## 有界流体尺寸
@@ -148,12 +149,32 @@ height: 44px;              /* adaptive-ignore */   /* 忽略当前行 */
 
 默认保留不超过 `1px` 的细线；字符串、`url()`、`local()`、`format()` 不会误转换。
 
+## 改一个数字，立刻看到结果
+
+```bash
+npx adaptive-matrix src/styles/app.css
+```
+
+```
+src/styles/app.css
+  profiles: app (default), pc, +5 library canvases
+  .page
+    padding    16px → clamp(13.65333px, 4.26667vw, 20.48px)
+    font-size  16px → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)
+  @media (min-width: 768px) › .page
+    padding    48px → clamp(34.13333px, 3.33333vw, 64px)
+  3 converted, 0 left as authored
+```
+
+不用启动构建，不用开浏览器。`--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.md)。
+
 ## 文档
 
 | | |
 | --- | --- |
 | [快速上手与双设计稿工作流](./docs/getting-started.md) | 从安装到 App/PC 双稿协作 |
 | [构建工具集成](./docs/integration.md) | Vite、Nuxt、Webpack、Taro，以及三个静默出错的点 |
+| [命令行预览](./docs/cli.md) | `npx adaptive-matrix`：不用构建就能看到换算结果 |
 | [组件库适配](./docs/libraries.md) | 内置清单、匹配方式、覆盖与扩展 |
 | [配置参考](./docs/configuration.md) | 全部选项、类型与默认值 |
 | [架构与转换公式](./docs/architecture.md) | 编译流程、数学公式、幂等、实现边界 |
