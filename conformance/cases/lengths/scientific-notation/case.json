@@ -1,0 +1,10 @@
+{
+  "description": "Numbers written with an exponent are lengths like any other, and an exponent inside a bounding function still marks the value as already fluid",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    }
+  }
+}

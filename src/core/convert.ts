@@ -12,9 +12,25 @@ const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 /** The three functions whose whole purpose is to bound a fluid value. */
 const BOUNDING_FUNCTIONS = new Set(['clamp', 'min', 'max'])
 
+/**
+ * A CSS `<number>`: optional sign, digits with an optional fraction, and an
+ * optional exponent.
+ *
+ * The exponent is the part that is easy to leave out, and both places this
+ * pattern is used get it wrong without it. `1e2px` is an ordinary hundred
+ * pixels — CSS has allowed scientific notation in numbers since Values 3, and
+ * generated stylesheets emit it — but a mantissa-only pattern cannot start
+ * matching mid-token, so the length is silently left unconverted. The same gap
+ * makes `min(1e2vw, 50px)` look free of viewport units, which defeats the
+ * idempotence guard and rescales a value the author had already bounded.
+ */
+const NUMBER = String.raw`-?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?`
+
 /** A number carrying any viewport- or container-relative unit. */
-const VIEWPORT_RELATIVE =
-  /(?:^|[^\w.-])-?(?:\d*\.\d+|\d+\.?\d*)(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\w-])/i
+const VIEWPORT_RELATIVE = new RegExp(
+  `(?:^|[^\\w.-])${NUMBER}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\\w-])`,
+  'i',
+)
 
 /**
  * The unit pattern depends only on `unitToConvert`, so it is built once per
@@ -29,7 +45,7 @@ function unitPattern(unit: string): RegExp {
   if (cached) return cached
   const escaped = unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const pattern = new RegExp(
-    `(^|[^a-zA-Z0-9_.-])(-?(?:\\d*\\.\\d+|\\d+\\.?\\d*))${escaped}(?![a-zA-Z0-9_-])`,
+    `(^|[^a-zA-Z0-9_.-])(${NUMBER})${escaped}(?![a-zA-Z0-9_-])`,
     'gi',
   )
   UNIT_PATTERNS.set(unit, pattern)

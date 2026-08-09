@@ -84,19 +84,19 @@ function shouldIgnoreRule(rule: Rule): boolean {
   return true
 }
 
-function hasEquivalentDeclaration(
-  declaration: Declaration,
-  value: string,
-): boolean {
-  return Boolean(
-    declaration.parent?.nodes.some(
-      (node) =>
-        node.type === 'decl' &&
-        node !== declaration &&
-        node.prop === declaration.prop &&
-        node.value === value,
-    ),
-  )
+/**
+ * True when this declaration is already immediately followed by its converted
+ * twin — the shape `preserveOriginal` produces, and the one to leave alone.
+ *
+ * Positional on purpose. Scanning the whole rule instead would also match two
+ * identical declarations someone wrote by hand, and skipping the later of those
+ * is the one thing that must not happen: the last declaration wins the cascade,
+ * so leaving it authored means the conversion has no effect at all, silently.
+ */
+function isFollowedByEquivalent(declaration: Declaration, value: string): boolean {
+  let node = declaration.next()
+  while (node?.type === 'comment') node = node.next()
+  return node?.type === 'decl' && node.prop === declaration.prop && node.value === value
 }
 
 interface ProcessorContext {
@@ -144,7 +144,7 @@ function transformDeclaration(
     target.profile,
     file,
   )
-  if (converted === declaration.value || hasEquivalentDeclaration(declaration, converted)) {
+  if (converted === declaration.value || isFollowedByEquivalent(declaration, converted)) {
     return
   }
   if (options.preserveOriginal) {

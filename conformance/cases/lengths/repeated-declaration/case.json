@@ -1,0 +1,10 @@
+{
+  "description": "Every occurrence of a repeated declaration is converted, because the last one wins the cascade and leaving it authored would defeat the conversion entirely",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    }
+  }
+}

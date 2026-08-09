@@ -1,0 +1,17 @@
+.converted {
+  width: clamp(85.33333px, 26.66667vw, 128px);
+  height: clamp(85.33333px, 26.66667vw, 128px);
+  margin: clamp(12.8px, 4vw, 19.2px);
+  inset-inline-start: clamp(-128px, -26.66667vw, -85.33333px);
+  padding: clamp(85.33333px, 26.66667vw, 128px);
+}
+
+.already-fluid {
+  width: min(1e2vw, 50px);
+}
+
+.not-a-number {
+  width: 1epx;
+  color: #1e2f3a;
+  font-family: e2px;
+}

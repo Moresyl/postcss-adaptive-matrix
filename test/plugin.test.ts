@@ -116,6 +116,26 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('width: 100px; width: clamp(')
   })
 
+  it('converts a repeated declaration, not only its first occurrence', async () => {
+    // The later declaration wins the cascade. Treating it as an already-emitted
+    // fallback and skipping it would leave the authored pixels in effect, so the
+    // whole conversion would silently do nothing.
+    const result = await process('.box { width: 100px; color: red; width: 100px }')
+
+    expect(result.css).not.toContain('100px')
+    expect(result.css.match(/clamp\(/g)).toHaveLength(2)
+  })
+
+  it('leaves an existing fallback pair alone, so a second pass is a no-op', async () => {
+    const options = { preserveOriginal: true }
+    const once = await process('.box { width: 100px }', options)
+    const twice = await postcss([adaptiveMatrix(options)]).process(once.css, {
+      from: '/project/src/app.css',
+    })
+
+    expect(twice.css).toBe(once.css)
+  })
+
   it('supports file include/exclude and functional design widths', async () => {
     const options = defineConfig({
       include: /src/,

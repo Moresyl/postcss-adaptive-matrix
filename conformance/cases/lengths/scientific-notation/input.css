@@ -1,0 +1,17 @@
+.converted {
+  width: 1e2px;
+  height: 1E2px;
+  margin: 1.5e1px;
+  inset-inline-start: -1e2px;
+  padding: 1e+2px;
+}
+
+.already-fluid {
+  width: min(1e2vw, 50px);
+}
+
+.not-a-number {
+  width: 1epx;
+  color: #1e2f3a;
+  font-family: e2px;
+}
