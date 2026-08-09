@@ -7,6 +7,9 @@
 - 跨画布的选择器列表（如 `.van-cell, .page-hero { ... }`）现在会告警并指出哪个选择器落空了。一条声明只能有一个结果，此前是静默按第一个命中的画布编译整条规则。
 - 命令行的 `-c` 不再在配置模块漏写 `default`、或预设忘了调用时静默改用内置默认值。这两种写法此前会跑完并打印一份看着正确的对照表，没有任何地方说过配置没被读到。
 - `@adaptive pc;`（没有块）此前被改写成 `@media (min-width: 768px);`——不是合法 CSS，而作者想放到那张画布上的规则仍留在原画布。现在告警并保持原样。
+- 修正 CommonJS 入口：`require('postcss-adaptive-matrix')` 此前返回的是命名空间对象，直接调用会抛 `plugin is not a function`，必须写 `.default`。而 `plugins: [require('postcss-adaptive-matrix')({ ... })]` 正是所有 `postcss.config.js` 的通用写法——本仓库 Webpack 文档里的示例自己就是错的。现在 `module.exports` 就是插件本身，`.default` 与各具名导出仍作为属性保留。ESM 入口不受影响。
+- 修正类型入口：`exports` 里的 `types` 此前只有顶层一处，CJS 使用者拿到的是 ESM 版 `.d.ts`，与实际产物对不上。现在 `require` 指向已经在构建的 `.d.cts`。
+- 新增针对构建产物本身的测试：其余测试都从 `src` 导入，而「`require` 拿到什么」「类型解析到哪个文件」由构建与 `package.json` 决定，从源码导入永远测不到。`npm run check` 因此改为先构建再测试。
 - 新增配置校验：`unit` 与 `strategy` 的取值、空的 `unitToConvert`、与 CSS 已定义的 at-rule 重名的 `atRuleName`、空的 `root.selector`。这些字段写错的后果都是静默的，其中 `unit` 写错会直接产出无效 CSS。
 
 ## 0.3.0
