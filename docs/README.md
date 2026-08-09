@@ -5,9 +5,11 @@
 | 你想做的事 | 读这里 |
 | --- | --- |
 | 装上去，跑通第一个页面 | [快速上手](./getting-started.md) |
+| 接进 Vite / Nuxt / Webpack / Taro | [构建工具集成](./integration.md) |
 | 项目里用了 Vant / Element Plus / antd… | [组件库适配](./libraries.md) |
 | 查某个选项叫什么、默认值是多少 | [配置参考](./configuration.md) |
 | 想知道数字是怎么算出来的 | [架构与转换公式](./architecture.md) |
+| 软键盘 / 地址栏 / WebView 把布局顶歪了 | [可选运行时](./runtime.md) |
 | 从现有的 px 换算方案换过来 | [迁移指南](./migration.md) |
 | 发版、产物、浏览器支持 | [发布与兼容性](./release.md) |
 

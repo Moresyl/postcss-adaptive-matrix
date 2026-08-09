@@ -153,9 +153,11 @@ height: 44px;              /* adaptive-ignore */   /* 忽略当前行 */
 | | |
 | --- | --- |
 | [快速上手与双设计稿工作流](./docs/getting-started.md) | 从安装到 App/PC 双稿协作 |
+| [构建工具集成](./docs/integration.md) | Vite、Nuxt、Webpack、Taro，以及三个静默出错的点 |
 | [组件库适配](./docs/libraries.md) | 内置清单、匹配方式、覆盖与扩展 |
 | [配置参考](./docs/configuration.md) | 全部选项、类型与默认值 |
-| [架构与转换公式](./docs/architecture.md) | 编译流程、数学公式、实现边界 |
+| [架构与转换公式](./docs/architecture.md) | 编译流程、数学公式、幂等、实现边界 |
+| [可选运行时](./docs/runtime.md) | VisualViewport 观察器：软键盘、地址栏、WebView |
 | [迁移指南](./docs/migration.md) | 从其它 px 换算方案迁移 |
 | [发布与兼容性](./docs/release.md) | 产物、浏览器策略、版本策略 |
 | [一致性套件](./conformance/README.md) | 语言无关的行为规范 |

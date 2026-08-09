@@ -200,9 +200,17 @@ function unknownProfile(
   name: string,
   context: ProcessorContext,
 ): void {
-  const message = `Unknown adaptive profile "${name}". Available profiles: ${Object.keys(
-    context.options.profiles,
-  ).join(', ')}.`
+  // Says what happens next, not just what is wrong. An unrecognised profile
+  // leaves the at-rule in place, and a browser discards an at-rule it does not
+  // know along with everything inside it — so the block does not merely go
+  // unconverted, it stops applying at all. That is worth spelling out at the
+  // point someone reads the warning.
+  const message =
+    `Unknown adaptive profile "${name}". Available profiles: ${Object.keys(
+      context.options.profiles,
+    ).join(', ')}. ` +
+    `The @${context.options.atRuleName} block is left as authored, which means browsers will drop it entirely. ` +
+    `Set unknownProfile: 'error' to fail the build instead.`
   if (context.options.unknownProfile === 'error') {
     throw atRule.error(message, { plugin: PLUGIN_NAME })
   }
