@@ -28,7 +28,10 @@
     gap: 48px;
     min-height: 560px;
     padding: 64px;
-    border-radius: 32px;
+    /* 32px 在这里会让圆角在 768px 处从 25.6px 掉到 22.76px——窗口变宽、圆角
+       反而变小。App 稿到断点时已经放大到 1.28 倍，PC 稿从 1024 起步只有
+       0.711 倍，所以 PC 稿的值至少要是 App 稿的 1.8 倍才接得上。 */
+    border-radius: 40px;
   }
 
   .hero__title {

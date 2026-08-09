@@ -81,6 +81,40 @@ Vue SFC 的路径带 query 串，照抄进去即可：
 npx adaptive-matrix scratch.css --from 'src/views/mobile/home/index.vue?vue&type=style&lang.scss'
 ```
 
+## 断点处的倒退
+
+两张设计稿各自都对，接缝处未必对。这个检查专门找一种情况：**窗口变宽，某个尺寸反而变小了。**
+
+```
+  shrinks .card font-size gets smaller at 768px: 17.57px → 16.18px
+          clamp(0.94867rem, ...) → clamp(1.01125rem, ...). Widening the window makes this smaller — the two canvases disagree here.
+```
+
+`.card` 的字号在 App 稿上写 16px、PC 稿上写 18px，两个数字单独看都合理。但 App 稿到 767px 时已经流体放大到 17.57px，而 PC 稿从 768px 起步只有 16.18px。于是把浏览器拉宽一个像素，正文字号会突然变小。
+
+之所以值得单独检查，是因为它**只在那一个宽度上出现**：两张稿子各自渲染都正常，日常调试的 375 和 1440 也都正常。
+
+编译器输出的每一条公式在视口宽度上都是单调不减的——`clamp()` 的上下界都是正数，不可能越宽越小。所以一旦出现倒退，来源只能是跨断点换了画布。这也意味着这个检查是完备的：这一类问题不会漏报到别的宽度上去。
+
+怎么改由你决定——抬高 PC 稿的字号、把 `pcFluidMin` 从 1024 降到 768、或者收窄 App 稿的 `fluid.maxWidth`。工具只负责告诉你接缝在哪。
+
+检查刻意收得很窄，宁可不报也不误报：只比对同一个选择器串、不做优先级推算、不展开简写；遇到 `@supports`、`@container`、非纯宽度的媒体查询、跨层叠层的分组，以及 `var()` / `env()` / `%` / 容器单位这类算不出数值的值，整组跳过。
+
+自定义属性（`--x: ...`）也不检查。它不是屏幕上的长度，而是交给别处消费的值，方向对不对由消费方决定——本插件自己的 `--adaptive-root-width` 就是反的：它喂给 `max(0px, (100vw - var(--adaptive-root-width)) / 2)`，值变小正是为了让留白变大。代价是主题 token 和一切经 `var()` 读取的值查不到，这是这个检查说不了的部分。
+
+实测误报率：68 份一致性套件产物、Vant 完整样式表（199 KB）、本仓库示例工程，`shrinks` 报告数均为 0。
+
+要让构建直接失败，同一个检查也从包里导出：
+
+```js
+import postcss from 'postcss'
+import adaptiveMatrix, { findContinuityIssues } from 'postcss-adaptive-matrix'
+
+const result = await postcss([adaptiveMatrix(options)]).process(css, { from })
+const issues = findContinuityIssues(result.root)
+if (issues.length) throw new Error(`${issues.length} 处断点倒退`)
+```
+
 ## 看整份产物
 
 要接着给别的工具处理，用 `--css`：
@@ -98,5 +132,6 @@ npx adaptive-matrix src/app.css --css > out.css
 - `+ ...` —— 编译器新增的声明，比如根容器基础样式、`preserveOriginal` 的降级值
 - `@media (min-width: 768px) › .page` —— 声明所在位置由外向内。`@adaptive pc` 编译后就是这个样子，同一个 `.page` 出现两次是正常的
 - `warning ...` —— 编译器的告警，原样透传
+- `shrinks ...` —— 跨断点时尺寸倒退，见[断点处的倒退](#断点处的倒退)
 
 表头的 `+5 library canvases` 是内置组件库各自的画布。它们由注册表生成，不是你能在 `@adaptive` 里写的名字，所以只报个数。完整清单见[组件库适配](./libraries.md)。

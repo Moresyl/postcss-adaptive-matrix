@@ -12,6 +12,7 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
+import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
 import type { AdaptiveMatrixOptions } from './core/types.js'
@@ -35,7 +36,14 @@ Options
   -h, --help
 
 Without --config the built-in defaults are used, and the header says which
-profiles those are. A .ts config needs a loader:
+profiles those are.
+
+The diff is followed by any "shrinks" findings: a length that gets smaller when
+the viewport gets wider. Every formula this compiler emits grows with the
+viewport, so that can only happen where two canvases disagree about the same
+element across a breakpoint.
+
+A .ts config needs a loader:
   npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js app.css -c cfg.ts
 `.trimStart()
 
@@ -173,7 +181,12 @@ async function compile(
   source: string,
   from: string,
   options: AdaptiveMatrixOptions,
-): Promise<{ root: Root; changes: Change[]; warnings: string[] }> {
+): Promise<{
+  root: Root
+  changes: Change[]
+  warnings: string[]
+  issues: ContinuityIssue[]
+}> {
   const root = postcss.parse(source, { from })
   const original = new Map<Declaration, string>()
   root.walkDecls((declaration) => {
@@ -196,6 +209,10 @@ async function compile(
     root: result.root,
     changes,
     warnings: result.warnings().map((warning) => warning.text),
+    // Run on the compiled tree, not the source: the question is whether the
+    // *output* is monotonic, and the numbers to compare only exist once the
+    // canvases have been applied.
+    issues: findContinuityIssues(result.root),
   }
 }
 
@@ -216,6 +233,7 @@ function report(
   label: string,
   changes: Change[],
   warnings: string[],
+  issues: ContinuityIssue[],
   args: CliArgs,
   profiles: string[],
 ): { converted: number; lines: string[] } {
@@ -244,6 +262,24 @@ function report(
   }
 
   for (const warning of warnings) lines.push(`  ${c.yellow('warning')} ${warning}`)
+
+  // Printed after the diff rather than beside the declaration, because the
+  // finding belongs to neither of the two declarations that produced it — it
+  // is about the step between them.
+  const round = (value: number) => `${Math.round(value * 100) / 100}px`
+  for (const issue of issues) {
+    lines.push(
+      `  ${c.yellow('shrinks')} ${c.cyan(issue.selector)} ${issue.prop} ` +
+        `gets smaller at ${issue.breakpoint}px: ` +
+        `${round(issue.below.px)} ${c.dim('→')} ${round(issue.above.px)}`,
+    )
+    lines.push(
+      c.dim(
+        `          ${issue.below.value} → ${issue.above.value}. ` +
+          'Widening the window makes this smaller — the two canvases disagree here.',
+      ),
+    )
+  }
 
   const unchanged = changes.length - converted.length
   lines.push(
@@ -307,7 +343,7 @@ export async function runCli(argv: string[]): Promise<number> {
     let total = 0
     for (const input of inputs) {
       const from = args.from ? resolve(args.from) : input.from
-      const { root, changes, warnings } = await compile(input.source, from, options)
+      const { root, changes, warnings, issues } = await compile(input.source, from, options)
 
       if (args.css) {
         // Warnings go to stderr so that `--css > out.css` still shows them and
@@ -318,7 +354,14 @@ export async function runCli(argv: string[]): Promise<number> {
         process.stdout.write(`${root.toString()}\n`)
         continue
       }
-      const { converted, lines } = report(input.label, changes, warnings, args, profiles)
+      const { converted, lines } = report(
+        input.label,
+        changes,
+        warnings,
+        issues,
+        args,
+        profiles,
+      )
       total += converted
       process.stdout.write(`${lines.join('\n')}\n`)
     }

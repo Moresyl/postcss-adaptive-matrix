@@ -94,6 +94,7 @@ export default {
 | **容器查询** | `unit: 'cqi'` + `@container`，尺寸依赖容器而非窗口 |
 | **可选运行时** | VisualViewport 观察器，覆盖 WebView、软键盘与动态视口 |
 | **命令行预览** | 改完配置不用构建，一行命令看到逐条声明的换算结果 |
+| **断点接缝检查** | 自动找出「窗口变宽、尺寸反而变小」的位置——两张设计稿没对齐的地方 |
 | **工程化** | 完整 TypeScript 类型，ESM + CJS 双产物，语言无关一致性套件 |
 
 ## 有界流体尺寸
@@ -163,10 +164,15 @@ src/styles/app.css
     font-size  16px → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)
   @media (min-width: 768px) › .page
     padding    48px → clamp(34.13333px, 3.33333vw, 64px)
+  shrinks .card font-size gets smaller at 768px: 17.57px → 16.18px
   3 converted, 0 left as authored
 ```
 
-不用启动构建，不用开浏览器。`--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.md)。
+不用启动构建，不用开浏览器。
+
+最后那行是断点接缝检查：App 稿写 16px、PC 稿写 18px，两个数字单独看都合理，但把窗口拉宽一个像素，正文字号会突然变小。编译器输出的公式在视口宽度上都是单调不减的，所以尺寸倒退只可能来自跨断点换画布——两张稿子在这个元素上没对齐。
+
+`--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.md)。
 
 ## 文档
 

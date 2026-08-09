@@ -64,6 +64,32 @@ describe('runCli', () => {
     expect(out).toContain('1 converted, 1 left as authored')
   })
 
+  it('reports a length that shrinks as the viewport grows', async () => {
+    // 16px on the app canvas and 18px on the PC canvas are each plausible on
+    // their own, but the app canvas has already reached 17.57px by the time
+    // the PC one starts at 16.18px. Confirmed in Chrome at 767px and 768px.
+    const path = await file(
+      'app.css',
+      '.card { font-size: 16px }\n@adaptive pc { .card { font-size: 18px } }',
+    )
+
+    expect(await runCli([path, '--no-color'])).toBe(0)
+    expect(out).toContain('shrinks')
+    expect(out).toContain('.card font-size gets smaller at 768px')
+    expect(out).toContain('17.57px')
+    expect(out).toContain('16.18px')
+  })
+
+  it('says nothing about a length that grows across the breakpoint', async () => {
+    const path = await file(
+      'app.css',
+      '.card { padding: 16px }\n@adaptive pc { .card { padding: 32px } }',
+    )
+
+    expect(await runCli([path, '--no-color'])).toBe(0)
+    expect(out).not.toContain('shrinks')
+  })
+
   it('hides unchanged declarations unless --all is passed', async () => {
     const path = await file('app.css', '.page { padding: 16px; border: 1px solid }')
 
