@@ -53,7 +53,7 @@ adaptiveMatrix({
 
 1. `strategy` 改回默认 `clamp`——尺寸获得上下界，大屏不再无限放大；
 2. 移除 `query: false`，或改用 `appPcPreset` 引入 PC profile；
-3. 删掉 `libraries: false`，组件库按各自画布适配（详见 [配置参考](./configuration.md#libraries)）。这一步通常可以顺带删掉原方案里为组件库写的整段忽略名单；
+3. 删掉 `libraries: false`，组件库按各自画布适配（详见 [组件库适配](./libraries.md)）。这一步通常可以顺带删掉原方案里为组件库写的整段忽略名单；
 4. 需要居中列时配置 `root`，`fixedContainingBlock` 会一并处理固定定位元素。
 
 ## 验收
