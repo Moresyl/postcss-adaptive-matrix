@@ -59,6 +59,31 @@ describeBuilt('the built package', () => {
     expect(runtime.default).toBeUndefined()
   })
 
+  it('declares the CJS entry as callable, matching what it ships', () => {
+    // Making `module.exports` callable fixed the runtime and left the types
+    // saying the opposite: `import x = require('postcss-adaptive-matrix')` was
+    // rejected with "has no call signatures" against code that runs. Code and
+    // declarations disagreeing is worse than either being wrong on its own,
+    // because the editor is the half people believe.
+    const declarations = readFileSync(
+      new URL('../dist/index.d.cts', import.meta.url),
+      'utf8',
+    )
+
+    expect(declarations).toContain('export = _cjs')
+    expect(declarations).toContain('declare const _cjs: typeof adaptiveMatrix &')
+    // Types have to survive the move to `export =`, which cannot sit beside a
+    // named export statement. They live in a merged namespace instead.
+    expect(declarations).toContain('declare namespace _cjs')
+    expect(declarations).toContain('type AdaptiveMatrixOptions')
+    expect(declarations).toContain('default: typeof adaptiveMatrix')
+
+    // The ESM declarations describe an ES module and must keep saying so.
+    const esm = readFileSync(new URL('../dist/index.d.ts', import.meta.url), 'utf8')
+    expect(esm).not.toContain('export =')
+    expect(esm).toContain('as default')
+  })
+
   it('points require and import at their own type declarations', () => {
     // A single top-level `types` hands CJS consumers the ESM `.d.ts`. Under
     // node16 resolution that declares `export default` where the runtime has

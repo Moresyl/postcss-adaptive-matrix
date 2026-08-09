@@ -213,6 +213,49 @@ describe('findContinuityIssues', () => {
     ).toEqual([])
   })
 
+  it('sees through a token to the length behind it', () => {
+    // Without this the check gave up at the first `var(`, which on a component
+    // library is most of the file: Vant 4.10.0 reads 1173 of its 3198 ordinary
+    // declarations entirely through tokens.
+    const issues = check(`
+      :root,:host { --card-width: 40px }
+      .a { width: var(--card-width) }
+      @media (min-width: 768px) { .a { width: 20px } }
+    `)
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.below.px).toBe(40)
+    expect(issues[0]!.above.px).toBe(20)
+  })
+
+  it('follows a token redefined at the breakpoint under one declaration', () => {
+    // The rule never changes. What it reads does — and the author, looking at
+    // one `width` in one place, has nothing to compare.
+    const issues = check(`
+      :root { --card-width: 40px }
+      @media (min-width: 768px) { :root { --card-width: 20px } }
+      .a { width: var(--card-width) }
+    `)
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.breakpoint).toBe(768)
+    expect(issues[0]!.below.value).toBe('40px')
+    expect(issues[0]!.above.value).toBe('20px')
+  })
+
+  it('declines a token a theme class can override', () => {
+    // `.dark { --card-width: ... }` puts the value under an ancestor's class,
+    // and no width tells you which one an element sits beneath.
+    expect(
+      check(`
+        :root { --card-width: 40px }
+        .dark { --card-width: 30px }
+        .a { width: var(--card-width) }
+        @media (min-width: 768px) { .a { width: 20px } }
+      `),
+    ).toEqual([])
+  })
+
   it('respects max-width bounds, not just min-width', () => {
     const issues = check(`
       @media (max-width: 767.98px) { .a { width: 40px } }

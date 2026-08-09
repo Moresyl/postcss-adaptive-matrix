@@ -1,6 +1,8 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { evaluateLength, splitComponents } from './evaluate.js'
+import { allMatch, boundaryOf, widthConditions } from './media.js'
+import { collectTokens } from './tokens.js'
 
 /**
  * One place where a length moves backwards as the viewport grows.
@@ -40,43 +42,6 @@ const PROBE = 0.05
 /** Below this, a difference is rounding, not a step. */
 const EPSILON = 0.01
 
-const WIDTH_FEATURE = /^\(\s*(min|max)-width\s*:\s*([\d.]+)px\s*\)$/
-/** Media types that describe a screen; anything else is not our business. */
-const SCREEN_TYPES = new Set(['screen', 'all'])
-
-/**
- * Splits a media query's params on `and`, rejecting anything with a comma,
- * `not`, or `only`.
- *
- * A rejected query is not skipped — it poisons every declaration under it, so
- * the whole group goes unchecked. Treating an unreadable condition as "always
- * true" would invent cascades that never happen and report steps that are not
- * there.
- */
-function widthConditions(params: string): string[] | null {
-  if (/[,]|\bnot\b|\bonly\b/i.test(params)) return null
-  const parts = params.split(/\s+and\s+/i).map((part) => part.trim())
-  const conditions: string[] = []
-  for (const part of parts) {
-    if (SCREEN_TYPES.has(part.toLowerCase())) continue
-    if (!WIDTH_FEATURE.test(part)) return null
-    conditions.push(part)
-  }
-  return conditions
-}
-
-function matches(condition: string, width: number): boolean {
-  const parsed = WIDTH_FEATURE.exec(condition)
-  if (!parsed) return false
-  const bound = Number(parsed[2])
-  return parsed[1] === 'min' ? width >= bound : width <= bound
-}
-
-function boundaryOf(condition: string): number | null {
-  const parsed = WIDTH_FEATURE.exec(condition)
-  return parsed ? Number(parsed[2]) : null
-}
-
 /**
  * Walks the tree once, recording every declaration together with the width
  * conditions and cascade layer it sits under.
@@ -97,9 +62,9 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
     // `max(0px, (100vw - var(--adaptive-root-width)) / 2)`, so a *smaller*
     // value there means a *larger* gutter. Shrinking is the intent.
     //
-    // The cost is that theme tokens go unchecked, and so does anything read
-    // through `var()`. That is the honest trade: this check can only speak
-    // about numbers whose meaning it knows.
+    // Skipping the declaration is not the same as ignoring the token: the
+    // consumer *is* checked, with the token substituted in (see `tokens.ts`),
+    // which is where its direction finally has a meaning to be wrong about.
     if (declaration.prop.startsWith('--')) return
 
     const conditions: string[] = []
@@ -153,7 +118,7 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
 function effective(group: Entry[], width: number): Entry | undefined {
   let winner: Entry | undefined
   for (const entry of group) {
-    if (!entry.conditions.every((condition) => matches(condition, width))) continue
+    if (!allMatch(entry.conditions, width)) continue
     if (!winner || entry.order > winner.order) winner = entry
   }
   return winner
@@ -170,8 +135,9 @@ function effective(group: Entry[], width: number): Entry | undefined {
  */
 export function findContinuityIssues(root: Root): ContinuityIssue[] {
   const { entries, poisoned } = collect(root)
+  const tokens = collectTokens(root)
 
-  const boundaries = new Set<number>()
+  const boundaries = new Set<number>(tokens.boundaries)
   for (const entry of entries) {
     for (const condition of entry.conditions) {
       const bound = boundaryOf(condition)
@@ -205,14 +171,26 @@ export function findContinuityIssues(root: Root): ContinuityIssue[] {
   const byTransition = new Map<string, ContinuityIssue>()
 
   for (const [key, group] of groups) {
-    if (group.length < 2) continue
+    // One declaration cannot disagree with itself — unless it reads a token
+    // that the stylesheet redefines at a breakpoint, which is the same
+    // disagreement one level down and shows up as two different resolved
+    // values below.
+    if (group.length < 2 && !group[0]!.value.includes('var(')) continue
     for (const breakpoint of [...boundaries].sort((a, b) => a - b)) {
       const low = effective(group, breakpoint - PROBE)
       const high = effective(group, breakpoint + PROBE)
-      if (!low || !high || low === high) continue
+      if (!low || !high) continue
 
-      const lowParts = splitComponents(low.value)
-      const highParts = splitComponents(high.value)
+      // Tokens are substituted at each probe width separately, so a token
+      // redefined across the breakpoint is compared at the value that actually
+      // applies on each side. `null` means the value reads something this
+      // cannot pin down, and the pair is dropped.
+      const lowValue = tokens.resolve(low.value, breakpoint - PROBE)
+      const highValue = tokens.resolve(high.value, breakpoint + PROBE)
+      if (lowValue === null || highValue === null || lowValue === highValue) continue
+
+      const lowParts = splitComponents(lowValue)
+      const highParts = splitComponents(highValue)
       if (lowParts.length !== highParts.length) continue
 
       for (const [index, lowPart] of lowParts.entries()) {
@@ -246,7 +224,10 @@ export function findContinuityIssues(root: Root): ContinuityIssue[] {
         if (lowPx < 0 !== highPx < 0) continue
         if (Math.abs(highPx) >= Math.abs(lowPx) - EPSILON) continue
 
-        const identity = `${key}|${low.order}|${high.order}|${index}`
+        // The resolved values are part of the identity, not just the two
+        // declarations: one declaration reading a token that is redefined at
+        // 768 and again at 1024 is one pair of orders but two transitions.
+        const identity = `${key}|${low.order}|${high.order}|${index}|${lowPart}|${highPart}`
         const already = byTransition.get(identity)
         if (already) {
           already.breakpoint = breakpoint
