@@ -1,6 +1,8 @@
-# 命令行预览
+# CLI preview
 
-改一个 `designWidth`、挪一次 `fluid` 区间，要看效果就得重新构建，再去浏览器里肉眼比对。这条命令把这一步缩短成一次回车：
+**English** · [简体中文](./cli.zh-CN.md)
+
+Change one `designWidth`, move a `fluid` range, and seeing the effect normally means rebuilding and comparing by eye in a browser. This command shortens that to one keystroke:
 
 ```bash
 npx adaptive-matrix src/styles/app.css
@@ -17,37 +19,37 @@ src/styles/app.css
   3 converted, 0 left as authored
 ```
 
-输出的是**逐条声明的前后对照**，不是整份 CSS。构建工具跑出来的产物动辄几千行，而你想确认的通常只有那么几个数字。
+What it prints is a **before/after list per declaration**, not the whole stylesheet. A build tool's output runs to thousands of lines, and what you actually want to confirm is usually a handful of numbers.
 
-## 用法
+## Usage
 
 ```
 adaptive-matrix <file...> [options]
 cat app.css | adaptive-matrix --from src/app.css
 ```
 
-| 选项 | 作用 |
+| Option | Effect |
 | --- | --- |
-| `-c, --config <path>` | 默认导出插件选项的模块 |
-| `--from <path>` | 把输入当作位于这个路径 |
-| `--profile <name>` | 覆盖 `defaultProfile` |
-| `--targets <list>` | 按你要支持的最低浏览器版本审计产物，如 `"safari 14, ios_saf 13"` |
-| `--all` | 连未改动的声明一起列出 |
-| `--css` | 打印编译后的完整 CSS，而不是对照表 |
-| `--color` / `--no-color` | 强制开/关颜色；都不写则跟随终端，并遵守 `NO_COLOR` |
-| `-h, --help` | 帮助 |
+| `-c, --config <path>` | A module whose default export is the plugin options |
+| `--from <path>` | Treat the input as living at this path |
+| `--profile <name>` | Override `defaultProfile` |
+| `--targets <list>` | Audit the output against the oldest browsers you support, e.g. `"safari 14, ios_saf 13"` |
+| `--all` | List unchanged declarations too |
+| `--css` | Print the compiled stylesheet instead of the comparison |
+| `--color` / `--no-color` | Force colour on/off; with neither it follows the terminal and honours `NO_COLOR` |
+| `-h, --help` | Help |
 
-退出码：一切正常为 `0`，参数错误、文件读不到、配置非法为 `1`。所以可以直接串进 shell 判断。
+Exit codes: `0` when everything is fine, `1` for a bad argument, an unreadable file, or an invalid configuration. So it drops straight into a shell condition.
 
-## 读配置
+## Reading a configuration
 
-不传 `-c` 就用内置默认值，表头会告诉你当前是哪几个画布。
+Without `-c` the built-in defaults are used, and the header tells you which canvases are active.
 
 ```bash
 npx adaptive-matrix src/app.css -c postcss.config.mjs
 ```
 
-配置模块要默认导出**插件选项对象**，不是 PostCSS 配置。两者不一样时单独写一个：
+The config module must default-export the **plugin options object**, not a PostCSS config. When the two differ, write a separate file:
 
 ```js
 // adaptive.config.mjs
@@ -55,77 +57,77 @@ import { appPcPreset } from 'postcss-adaptive-matrix'
 export default appPcPreset({ appDesignWidth: 375, pcDesignWidth: 1440 })
 ```
 
-TypeScript 配置需要一个加载器：
+A TypeScript config needs a loader:
 
 ```bash
 npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js src/app.css -c adaptive.config.ts
 ```
 
-（Node 22.6+ 自带类型擦除，直接 `npx adaptive-matrix -c adaptive.config.ts` 也能跑，但会打一条 experimental 警告，且只支持可擦除的写法。）
+(Node 22.6+ strips types natively, so `npx adaptive-matrix -c adaptive.config.ts` also runs, but it prints an experimental warning and only supports erasable syntax.)
 
-配置在读第一个样式文件之前就会被校验，所以 `defaultProfile` 写错、`fluid` 区间反了，报的是编译器自己的那句话，不会先刷一屏对照表再报错。
+The configuration is validated before the first stylesheet is read, so a misspelled `defaultProfile` or a reversed `fluid` range produces the compiler's own message rather than a screenful of comparisons followed by an error.
 
-`default` 漏写（`export const options = {...}`）或预设忘了调用（`export default appPcPreset` 而不是 `appPcPreset({...})`）都会直接报错。这两种写法此前会静默地用内置默认值跑完——表头照样列出画布，对照表看着也对，没有任何地方说过你的配置根本没被读到。
+A missing `default` (`export const options = {...}`) or an uncalled preset (`export default appPcPreset` rather than `appPcPreset({...})`) is an error. Both used to run silently on the built-in defaults — the header still listed canvases, the comparison still looked right, and nothing anywhere said your configuration had never been read.
 
-## 验证文件路由
+## Rehearsing file routing
 
-按路径判定画布是最容易配错、又最不容易发现的一项——写错了不报错，只是路由静默失效（见[构建工具集成](./integration.md#2-from-必须传)）。`--from` 就是用来在上线前把路由试一遍的：
+Deciding a canvas by path is the easiest thing to misconfigure and the hardest to notice — a wrong pattern is not an error, the route just silently fails to match (see [Build tool integration](./integration.md#2-from-is-mandatory)). `--from` exists to rehearse routing before you ship:
 
 ```bash
-# 同一份 CSS，假装它在 desktop 目录下
+# The same CSS, pretending it lives under desktop/
 npx adaptive-matrix scratch.css -c adaptive.config.mjs --from src/desktop/scratch.css
 ```
 
-两次输出的数字不一样，说明路由命中了。一样，就是没命中。
+Different numbers between the two runs mean the route matched. Identical numbers mean it did not.
 
-Vue SFC 的路径带 query 串，照抄进去即可：
+A Vue SFC path carries a query string; copy it in verbatim:
 
 ```bash
 npx adaptive-matrix scratch.css --from 'src/views/mobile/home/index.vue?vue&type=style&lang.scss'
 ```
 
-## 断点处的倒退
+## Going backwards at a breakpoint
 
-两张设计稿各自都对，接缝处未必对。这个检查专门找一种情况：**窗口变宽，某个尺寸反而变小了。**
+Two design files can each be right and still disagree at the seam. This check looks for exactly one thing: **the window gets wider and a size gets smaller.**
 
 ```
   shrinks .card font-size gets smaller at 768px: 17.57px → 16.18px
           clamp(0.94867rem, ...) → clamp(1.01125rem, ...). Widening the window makes this smaller — the two canvases disagree here.
 ```
 
-`.card` 的字号在 App 稿上写 16px、PC 稿上写 18px，两个数字单独看都合理。但 App 稿到 767px 时已经流体放大到 17.57px，而 PC 稿从 768px 起步只有 16.18px。于是把浏览器拉宽一个像素，正文字号会突然变小。
+`.card`'s font size is 16px on the app file and 18px on the desktop file; both are reasonable on their own. But by 767px the app canvas has already grown it to 17.57px, while the desktop canvas starts at 16.18px. Widen the browser by one pixel and the body text jumps down.
 
-之所以值得单独检查，是因为它**只在那一个宽度上出现**：两张稿子各自渲染都正常，日常调试的 375 和 1440 也都正常。
+It is worth a dedicated check because it **only appears at that one width**: each design file renders correctly on its own, and the 375 and 1440 you debug at every day are both fine.
 
-编译器输出的每一条公式，其**绝对值**在视口宽度上都是单调不减的，而且全程不变号。所以一旦出现倒退，来源只能是跨断点换了画布。这也意味着这个检查是完备的：这一类问题不会漏报到别的宽度上去。
+Every formula this compiler emits is non-decreasing in **absolute value** across viewport width, and never changes sign. So a size going backwards can only come from a canvas change across a breakpoint. That also makes the check complete: this class of problem cannot escape to some other width.
 
-### 只检查编译器自己产出的值
+### Only values the compiler produced
 
-上面那句「来源只能是跨断点换了画布」只对**本编译器产出的公式**成立。没被换算的样式表在断点处变小，往往是作者有意为之：
+"Can only come from a canvas change" holds only for **formulas this compiler produced**. An unconverted stylesheet that shrinks at a breakpoint is usually doing so on purpose:
 
 ```css
-/* Quasar 2.19 自己的样式表 */
+/* Quasar 2.19's own stylesheet */
 .q-tooltip { padding: 6px 10px }
 @media (max-width: 599.98px) { .q-tooltip { padding: 8px 16px } }
 ```
 
-手机上点击区域大一些，600px 往上收窄——两个数字都是人手写下的，作者比对过。Quasar 是「保留像素」条目，两侧都没被换算，报它没有意义。
+A bigger tap target on a phone, tightened up above 600px — both numbers were written by a person who compared them. Quasar is a "keep pixels" entry, neither side was converted, and reporting it would be noise.
 
-所以只有**至少一侧是编译器产出的公式**时才报。有界流体尺寸没有不带包装的写法，编译器产出的视口相关长度一律在 `clamp()` / `min()` / `max()` / `calc()` 里（69 份一致性套件产物中无一例外），据此判断。一侧换算、另一侧没有，照样报——那正是一次跨画布，而且没有人比对过这两个数字。
+So a report requires **at least one side to be a compiler-produced formula**. There is no unwrapped spelling of a bounded fluid size: every viewport-dependent length this compiler emits sits inside `clamp()` / `min()` / `max()` / `calc()` (no exception across all 69 conformance fixtures), which is how the check decides. One side converted and the other not still reports — that is precisely a canvas change, and nobody compared those two numbers.
 
-代入发生在判断之前，所以「声明只写了 `var(--x)`、公式在 token 里」也算数。
+Substitution happens before the decision, so "the declaration is just `var(--x)` and the formula is in the token" counts too.
 
-比的是绝对值而不是数值：负长度（负外边距、外溢）本来就靠远离零来变大，`-16px` 编译出的公式是越宽越小的。断点两侧变号则一律不报——零是编译器自己不会跨过去的界，在这里遇到它说明两张稿的意图本就不同，谁对谁错不是这个检查能判断的。
+It compares absolute values rather than signed numbers: a negative length (a negative margin, a bleed) grows by moving away from zero, so the formula compiled from `-16px` gets smaller as the window widens. A sign change across the breakpoint is never reported — zero is a boundary the compiler itself never crosses, so meeting it here means the two design files intended different things, and which one is right is not something this check can decide.
 
-怎么改由你决定——抬高 PC 稿的字号、把 `pcFluidMin` 从 1024 降到 768、或者收窄 App 稿的 `fluid.maxWidth`。工具只负责告诉你接缝在哪。
+What to change is your call — raise the desktop font size, drop `pcFluidMin` from 1024 to 768, or narrow the app file's `fluid.maxWidth`. The tool only tells you where the seam is.
 
-检查刻意收得很窄，宁可不报也不误报：只比对同一个选择器串、不做优先级推算、不展开简写；遇到 `@supports`、`@container`、非纯宽度的媒体查询、跨层叠层的分组，以及 `env()` / `%` / 容器单位这类算不出数值的值，整组跳过。
+The check is deliberately narrow, preferring silence to a false positive: it compares only identical selector strings, does no specificity reasoning, and expands no shorthands. It skips the whole group on `@supports`, `@container`, media queries that are not pure width, groups spanning cascade layers, and values it cannot evaluate to a number such as `env()`, `%` or container units.
 
-### 主题 token 会被代入
+### Theme tokens are substituted
 
-组件库的尺寸几乎不写字面量。Vant 4.10.0 的 3198 条普通声明里，有 1173 条完全经 `var()` 读取——检查若在第一个 `var(` 就放弃，看到的就只是一小片，而且恰好避开了本插件要适配的那一层。
+Component libraries almost never write literal sizes. Of Vant 4.10.0's 3198 ordinary declarations, 1173 read entirely through `var()` — a check that gave up at the first `var(` would see a small slice, and precisely the slice that avoids the layer this plugin adapts.
 
-所以同一份样式表里的自定义属性会先被代入，再求值：
+So custom properties in the same stylesheet are substituted first, then evaluated:
 
 ```css
 :root,:host { --card-width: 40px }
@@ -133,30 +135,30 @@ npx adaptive-matrix scratch.css --from 'src/views/mobile/home/index.vue?vue&type
 @media (min-width: 768px) { .card { width: 20px } }
 ```
 
-这里 `.card` 在 768px 处从 40px 掉到 20px，代入之后才看得见。
+`.card` drops from 40px to 20px at 768px, which is only visible after substitution.
 
-代入只在值由**视口宽度单独决定**时进行，两条都要满足：
+Substitution happens only when the value is decided by **viewport width alone**; both conditions must hold:
 
-- 只声明在 `:root` / `:host` / `html` 上，别处没有第二份。`.van-theme-dark { --card-width: ... }` 一出现就整个放弃——元素的取值取决于祖先有没有那个 class，这不是宽度能回答的。
-- 每一处声明要么无条件，要么位于纯像素宽度的 `@media` 里。`@supports`、`@container`、方向查询里的声明同样放弃。
+- Declared only on `:root` / `:host` / `html`, with no second copy elsewhere. One `.van-theme-dark { --card-width: ... }` abandons the whole thing — the element's value then depends on whether an ancestor carries that class, which width cannot answer.
+- Every declaration is either unconditional or inside a pure pixel-width `@media`. Declarations inside `@supports`, `@container` or an orientation query abandon it as well.
 
-token 本身在断点处被改写也算一次接缝，即使消费它的规则只写了一次：
+A token rewritten at a breakpoint is itself a seam, even if the rule consuming it is written once:
 
 ```css
 :root { --card-width: 40px }
 @media (min-width: 768px) { :root { --card-width: 20px } }
-.card { width: var(--card-width) }   /* 只有一条，照样报 */
+.card { width: var(--card-width) }   /* written once, still reported */
 ```
 
-`var(--x, 16px)` 的兜底值只在 `--x` 确实没被声明时使用——这与浏览器一致。若 `--x` 被声明了但取值不可知（比如上面的主题 class），则不报，而不是拿兜底值当答案。
+The fallback in `var(--x, 16px)` is used only when `--x` really is undeclared — matching the browser. If `--x` is declared but its value is unknowable (the theme class above), nothing is reported, rather than taking the fallback as the answer.
 
-自定义属性声明本身（`--x: ...` 这一条）仍然不检查。它不是屏幕上的长度，方向对不对由消费方决定——本插件自己的 `--adaptive-root-width` 就是反的：它喂给 `max(0px, (100vw - var(--adaptive-root-width)) / 2)`，值变小正是为了让留白变大。跳过它不等于忽略它：消费它的那条声明会被检查，代入之后它的方向才有意义。
+The custom-property declaration itself (the `--x: ...` line) is still not checked. It is not a length on screen, and its direction is decided by whoever consumes it — this plugin's own `--adaptive-root-width` is inverted: it feeds `max(0px, (100vw - var(--adaptive-root-width)) / 2)`, where a smaller value exists to make the gutter bigger. Skipping it is not ignoring it: the declaration that consumes it is checked, and after substitution its direction is meaningful.
 
-实测（Vant 4.10.0 完整样式表，195 KB）：可求值的值分量从 622 条（17.6%）升到 1309 条（36.9%），收录 779 个 token。剩下的是关键字、颜色和百分比——本来就不是视口相关的长度。
+Measured (the complete Vant 4.10.0 stylesheet, 195 KB): evaluable value components rise from 622 (17.6%) to 1309 (36.9%), with 779 tokens collected. The rest are keywords, colours and percentages — never viewport-dependent lengths.
 
-误报方面：69 份一致性套件产物、本仓库示例工程，以及 10 个组件库的已发布样式表（Vant、NutUI、Varlet、antd-mobile 1x/2x、Taro UI、Element Plus、Ant Design、Arco Design、Quasar，合计约 3.2 MB CSS），`shrinks` 报告数均为 0。见[组件库适配](./libraries.md#这张表是核对过的)。
+On false positives: across the 69 conformance fixtures, this repository's example project, and the published stylesheets of 10 component libraries (Vant, NutUI, Varlet, antd-mobile 1x/2x, Taro UI, Element Plus, Ant Design, Arco Design, Quasar — about 3.2 MB of CSS), the `shrinks` count is 0 everywhere. See [Component libraries](./libraries.md#this-table-was-checked).
 
-要让构建直接失败，同一个检查也从包里导出：
+To fail a build on it, the same check is exported from the package:
 
 ```js
 import postcss from 'postcss'
@@ -164,12 +166,12 @@ import adaptiveMatrix, { findContinuityIssues } from 'postcss-adaptive-matrix'
 
 const result = await postcss([adaptiveMatrix(options)]).process(css, { from })
 const issues = findContinuityIssues(result.root)
-if (issues.length) throw new Error(`${issues.length} 处断点倒退`)
+if (issues.length) throw new Error(`${issues.length} breakpoint regressions`)
 ```
 
-## 目标浏览器读不懂的语法
+## Syntax your target browsers cannot read
 
-`--targets` 收一串「浏览器 + 你打算支持的最低版本」，逐条对着**编译产物**核：
+`--targets` takes a list of "browser + the oldest version you intend to support" and checks each one against the **compiled output**:
 
 ```bash
 npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
@@ -185,38 +187,38 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
   needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
 ```
 
-四行的顺序是有意的：先说**丢什么**，再说**换成什么**。「iOS Safari 13 太老了」单独拿出来没法行动，而 CSS 支持缺口真正要紧的一直是「跟着一起消失的有多少」——值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。
+The order of those four lines is deliberate: **what disappears** first, **what to switch to** second. "iOS Safari 13 is too old" is not actionable on its own, and what has always mattered about a CSS support gap is how much goes with it — an unreadable value takes its declaration, an unreadable selector takes its rule, an unreadable at-rule takes its whole block.
 
-上面 `clamp()` 那条差的是**一个小版本**：13.4 就有了。人工比对版本号时这种差距最容易看漏。
+The `clamp()` line above misses by **a point release**: 13.4 has it. That is exactly the gap a human comparing version numbers overlooks.
 
-目标全都够用时只有一行：
+When every target is new enough, there is one line:
 
 ```
   every target reads all 7 CSS features in this output
 ```
 
-已知名字：`chrome`、`edge`、`safari`、`firefox`、`ios_saf`、`samsung`；`android`、`webview` 归到 `chrome`。名字不认识会报错并以 `1` 退出，不会静默跳过——被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
+Known names: `chrome`, `edge`, `safari`, `firefox`, `ios_saf`, `samsung`; `android` and `webview` map to `chrome`. An unrecognised name is an error and exits `1` rather than being skipped silently — a target quietly dropped is worse than no audit at all, because it reads like a pass.
 
-完整的特性 × 版本表、每一项的降级路径，以及编程式 API，见[浏览器特性支持与降级](./compatibility.md)。
+For the full feature × version matrix, the degradation path for each feature and the programmatic API, see [Browser support and degradation](./compatibility.md).
 
-## 看整份产物
+## Seeing the whole output
 
-要接着给别的工具处理，用 `--css`：
+To hand the result to another tool, use `--css`:
 
 ```bash
 npx adaptive-matrix src/app.css --css > out.css
 ```
 
-`--css` 模式的 stdout 只有 CSS，警告走 stderr。所以重定向出来的文件是干净的、可直接解析的 CSS，而警告依然会出现在终端里——不会被悄悄吞掉。
+In `--css` mode stdout is CSS only; warnings go to stderr. So the redirected file is clean, directly parseable CSS, while the warnings still appear in your terminal rather than being swallowed.
 
-## 读懂输出
+## Reading the output
 
-- `16px → clamp(...)` —— 换算了
-- 灰色无箭头的一行 —— 原样保留（`--all` 才显示）。细线、`@font-face` 里的长度、被忽略注释标记的声明都在这里
-- `+ ...` —— 编译器新增的声明，比如根容器基础样式、`preserveOriginal` 的降级值
-- `@media (min-width: 768px) › .page` —— 声明所在位置由外向内。`@adaptive pc` 编译后就是这个样子，同一个 `.page` 出现两次是正常的
-- `warning ...` —— 编译器的告警，原样透传
-- `shrinks ...` —— 跨断点时尺寸倒退，见[断点处的倒退](#断点处的倒退)
-- `needs ...` —— 目标浏览器读不懂的语法，只在传了 `--targets` 时出现，见[目标浏览器读不懂的语法](#目标浏览器读不懂的语法)
+- `16px → clamp(...)` — converted
+- a grey line with no arrow — left as authored (only shown with `--all`). Hairlines, lengths inside `@font-face`, and declarations marked by an ignore comment appear here
+- `+ ...` — a declaration the compiler added, such as the root foundation or a `preserveOriginal` fallback
+- `@media (min-width: 768px) › .page` — where the declaration sits, outermost first. This is what `@adaptive pc` compiles to, and seeing the same `.page` twice is normal
+- `warning ...` — a compiler warning, passed through verbatim
+- `shrinks ...` — a size going backwards across a breakpoint, see [Going backwards at a breakpoint](#going-backwards-at-a-breakpoint)
+- `needs ...` — syntax a target browser cannot read; only with `--targets`, see [Syntax your target browsers cannot read](#syntax-your-target-browsers-cannot-read)
 
-表头的 `+5 library canvases` 是内置组件库各自的画布。它们由注册表生成，不是你能在 `@adaptive` 里写的名字，所以只报个数。完整清单见[组件库适配](./libraries.md)。
+The header's `+5 library canvases` are the canvases of the built-in component libraries. They are generated from the registry and are not names you can write in `@adaptive`, so only the count is reported. For the full list see [Component libraries](./libraries.md).

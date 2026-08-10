@@ -1,97 +1,99 @@
-# 配置参考
+# Configuration reference
 
-全部选项、类型与默认值。上手请先读[快速上手](./getting-started.md)。
+**English** · [简体中文](./configuration.zh-CN.md)
 
-## 顶层配置
+Every option, its type and its default. If you are just starting, read [Getting started](./getting-started.md) first.
 
-| 配置 | 默认值 | 说明 |
+## Top-level options
+
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `profiles` | App/PC 预设 | 多设计画布映射 |
-| `defaultProfile` | `app` | 普通 CSS 使用的画布 |
-| `routes` | `[]` | 按选择器、属性名或文件改派画布 |
-| `libraries` | `'auto'` | 组件库适配，默认启用全部内置项 |
-| `atRuleName` | `adaptive` | 自定义 At-rule 名称 |
-| `strategy` | `clamp` | `clamp` 或兼容型 `viewport` |
-| `unit` | `vw` | `vw`、`vi`、`cqw`、`cqi` |
-| `precision` | `5` | 0~12 位小数 |
-| `unitToConvert` | `'px'` | 读取的输入单位，可传数组同时读多种 |
-| `rootValue` | `16` | 一个 `rem` 折合多少像素 |
-| `minPixelValue` | `0` | 小于该绝对值不转换 |
-| `hairline` | `1` | 不转换的细线阈值 |
-| `fontFluidity` | `0.35` | 文字流体比例，0~1 |
-| `textProperties` | 字体相关属性 | 使用可缩放混合公式的属性 |
-| `propList` | `['*']` | 支持 `*` 与 `!` 的属性表 |
-| `selectorExclude` | `[]` | 字符串包含或正则排除 |
-| `valueExclude` | `[]` | 属性值排除 |
-| `include` / `exclude` | 无 | 文件字符串、正则、函数或数组 |
-| `transformCustomProperties` | `false` | 是否转换 `--token` 值 |
-| `preserveOriginal` | `false` | 是否保留原声明作为前置回退 |
-| `root` | `false` | 可选根布局基础样式 |
-| `unknownProfile` | `warn` | `warn`、`error`、`ignore` |
+| `profiles` | app/desktop preset | The map of design canvases |
+| `defaultProfile` | `app` | The canvas ordinary CSS uses |
+| `routes` | `[]` | Reassign a canvas by selector, property name or file |
+| `libraries` | `'auto'` | Component-library adaptation; all built-ins on by default |
+| `atRuleName` | `adaptive` | Custom at-rule name |
+| `strategy` | `clamp` | `clamp`, or the compatibility-oriented `viewport` |
+| `unit` | `vw` | `vw`, `vi`, `cqw`, `cqi` |
+| `precision` | `5` | 0–12 decimal places |
+| `unitToConvert` | `'px'` | The input unit(s) to read; an array reads several |
+| `rootValue` | `16` | How many pixels one `rem` is worth |
+| `minPixelValue` | `0` | Absolute values below this are not converted |
+| `hairline` | `1` | Hairline threshold that is never converted |
+| `fontFluidity` | `0.35` | Text fluidity ratio, 0–1 |
+| `textProperties` | font-related properties | Properties that use the zoomable hybrid formula |
+| `propList` | `['*']` | Property list supporting `*` and `!` |
+| `selectorExclude` | `[]` | Exclude by substring or regular expression |
+| `valueExclude` | `[]` | Exclude by value |
+| `include` / `exclude` | none | File string, regular expression, function, or an array |
+| `transformCustomProperties` | `false` | Whether to convert `--token` values |
+| `preserveOriginal` | `false` | Keep the original declaration in front as a fallback |
+| `root` | `false` | The optional root layout foundation |
+| `unknownProfile` | `warn` | `warn`, `error`, `ignore` |
 
-`propList` 示例：
+`propList` example:
 
 ```js
 propList: ['*', '!border*', '!box-shadow']
 ```
 
-`*` 不能省。只写排除项的 `['!border*']` 在语义上匹配不到任何属性，等于整份样式表都不换算——这种配置会直接报错，不会静默生效。
+The `*` is not optional. An exclude-only `['!border*']` matches no property at all, which means the entire stylesheet goes unconverted — that configuration is an error rather than a silent no-op.
 
-### 配置一律先校验
+### Configuration is always validated first
 
-配置多半写在 `.mjs` 里，没有任何类型检查兜底，而这些字段写错的后果都是**静默的**——所以下列情况一律在读第一个样式文件之前就报错：
+A configuration usually lives in a `.mjs` file with no type checking behind it, and getting these fields wrong fails **silently**. So all of the following are errors raised before the first stylesheet is read:
 
-| 写法 | 后果 |
+| What you wrote | The consequence |
 | --- | --- |
-| `unit: 'vm'` | 输出 `4.267vm`。它不是长度，浏览器整条声明丢弃，元素保留继承值 |
-| `strategy: 'viewpoint'` | 静默回退到 `clamp`，看起来像设置生效了 |
-| `unitToConvert: ''` / `[]` | 匹配不到任何长度，与没装插件无法区分 |
-| `rootValue: 0` | 每个 `rem` 读成 0，输出侧再除零 |
-| `atRuleName: 'media'` | 样式表里每个 `@media` 都被当成画布名读取并改写。At-keyword 大小写不敏感，`MEDIA` 是同一个冲突 |
-| `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
-| `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
+| `unit: 'vm'` | Emits `4.267vm`. That is not a length, so the browser drops the whole declaration and the element keeps its inherited value |
+| `strategy: 'viewpoint'` | Silently falls back to `clamp`, looking exactly like a setting that took effect |
+| `unitToConvert: ''` / `[]` | Matches no length, indistinguishable from not installing the plugin |
+| `rootValue: 0` | Every `rem` reads as 0, and the writing end divides by zero |
+| `atRuleName: 'media'` | Every `@media` in the stylesheet is read as a canvas name and rewritten. At-keywords are case-insensitive, so `MEDIA` is the same collision |
+| `root.selector: ''` | Compiles to `:where()`, which is a parse error — the whole foundation, safe-area variables included, is discarded |
+| `textAnchorWidth: 0` | Division by zero, turning every text length into `Infinity` |
 
-`unit` 与 `strategy` 在 profile 级别同样校验。
+`unit` and `strategy` are validated at profile level too.
 
 ### unknownProfile
 
-`@adaptive ghost` 里的画布名不存在时：
+When the canvas name in `@adaptive ghost` does not exist:
 
-| 取值 | 行为 |
+| Value | Behaviour |
 | --- | --- |
-| `warn` | 告警，at-rule 原样保留 |
-| `error` | 直接中断构建 |
-| `ignore` | 不出声，at-rule 原样保留 |
+| `warn` | Warn, and leave the at-rule as written |
+| `error` | Fail the build |
+| `ignore` | Say nothing, and leave the at-rule as written |
 
-`warn` 与 `ignore` 都保留原文，而浏览器读不懂 `@adaptive`，会把**整块丢弃**——块里的样式全部消失。区别只在于有没有人告诉你。画布名区分大小写（它是你自己在 `profiles` 里写的键），`@adaptive PC` 找不到 `pc`。
+Both `warn` and `ignore` leave the original text, and a browser that cannot read `@adaptive` **discards the whole block** — everything inside it disappears. The only difference is whether anyone told you. Canvas names are case-sensitive (they are keys you wrote in `profiles`), so `@adaptive PC` does not find `pc`.
 
-`@adaptive pc;` 这种没有块的写法会单独告警：没有块就没有任何东西被编译到那张画布上，它不会被改写成 `@media`。
+A block-less `@adaptive pc;` warns separately: with no block, nothing is compiled onto that canvas, and it is not rewritten into a `@media`.
 
-### unitToConvert 与 rootValue
+### unitToConvert and rootValue
 
 ```ts
-unitToConvert?: string | readonly string[]   // 默认 'px'
-rootValue?: number                           // 默认 16
+unitToConvert?: string | readonly string[]   // default 'px'
+rootValue?: number                           // default 16
 ```
 
-默认只读 `px`。传数组可以一次读多种单位——原子化 CSS 项目需要这个，见[构建工具集成](./integration.md#原子化-css)：
+By default only `px` is read. An array reads several units at once, which atomic CSS projects need — see [Build tool integration](./integration.md#atomic-css-tailwind-and-unocss):
 
 ```js
 unitToConvert: ['px', 'rem']
 ```
 
-单位之间的换算规则只有一条：**`rem` 按 `rootValue` 折成像素，其它单位按面值读。**
+There is exactly one conversion rule between units: **`rem` becomes pixels via `rootValue`; every other unit is read at face value.**
 
-`em` 也按面值读，这是刻意的。`em` 相对的是元素继承来的字号，那是运行时才知道的事，构建期没有任何常数能替它。把 `em` 当 `rem` 处理，只在两者恰好相等的地方是对的——而那在一份样式表里是少数。
+`em` is read at face value too, deliberately. `em` is relative to the font size an element inherits, which is only known at runtime, and no build-time constant can stand in for it. Treating `em` as `rem` is correct only where the two happen to be equal — a minority of places in any stylesheet.
 
-`rootValue` 同时管两头：
+`rootValue` governs both ends:
 
-- 读的时候，`1rem` 折成多少像素；
-- 写的时候，文字的静态部分除以多少变成 `rem`。
+- when reading, how many pixels `1rem` is worth;
+- when writing, what the static part of a text size is divided by to become `rem`.
 
-所以页面写了 `html { font-size: 62.5% }` 就配 `rootValue: 10`，`3.2rem` 与 `32px` 会得到完全一样的产物，两边都对。只配一头会错一头，因此这里没有第二个选项可配。
+So a page with `html { font-size: 62.5% }` sets `rootValue: 10`, and `3.2rem` and `32px` produce exactly the same output, both correct. Configuring only one end would be wrong at the other, which is why there is no second option here.
 
-`minPixelValue` 与 `hairline` 的阈值是**像素**，不是面值。框架把发丝线写成 `0.0625rem`、你手写成 `1px`，是同一根线，都会被 `hairline` 拦下。
+The `minPixelValue` and `hairline` thresholds are in **pixels**, not face value. A framework writing a hairline as `0.0625rem` and you writing `1px` are the same line, and `hairline` stops both.
 
 ## AdaptiveRoute
 
@@ -104,11 +106,11 @@ interface AdaptiveRoute {
 }
 ```
 
-把匹配到的 CSS 改派到另一张画布，`profile: false` 则保留像素不转换。字符串按「包含」匹配，正则按 `test` 匹配；`property` 按前缀匹配自定义属性名。
+Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix.
 
-一条路由声明了几条通道，就要几条同时命中。想让类名和文件各自独立生效，写成两条路由。
+Every channel a route declares must match. To let a class name and a file match independently, write two routes.
 
-按目录划分两套互不响应的端口，是最常见的用法：
+Splitting two non-responsive ends by directory is the most common use:
 
 ```js
 adaptiveMatrix({
@@ -121,34 +123,34 @@ adaptiveMatrix({
 })
 ```
 
-两张画布在同一个插件实例里判定，因此不会互相覆盖，也不需要为每一端各挂一次插件——同一段 CSS 只会被换算一次，先命中的画布就是最终结果。
+Both canvases are resolved inside the same plugin instance, so they cannot overwrite each other and you do not need to register the plugin once per end — a piece of CSS is converted exactly once, and the first canvas that matches is the final answer.
 
-判定优先级从高到低：
+Resolution priority, highest first:
 
-1. 外层 `@adaptive <profile>`——作者已经明确指定；
-2. 命中的 `property` 路由；
-3. 命中的 `selector` 路由；
-4. 命中的 `file` 路由；
-5. `defaultProfile`。
+1. an enclosing `@adaptive <profile>` — the author has already said so;
+2. a matching `property` route;
+3. a matching `selector` route;
+4. a matching `file` route;
+5. `defaultProfile`.
 
-选择器高于文件路径，是因为选择器属于 CSS 本身，而路径只反映构建工具当时怎么摆放文件；打包器一旦把依赖内联进产物，路径就没了。属性名的理由相同且更强：主题 token 声明在 `:root` 上，除了名字之外不留任何来源痕迹。
+A selector beats a file path because the selector is part of the CSS itself, whereas a path only reflects how the build tool happened to arrange files at the time; once a bundler inlines a dependency, the path is gone. The reasoning for property names is the same and stronger: theme tokens are declared on `:root` and leave no trace of their origin beyond their name.
 
 ## libraries
 
 ```ts
 type LibraryEntry =
-  | string                                              // 内置名称
-  | LibraryAdaptation                                   // 完整定义
-  | (Partial<LibraryAdaptation> & { extends: string })  // 基于内置项修改
+  | string                                              // a built-in name
+  | LibraryAdaptation                                   // a complete definition
+  | (Partial<LibraryAdaptation> & { extends: string })  // adjust a built-in
 
 libraries?: LibraryEntry[] | 'auto' | false
 ```
 
-默认 `'auto'`：全部内置库生效，使用 Vant 或 Element Plus 的项目不需要任何配置。`false` 整体关闭。给出数组则只启用列出的条目。
+Default `'auto'`: every built-in is active, so a project using Vant or Element Plus needs no configuration. `false` turns the whole thing off. Providing an array enables only the listed entries.
 
-条目展开成若干条路由，追加在 `routes` 之后——显式路由永远优先。
+Entries expand into routes appended after `routes` — explicit routes always win.
 
-内置清单、匹配通道、覆盖与扩展方式见 [组件库适配](./libraries.md)。
+For the built-in list, the matching channels and how to override or extend, see [Component libraries](./libraries.md).
 
 ## Profile
 
@@ -169,9 +171,9 @@ interface AdaptiveProfile {
 }
 ```
 
-`query: false` 会移除 `@adaptive` 外壳但保留内部规则，适合构建不同产物时由环境选择 profile。
+`query: false` removes the `@adaptive` wrapper but keeps the rules inside it, which suits building separate artifacts with the profile chosen by environment.
 
-`textAnchorWidth` 默认等于 `designWidth`，只影响文字：文字有一段固定的 `rem`（用于保留浏览器缩放），固定长度必须相对某个宽度才有意义。手写画布用自己的设计宽度是对的；但当两张画布描述的是**同一份设计的两套单位**时（组件库画在 375、页面画在 750，Vant 的 16px 就是页面的 32px），各自锚在自己身上会让两边在任何视口下都对不上。组件库画布因此一律继承所属 profile 的锚点，无需配置。原理与实测见[静态部分锚在哪张画布上](./architecture.md#静态部分锚在哪张画布上)。
+`textAnchorWidth` defaults to `designWidth` and affects text only: text keeps a fixed `rem` component (so browser zoom keeps working), and a fixed length only means something relative to some width. A hand-written canvas anchoring to its own design width is correct; but when two canvases describe **the same design in two sets of units** (a library drawn on 375, pages drawn on 750, where Vant's 16px is the page's 32px), anchoring each to itself leaves the two misaligned at every viewport. Library canvases therefore always inherit the anchor of the profile they belong to, with nothing to configure. For the reasoning and the measurements see [Which canvas the static part anchors to](./architecture.md#which-canvas-the-static-part-anchors-to).
 
 ## RootFoundationOptions
 
@@ -189,56 +191,56 @@ interface RootFoundationOptions {
 }
 ```
 
-默认不注入全局样式。只有显式配置 `root` 或在 `appPcPreset` 传 `rootSelector` 才启用。
+No global styles are injected by default. This is enabled only by configuring `root` explicitly or passing `rootSelector` to `appPcPreset`.
 
 ### injectTo
 
-限定哪些文件接收这段基础样式，默认全部。
+Limits which files receive the foundation; by default, all of them.
 
-基础样式是全局的，而 PostCSS 一次只看见一个文件，无法跨文件去重。单一样式表的项目正需要默认行为；Vue / Svelte 项目里每个组件的 `<style>` 块都是独立文件，默认就变成了每个组件一份。
+The foundation is global, but PostCSS only ever sees one file at a time and cannot deduplicate across files. A single-stylesheet project wants the default; in a Vue or Svelte project every component's `<style>` block is a separate file, so the default becomes one copy per component.
 
 ```js
 root: { selector: '#app', injectTo: 'src/styles/main' }
 ```
 
-匹配方式与 `include` 相同：字符串按包含判断，正则按路径测试，函数自行决定。`appPcPreset` 的对应字段是 `rootInjectTo`。
+Matching works exactly like `include`: a string matches by "contains", a regular expression tests the path, and a function decides for itself. The `appPcPreset` field is `rootInjectTo`.
 
-匹配不上不报错，只是一份都不注入——用[命令行预览](./cli.md)确认入口文件里出现了新增声明。
+A pattern that matches nothing is not an error — it just injects nothing. Use the [CLI preview](./cli.md) to confirm the added declarations appear in the entry file.
 
 ### logical
 
-默认 `true`，基础样式写逻辑属性：`inline-size`、`margin-inline`、`max-inline-size`。
+Default `true`: the foundation is written with logical properties — `inline-size`, `margin-inline`, `max-inline-size`.
 
-设为 `false` 改写 `width`、`margin-left` / `margin-right`、`max-width`。横排页面上两者等价，所以这个开关只有一个用途：**给读不懂逻辑属性的浏览器兜底**（Safari 15 / iOS 15.0 / Chrome 89 以下）。
+Set it to `false` and it writes `width`, `margin-left` / `margin-right` and `max-width` instead. The two are equivalent on a horizontal page, so this switch has exactly one purpose: **a fallback for browsers that cannot read logical properties** (below Safari 15 / iOS 15.0 / Chrome 89).
 
-它值得单独有个开关，是因为这是本插件产出的语法里唯一一个失败之后页面看起来还正常的：丢掉 `margin-inline: auto`，列宽完全正确、贴在屏幕左边；丢掉 `max-inline-size`，列铺满整屏。两种都不像故障。完整的失败清单与降级路径见[浏览器特性支持与降级](./compatibility.md)。
+It deserves its own switch because it is the only syntax this plugin emits whose failure still leaves a page that looks fine: without `margin-inline: auto` the column is exactly the right width and sits against the left edge of the screen; without `max-inline-size` it goes full-bleed. Neither looks like a fault. For the complete failure list and the degradation path for each, see [Browser support and degradation](./compatibility.md).
 
-`appPcPreset` 的对应字段是 `rootLogical`；同理还有 `rootLayer`，透传到 `layer`。
+The `appPcPreset` field is `rootLogical`; likewise `rootLayer`, which passes through to `layer`.
 
 ### fixedContainingBlock
 
-某个 profile 设了 `rootMaxWidth` 时，页面成为居中的列，而 `position: fixed` 会退回以视口为包含块——固定元素贴到窗口两端，与它所在的内容列错开。
+When a profile sets `rootMaxWidth`, the page becomes a centred column, and `position: fixed` falls back to the viewport as its containing block — the fixed element sticks to the window edges, out of line with the content column it belongs to.
 
-开启后编译器发布两个变量：
+Enabled, the compiler publishes two variables:
 
-| 变量 | 含义 |
+| Variable | Meaning |
 | --- | --- |
-| `--adaptive-root-width` | 当前断点下的根列宽，未设上限时为 `100vw` |
-| `--adaptive-root-gutter` | `max(0px, (100vw - 列宽) / 2)`，即单侧留白 |
+| `--adaptive-root-width` | The root column width at the current breakpoint, or `100vw` with no ceiling |
+| `--adaptive-root-gutter` | `max(0px, (100vw - column width) / 2)`, i.e. the gutter on one side |
 
-并对自身声明了 `position: fixed` 的规则做三件事：
+and does three things to rules that themselves declare `position: fixed`:
 
-- `left` / `right` / `inset-inline-*` 为 `0` 时替换为留白，非零时改为 `calc(原值 + 留白)`，`auto` 不动；
-- `width` / `inline-size` 等为 `100%` 时改为 `min(100%, 列宽)`；
-- 块轴（`top` / `bottom`）不处理——居中列只约束行内轴。
+- `left` / `right` / `inset-inline-*` become the gutter when they are `0`, and `calc(original + gutter)` when they are not; `auto` is left alone;
+- `width` / `inline-size` and friends become `min(100%, column width)` when they are `100%`;
+- the block axis (`top` / `bottom`) is untouched — a centred column only constrains the inline axis.
 
-列宽等于视口时留白为 `0`，因此窄屏输出与手写完全一致。修正幂等，已含这两个变量的值不再二次处理。
+When the column equals the viewport, the gutter is `0`, so narrow-screen output is identical to what you would have written by hand. The correction is idempotent and does not reprocess a value that already contains these variables.
 
-只看规则自身的 `position` 声明：从别处继承定位是 CSS 不允许静态观察的，猜测比漏掉更糟。
+Only the rule's own `position` declaration is considered: inheriting positioning from elsewhere is not something CSS allows you to observe statically, and guessing would be worse than missing.
 
-`appPcPreset` 传了 `rootSelector` 时默认开启——该预设的两张 profile 都设了 `rootMaxWidth`，正是会出现这一问题的配置。用 `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })` 关闭。
+It is on by default when `appPcPreset` is given a `rootSelector` — both of that preset's profiles set `rootMaxWidth`, which is exactly the configuration where the problem appears. Turn it off with `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })`.
 
-## 旧 WebView 模式
+## Legacy WebView mode
 
 ```js
 adaptiveMatrix({
@@ -248,6 +250,6 @@ adaptiveMatrix({
 })
 ```
 
-这会输出原始 `px` 后再输出 `vw`。是否使用该方案应由真实目标浏览器决定；现代项目优先使用默认 `clamp`。
+This emits the original `px` followed by the `vw`. Whether to use it should be decided by your real target browsers; modern projects should prefer the default `clamp`.
 
-「真实目标浏览器」不必靠猜——`npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` 会把产物里每一处超出目标的语法列出来，连同不支持时丢掉的东西和关掉它的开关。见[浏览器特性支持与降级](./compatibility.md)。
+"Real target browsers" does not have to be a guess — `npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` lists every piece of syntax in the output beyond your targets, along with what is lost when it is unsupported and the switch that turns it off. See [Browser support and degradation](./compatibility.md).

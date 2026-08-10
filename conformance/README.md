@@ -1,7 +1,6 @@
 # Conformance Suite
 
-> 本文档使用英文，因为这套用例是给**其它语言的实现**做验收用的规范，而不是本项目的使用说明。
-> 使用说明请见 [docs/](../docs/)。
+**English** · [简体中文](./README.zh-CN.md)
 
 A language-neutral description of what this compiler must produce.
 

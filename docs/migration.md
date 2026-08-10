@@ -1,64 +1,66 @@
-# 迁移指南
+# Migration guide
 
-从任何一种「px 换算成视口单位」的方案迁移，步骤都一样：先让输出对齐，再逐步启用新能力。按概念对照，不必逐个配置项去找同名替代。
+**English** · [简体中文](./migration.zh-CN.md)
 
-## 第一步：只换等价物
+Migrating from any "convert px to viewport units" setup follows the same steps: get the output to line up first, then enable the new capabilities one at a time. Map concepts rather than hunting for an identically named option.
 
-先不引入任何新特性，让新旧产物尽可能接近：
+## Step one: swap in the equivalent only
+
+Introduce no new features yet; get the new output as close to the old as possible:
 
 ```js
 adaptiveMatrix({
   defaultProfile: 'app',
   profiles: {
     app: {
-      designWidth: 375,     // 原来的视口基准宽度
+      designWidth: 375,     // your old viewport base width
       fluid: { minWidth: 320, maxWidth: 480 },
-      query: false,         // 不生成媒体查询外壳
+      query: false,         // do not generate a media query wrapper
     },
   },
-  precision: 5,             // 原来的小数位数
-  strategy: 'viewport',     // 输出纯 vw，与旧方案同形
-  libraries: false,         // 组件库适配也先关掉
+  precision: 5,             // your old decimal places
+  strategy: 'viewport',     // plain vw, the same shape as before
+  libraries: false,         // component-library adaptation off for now too
 })
 ```
 
-`strategy: 'viewport'` 输出的是不带边界的 `vw`，与传统方案逐字节可比。此时差异只应来自舍入。
+`strategy: 'viewport'` emits unbounded `vw`, byte-comparable with a traditional setup. At this point the only differences should be rounding.
 
-## 第二步：概念对照
+## Step two: map the concepts
 
-| 你原来配置的东西 | 这里的位置 |
+| What you used to configure | Where it lives here |
 | --- | --- |
-| 设计稿宽度 / 视口基准宽度 | profile 的 `designWidth` |
-| 小数位数 | `precision` |
-| 输出单位 | `unit`，或某个 profile 的 `unit` |
-| 属性白/黑名单 | `propList`（支持 `*` 与 `!`） |
-| 选择器黑名单 | `selectorExclude` |
-| 属性值黑名单 | `valueExclude` |
-| 最小转换像素值 | `minPixelValue` |
-| 文件包含/排除 | `include` / `exclude`，额外支持函数 |
-| 保留原声明作为回退 | `preserveOriginal: true` |
-| 根容器选择器 | `root.selector` |
-| 桌面端最大展示宽度 | `fluid.maxWidth` + `rootMaxWidth` |
-| 忽略注释 | `adaptive-ignore` / `adaptive-ignore-next` / `adaptive-ignore-rule` |
+| Design file width / viewport base width | a profile's `designWidth` |
+| Decimal places | `precision` |
+| Output unit | `unit`, or a profile's `unit` |
+| Property allow/deny list | `propList` (supports `*` and `!`) |
+| Selector blacklist | `selectorExclude` |
+| Value blacklist | `valueExclude` |
+| Minimum pixel value to convert | `minPixelValue` |
+| File include/exclude | `include` / `exclude`, which also accept functions |
+| Keep the original declaration as a fallback | `preserveOriginal: true` |
+| Root container selector | `root.selector` |
+| Maximum desktop display width | `fluid.maxWidth` + `rootMaxWidth` |
+| Ignore comments | `adaptive-ignore` / `adaptive-ignore-next` / `adaptive-ignore-rule` |
 
-两处需要换个想法，而不是换个名字：
+Two things need a different idea rather than a different name:
 
-**横屏不是全局开关。** 新建一个 landscape profile 并给它明确的媒体查询，横屏就拥有自己的设计宽度和缩放区间，而不是从竖屏推算出来的比例。
+**Landscape is not a global switch.** Create a landscape profile with an explicit media query, and landscape gets its own design width and scaling range instead of a ratio derived from portrait.
 
-**桌面宽度不是设计宽度。** 如果 PC 只是把移动版居中展示，那它没有自己的设计稿，用 app profile 加 `rootMaxWidth` 即可。如果 PC 有独立设计稿，就给它独立的 `designWidth`，把差异写进 `@adaptive pc`。这两件事以前常被同一个配置项表达，在这里是两种不同的结构。
+**Desktop width is not a design width.** If desktop is just the mobile version centred, it has no design file of its own: use the app profile with `rootMaxWidth`. If desktop has its own design file, give it its own `designWidth` and put the differences in `@adaptive pc`. Those two used to be expressed by the same option; here they are two different structures.
 
-## 第三步：逐项启用
+## Step three: enable the rest
 
-确认视觉一致后，按顺序打开：
+Once the visuals match, turn things on in order:
 
-1. `strategy` 改回默认 `clamp`——尺寸获得上下界，大屏不再无限放大；
-2. 移除 `query: false`，或改用 `appPcPreset` 引入 PC profile；
-3. 删掉 `libraries: false`，组件库按各自画布适配（详见 [组件库适配](./libraries.md)）。这一步通常可以顺带删掉原方案里为组件库写的整段忽略名单；
-4. 需要居中列时配置 `root`，`fixedContainingBlock` 会一并处理固定定位元素。
+1. Put `strategy` back to the default `clamp` — sizes gain a floor and a ceiling, and stop growing without limit on a large screen;
+2. Remove `query: false`, or switch to `appPcPreset` to bring in a desktop profile;
+3. Drop `libraries: false`, so component libraries adapt on their own canvases (see [Component libraries](./libraries.md)). This step usually lets you delete the entire ignore list your old setup needed for them;
+4. Configure `root` when you want a centred column, and `fixedContainingBlock` handles fixed-position elements along with it.
 
-## 验收
+## Acceptance
 
-- 保存旧产物作为视觉基线；
-- 覆盖 320、375、480、768、1024、1440、1920；
-- 检查 fixed/sticky、弹窗、第三方组件和输入法；
-- 执行 200% 浏览器缩放与键盘导航测试——文字混合公式的收益正是在这里体现，也只有真实测试能验证。
+- Keep the old output as a visual baseline;
+- Cover 320, 375, 480, 768, 1024, 1440, 1920;
+- Check fixed/sticky elements, modals, third-party components and input methods;
+- Run 200% browser zoom and keyboard navigation tests — the text hybrid formula pays off exactly there, and only a real test verifies it.

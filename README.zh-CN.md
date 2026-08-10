@@ -140,7 +140,7 @@ adaptiveMatrix({
 
 内置：`vant`、`nutui`、`varlet`、`antd-mobile`、`taro-ui`、`element-plus`、`antd`、`arco-design`、`naive-ui`、`quasar`、`mui`。
 
-未收录的库写一行定义即可，收录的库用 `extends` 改一项即可。完整说明见[组件库适配](./docs/libraries.md)。
+未收录的库写一行定义即可，收录的库用 `extends` 改一项即可。完整说明见[组件库适配](./docs/libraries.zh-CN.md)。
 
 ## 精准控制
 
@@ -178,7 +178,7 @@ src/styles/app.css
 
 最后那行是断点接缝检查：App 稿写 16px、PC 稿写 18px，两个数字单独看都合理，但把窗口拉宽一个像素，正文字号会突然变小。编译器输出的公式在视口宽度上都是单调不减的，所以尺寸倒退只可能来自跨断点换画布——两张稿子在这个元素上没对齐。
 
-`--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.md)。
+`--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.zh-CN.md)。
 
 ## 产物到底要求浏览器做到什么
 
@@ -197,23 +197,23 @@ npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"
 
 CSS 不会优雅降级，它**丢弃**，而且全程不说话：值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。所以审计读的是**编译产物**而不是配置——这是让两者永远不会走偏的唯一做法——并且对每一项先说丢什么，再说换成什么。
 
-版本数据在构建期烘焙进包，因此不增加任何运行时依赖，离线可用。见[浏览器特性支持与降级](./docs/compatibility.md)。
+版本数据在构建期烘焙进包，因此不增加任何运行时依赖，离线可用。见[浏览器特性支持与降级](./docs/compatibility.zh-CN.md)。
 
 ## 文档
 
 | | |
 | --- | --- |
-| [快速上手与双设计稿工作流](./docs/getting-started.md) | 从安装到 App/PC 双稿协作 |
-| [构建工具集成](./docs/integration.md) | Vite、Nuxt、Webpack、Taro，以及四个静默出错的点 |
-| [命令行预览](./docs/cli.md) | `npx adaptive-matrix`：不用构建就能看到换算结果 |
-| [组件库适配](./docs/libraries.md) | 内置清单、匹配方式、覆盖与扩展 |
-| [配置参考](./docs/configuration.md) | 全部选项、类型与默认值 |
-| [架构与转换公式](./docs/architecture.md) | 编译流程、数学公式、幂等、实现边界 |
-| [可选运行时](./docs/runtime.md) | VisualViewport 观察器：软键盘、地址栏、WebView |
-| [浏览器特性支持与降级](./docs/compatibility.md) | 特性 × 版本表、不支持时丢什么、每一项怎么关 |
-| [迁移指南](./docs/migration.md) | 从其它 px 换算方案迁移 |
-| [发布与兼容性](./docs/release.md) | 产物、Node 版本、版本策略 |
-| [一致性套件](./conformance/README.md) | 语言无关的行为规范 |
+| [快速上手与双设计稿工作流](./docs/getting-started.zh-CN.md) | 从安装到 App/PC 双稿协作 |
+| [构建工具集成](./docs/integration.zh-CN.md) | Vite、Nuxt、Webpack、Taro，以及四个静默出错的点 |
+| [命令行预览](./docs/cli.zh-CN.md) | `npx adaptive-matrix`：不用构建就能看到换算结果 |
+| [组件库适配](./docs/libraries.zh-CN.md) | 内置清单、匹配方式、覆盖与扩展 |
+| [配置参考](./docs/configuration.zh-CN.md) | 全部选项、类型与默认值 |
+| [架构与转换公式](./docs/architecture.zh-CN.md) | 编译流程、数学公式、幂等、实现边界 |
+| [可选运行时](./docs/runtime.zh-CN.md) | VisualViewport 观察器：软键盘、地址栏、WebView |
+| [浏览器特性支持与降级](./docs/compatibility.zh-CN.md) | 特性 × 版本表、不支持时丢什么、每一项怎么关 |
+| [迁移指南](./docs/migration.zh-CN.md) | 从其它 px 换算方案迁移 |
+| [发布与兼容性](./docs/release.zh-CN.md) | 产物、Node 版本、版本策略 |
+| [一致性套件](./conformance/README.zh-CN.md) | 语言无关的行为规范 |
 | [完整示例](./examples/app-pc/) | 可运行的 App + PC 工程 |
 
 ## 兼容性
@@ -234,4 +234,4 @@ npm run bench
 
 ## License
 
-MIT。欢迎阅读[贡献指南](./CONTRIBUTING.md)参与开发；安全问题请按[安全策略](./SECURITY.md)私下报告。
+MIT。欢迎阅读[贡献指南](./CONTRIBUTING.zh-CN.md)参与开发；安全问题请按[安全策略](./SECURITY.zh-CN.md)私下报告。

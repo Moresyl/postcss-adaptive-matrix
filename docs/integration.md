@@ -1,10 +1,12 @@
-# 构建工具集成
+# Build tool integration
 
-插件是标准 PostCSS 8 插件，凡是能配 PostCSS 的地方都能用。下面是各工具的接法，以及几个会静默出错的点。
+**English** · [简体中文](./integration.zh-CN.md)
+
+This is a standard PostCSS 8 plugin, so it works anywhere PostCSS can be configured. Below is how to wire it into each tool, plus a few places where things go wrong silently.
 
 ## Vite
 
-`postcss.config.mjs`（推荐，与 `vite.config.ts` 解耦）：
+`postcss.config.mjs` (recommended — it keeps this out of `vite.config.ts`):
 
 ```js
 import adaptiveMatrix, { appPcPreset } from 'postcss-adaptive-matrix'
@@ -18,7 +20,7 @@ export default {
 }
 ```
 
-或写在 `vite.config.ts` 里：
+Or inside `vite.config.ts`:
 
 ```ts
 export default defineConfig({
@@ -30,7 +32,7 @@ export default defineConfig({
 })
 ```
 
-**两者不能同时存在。** Vite 一旦发现 `css.postcss` 是内联对象，就不再读 `postcss.config.*`。
+**Not both.** As soon as Vite sees `css.postcss` as an inline object it stops reading `postcss.config.*`.
 
 ## Nuxt
 
@@ -39,14 +41,14 @@ export default defineConfig({
 export default defineNuxtConfig({
   postcss: {
     plugins: {
-      'postcss-adaptive-matrix': { /* 选项 */ },
+      'postcss-adaptive-matrix': { /* options */ },
       autoprefixer: {},
     },
   },
 })
 ```
 
-Nuxt 用的是对象形式，键是包名。要用 `appPcPreset` 就得改回 `postcss.config.mjs` 数组形式——预设返回的是一个对象，没法用包名键表达。
+Nuxt uses the object form, keyed by package name. To use `appPcPreset` you have to go back to the array form in `postcss.config.mjs` — a preset returns an object, which cannot be expressed as a package-name key.
 
 ## Webpack
 
@@ -60,7 +62,7 @@ module.exports = {
 }
 ```
 
-`postcss-loader` 要排在 `css-loader` 之后、预处理器 loader 之前：
+`postcss-loader` goes after `css-loader` and before any preprocessor loader:
 
 ```js
 use: ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader']
@@ -71,7 +73,7 @@ use: ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader']
 ```js
 // config/index.js
 const config = {
-  mini: { postcss: { /* Taro 自己的插件配置 */ } },
+  mini: { postcss: { /* Taro's own plugin configuration */ } },
   h5: {
     postcss: {
       'postcss-adaptive-matrix': {
@@ -83,75 +85,75 @@ const config = {
 }
 ```
 
-小程序端建议只用单画布：小程序没有 `@media`，`query: false` 是必须的，`rpx` 也已经在做类似的事，两套换算叠加会翻倍。
+On the mini-program side, use a single canvas: mini programs have no `@media`, so `query: false` is mandatory, and `rpx` is already doing something similar — stacking two conversions doubles the effect.
 
 ---
 
-## 四个静默出错的点
+## Four ways to fail silently
 
-### 1. 插件顺序
+### 1. Plugin order
 
-放在 `autoprefixer` **之前**。`autoprefixer` 不会给 `clamp()` 加前缀，顺序反了不报错，只是白跑一趟。
+Put it **before** `autoprefixer`. `autoprefixer` does not prefix `clamp()`, so the wrong order is not an error — it is just a wasted pass.
 
-放在 `postcss-nesting` 这类展开嵌套的插件**之后**也可以——两种顺序都正确，因为嵌套的 `@adaptive` 现在能正常处理（见[架构](./architecture.md#嵌套)）。
+Putting it **after** a nesting plugin such as `postcss-nesting` is fine too — both orders are correct, because a nested `@adaptive` is now handled properly (see [Architecture](./architecture.md#nesting)).
 
-Sass / Less 不属于这个话题：预处理器在 PostCSS 之前跑完，PostCSS 拿到的已经是展开后的 CSS。
+Sass and Less are not part of this discussion: a preprocessor finishes before PostCSS starts, so PostCSS already receives expanded CSS.
 
-### 2. `from` 必须传
+### 2. `from` is mandatory
 
-按文件路径判定画布的功能——`routes` 的 `file` 通道、`include` / `exclude`、组件库的路径匹配——全部依赖 PostCSS 的 `from`。
+Everything that decides a canvas by file path — the `file` channel in `routes`, `include` / `exclude`, and component-library path matching — depends on PostCSS's `from`.
 
-Vite、Webpack、Nuxt、Taro 都会传。但如果你手写 `postcss(...).process(css)` 而不传 `from`，文件路径退化成空串，所有 `file` 匹配静默失效——不报错，只是组件库不再被认领。
+Vite, Webpack, Nuxt and Taro all pass it. But if you hand-write `postcss(...).process(css)` without `from`, the file path degrades to an empty string and every `file` match silently stops working — no error, the component libraries simply stop being claimed.
 
 ```js
-// 错
+// wrong
 await postcss([adaptiveMatrix(options)]).process(css)
 
-// 对
+// right
 await postcss([adaptiveMatrix(options)]).process(css, { from: '/abs/path/app.css' })
 ```
 
-### 3. Vue SFC 的路径带 query 串
+### 3. A Vue SFC path carries a query string
 
-Vite 给 `<style>` 块的 `from` 长这样：
+The `from` Vite gives a `<style>` block looks like this:
 
 ```
 /project/src/views/mobile/home/index.vue?vue&type=style&index=0&lang.scss
 ```
 
-写 `file` 匹配时按**包含**去写，不要锚定结尾：
+Write `file` patterns as **contains**, not anchored to the end:
 
 ```js
-routes: [{ profile: 'mobile', file: [/[\\/]mobile[\\/]/] }]   // 对
-routes: [{ profile: 'mobile', file: [/\.mobile\.scss$/] }]     // SFC 匹配不到
+routes: [{ profile: 'mobile', file: [/[\\/]mobile[\\/]/] }]   // right
+routes: [{ profile: 'mobile', file: [/\.mobile\.scss$/] }]     // never matches an SFC
 ```
 
-Windows 与 POSIX 的分隔符不同，所以用 `[\\/]` 而不是 `/`。
+Windows and POSIX use different separators, hence `[\\/]` rather than `/`.
 
-### 4. 组件化项目的根容器基础样式会逐文件重复
+### 4. The root foundation is repeated per file in a component-based project
 
-配了 `rootSelector` / `root` 之后，插件会追加一段全局基础样式。它是全局的，但 PostCSS 一次只看见一个文件，没有跨文件去重的余地——所以默认**每个文件各一份**。
+Once `rootSelector` / `root` is configured, the plugin appends a global foundation. It is global, but PostCSS only ever sees one file at a time and has no way to deduplicate across files — so by default **every file gets a copy**.
 
-Vue / Svelte 里每个组件的 `<style>` 块都是独立文件，于是 150 个组件就是 150 份安全区变量和根列规则。不报错，只是产物白白变大。
+In Vue and Svelte every component's `<style>` block is a separate file, so 150 components mean 150 copies of the safe-area variables and root column rules. Not an error, just a needlessly larger bundle.
 
 ```js
 appPcPreset({
   rootSelector: '#app',
-  rootInjectTo: 'src/styles/main',   // 只注入入口这一份
+  rootInjectTo: 'src/styles/main',   // inject only into the entry
 })
 ```
 
-反过来，匹配不上就一份都没有，同样不报错。用 `npx adaptive-matrix src/styles/main.css` 确认入口文件里出现了新增声明。
+Conversely, a pattern that matches nothing injects nothing, also without an error. Run `npx adaptive-matrix src/styles/main.css` to confirm the added declarations appear in the entry file.
 
 ---
 
-## 原子化 CSS：Tailwind 与 UnoCSS
+## Atomic CSS: Tailwind and UnoCSS
 
-工具类 CSS 同样经过 PostCSS，所以同样会被换算——这正是你要的：`p-4` 和你手写的 `padding: 16px` 说的是同一个尺寸，应该得到同一个结果。
+Utility CSS goes through PostCSS too, so it gets converted too — which is what you want: `p-4` and a hand-written `padding: 16px` mean the same size and should produce the same result.
 
-**但默认配置一个都读不到，而且不报错。** 装上插件跑一遍，手写的部分被换算了、工具类原样不动，两套尺寸从此对不齐。原因有两个，取决于你用的大版本。
+**But the default configuration reads none of it, and says nothing.** Install the plugin, run a build, and your hand-written CSS scales while the utilities stay put; from then on the two size systems drift. There are two reasons, depending on which major version you use.
 
-包一层就都解决了：
+One wrapper solves both:
 
 ```js
 import adaptiveMatrix, { appPcPreset, withAtomicCss } from 'postcss-adaptive-matrix'
@@ -161,26 +163,26 @@ export default {
 }
 ```
 
-`withAtomicCss` 是**包装**不是替换：你原有的 `profiles`、`routes`、`root` 全部保留，它只往上加需要的两件事。下面解释这两件事分别在挡什么。
+`withAtomicCss` **wraps** rather than replaces: your existing `profiles`, `routes` and `root` are all kept, and it only adds the two things needed. Here is what each of those two is unblocking.
 
-### 挡路的第一件事：单位是 rem
+### Obstacle one: the unit is rem
 
-Tailwind 3、UnoCSS `presetUno` / `presetWind3` 把长度直接写成 `rem`：
+Tailwind 3 and UnoCSS `presetUno` / `presetWind3` write lengths directly in `rem`:
 
 ```css
-.p-4      { padding: 1rem }          /* 不是 16px */
+.p-4      { padding: 1rem }          /* not 16px */
 .text-lg  { font-size: 1.125rem; line-height: 1.75rem }
-.border   { border-width: 1px }      /* 边框仍然是 px */
-.p-\[13px\] { padding: 13px }        /* 方括号任意值也是 px */
+.border   { border-width: 1px }      /* borders are still px */
+.p-\[13px\] { padding: 13px }        /* bracketed arbitrary values are px too */
 ```
 
-同一张表里两种单位都有。所以要读的是**两种**，不是把 `px` 改成 `rem`：只读 `rem` 会漏掉所有边框宽度和方括号值，只读 `px` 会漏掉间距和字号。`withAtomicCss` 做的第一件事就是把 `rem` 加进 `unitToConvert`。
+Both units appear in the same stylesheet. So what you need to read is **both**, not `rem` instead of `px`: reading only `rem` misses every border width and bracketed value, and reading only `px` misses spacing and font sizes. The first thing `withAtomicCss` does is add `rem` to `unitToConvert`.
 
-页面如果写了 `html { font-size: 62.5% }`，再配一个 `rootValue: 10`，读和写两头一起改，见[配置参考](./configuration.md#unittoconvert-与-rootvalue)。
+If your page sets `html { font-size: 62.5% }`, add `rootValue: 10` so the reading and writing ends change together — see [Configuration reference](./configuration.md#unittoconvert-and-rootvalue).
 
-### 挡路的第二件事：长度根本不在工具类里
+### Obstacle two: the length is not in the utility at all
 
-Tailwind 4 和 UnoCSS `presetWind4` 换了形状——工具类里没有长度，只有一个变量引用：
+Tailwind 4 and UnoCSS `presetWind4` changed shape — there is no length in the utility, only a variable reference:
 
 ```css
 :root { --spacing: 0.25rem; --text-lg: 1.125rem; --radius-lg: 0.5rem }
@@ -191,79 +193,79 @@ Tailwind 4 和 UnoCSS `presetWind4` 换了形状——工具类里没有长度�
 .text-lg   { font-size: var(--text-lg) }
 ```
 
-`var()` 是不透明的，编译器看不进去。所以要在**源头**认领这些主题 token。自定义属性默认不换算（要么被显式认领，要么开 `transformCustomProperties`），`withAtomicCss` 加的正是这条认领路由。
+`var()` is opaque; the compiler cannot see through it. So the theme tokens have to be claimed **at the source**. Custom properties are not converted by default (they must be explicitly claimed, or `transformCustomProperties` enabled), and the route `withAtomicCss` adds is exactly that claim.
 
-认领 token 之后工具类不用动也对了：
+Once the tokens are claimed, the utilities are correct without being touched:
 
 ```css
 --spacing: clamp(3.41333px, 1.06667vw, 5.12px);
 .p-4 { padding: calc(var(--spacing) * 4) }
 ```
 
-`calc(clamp(a, b, c) * 4)` 等价于 `clamp(4a, 4b, 4c)`（正系数下乘法可以穿过 clamp），结果与直接换算 `16px` 逐位相同。
+`calc(clamp(a, b, c) * 4)` is equivalent to `clamp(4a, 4b, 4c)` (multiplication by a positive coefficient passes through a clamp), and the result is digit-for-digit identical to converting `16px` directly.
 
-被认领的 token 前缀：`--spacing`、`--text-`、`--leading-`、`--radius-`、`--container-`。三个**故意不在**列表里：
+The claimed token prefixes are `--spacing`, `--text-`, `--leading-`, `--radius-`, `--container-`. Three are **deliberately absent**:
 
-| 没认领 | 原因 |
+| Not claimed | Why |
 | --- | --- |
-| `--breakpoint-*` | 它是画布**切换**的宽度。缩放它等于移动断点本身，而且没有任何地方会提示 |
-| `--tracking-*` | 用 `em` 发布，而 `em` 依附的字号已经被做成流体了，再缩一次是叠加 |
-| `--shadow-*` | 阴影的像素是按屏幕尺度画的层次感，不是设计稿上量出来的长度 |
+| `--breakpoint-*` | It is the width at which a canvas **switches**. Scaling it moves the breakpoint itself, and nothing anywhere would say so |
+| `--tracking-*` | Published in `em`, and the font size the `em` hangs off is already fluid — scaling again compounds it |
+| `--shadow-*` | A shadow's pixels are depth drawn at screen scale, not a length measured on a design file |
 
-主题里自己扩展的长度族用 `tokenPrefixes` 补：
+Length families you extend the theme with are added via `tokenPrefixes`:
 
 ```js
 withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
 ```
 
-### 字号 token 照样可缩放
+### Font-size tokens stay zoomable
 
-`--text-lg` 这种名字不长得像字体属性，但它承载的就是字号。默认的 `textProperties` 里包含 `--text-*` 与 `--leading-*`，所以它拿到的是和手写 `font-size` 完全相同的 `rem + vw` 混合公式，浏览器文字缩放不受影响：
+A name like `--text-lg` does not look like a font property, but a font size is exactly what it carries. The default `textProperties` includes `--text-*` and `--leading-*`, so it gets precisely the same `rem + vw` hybrid as a hand-written `font-size`, and browser text zoom is unaffected:
 
 ```css
 --text-lg: clamp(1.06725rem, calc(0.73125rem + 1.68vw), 1.23525rem);
 ```
 
-这一条对没有被认领的 token 不起作用——它只决定一个已经要换算的长度**怎么写**，不决定它换不换算。
+This does nothing for an unclaimed token — it decides **how** an already-converting length is written, not whether it converts.
 
-### 这一节是对着真实产物写的
+### This section was written against real output
 
-`conformance/cases/atomic/` 下的三个用例，输入是 Tailwind CSS 4.3.3、UnoCSS 66.7.5 `presetWind3`、UnoCSS 66.7.5 `presetWind4` 的**真实产物原文**，不是手写的仿制品——上面那两种形状的差别大到手写必然写成想象中的样子。用 `scripts/capture-atomic.mjs` 重新抓取。
+The three cases under `conformance/cases/atomic/` take their input from the **actual published output** of Tailwind CSS 4.3.3, UnoCSS 66.7.5 `presetWind3` and UnoCSS 66.7.5 `presetWind4` — not hand-written imitations, because the two shapes above differ far too much for a hand-written copy to be anything but what you imagined. Re-capture with `scripts/capture-atomic.mjs`.
 
-这两个框架不是 devDependency：抓下来的 CSS 就是全部输入，把 `npm test` 绑在别人的发版节奏上换不来额外信息。
+Neither framework is a devDependency: the captured CSS is the entire input, and tying `npm test` to someone else's release schedule buys no extra information.
 
-### 另一条路
+### The other route
 
-不想加配置也可以让框架输出 px：UnoCSS 的 `@unocss/preset-rem-to-px`，Tailwind 3 改 `theme.spacing`。Tailwind 4 没有这条路——它的形状是 token 间接引用，与单位无关。
+If you would rather not configure anything, make the framework emit px instead: UnoCSS has `@unocss/preset-rem-to-px`, and Tailwind 3 has `theme.spacing`. Tailwind 4 has no such route — its shape is token indirection, which has nothing to do with units.
 
-### 工具类走哪张画布
+### Which canvas utilities use
 
-工具类没有类名前缀特征，所以它们走 `defaultProfile`。要让某一批工具类走别的画布，用 `routes` 的 `selector` 通道；主题 token 整体改派用 `withAtomicCss(base, { profile: 'pc' })`。
+Utilities have no distinguishing class-name prefix, so they use `defaultProfile`. To send a group of utilities to another canvas, use the `selector` channel in `routes`; to move the theme tokens as a whole, use `withAtomicCss(base, { profile: 'pc' })`.
 
-## 组件库按需引入
+## On-demand component imports
 
-`unplugin-vue-components` 之类的按需引入，最终仍然是从 `node_modules` 里引 CSS 文件，路径通道照常命中，不需要额外配置。
+On-demand importers such as `unplugin-vue-components` still end up importing CSS files from `node_modules`, so the path channel matches as usual and no extra configuration is needed.
 
-但**不要**为了"性能"加 `exclude: [/node_modules/]`——那会把组件库的 CSS 整个排除在外，组件就回到原始像素，和你缩放后的页面对不齐。这正是[组件库适配](./libraries.md)要解决的问题。
+But do **not** add `exclude: [/node_modules/]` for "performance" — that excludes the component libraries' CSS entirely, so the components fall back to raw pixels and stop lining up with your scaled page. That is precisely the problem [Component libraries](./libraries.md) exists to solve.
 
-## 校验
+## Verifying
 
-改完配置，跑一遍产物比看配置可靠：
+After changing configuration, running the output is more reliable than reading the configuration:
 
 ```bash
 npx adaptive-matrix src/styles/app.css -c postcss.config.mjs
 ```
 
-输出是逐条声明的前后对照，不用启动构建、不用开浏览器。上面那个「`from` 必须传」的坑，也可以用 `--from` 先试一遍再上线。完整用法见[命令行预览](./cli.md)。
+The output is a per-declaration before/after, with no build to start and no browser to open. The "`from` is mandatory" trap above can also be rehearsed with `--from` before you ship. See [CLI preview](./cli.md).
 
-## 这一篇是跑过真实构建的
+## This page was run against a real build
 
-本文关于 Vite 的每一条说法都由 `test/vite.test.ts` 里的**真实 Vite 构建**验证，而不是靠 `postcss().process` 模拟。构建脚手架包含一个自动发现的 `postcss.config.mjs`、一份从 `node_modules` 里引入的依赖 CSS、以及一个由 `@vitejs/plugin-vue` 同款方式提供的 `<style>` 块，然后断言：
+Every claim on this page about Vite is verified by a **real Vite build** in `test/vite.test.ts`, rather than simulated with `postcss().process`. The scaffold includes an auto-discovered `postcss.config.mjs`, a dependency stylesheet imported from `node_modules`, and a `<style>` block supplied the same way `@vitejs/plugin-vue` supplies one. It then asserts that:
 
-- 配置文件确实被 Vite 找到并生效（没生效时构建照样成功、样式表原样输出，没有任何地方会说话）；
-- 依赖的 CSS 按 `node_modules` 路径落到组件库画布，产出与页面上等价尺寸**逐字节相同**；
-- 带 query 串的 SFC id 能被包含式 `file` 路由命中；
-- 同样的输入再构建一次，产物完全一致（watch / HMR 会反复跑同一条流水线）；
-- 反过来，用 `/\.mobile\.css$/` 这种锚定结尾的写法，SFC 块确实静默留在默认画布上——上面第 3 条说的就是这件事，这条测试让它成为验证过的事实而不是记忆。
+- Vite really does find and apply the config file (when it does not, the build still succeeds and the stylesheet passes through untouched, with nothing anywhere saying so);
+- dependency CSS lands on the component-library canvas via its `node_modules` path, producing output **byte-for-byte identical** to the equivalent size on the page;
+- an SFC id with a query string is matched by a contains-style `file` route;
+- building the same input twice produces identical output (watch and HMR run the same pipeline over and over);
+- conversely, an end-anchored pattern like `/\.mobile\.css$/` really does leave the SFC block silently on the default canvas — point 3 above, turned from something remembered into something verified.
 
-Webpack 侧没有起真实构建。`postcss-loader` 做的事就是带着 `from` 调 `postcss.process`，而 Webpack 场景真正出过问题的是 CommonJS 入口能不能直接调用（0.4.0 修复），那一条由 `test/package.test.ts` 针对构建产物本身验证。为一条几乎没有独立风险的路径引入整套 Webpack 依赖，不划算。
+There is no real Webpack build. All `postcss-loader` does is call `postcss.process` with a `from`, and what has actually broken in a Webpack setting is whether the CommonJS entry can be called directly (fixed in 0.4.0), which `test/package.test.ts` verifies against the built artifact itself. Pulling in a whole Webpack toolchain for a path with almost no independent risk is not worth it.

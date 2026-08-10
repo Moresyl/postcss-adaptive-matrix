@@ -1,13 +1,15 @@
-# 安全策略
+# Security policy
 
-## 支持范围
+**English** · [简体中文](./SECURITY.zh-CN.md)
 
-发布后的最新 minor 版本会接收安全更新。预发布版本仅用于验证，不承诺长期维护。
+## Supported versions
 
-## 报告漏洞
+The latest released minor version receives security updates. Pre-releases are for verification only and carry no long-term maintenance commitment.
 
-请使用 GitHub 仓库的 **Security → Report a vulnerability** 私下报告，不要创建公开 Issue。
+## Reporting a vulnerability
 
-报告请包含受影响版本、最小复现、影响范围和建议修复方案。维护者会尽快确认，并在修复可用前协调披露时间。请勿在测试中访问不属于你的系统或数据。
+Please report privately via **Security → Report a vulnerability** on the GitHub repository. Do not open a public issue.
 
-项目不会要求报告者提供密码、Token、私钥或其他敏感凭据。
+Include the affected versions, a minimal reproduction, the scope of impact and, if you have one, a suggested fix. A maintainer will confirm as soon as possible and coordinate disclosure timing until a fix is available. Please do not access systems or data that are not yours while testing.
+
+This project will never ask a reporter for passwords, tokens, private keys or other sensitive credentials.

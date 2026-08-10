@@ -1,14 +1,16 @@
-# 快速上手
+# Getting started
 
-## 安装
+**English** · [简体中文](./getting-started.zh-CN.md)
+
+## Install
 
 ```bash
 npm i -D postcss postcss-adaptive-matrix
 ```
 
-## 最小配置
+## Minimal configuration
 
-只有一张设计稿时：
+With a single design file:
 
 ```js
 // postcss.config.mjs
@@ -29,11 +31,11 @@ export default {
 }
 ```
 
-`designWidth` 是设计稿宽度，`fluid` 是尺寸继续跟随视口变化的区间。区间之外尺寸停住——这是与纯 `vw` 方案最大的区别，详见[有界流体](#有界流体)。
+`designWidth` is the width of the design file; `fluid` is the range across which a size keeps following the viewport. Outside that range the size stops — which is the biggest difference from a plain `vw` setup, see [Bounded fluid sizing](#bounded-fluid-sizing).
 
-## 双设计稿：App + PC
+## Two design files: app + desktop
 
-设计团队交付两个画布时用 `appPcPreset`：
+When the design team delivers two canvases, use `appPcPreset`:
 
 ```js
 import adaptiveMatrix, { appPcPreset } from 'postcss-adaptive-matrix'
@@ -51,17 +53,17 @@ export default {
 }
 ```
 
-预设给出的约定：
+What the preset decides for you:
 
-| | App | PC |
+| | App | Desktop |
 | --- | --- | --- |
-| 设计宽度 | 375 | 1440 |
-| 流体区间 | 320 ~ 480 | 1024 ~ 1920 |
-| 生效条件 | 默认 | `@media (min-width: 768px)` |
+| Design width | 375 | 1440 |
+| Fluid range | 320 – 480 | 1024 – 1920 |
+| Applies when | default | `@media (min-width: 768px)` |
 
-## 写业务 CSS
+## Writing your CSS
 
-基础选择器写两端共有的部分——布局结构、颜色、交互状态。只把尺寸真正不同的内容放进 `@adaptive pc`，不要维护两份页面：
+Put everything both ends share — layout structure, colour, interaction states — in the base selector. Only what genuinely differs in size goes into `@adaptive pc`. Do not maintain two copies of the page:
 
 ```css
 .product-card {
@@ -80,7 +82,7 @@ export default {
 }
 ```
 
-输出：
+Output:
 
 ```css
 .product-card {
@@ -99,13 +101,13 @@ export default {
 }
 ```
 
-普通规则按默认 `app` 画布转换；`@adaptive pc` 块按 1440 画布转换，并包裹进 PC 媒体查询。
+Ordinary rules convert on the default `app` canvas; the `@adaptive pc` block converts on the 1440 canvas and is wrapped in the desktop media query.
 
-## 另一种双端：两套页面代码，按文件夹分
+## The other kind of two-ended project: two page trees, split by folder
 
-上面那种写法是**一套页面、两张稿**——共有的部分只写一遍，差异放进 `@adaptive pc`。
+The style above is **one page, two design files** — shared parts written once, differences in `@adaptive pc`.
 
-还有一种常见做法是**两套页面代码**：`src/mobile/**` 和 `src/pc/**` 各自完整一份，路由或入口决定进哪一套。这种项目不需要在 CSS 里写 `@adaptive`，用文件路由就够了：
+The other common arrangement is **two page trees**: `src/mobile/**` and `src/pc/**`, each complete on its own, with routing or the entry point deciding which one you land in. Such a project needs no `@adaptive` in its CSS at all — file routing is enough:
 
 ```js
 {
@@ -121,62 +123,62 @@ export default {
 }
 ```
 
-同样一行 `padding: 32px`，落在哪个文件夹就按哪张稿换算：
+The same `padding: 32px` converts against whichever design file its folder belongs to:
 
-| 文件 | 产物 |
+| File | Output |
 | --- | --- |
 | `src/mobile/home/index.vue` | `clamp(13.65333px, 4.26667vw, 25.6px)` |
 | `src/pc/home/index.vue` | `clamp(22.75556px, 2.22222vw, 42.66667px)` |
 
-**关键一点：文件路由只决定"按哪张稿换算"，不会给规则套媒体查询。** 这正是这类项目需要的——哪套页面显示已经由路由/入口决定了，CSS 不该再管一遍。上面两条产物都是无条件的。
+**The key point: file routing only decides which design file to convert against. It never wraps a rule in a media query.** That is exactly what this kind of project needs — which page tree is displayed has already been decided by routing, and CSS should not decide it a second time. Both outputs above are unconditional.
 
-SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），所以 `file` 要按包含写、不要锚定结尾，见[构建工具集成](./integration.md#3-vue-sfc-的路径带-query-串)。
+An SFC's `from` carries a query string (`index.vue?vue&type=style&index=0&lang.css`), so write `file` patterns as "contains" rather than anchoring them to the end — see [Build tool integration](./integration.md#3-a-vue-sfc-path-carries-a-query-string).
 
-### 共用组件落在哪张画布上
+### Which canvas do shared components land on
 
-`src/components/**` 两边都用，两条路由都不命中，于是走 `defaultProfile`。三个选择：
+`src/components/**` is used by both ends and matches neither route, so it falls through to `defaultProfile`. Three choices:
 
-1. **就用默认画布**——组件本来就该在移动端和 PC 端长一样时，这是对的；
-2. **按用途再拆一层文件夹**，`src/components/mobile/**` 与 `src/components/pc/**`，各自命中路由；
-3. **在组件里用 `@adaptive pc`**——但这条在本节的配置下有个坑，见下。
+1. **Just use the default canvas** — correct when the component is meant to look the same on mobile and desktop;
+2. **Split one more folder level by purpose**, `src/components/mobile/**` and `src/components/pc/**`, each matching a route;
+3. **Use `@adaptive pc` inside the component** — but under this section's configuration that has a trap, below.
 
-### 坑：`query` 没设置时 `@adaptive` 会变成无条件规则
+### The trap: with no `query`, `@adaptive` becomes an unconditional rule
 
-这一节的两个 profile 都没有 `query`，因为切换本来就不由 CSS 负责。但一旦有人在共用组件里写：
+Neither profile in this section has a `query`, because switching is not CSS's job here. But the moment someone writes this in a shared component:
 
 ```css
 .shared-card { padding: 32px }
 @adaptive pc { .shared-card { padding: 48px } }
 ```
 
-`pc` 画布没有 `query`,外壳无处可套,于是被拆开——两条规则都是无条件的,而后一条在文件里更靠后,**在任何视口都会赢**:
+the `pc` canvas has no `query`, so there is no wrapper to put it in and the block is unwrapped instead — both rules are unconditional, and the second one comes later in the file, so **it wins at every viewport**:
 
 ```css
 .shared-card { padding: clamp(13.65333px, 4.26667vw, 25.6px) }
-.shared-card { padding: clamp(34.13333px, 3.33333vw, 64px) }   /* 永远是这条生效 */
+.shared-card { padding: clamp(34.13333px, 3.33333vw, 64px) }   /* always the one that applies */
 ```
 
-编译器会为此告警并给出两个出口：给 `pc` 加上 `query`，或者写 `query: false` 表明切换发生在 CSS 之外（一端一个产物、或按环境变量选画布）。写了 `query: false` 就不再提示——那是你已经回答过的问题。
+The compiler warns about this and offers two exits: give `pc` a `query`, or write `query: false` to state that switching happens outside CSS (one artifact per end, or a canvas chosen by environment variable). Once `query: false` is written the warning stops — that is a question you have already answered.
 
-同一张画布上的 `@adaptive app` 不告警：没有切换，拆开也不丢东西。
+`@adaptive app` on its own canvas does not warn: there is no switch, and unwrapping loses nothing.
 
-### 组件库不用管
+### Component libraries need no attention
 
-移动端的 Vant、PC 端的 Element Plus 都在 `node_modules` 里，两条文件夹路由都不命中，各自由内置注册表认领——Vant 走 375 画布，Element Plus 保留像素。不需要额外配置。
+Vant on mobile and Element Plus on desktop both live in `node_modules` and match neither folder route, so each is claimed by the built-in registry — Vant on the 375 canvas, Element Plus left in real pixels. No extra configuration.
 
-唯一要注意的是**你写的路由优先于组件库路由**，所以文件夹正则要写得足够具体：`/[\\/]pc[\\/]/` 只匹配路径里独立的 `pc` 段，而 `/pc/` 这种写法会误伤任何路径里带 `pc` 三个字母的依赖。
+The one thing to watch is that **your routes take priority over library routes**, so write folder patterns specifically enough: `/[\\/]pc[\\/]/` only matches a standalone `pc` segment, whereas `/pc/` would catch any dependency with those three letters anywhere in its path.
 
-## 有界流体
+## Bounded fluid sizing
 
-![有界流体区间](./assets/fluid-range.svg)
+![The bounded fluid range](./assets/en/fluid-range.svg)
 
-**断点和流体区间不是一回事。** 断点决定哪套布局生效，流体区间决定尺寸在哪段区间里继续缩放。
+**A breakpoint and a fluid range are not the same thing.** A breakpoint decides which layout applies; a fluid range decides across which span sizes keep scaling.
 
-上面的配置里，App 规则在 768px 之前一直生效，但尺寸到 480px 就停止放大——600px 宽的小平板因此不会看到被粗暴放大的手机 UI。PC 从 768px 起生效，但尺寸在 1024px 以下保持下限，窄窗口不会被过度压缩。
+In the configuration above, the app rules apply all the way up to 768px, but sizes stop growing at 480px — so a 600px tablet does not get a phone UI crudely blown up. Desktop applies from 768px, but sizes hold their floor below 1024px, so a narrow window is not over-compressed.
 
-## 文字
+## Text
 
-字号不走纯 `vw`，而是 `rem + vw` 的混合公式：
+Font sizes do not use plain `vw`; they use a `rem + vw` hybrid:
 
 ```css
 .title { font-size: 16px }
@@ -186,49 +188,49 @@ SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），
 .title { font-size: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem) }
 ```
 
-静态部分用 `rem`，因此浏览器的文字缩放设置依然有效（WCAG 1.4.4）。纯 `vw` 文字会把用户的缩放选择完全吃掉。混合比例由 `fontFluidity` 控制，默认 `0.35`；在设计宽度处结果仍严格等于设计值。
+The static part is in `rem`, so the browser's text-zoom setting keeps working (WCAG 1.4.4). Text in plain `vw` swallows the user's zoom choice entirely. The mix is controlled by `fontFluidity`, default `0.35`; at the design width the result is still exactly the design value.
 
-## 根容器
+## The root container
 
-传入 `rootSelector` 后，插件追加一个低优先级的 `@layer adaptive-matrix`：
+Pass `rootSelector` and the plugin appends a low-priority `@layer adaptive-matrix`:
 
-- 根元素 `inline-size: 100%`，水平居中；
-- App 与 PC 各自在流体上限处停止增长；
-- 注入 `env(safe-area-inset-*)` 安全区变量；
-- 发布根列宽与留白变量，并据此修正 `position: fixed`。
+- the root element gets `inline-size: 100%` and is centred horizontally;
+- app and desktop each stop growing at their fluid ceiling;
+- `env(safe-area-inset-*)` safe-area variables are injected;
+- the root column width and gutter are published as variables, and `position: fixed` is corrected against them.
 
-最后一条值得单独说：页面一旦成为居中的列，`position: fixed` 会退回以视口为包含块，底部导航栏就贴到了窗口两端，与它所在的内容列错开。`appPcPreset` 默认修正这一点，不需要时传 `fixedContainingBlock: false`。参见[配置参考](./configuration.md#fixedcontainingblock)。
+That last one deserves its own note: once the page is a centred column, `position: fixed` falls back to the viewport as its containing block, so a bottom navigation bar sticks to the window edges, out of line with the content column it belongs to. `appPcPreset` corrects this by default; pass `fixedContainingBlock: false` if you do not want it. See [Configuration reference](./configuration.md#fixedcontainingblock).
 
-已经自己管理根容器的项目省略 `rootSelector` 即可，插件不会注入任何全局 CSS。
+A project that already manages its own root container can simply omit `rootSelector`, and the plugin injects no global CSS at all.
 
-### 组件化项目要指定注入位置
+### Component-based projects must say where to inject
 
-这段基础样式是全局的，但 PostCSS 一次只看见一个文件，没有跨文件去重的余地。所以默认每个被处理的文件都会拿到一份。
+This foundation is global, but PostCSS only ever sees one file at a time and has no way to deduplicate across files. So by default every processed file gets a copy.
 
-只有一份全局样式表的项目，这正是想要的。Vue / Svelte 项目则相反：**每个组件的 `<style>` 块都是独立的一个文件**，默认行为等于给 150 个组件各塞一份安全区变量和根列规则。
+For a project with a single global stylesheet, that is exactly right. Vue and Svelte projects are the opposite: **every component's `<style>` block is a separate file**, so the default means handing 150 components their own copy of the safe-area variables and root column rules.
 
-指到入口样式表上，就只注入一次：
+Point it at the entry stylesheet and it is injected once:
 
 ```js
 appPcPreset({
   rootSelector: '#app',
-  rootInjectTo: 'src/styles/main',   // 字符串按「包含」匹配
+  rootInjectTo: 'src/styles/main',   // a string matches by "contains"
 })
 ```
 
-也接受正则和函数，规则与 `include` 一致。直接写 `root` 时对应字段是 `root.injectTo`。
+Regular expressions and functions are accepted too, with the same rules as `include`. When writing `root` directly the field is `root.injectTo`.
 
-匹配不上不会报错，只是一份都不注入。用[命令行](./cli.md)确认一下最稳妥——入口文件应当出现 `+ inline-size 100%` 这类新增声明：
+A pattern that matches nothing is not an error — it just injects nothing. Confirming with the [CLI](./cli.md) is the safest move; the entry file should show added declarations like `+ inline-size 100%`:
 
 ```bash
 npx adaptive-matrix src/styles/main.css -c postcss.config.mjs
 ```
 
-## 组件库
+## Component libraries
 
-不需要配置。内置的 11 个主流库按各自设计画布换算，桌面端组件库保留真实像素，主题 token 按名字识别并走文字混合公式。完整清单与覆盖方式见[组件库适配](./libraries.md)。
+Nothing to configure. The 11 built-in mainstream libraries convert against their own design canvas, desktop libraries keep real pixels, and theme tokens are recognised by name and take the text hybrid formula. For the full list and how to override, see [Component libraries](./libraries.md).
 
-## 局部关闭
+## Turning it off locally
 
 ```css
 /* adaptive-ignore-next */
@@ -240,12 +242,12 @@ height: 44px; /* adaptive-ignore */
 .widget { width: 300px }
 ```
 
-这三个注释会**保留在产物里**。被忽略的 `40px` 和没人管过的 `40px` 长得一模一样，注释一旦被吃掉，产物再过一遍编译（预编译的依赖被消费方再编译一次就是这种情况）就会把它换算了。注释本身会被任何压缩器去掉。
+These three comments **survive into the output**. An ignored `40px` and a `40px` nobody ever looked at are indistinguishable, so if the comment were dropped, a second compilation pass (which is exactly what happens when a pre-compiled dependency is compiled again by its consumer) would convert it. Any minifier removes the comments themselves.
 
-范围更大的排除用 `propList`、`selectorExclude`、`valueExclude`、`exclude`，或用 `routes` 把某一片 CSS 改派到 `profile: false`。
+For broader exclusions use `propList`, `selectorExclude`, `valueExclude`, `exclude`, or route a section of CSS to `profile: false`.
 
-## 验收尺寸
+## Widths worth testing
 
-建议至少在这些宽度做视觉回归：320、375、480、767、768、1024、1440、1920、2560。
+Visual regression at least at: 320, 375, 480, 767, 768, 1024, 1440, 1920, 2560.
 
-另测：浏览器 200% 文字缩放、iOS 安全区、Android WebView 软键盘、横屏、以及使用容器查询的组件。
+Also test: 200% browser text zoom, the iOS safe area, the Android WebView on-screen keyboard, landscape orientation, and any component using container queries.

@@ -1,31 +1,33 @@
-# 文档
+# Documentation
 
-按你现在要做的事情挑一篇：
+**English** · [简体中文](./README.zh-CN.md)
 
-| 你想做的事 | 读这里 |
+Pick the page that matches what you are doing right now:
+
+| What you want | Read this |
 | --- | --- |
-| 装上去，跑通第一个页面 | [快速上手](./getting-started.md) |
-| 接进 Vite / Nuxt / Webpack / Taro | [构建工具集成](./integration.md) |
-| 改完配置，先看看输出对不对 | [命令行预览](./cli.md) |
-| 项目里用了 Vant / Element Plus / antd… | [组件库适配](./libraries.md) |
-| 查某个选项叫什么、默认值是多少 | [配置参考](./configuration.md) |
-| 想知道数字是怎么算出来的 | [架构与转换公式](./architecture.md) |
-| 软键盘 / 地址栏 / WebView 把布局顶歪了 | [可选运行时](./runtime.md) |
-| 要支持某个旧 Safari / WebView | [浏览器特性支持与降级](./compatibility.md) |
-| 从现有的 px 换算方案换过来 | [迁移指南](./migration.md) |
-| 发版、产物、Node 版本 | [发布与兼容性](./release.md) |
+| Install it and get a first page working | [Getting started](./getting-started.md) |
+| Wire it into Vite / Nuxt / Webpack / Taro | [Build tool integration](./integration.md) |
+| Check the output after changing configuration | [CLI preview](./cli.md) |
+| The project uses Vant / Element Plus / antd… | [Component libraries](./libraries.md) |
+| Look up an option name or its default | [Configuration reference](./configuration.md) |
+| Understand where the numbers come from | [Architecture and formulas](./architecture.md) |
+| Keyboards / address bars / WebViews break the layout | [Optional runtime](./runtime.md) |
+| Support an old Safari or WebView | [Browser support and degradation](./compatibility.md) |
+| Move over from an existing px conversion setup | [Migration guide](./migration.md) |
+| Releases, artifacts, Node versions | [Release and compatibility](./release.md) |
 
-规范与示例：
+Specification and examples:
 
-- [一致性套件](../conformance/README.md)——语言无关的行为定义，纯数据，任何语言的实现都能拿它做验收
-- [可运行示例](../examples/app-pc/)——App 375 + PC 1440 的完整工程
+- [Conformance suite](../conformance/README.md) — a language-agnostic behavioural definition, pure data, usable as an acceptance suite by an implementation in any language
+- [Runnable example](../examples/app-pc/) — a complete app 375 + desktop 1440 project
 
-## 核心模型
+## The core model
 
-![多画布模型](./assets/canvas-model.svg)
+![The multi-canvas model](./assets/en/canvas-model.svg)
 
-整个项目只解决一件事：一个 `px` 要先知道自己画在哪张设计稿上，才谈得上换算。
+This project solves exactly one problem: a `px` cannot be converted until you know which design file it was drawn on.
 
-页面、移动组件库、桌面组件库来自三张不同的稿子——甚至第三张根本没有稿子。给每张稿子一个**画布**（profile），每个 `px` 按自己画布的宽度换算，是唯一不需要在「页面缩放但组件不动」和「组件被按错误比例拉变形」之间二选一的做法。
+Your pages, a mobile component library and a desktop component library come from three different design files — and the third one may have no design file at all. Giving each file its own **canvas** (a profile), and converting every `px` against the width of the canvas it belongs to, is the only approach that does not force a choice between "the page scales but the components stay put" and "the components get stretched against the wrong ratio".
 
-画布归属由三条通道判定：类名前缀、自定义属性前缀、文件路径。内置组件库的通道已经写好，所以默认配置就是对的。
+Canvas membership is decided by three channels: class-name prefix, custom-property prefix, and file path. The channels for the built-in component libraries are already written, which is why the default configuration is already correct.

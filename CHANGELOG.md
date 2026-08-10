@@ -1,128 +1,131 @@
 # Changelog
 
+**English** · [简体中文](./CHANGELOG.zh-CN.md)
+
 ## 0.5.0 — 2026-08-10
 
-### 文档
+### Documentation
 
-- `README.md` 改为英文主入口，新增完整中文版 `README.zh-CN.md`，两版互链。英文版配套的图放在 `docs/assets/en/`，是按英文重画的：中文标签短，直接替换会撑出卡片，`tracks the viewport` 还会被虚线从下面穿过。docs 正文暂时仍为中文，英文 README 直说这一点，不假装已经翻好。
-- 画布模型图移除第三方库名。模型与是哪家库无关，「移动端组件库 / 375 设计稿」「桌面端组件库 / 无设计稿 · 真实像素」说的是同一件事，而整张图从头到尾只在讲本编译器自己。
+- **Every documentation file is now bilingual**: `X.md` in English, `X.zh-CN.md` in Chinese, cross-linked at the top of each page. That covers the README, all 11 docs pages, the conformance suite description, the contributing guide, the security policy and this file. The English is not a machine translation of the Chinese — the same point wants different sentences in each language, so the two versions were written separately.
+- The English artwork lives in `docs/assets/en/` and was redrawn for English: Chinese labels are short, so substituting the text would overflow the cards, and the dashed plain-vw line would run under `tracks the viewport`.
+- The canvas-model diagram no longer names third-party libraries. The model has nothing to do with whose library it is; "a mobile component library / 375 design file" and "a desktop component library / no design file · real pixels" say exactly the same thing, and the diagram is about this compiler from start to finish.
 
-### 浏览器特性支持审计与降级
+### Browser support audit and degradation
 
-- 新增 `auditCompatibility(css, targets)`：给一串「浏览器 + 你要支持的最低版本」，逐条列出产物里超出目标的语法、不支持时丢掉的东西、以及关掉它的开关。审计读的是**编译产物文本**而不是配置——这是让审计和输出永远不会走偏的唯一做法，经预设、经组件库路由、经手写 CSS 进来的特性一样能看见。同时导出 `detectFeatures`、`COMPAT_FEATURES`、`FEATURE_SUPPORT`、`compatFeature`，类型齐全。
-- 命令行新增 `--targets "safari 14, ios_saf 13"`，在对照表之后输出 `needs` 段。四行的顺序是有意的：先说丢什么，再说换成什么——「iOS Safari 13 太老了」单独拿出来没法行动，而 CSS 支持缺口真正要紧的一直是**跟着一起消失的有多少**。CSS 不报错，它丢弃：值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块，全程无声。特性表因此按「丢得多」排序，不按「谁更新」。
-- 覆盖 11 项：`@layer`、`:where()`、`@container` / 容器单位、`clamp()` / `min()` / `max()`、`vi`、逻辑属性、`var()`、`env(safe-area-inset-*)`、`vw`、原生嵌套。原生嵌套本编译器不产出（读进来的嵌套原样写回），列入是因为它是会被问到的问题，而靠模式识别它会把普通 CSS 误读成嵌套——报错比不报更糟。
-- 版本数据由 `scripts/capture-compat.mjs` 从 caniuse-lite 烘焙进 `src/core/compat-data.ts`，caniuse-lite 只是 devDependency，插件不增加任何运行时依赖，离线可审计。「某特性从哪个版本开始能用」是不会再变的历史；**使用率则故意不看**——0.4% 的用户算不算数是关于你的项目的决定，`browserslist` 已经是回答那个问题的地方。取的是「从此再没断过支持」的版本而非第一个出现 `y` 的版本（个别特性发布后被撤回过）。
-- `--targets` 收显式的名字与版本，不收 browserslist 查询：查询要拉进 browserslist 包，回答的是关于用户的问题而不是关于这份样式表的问题，而且**同一条查询会随数据库更新而改变含义**——代码一个字没动，下个月构建就红了。不认识的目标名报错并以 `1` 退出，不静默跳过：被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
-- caniuse 没有 `:where()` 和 `vi` 的独立条目，改用 `:is()` 与 `svh`/`lvh`/`dvh` 条目，并在数据里标出这是代理而非实测。两组都出自同一节规范、同批发布（`:where()` / `:is()`：Chrome 88、Firefox 78、Safari 14）。
-- 新增 `root.logical`（预设字段 `rootLogical`）：设为 `false` 时基础样式改写 `width` / `margin-left` / `margin-right` / `max-width`，而不是 `inline-size` / `margin-inline` / `max-inline-size`。**这是审计过程中发现的真实缺口**——逻辑属性是编译器产出的语法里唯一一个失败之后页面看起来还正常的：丢掉 `margin-inline: auto`，列宽完全正确、贴在屏幕左边；丢掉 `max-inline-size`，列铺满整屏。两种都不像故障，因而比一眼可见的崩塌更容易活着上线，而此前没有任何开关能避开它。横排页面上两种拼法等价，关掉不损失任何东西。预设同时新增 `rootLayer`，透传到 `layer`——同样是支持开关，不该为了够到它而放弃预设。
-- 文档新增[浏览器特性支持与降级](docs/compatibility.md)：特性 × 浏览器最低版本表、逐项的「谁产出它 / 丢什么 / 怎么关、代价是什么」，以及这份审计**不能**代替真机测试的边界（它只能证明目标浏览器解析得了这份 CSS 的语法；渲染差异、软键盘、地址栏是别的问题）。反过来，版本门槛这件事真机也测不了——手上那台 iOS 17 读得懂 `@layer`，对「15.4 以下读不懂」没有任何说明力。
+- New `auditCompatibility(css, targets)`: give it "browser + the oldest version you support" and it lists every piece of syntax in the output beyond your targets, what is lost when it is unsupported, and the switch that turns it off. The audit reads the **compiled stylesheet text** rather than the configuration — the only way audit and output can never drift apart, and it sees features that arrive via a preset, via a component-library route or via hand-written CSS alike. Also exported: `detectFeatures`, `COMPAT_FEATURES`, `FEATURE_SUPPORT`, `compatFeature`, fully typed.
+- New CLI flag `--targets "safari 14, ios_saf 13"`, printing a `needs` section after the comparison. The order of those lines is deliberate: what is lost first, what to switch to second — "iOS Safari 13 is too old" is not actionable on its own, and what has always mattered about a CSS support gap is **how much goes with it**. CSS does not error, it discards: an unreadable value takes its declaration, an unreadable selector takes its rule, an unreadable at-rule takes its whole block, all silently. So the feature table is ordered by how much is lost, not by which feature is newest.
+- Covers 11 features: `@layer`, `:where()`, `@container` / container units, `clamp()` / `min()` / `max()`, `vi`, logical properties, `var()`, `env(safe-area-inset-*)`, `vw`, and native nesting. The compiler does not emit native nesting (nesting it reads is written back as it was); it is listed because it is a question that gets asked, and because pattern-matching it would misread ordinary CSS as nested — a false report is worse than no report.
+- Version data is baked into `src/core/compat-data.ts` from caniuse-lite by `scripts/capture-compat.mjs`. caniuse-lite stays a devDependency, the plugin adds no runtime dependency, and the audit works offline. "Which version a feature became usable in" is history and will not change again; **usage share is deliberately not consulted** — whether 0.4% of users count is a decision about your project, and `browserslist` is already the place that answers it. The scan takes the version from which support was never lost again, not the first version showing a `y` (a few features shipped and were then withdrawn).
+- `--targets` takes explicit names and versions, not a browserslist query: a query would pull in the browserslist package, answers a question about your users rather than about this stylesheet, and **the same query changes meaning as the database updates** — not one character of code changes and next month the build goes red. An unrecognised target name is an error that exits `1` rather than being skipped silently: a target quietly dropped is worse than no audit, because it reads like a pass.
+- caniuse has no separate entries for `:where()` or `vi`, so the `:is()` and `svh`/`lvh`/`dvh` entries are used, marked in the data as proxies rather than measurements. Both pairs come from the same section of the specification and shipped together (`:where()` / `:is()`: Chrome 88, Firefox 78, Safari 14).
+- New `root.logical` (preset field `rootLogical`): set to `false`, the foundation writes `width` / `margin-left` / `margin-right` / `max-width` instead of `inline-size` / `margin-inline` / `max-inline-size`. **This is a real gap found while building the audit** — logical properties are the only syntax the compiler emits whose failure still leaves a page that looks fine: without `margin-inline: auto` the column is exactly the right width, sitting against the left edge of the screen; without `max-inline-size` it goes full-bleed. Neither looks like a fault, so it is likelier to ship than a visible collapse, and until now no switch avoided it. The two spellings are equivalent on a horizontal page, so switching costs nothing. The preset also gained `rootLayer`, passed through to `layer` — also a support switch, and reaching it should not cost you the preset.
+- New documentation page: [Browser support and degradation](docs/compatibility.md) — the feature × minimum-version matrix, a per-feature "what emits it / what is lost / how to switch it off and what that costs", and the boundary of what this audit **cannot** replace (it only proves your target browsers can parse the syntax in this CSS; rendering differences, keyboards and address bars are different problems). Conversely, a real device cannot test a version threshold either — the iOS 17 in your hand reads `@layer`, which says nothing about 15.4 and below.
 
-### 断点检查
+### Breakpoint check
 
-- 修正**默认预设上稳定误报两条 `shrinks`**：`root.fixedContainingBlock` 会把固定元素的 `left: 0` 改写成 `left: var(--adaptive-root-gutter)`，而这个留白**本来就该在断点处跳变**——列宽从 480 换到 1920，留白从 143.96px 正确地掉到 0。读成设计长度是倒退，读成它本身是修正在起作用。比较前把这个变量代成 `0px` 而不是整条跳过，`left: calc(clamp(…) + var(--adaptive-root-gutter))` 里的 `clamp()` 照样接受检查。在默认配置上就狂叫的检查，是会被学会跳过的检查。
+- Fixed **two `shrinks` false positives that fired reliably on the default preset with no configuration at all**: `root.fixedContainingBlock` rewrites a fixed element's `left: 0` into `left: var(--adaptive-root-gutter)`, and that gutter is **meant** to step at a breakpoint — as the column goes from 480 to 1920, the gutter correctly drops from 143.96px to 0. Read as a design length that is a regression; read as itself it is the correction working. The variable is now substituted with `0px` before comparison rather than skipping the group entirely, so the `clamp()` in `left: calc(clamp(…) + var(--adaptive-root-gutter))` is still checked. A check that shouts on the default configuration is a check people learn to skip.
 
-### 原子化 CSS（Tailwind / UnoCSS）
+### Atomic CSS (Tailwind / UnoCSS)
 
-- 修正**工具类一个都换算不到**：这是静默的——手写 CSS 被缩放、工具类原样保留，两套尺寸从此对不齐，不报错。两个大版本各卡在一处。旧版（Tailwind 3、UnoCSS `presetUno` / `presetWind3`）把长度写成 `rem`，而编译器只读 `px`；新版（Tailwind 4、UnoCSS `presetWind4`）把长度整个搬进主题 token，`.p-4` 编译成 `padding: calc(var(--spacing) * 4)`，工具类里根本没有长度可读，而自定义属性默认不换算。
-- `unitToConvert` 现在接受数组，一趟读多种单位。这不是锦上添花：这两个框架同一张产物里两种单位都有——间距和字号是 `rem`，而边框宽度、`p-[13px]` 这类方括号任意值是 `px`，各自描述同一张设计稿。只读 `rem` 会漏掉所有边框，只读 `px` 会漏掉所有间距，两种单选都是错的。`rem` 按 `rootValue` 折算成像素，其余单位按面值读取。
-- 修正 `unitToConvert: 'rem'` 一直把 `1.5rem` 当成 1.5 像素：换算前不折算，于是低于 `minPixelValue` 与 `hairline` 阈值而被整批跳过。这两道阈值现在一律按**像素**判定——`0.0625rem` 与 `1px` 是同一根细线，怎么写的不影响它有多细。
-- 新增 `rootValue`（默认 16），读写两头共用一把尺：既决定 `rem` 输入折合多少像素，也决定文字静态项写成多少 `rem`。`html { font-size: 62.5% }` 的项目配 `rootValue: 10` 即可。
-- 新增 `withAtomicCss(base, options?)`：**包装**而非替换现有配置，把 `rem` 补进 `unitToConvert`，并认领主题 token 前缀 `--spacing`、`--text-`、`--leading-`、`--radius-`、`--container-`。认领源头即可，工具类不用动——`calc(clamp(a, b, c) * 4)` 恒等于 `clamp(4a, 4b, 4c)`（正系数下乘法可穿过 clamp），产物与直接换算 `16px` 逐位相同。故意不认领三类：`--breakpoint-*` 是画布**切换**的宽度，缩放它等于移动断点本身；`--tracking-*` 用 `em` 发布，依附的字号已被做成流体，再缩一次是叠加；`--shadow-*` 的像素是按屏幕尺度画的层次感。自定义长度族用 `tokenPrefixes` 补。
-- 默认 `textProperties` 加入 `--text-*` 与 `--leading-*`：字号被发布成 token 时，名字不长得像字体属性，漏掉就意味着这个字号**失去浏览器缩放**。这一条只决定一个已经要换算的长度怎么写，不决定它换不换算，因此对未被认领的 token 不起作用。
-- 新增一致性用例 `atomic/{tailwind-v4,unocss-wind3,unocss-wind4}`，输入是三者的**真实产物原文**（Tailwind 4.3.3、UnoCSS 66.7.5 两个预设），用 `scripts/capture-atomic.mjs` 重抓。两个大版本的产物形状差别大到手写必然写成想象中的样子。这两个框架不设为 devDependency：抓下来的 CSS 就是全部输入，把 `npm test` 绑在别人的发版节奏上换不来额外信息。
-- 路由的 `property` 通道收到正则时立即报 `TypeError` 并说明正确写法。另两个通道都收正则，这里只收字符串前缀，此前的表现是运行中途 `prefix.toLowerCase is not a function`。
+- Fixed **no utility class being converted at all**, silently: hand-written CSS scaled, utilities did not, and the two size systems drifted apart with no error. Each major version was blocked in a different place. The older ones (Tailwind 3, UnoCSS `presetUno` / `presetWind3`) write lengths in `rem` while the compiler only read `px`; the newer ones (Tailwind 4, UnoCSS `presetWind4`) moved lengths entirely into theme tokens, so `.p-4` compiles to `padding: calc(var(--spacing) * 4)` — there is no length in the utility to read, and custom properties are not converted by default.
+- `unitToConvert` now accepts an array, reading several units in one pass. This is not a nicety: both frameworks emit both units in the same stylesheet — spacing and font sizes in `rem`, border widths and bracketed arbitrary values like `p-[13px]` in `px`, all describing the same design file. Reading only `rem` misses every border, reading only `px` misses every gap, and both single choices are wrong. `rem` becomes pixels via `rootValue`; every other unit is read at face value.
+- Fixed `unitToConvert: 'rem'` having always treated `1.5rem` as 1.5 pixels: with no conversion before comparison it fell below the `minPixelValue` and `hairline` thresholds and whole stylesheets were skipped. Both thresholds are now judged in **pixels** — `0.0625rem` and `1px` are the same hairline, and how you spell it does not change how thin it is.
+- New `rootValue` (default 16), one ruler shared by both ends: it decides how many pixels a `rem` input is worth, and how many `rem` a text size's static part is written as. A project with `html { font-size: 62.5% }` sets `rootValue: 10`.
+- New `withAtomicCss(base, options?)`: **wraps** rather than replaces an existing configuration, adding `rem` to `unitToConvert` and claiming the theme token prefixes `--spacing`, `--text-`, `--leading-`, `--radius-`, `--container-`. Claiming the source is enough and the utilities need no changes — `calc(clamp(a, b, c) * 4)` is identically `clamp(4a, 4b, 4c)` (multiplication by a positive coefficient passes through a clamp), and the output is digit-for-digit identical to converting `16px` directly. Three families are deliberately not claimed: `--breakpoint-*` is the width at which a canvas **switches**, so scaling it moves the breakpoint itself; `--tracking-*` is published in `em`, and the font size it hangs off is already fluid, so scaling again compounds it; `--shadow-*` pixels are depth drawn at screen scale. Add your own length families with `tokenPrefixes`.
+- The default `textProperties` now includes `--text-*` and `--leading-*`: when a font size is published as a token its name does not look like a font property, and missing it means that font size **loses browser zoom**. This only decides how an already-converting length is written, not whether it converts, so it does nothing for an unclaimed token.
+- New conformance cases `atomic/{tailwind-v4,unocss-wind3,unocss-wind4}`, whose input is the **actual published output** of all three (Tailwind 4.3.3 and two UnoCSS 66.7.5 presets), re-capturable with `scripts/capture-atomic.mjs`. The two major-version shapes differ far too much for a hand-written copy to be anything but what you imagined. Neither framework is a devDependency: the captured CSS is the entire input, and tying `npm test` to someone else's release schedule buys no extra information.
+- A regular expression passed to a route's `property` channel now throws a `TypeError` immediately, explaining the correct form. The other two channels accept regexes; this one takes string prefixes only, and the previous behaviour was a mid-run `prefix.toLowerCase is not a function`.
 
-**破坏性（类型）**：`ResolvedAdaptiveMatrixOptions.unitToConvert` 由 `string` 变为 `string[]`；`AdaptiveMatrixOptions.unitToConvert` 放宽为 `string | readonly string[]`，传字符串照旧。`findContinuityIssues` 新增可选第二参数 `rootFontSize`。
+**Breaking (types)**: `ResolvedAdaptiveMatrixOptions.unitToConvert` changes from `string` to `string[]`; `AdaptiveMatrixOptions.unitToConvert` widens to `string | readonly string[]`, so passing a string still works. `findContinuityIssues` gained an optional second parameter, `rootFontSize`.
 
-### 编译器
+### Compiler
 
-- 修正跨画布的文字尺寸：**项目画布与组件库画布不一致时，该库的文字全错**。普通长度两边一直是一致的（都归结为 `值 ÷ 画布`），文字不是——文字保留一段固定的 `rem` 以便浏览器缩放仍然有效，而这段固定长度此前锚在各自的画布上。Vant 画在 375、页面画在 750 时，两者描述的是同一份设计的两套单位，Vant 的 16px 与页面的 32px 本是同一个尺寸，却在 390px 视口下分别渲染成 16.22px 与 26.62px——**小了约 40%**，而 375 与 1440 上都看不出来。750 稿的项目配 Vant 是国内移动端最常见的组合之一；antd-mobile 的 1x/2x 双份产物同理。
-- 新增 profile 字段 `textAnchorWidth`：文字静态部分锚定的宽度，默认等于 `designWidth`。组件库画布一律继承所属 profile 的锚点，因此无需配置。等价形式是「先把长度换算成锚点画布的单位，再照常套公式」：流体项恰好不变（`P × F / D` 与画布同比例约掉），只有静态项被归一化。非文字长度 `fontFluidity = 1`、静态项恒为 0，产物逐字节不变，`strategy: 'viewport'` 同样不受影响。
-- 新增性质测试「同一份设计换一张画布尺寸不变」：随机画布与随机缩放比下，`V px on D` 与 `V×k px on D×k` 在每个视口上必须一致。一致性套件只能覆盖有人想到要写下来的画布组合，而这个 bug 恰好只在两张画布同时出现时暴露。
+- Fixed cross-canvas text sizing: **when the project canvas and a library canvas differ, all of that library's text was wrong**. Ordinary lengths always agreed (both reduce to `value ÷ canvas`); text did not — text keeps a fixed `rem` component so browser zoom stays effective, and that fixed length used to anchor to each canvas separately. With Vant on 375 and the page on 750 the two describe the same design in two sets of units, so Vant's 16px and the page's 32px are the same size — yet at a 390px viewport they rendered as 16.22px and 26.62px, **about 40% too small**, and invisible at both 375 and 1440. A 750-file project using Vant is one of the most common mobile combinations there is; antd-mobile's 1x/2x pair of artifacts is the same situation.
+- New profile field `textAnchorWidth`: the width the static part of text anchors to, defaulting to `designWidth`. A library canvas always inherits the anchor of the profile it belongs to, so there is nothing to configure. The equivalent form is "convert the length into the anchor canvas's units first, then apply the formula as usual": the fluid term is exactly unchanged (`P × F / D` cancels proportionally with the canvas), and only the static term is normalised. For non-text lengths `fontFluidity = 1` and the static term is always 0, so the output is byte-for-byte unchanged, and `strategy: 'viewport'` is unaffected too.
+- New property test: "the same design on a different canvas is the same size". Across random canvases and random scale factors, `V px on D` and `V×k px on D×k` must agree at every viewport. The conformance suite can only cover canvas combinations someone thought to write down, and this bug only surfaced when two canvases were present at once.
 
-### 编译器与校验
+### Compiler and validation
 
-- `@adaptive <画布>` 落在一个没有声明 `query` 的 profile 上时会告警。按文件夹分双端的项目（`src/mobile/**` 与 `src/pc/**` 各一套页面代码）通常两个 profile 都不带 `query`——切换本来就不由 CSS 负责。此时在共用组件里写 `@adaptive pc { ... }` 读起来是「这些规则给 PC 用」，编译出来却是无条件规则，而且更靠后，**在任何视口都会赢**，没有任何地方会说话。`query: false` 不告警：那是作者明确表示切换发生在 CSS 之外。指向同一张画布的 `@adaptive` 也不告警：没有切换，拆开不丢东西。
-- 文档新增「两套页面代码，按文件夹分」一节，写清文件路由只决定按哪张稿换算、不会附带媒体查询，以及共用组件、组件库、路由具体度这几处的取舍。
+- `@adaptive <canvas>` landing on a profile with no `query` now warns. Projects split by folder (`src/mobile/**` and `src/pc/**`, one page tree each) usually have no `query` on either profile — switching is not CSS's job there. Writing `@adaptive pc { ... }` in a shared component then reads as "these rules are for desktop", but compiles to unconditional rules that come later in the file and therefore **win at every viewport**, with nothing anywhere saying so. `query: false` does not warn: that is an author stating explicitly that switching happens outside CSS. An `@adaptive` pointing at its own canvas does not warn either: there is no switch, and unwrapping loses nothing.
+- New documentation section, "two page trees, split by folder", stating that file routing only decides which design file to convert against and never adds a media query, plus the trade-offs around shared components, component libraries and route specificity.
 
-### 构建工具集成
+### Build tool integration
 
-- 新增真实 Vite 构建测试：脚手架里有一个由 Vite 自行发现的 `postcss.config.mjs`、一份从 `node_modules` 引入的依赖 CSS、以及一个按 `@vitejs/plugin-vue` 同款方式提供的 `<style>` 块。此前集成文档里的每一条说法都没有任何东西验证过——而这些说法一旦不成立，构建仍然成功，只是样式表是错的。现在验证：配置被找到并生效、依赖按 `node_modules` 路径落到组件库画布且与页面等价尺寸逐字节相同、带 query 串的 SFC id 能被包含式 `file` 路由命中、二次构建产物完全一致。
-- 并且把文档里「锚定结尾的正则匹配不到 SFC」这条坑也写成了测试：用 `/\.mobile\.css$/` 构建一遍，断言该 `<style>` 块确实静默留在默认画布上，而其余产物一字不差。这类说法只有被反向验证过才算数。
+- New real Vite build test: the scaffold has a `postcss.config.mjs` that Vite discovers for itself, a dependency stylesheet imported from `node_modules`, and a `<style>` block supplied the way `@vitejs/plugin-vue` supplies one. Until now nothing verified a single claim in the integration documentation — and when those claims stop holding, the build still succeeds and only the stylesheet is wrong. Now verified: the config is found and applied; a dependency lands on the component-library canvas via its `node_modules` path with output byte-for-byte identical to the equivalent size on the page; an SFC id with a query string is matched by a contains-style `file` route; and a second build produces identical output.
+- The documented trap "an end-anchored regex never matches an SFC" is now a test too: building with `/\.mobile\.css$/` asserts that the `<style>` block really is left silently on the default canvas while the rest of the output is unchanged. A claim like that only counts once it has been verified from the other side.
 
-### 可选运行时
+### Optional runtime
 
-- 修正 `observeAdaptiveViewport` 的帧泄漏：`update()` 是公开方法，却会把调度器的帧句柄清零。「先手动 `update()`、再 `destroy()`」这一串下来，已排队的那一帧既没被记录也没被取消，会在下一拍落到已销毁的观察者上。现在只有调度器自己清句柄，`destroy()` 之后也把句柄归零，重复 `destroy()` 不会去取消宿主已经回收再分配的句柄。
-- 补齐运行时测试：没有 `visualViewport` 的旧 WebView 回退、iOS 橡皮筋回弹导致的负键盘高度、逐字段的非数值读数、事件合帧、销毁时机、以及不传参数时读全局对象这条所有浏览器使用者实际走的路径。分支覆盖 72% → 100%。
+- Fixed a frame leak in `observeAdaptiveViewport`: `update()` is a public method, yet it cleared the scheduler's frame handle. Calling `update()` manually and then `destroy()` left an already-queued frame neither recorded nor cancelled, so it landed on a destroyed observer on the next tick. Only the scheduler clears the handle now, `destroy()` zeroes it, and a repeated `destroy()` no longer cancels a handle the host has already recycled and reissued.
+- Filled in the runtime tests: the fallback for old WebViews with no `visualViewport`, negative keyboard heights from iOS rubber-band scrolling, per-field non-numeric readings, event coalescing, destroy timing, and reading the globals when called with no arguments — the path every browser user actually takes. Branch coverage 72% → 100%.
 
-### 组件库
+### Component libraries
 
-- 新增 `scripts/verify-libraries.ts`：下载每个内置库的**已发布产物**，用真实的 `node_modules` 路径编译，核对前缀是否真的存在、路由落到哪张画布、是否幂等、有无告警、接缝检查是否误报。此前注册表里除 Vant 外都是照文档写的，没有实证；下面三条都是这个脚本查出来的。
-- 修正 antd-mobile：该库把同一份样式表发布了两次，`bundle/` 画在 375 上、`2x/bundle/` 画在 750 上，类名与 token 名完全相同（实测 5.42.3，后者每个长度恰好是前者的两倍）。此前 `.adm-` 前缀路由会把 2x 产物按 375 换算，页面上每一个尺寸都是应有的两倍，且没有任何报错或告警。新增 `antd-mobile-2x` 条目，自动模式下无需配置。
-- 新增 `scoped`：限定 `prefix` 与 `tokenPrefix` 只在 `file` 同时命中时生效。一个前缀对应两张画布时，只有路径能区分。限定路径的路由先于不限定的路由测试，因为它更具体；路径不存在时（打包器内联依赖）退回不限定的那一条。`scoped` 却不给 `file` 直接报错。
-- 移除 Varlet 的 `tokenPrefix: '--var-'`：该库的自定义属性根本不带前缀，叫 `--field-padding`、`--icon-size-md`，声明在光秃秃的 `:root` 上。这条规则此前匹配不到任何东西。认领这些名字等于认领 `--card-width` 本身，注册表只收无歧义的前缀，所以不补，改为在文档里给出显式路由的写法。
-- 文档补上实测的前缀命中率，并写明**设计宽度这一列核对不了**（CSS 里看不出稿子画在多宽），以及 `naive-ui` 与 `mui` 的样式在运行时生成、磁盘上没有样式表。
+- New `scripts/verify-libraries.ts`: downloads each built-in library's **published artifact**, compiles it with a realistic `node_modules` path, and checks whether the prefix really exists, which canvas the route lands on, whether the result is idempotent, whether there are warnings, and whether the seam check produces a false positive. Until now every registry entry except Vant was written from documentation with no evidence; the three items below were all found by this script.
+- Fixed antd-mobile: the library publishes the same stylesheet twice, `bundle/` drawn on 375 and `2x/bundle/` on 750, with identical class and token names (measured on 5.42.3, every length in the latter exactly double the former). The `.adm-` prefix route used to convert the 2x artifact against 375, making every size on the page exactly twice what it should be, with no error and no warning. New `antd-mobile-2x` entry, active in automatic mode with nothing to configure.
+- New `scoped`: restricts `prefix` and `tokenPrefix` to only count when `file` matches too. When one prefix maps to two canvases, only the path tells them apart. Path-scoped routes are tested before unscoped ones because they are more specific; when the path does not exist (a bundler inlined the dependency), it falls back to the unscoped one. `scoped` without `file` is an error.
+- Removed Varlet's `tokenPrefix: '--var-'`: that library's custom properties carry no prefix at all — they are `--field-padding`, `--icon-size-md`, declared on a bare `:root`, and the rule matched nothing. Claiming those names means claiming `--card-width` itself, and the registry only takes unambiguous prefixes, so nothing was added; the documentation shows the explicit route instead.
+- The documentation now carries measured prefix hit rates, and states that **the design width column cannot be checked** (a stylesheet does not reveal how wide the file it was drawn on was), and that `naive-ui` and `mui` generate their styles at runtime with no stylesheet on disk.
 
-### 断点接缝检查
+### Breakpoint seam check
 
-- 只在**至少一侧是编译器产出的公式**时才报。此前会把库自己有意写下的断点差异当成接缝：Quasar 的 `.q-tooltip` 手机上 `padding: 8px 16px`、600px 往上 `6px 10px`，是点击区域的取舍，两个数字都是人手写的、也比对过。「倒退只可能来自跨画布」这个完备性论证只覆盖本编译器产出的公式，对原样保留的样式表不成立。一侧换算另一侧没有，仍然报。
-- 一致性套件的用例改用编译器形状的值。此前十余条负向用例写的是裸 `40px`，加上这道门之后会因为「没被编译」而通过，而不是因为它们各自要验的那件事。
+- Only reports when **at least one side is a compiler-produced formula**. It used to read a library's own deliberate breakpoint difference as a seam: Quasar's `.q-tooltip` is `padding: 8px 16px` on a phone and `6px 10px` above 600px, a tap-target trade-off where both numbers were written and compared by a person. The completeness argument "a regression can only come from a canvas change" covers only formulas this compiler produced, and does not hold for a stylesheet left as authored. One side converted and the other not still reports.
+- Conformance cases now use compiler-shaped values. Over a dozen negative cases used a bare `40px`, which after this gate would pass because they were never compiled rather than because of the thing each was meant to verify.
 
 ## 0.4.0 — 2026-08-09
 
-### 断点接缝检查
+### Breakpoint seam check
 
-- 新增断点接缝检查：命令行会指出「视口变宽、尺寸反而变小」的声明，并给出两侧的实际像素值。两张设计稿各自都对，接缝处未必对，而这类问题只在某一个宽度上出现——日常调试的 375 和 1440 都正常。检查也从包里导出为 `findContinuityIssues(root)`，可用于让构建直接失败。
-- 检查按**绝对值**比较，且断点两侧变号一律不报。编译器输出的公式，其绝对值对视口宽度单调不减且全程不变号，所以绝对值倒退只可能来自跨断点换画布。按数值比较对每一条负长度都是反的：负外边距、外溢这类值本来就靠远离零来变大。
-- 检查会代入同一份样式表里的主题 token。组件库的尺寸几乎不写字面量——Vant 4.10.0 的 3198 条普通声明里有 1173 条完全经 `var()` 读取，在第一个 `var(` 就放弃等于避开了本插件要适配的那一层。代入只在值由视口宽度单独决定时进行：token 只声明在 `:root` / `:host` / `html` 上且别处没有第二份，每一处声明要么无条件、要么位于纯像素宽度的 `@media` 里。token 自身在断点处被改写也算一次接缝，即使消费它的规则只写了一次。实测（Vant 4.10.0 完整样式表）可求值的值分量 622 → 1309 条（17.6% → 36.9%），收录 779 个 token。
-- 实测误报：69 份一致性套件产物、上述 Vant 样式表、本仓库示例工程，`shrinks` 报告数均为 0。
-- 新增 `evaluateLength`：把编译器产出的 `clamp()` / `min()` / `max()` / `calc()` 在指定视口宽度上求值。`env()`、`%`、容器单位一律返回 `null` 而不是猜一个数。
+- New breakpoint seam check: the CLI points out declarations where widening the viewport makes a size smaller, with the actual pixel values on both sides. Two design files can each be right and still disagree at the seam, and this class of problem only appears at one width — the 375 and 1440 you debug at every day are both fine. The check is also exported as `findContinuityIssues(root)` so a build can fail on it.
+- The comparison is on **absolute value**, and a sign change across the breakpoint is never reported. The absolute value of every formula the compiler emits is non-decreasing in viewport width and never changes sign, so an absolute-value regression can only come from a canvas change across a breakpoint. Comparing signed numbers was inverted for every negative length: negative margins and bleeds grow by moving away from zero.
+- The check substitutes theme tokens from the same stylesheet. Component libraries almost never write literal sizes — of Vant 4.10.0's 3198 ordinary declarations, 1173 read entirely through `var()`, so giving up at the first `var(` means avoiding precisely the layer this plugin adapts. Substitution happens only when the value is decided by viewport width alone: the token must be declared only on `:root` / `:host` / `html` with no second copy elsewhere, and every declaration must be either unconditional or inside a pure pixel-width `@media`. A token rewritten at a breakpoint is itself a seam, even if the rule consuming it is written once. Measured (the complete Vant 4.10.0 stylesheet): evaluable value components 622 → 1309 (17.6% → 36.9%), with 779 tokens collected.
+- Measured false positives: across the 69 conformance fixtures, the Vant stylesheet above, and this repository's example project, the `shrinks` count is 0 everywhere.
+- New `evaluateLength`: evaluates the compiler's `clamp()` / `min()` / `max()` / `calc()` at a given viewport width. `env()`, `%` and container units return `null` rather than a guessed number.
 
-### 打包与类型
+### Packaging and types
 
-- 修正 CommonJS 入口：`require('postcss-adaptive-matrix')` 此前返回的是命名空间对象，直接调用会抛 `plugin is not a function`，必须写 `.default`。而 `plugins: [require('postcss-adaptive-matrix')({ ... })]` 正是所有 `postcss.config.js` 的通用写法——本仓库 Webpack 文档里的示例自己就是错的。现在 `module.exports` 就是插件本身，`.default` 与各具名导出仍作为属性保留。
-- 修正 CommonJS 类型入口。两处：`exports` 里的 `types` 此前只有顶层一处，CJS 使用者拿到的是 ESM 版 `.d.ts`；而 `.d.cts` 本身只声明具名导出，于是 `import x = require('postcss-adaptive-matrix')` 报 “has no call signatures”——代码能跑、编辑器报红。现在 `require` 指向 `.d.cts`，且 `.d.cts` 以 `export =` 描述真实形状，类型经合并的命名空间保留，`import type { AdaptiveMatrixOptions }` 照常可用。ESM 入口与类型不受影响。
-- 新增针对构建产物本身的测试：其余测试都从 `src` 导入，而「`require` 拿到什么」「类型解析到哪个文件」由构建与 `package.json` 决定，从源码导入永远测不到。`npm run check` 因此改为先构建再测试。
+- Fixed the CommonJS entry: `require('postcss-adaptive-matrix')` returned a namespace object, so calling it directly threw `plugin is not a function` and `.default` was mandatory. But `plugins: [require('postcss-adaptive-matrix')({ ... })]` is the universal shape of every `postcss.config.js` — this repository's own Webpack documentation example was wrong. `module.exports` is now the plugin itself, with `.default` and the named exports still available as properties.
+- Fixed the CommonJS type entry, in two places: `types` in `exports` existed only at the top level, so CJS consumers got the ESM `.d.ts`; and `.d.cts` itself only declared named exports, so `import x = require('postcss-adaptive-matrix')` reported "has no call signatures" — code that ran while the editor showed red. `require` now points at `.d.cts`, which describes the real shape with `export =`, types are preserved through a merged namespace, and `import type { AdaptiveMatrixOptions }` still works. The ESM entry and its types are unaffected.
+- New tests against the built artifact itself: every other test imports from `src`, but what `require` receives and which file types resolve to are decided by the build and by `package.json`, and importing from source can never test that. `npm run check` therefore builds before testing.
 
-### 编译器与校验
+### Compiler and validation
 
-- 跨画布的选择器列表（如 `.van-cell, .page-hero { ... }`）现在会告警并指出哪个选择器落空了。一条声明只能有一个结果，此前是静默按第一个命中的画布编译整条规则。
-- `@adaptive pc;`（没有块）此前被改写成 `@media (min-width: 768px);`——不是合法 CSS，而作者想放到那张画布上的规则仍留在原画布。现在告警并保持原样。
-- 命令行的 `-c` 不再在配置模块漏写 `default`、或预设忘了调用时静默改用内置默认值。这两种写法此前会跑完并打印一份看着正确的对照表，没有任何地方说过配置没被读到。
-- 新增配置校验：`unit` 与 `strategy` 的取值、空的 `unitToConvert`、与 CSS 已定义的 at-rule 重名的 `atRuleName`、空的 `root.selector`。这些字段写错的后果都是静默的，其中 `unit` 写错会直接产出无效 CSS。
-- 新增基于性质的随机测试：以 `evaluateLength` 为判据，在数百组生成的画布上验证设计宽度恒等、绝对值单调、区间外恒定、区间内线性与幂等。一致性套件只能覆盖有人想到要写下来的设计宽度。
+- A selector list that straddles canvases (`.van-cell, .page-hero { ... }`) now warns and names the selector that lost. One declaration can only have one answer, and the previous behaviour silently compiled the whole rule on the first canvas that matched.
+- `@adaptive pc;` (no block) used to be rewritten as `@media (min-width: 768px);` — not valid CSS, while the rules the author meant to put on that canvas stayed on the original one. It now warns and is left as written.
+- The CLI's `-c` no longer falls back silently to the built-in defaults when the config module is missing `default` or the preset was never called. Both used to run to completion and print a comparison that looked correct, with nothing anywhere saying the configuration had not been read.
+- New configuration validation: the values of `unit` and `strategy`, an empty `unitToConvert`, an `atRuleName` colliding with an at-rule CSS already defines, and an empty `root.selector`. Getting any of these wrong fails silently, and a wrong `unit` emits outright invalid CSS.
+- New property-based random tests: using `evaluateLength` as the oracle, design-width identity, absolute-value monotonicity, constancy outside the range, linearity inside it and idempotence are verified across hundreds of generated canvases. The conformance suite can only cover design widths someone thought to write down.
 
 ## 0.3.0
 
-- 新增 `adaptive-matrix` 命令行预览：逐条声明的前后对照，`--from` 可在上线前验证文件路由，`--css` 输出完整产物且警告走 stderr。
-- 修正嵌套场景：`@media` / `@supports` / `@layer` / `@container` / `@scope` / `@starting-style` 内的声明现在会被换算，`@font-face` / `@page` / `@property` / `@counter-style` 内的长度保持原样。
-- 修正幂等性：已经带视口单位的 `clamp()` / `min()` / `max()` 不再被二次换算。
-- 修正根容器基础样式的幂等性：产物带 `/* postcss-adaptive-matrix foundation */` 标记，再编译一次既不会把 `max-inline-size: 480px` 这类固定上限当成设计稿尺寸缩放，也不会叠出第二份。
-- 忽略注释（`adaptive-ignore` 系列）不再从产物中删除。被忽略的值没有任何自身痕迹，注释一旦消失，第二趟编译就会把作者明确排除的尺寸换算掉；注释会被压缩器去掉，不影响上线体积。
-- 一致性套件对每一个样例增加幂等断言：产物再编译一遍必须原样返回。
-- 修正重复声明：同一规则内重复书写的声明现在每一条都会换算。此前只换算第一条，而层叠中生效的是最后一条，等于整条换算失效。
-- 支持带指数的数字：`1e2px` 就是 100px，此前被静默跳过；`min(1e2vw, 50px)` 也不再被误判为「没有视口单位」。
-- 修正 at-rule 大小写：`@ADAPTIVE` / `@Adaptive` 与 `@adaptive` 等价，与 CSS 对 at-keyword 的大小写不敏感一致。此前不被识别，整块会被浏览器丢弃且没有任何提示。
-- 新增 `root.injectTo`（预设为 `rootInjectTo`）：限定根容器基础样式注入到哪些文件。组件化项目里每个 `<style>` 块都是独立文件，默认会逐个注入一份。
-- 只写排除项的 `propList`（如 `['!border*']`）现在直接报错——它匹配不到任何属性，等于整份样式表都不换算。
-- 在 `profiles` 里使用保留前缀 `library:` 现在直接报错并指回 `libraries: [{ extends }]`——此前会被合成的组件库画布静默覆盖。
-- 未知画布的告警不再列出内部合成的组件库画布，并说明浏览器会整块丢弃该 at-rule；`unknownProfile: 'error'` 下的报错不再建议开启已经开启的选项。
-- 新增注册表不变量测试，覆盖前缀歧义、画布取值与自动模式的短前缀策略。
-- 重写文档结构，新增快速上手、构建工具集成、组件库适配、可选运行时与命令行预览五篇，并补充 SVG 图示。
+- New `adaptive-matrix` CLI preview: a per-declaration before/after, with `--from` to verify file routing before you ship and `--css` to emit the full output while warnings go to stderr.
+- Fixed nesting: declarations inside `@media` / `@supports` / `@layer` / `@container` / `@scope` / `@starting-style` are now converted, while lengths inside `@font-face` / `@page` / `@property` / `@counter-style` are left as written.
+- Fixed idempotence: `clamp()` / `min()` / `max()` that already carry a viewport unit are no longer converted a second time.
+- Fixed idempotence of the root foundation: the output carries a `/* postcss-adaptive-matrix foundation */` marker, so recompiling neither scales a fixed ceiling like `max-inline-size: 480px` as if it were a design-file size, nor stacks on a second copy.
+- Ignore comments (the `adaptive-ignore` family) are no longer removed from the output. An ignored value carries no trace of itself, so once the comment is gone a second pass converts the size the author explicitly excluded; minifiers remove the comments, so shipped size is unaffected.
+- The conformance suite gained an idempotence assertion for every case: recompiling the output must return it unchanged.
+- Fixed duplicate declarations: every repetition of a declaration within one rule is now converted. Only the first used to be, while the cascade uses the last — so the conversion was effectively lost.
+- Numbers with exponents are supported: `1e2px` is 100px, which used to be skipped silently, and `min(1e2vw, 50px)` is no longer misjudged as having no viewport unit.
+- Fixed at-rule casing: `@ADAPTIVE` / `@Adaptive` are equivalent to `@adaptive`, matching CSS's case-insensitivity for at-keywords. They used to go unrecognised, and the browser discarded the whole block with no indication.
+- New `root.injectTo` (`rootInjectTo` on the preset): limits which files receive the root foundation. In a component-based project every `<style>` block is a separate file, so the default injects one copy into each.
+- An exclude-only `propList` (such as `['!border*']`) is now an error — it matches no property, which means the entire stylesheet goes unconverted.
+- Using the reserved `library:` prefix in `profiles` is now an error pointing back at `libraries: [{ extends }]` — it used to be silently overwritten by the synthesised library canvas.
+- The unknown-canvas warning no longer lists internally synthesised library canvases, and explains that the browser discards the whole at-rule; under `unknownProfile: 'error'` the error no longer suggests enabling an option that is already enabled.
+- New registry invariant tests, covering prefix ambiguity, canvas values and the short-prefix policy in automatic mode.
+- Restructured the documentation, adding getting started, build tool integration, component libraries, optional runtime and CLI preview, with SVG diagrams.
 
 ## 0.2.0
 
-- 新增组件库画布、自动识别、路由覆盖和设计令牌适配。
-- 新增 fixed 根包含块定位矫正与桌面端偏移处理。
-- 将编译核心与 PostCSS 适配层解耦，公开解析后的多画布配置能力。
-- 建立 50+ 组 conformance 固定样例、133 项测试和性能基准工具。
-- 重写多画布模型、组件库接入、架构与迁移文档。
+- Added component-library canvases, automatic recognition, route overrides and design-token adaptation.
+- Added the fixed root containing block correction and desktop offset handling.
+- Decoupled the compilation core from the PostCSS adapter layer, exposing the resolved multi-canvas configuration.
+- Established 50+ conformance fixtures, 133 tests and a benchmarking tool.
+- Rewrote the multi-canvas model, component library, architecture and migration documentation.
 
 ## 0.1.0
 
-- 首次实现 App/PC 多设计画布编译模型。
-- 支持有界流体尺寸、可缩放文字、媒体查询和容器查询 profile。
-- 支持动态设计宽度、文件/属性/选择器/值过滤与忽略指令。
-- 提供可选根布局、安全区变量和 VisualViewport 运行时。
-- 发布 ESM、CommonJS 与 TypeScript 类型。
+- First implementation of the app/desktop multi-canvas compilation model.
+- Bounded fluid sizing, zoomable text, and media-query and container-query profiles.
+- Dynamic design widths, file/property/selector/value filters and ignore directives.
+- Optional root layout, safe-area variables and the VisualViewport runtime.
+- Published ESM, CommonJS and TypeScript types.

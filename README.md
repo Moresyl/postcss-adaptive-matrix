@@ -216,7 +216,7 @@ Support versions are baked in at build time, so this adds no runtime dependency 
 | [Conformance suite](./conformance/README.md) | A language-agnostic behavioural specification |
 | [Full example](./examples/app-pc/) | A runnable app + desktop project |
 
-Documentation is currently written in Chinese; the pages above are being translated. This README is the English entry point.
+Every page is available in both English and Simplified Chinese; use the switcher at the top of each one.
 
 ## Requirements
 

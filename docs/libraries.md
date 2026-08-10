@@ -1,14 +1,16 @@
-# 组件库适配
+# Component libraries
 
-## 问题
+**English** · [简体中文](./libraries.zh-CN.md)
 
-组件库有自己的设计稿，而且未必和你的一致。Vant 画在 375 上，你的页面可能画在 750 上，Element Plus 则根本没有设计稿——它按真实像素绘制，本来就不该缩放。
+## The problem
 
-传统做法是把 `node_modules` 加进忽略名单。这只会把问题换个形状：页面缩放而组件不动，两者从此对不齐。反过来不忽略，组件就按错误的画布被拉变形。忽略名单能给出的选项只有这两个，都不对。
+A component library has its own design file, and it is not necessarily yours. Vant is drawn on 375, your pages may be drawn on 750, and Element Plus has no design file at all — it is drawn in real pixels and was never meant to scale.
 
-正确的做法是给每张设计稿一个画布。**这是默认行为，不需要配置。**
+The traditional answer is to add `node_modules` to an ignore list. That only changes the shape of the problem: the page scales while the components stay put, and the two stop lining up. Not ignoring them stretches the components against a canvas that was never theirs. Those are the only two options an ignore list offers, and neither is right.
 
-## 效果
+The correct answer is to give each design file its own canvas. **That is the default — there is nothing to configure.**
+
+## The effect
 
 ```js
 adaptiveMatrix({
@@ -20,7 +22,7 @@ adaptiveMatrix({
 ```
 
 ```css
-/* 输入 —— 四处都写 16px */
+/* Input — 16px in all four places */
 :root       { --van-padding-md: 16px }
 .van-cell   { padding: 16px }
 .el-input   { padding: 16px }
@@ -28,20 +30,20 @@ adaptiveMatrix({
 ```
 
 ```css
-/* 输出 */
+/* Output */
 :root       { --van-padding-md: clamp(13.65333px, 4.26667vw, 25.6px) }
 .van-cell   { padding: clamp(13.65333px, 4.26667vw, 25.6px) }
 .el-input   { padding: 16px }
 .page-hero  { padding: clamp(6.82667px, 2.13333vw, 12.8px) }
 ```
 
-Vant 的三项按 375 换算，Element Plus 原样保留，页面按 750 换算。三个不同的结果，各自都对。
+The three Vant items convert on 375, Element Plus is left alone, and the page converts on 750. Three different results, each of them correct.
 
-## 内置清单
+## The built-in list
 
-移动端——按各自设计画布换算：
+Mobile — converted against their own design canvas:
 
-| 名称 | 设计宽度 | 类名前缀 | Token 前缀 | 前缀命中率 |
+| Name | Design width | Class prefix | Token prefix | Prefix hit rate |
 | --- | --- | --- | --- | --- |
 | `vant` | 375 | `van-` | `--van-` | 1288/1407 |
 | `nutui` | 375 | `nut-` | `--nut-` | 1398/1497 |
@@ -50,76 +52,76 @@ Vant 的三项按 375 换算，Element Plus 原样保留，页面按 750 换算�
 | `antd-mobile-2x` | 750 | `adm-` ‡ | `--adm-` ‡ | 798/829 |
 | `taro-ui` | 750 | `at-` * | — | 711/722 |
 
-桌面端——按真实像素绘制，正确的适配就是不动它：
+Desktop — drawn in real pixels, where the correct adaptation is to leave them alone:
 
-| 名称 | 设计宽度 | 类名前缀 | Token 前缀 | 前缀命中率 |
+| Name | Design width | Class prefix | Token prefix | Prefix hit rate |
 | --- | --- | --- | --- | --- |
-| `element-plus` | 保留像素 | `el-` | `--el-` | 3180/3251 |
-| `antd` | 保留像素 | `ant-` | — | 5941/6050 |
-| `arco-design` | 保留像素 | `arco-` | — | 3462/3763 |
-| `naive-ui` | 保留像素 | `n-` * | — | 运行时生成 |
-| `quasar` | 保留像素 | `q-` * | — | 2080/3363 |
-| `mui` | 保留像素 | `Mui` | — | 运行时生成 |
+| `element-plus` | keep pixels | `el-` | `--el-` | 3180/3251 |
+| `antd` | keep pixels | `ant-` | — | 5941/6050 |
+| `arco-design` | keep pixels | `arco-` | — | 3462/3763 |
+| `naive-ui` | keep pixels | `n-` * | — | generated at runtime |
+| `quasar` | keep pixels | `q-` * | — | 2080/3363 |
+| `mui` | keep pixels | `Mui` | — | generated at runtime |
 
-每一项同时按包路径匹配（如 `/vant/`、`/@nutui/`），因此产物是否分文件都能工作。
+Every entry also matches by package path (`/vant/`, `/@nutui/` and so on), so it works whether or not the output is still split into files.
 
-标 `*` 的三个前缀在自动模式下不启用，原因见下。† 见[没有前缀的 token](#没有前缀的-token)，‡ 见[同一个前缀，两张画布](#同一个前缀两张画布)。
+The three prefixes marked `*` are not enabled in automatic mode; why is below. † see [Tokens without a prefix](#tokens-without-a-prefix), ‡ see [One prefix, two canvases](#one-prefix-two-canvases).
 
-### 这张表是核对过的
+### This table was checked
 
-「前缀命中率」是该库**已发布样式表**里含此前缀的规则数 ÷ 总规则数，实测得到，不是照文档抄的。核对脚本在仓库里，可以自己跑：
+"Prefix hit rate" is the number of rules containing that prefix in the library's **published stylesheet** ÷ the total rule count — measured, not copied from documentation. The verification script is in the repository and you can run it yourself:
 
 ```bash
-npx tsx scripts/verify-libraries.ts          # 全部
-npx tsx scripts/verify-libraries.ts vant     # 单个
+npx tsx scripts/verify-libraries.ts          # all of them
+npx tsx scripts/verify-libraries.ts vant     # one
 ```
 
-它会下载每个库的发布产物，用真实的 `node_modules` 路径编译，然后检查：前缀与 token 前缀是否真的存在、路由落到哪张画布、是否幂等、有无告警、断点接缝检查是否误报。当前 12 项全部通过。
+It downloads each library's published artifact, compiles it with a realistic `node_modules` path, and then checks: whether the prefix and token prefix really exist, which canvas the route lands on, whether the result is idempotent, whether there are warnings, and whether the breakpoint seam check produces a false positive. All 12 entries currently pass.
 
-**未覆盖的一项：设计宽度。** 一张 CSS 里看不出它画在多宽的稿子上，这一列来自各库自己的文档，脚本核对不了。
+**One column it does not cover: design width.** A stylesheet does not reveal how wide the file it was drawn on was; that column comes from each library's own documentation and the script cannot check it.
 
-`naive-ui` 与 `mui` 的样式在运行时生成，磁盘上没有样式表——不经过 PostCSS，也就无从核对。条目仍然有用：它们是「保留像素」，所以你手写的 `.n-button` 覆盖样式不会被缩放。
+`naive-ui` and `mui` generate their styles at runtime, so there is no stylesheet on disk — nothing goes through PostCSS and there is nothing to check. The entries are still useful: they are "keep pixels", so your hand-written `.n-button` overrides are not scaled.
 
-清单可以从代码读取：
+The list is readable from code:
 
 ```js
 import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 ```
 
-## 匹配方式
+## How matching works
 
-一个条目最多提供三条通道，命中任意一条即归属该库的画布：
+An entry offers up to three channels, and matching any one of them assigns the CSS to that library's canvas:
 
-- **类名前缀**——不带点。`'van-'` 匹配 `.van-cell` 与 `.page .van-cell`，不匹配 `.caravan-slot`；
-- **自定义属性前缀**——如 `'--van-'`。被认领本身就是开关，所以不受 `transformCustomProperties` 约束；那个开关管的是你自己写的变量；
-- **文件路径**——构建产物仍然分文件时的兜底。
+- **Class prefix** — without the dot. `'van-'` matches `.van-cell` and `.page .van-cell`, but not `.caravan-slot`;
+- **Custom-property prefix** — such as `'--van-'`. Being claimed is itself the switch, so this is not gated by `transformCustomProperties`; that option governs variables you wrote;
+- **File path** — the fallback for when the build output is still split into files.
 
-优先级：属性名 > 选择器 > 文件路径。
+Priority: property name > selector > file path.
 
-选择器高于文件路径，是因为选择器属于 CSS 本身，而路径只反映构建工具当时怎么摆放文件——打包器一旦把依赖内联进产物，路径就没了。属性名的理由相同且更强：主题 token 声明在 `:root` 上，除了名字之外不留任何来源痕迹。
+A selector beats a file path because the selector is part of the CSS itself, whereas a path only reflects how the build tool happened to arrange files at the time — once a bundler inlines a dependency, the path is gone. The reasoning for property names is the same and stronger: theme tokens are declared on `:root` and leave no trace of their origin beyond their name.
 
-## 一条规则只能有一个结果
+## A rule can only have one answer
 
-选择器列表是有可能跨画布的：
+A selector list can straddle canvases:
 
 ```css
 .van-cell, .page-hero { padding: 16px }
 ```
 
-`.van-cell` 归 Vant 画布，`.page-hero` 归默认画布，但 `padding: 16px` 只有一个值可以输出——CSS 无法让同一条声明对列表里不同的选择器给出不同结果。编译器取第一个命中的画布编译整条规则，另一个选择器就拿到了不属于它的换算。
+`.van-cell` belongs to the Vant canvas and `.page-hero` to the default one, but `padding: 16px` has only one value to emit — CSS cannot give one declaration a different result per selector in the list. The compiler compiles the whole rule on the first canvas that matches, and the other selector gets a conversion that is not its own.
 
-这种情况会告警，并指出是哪个选择器落空了。拆成两条规则即可：
+This warns, naming the selector that lost. Splitting into two rules fixes it:
 
 ```css
 .van-cell { padding: 16px }
 .page-hero { padding: 16px }
 ```
 
-`:is()`、`:not()` 和属性值里的逗号是参数分隔符，不是选择器边界，不会被拆开——也因此 `:is(.van-cell, .page-hero)` 这种真正混合的写法查不出来。
+Commas inside `:is()`, `:not()` and attribute values are argument separators, not selector boundaries, and are not split — which is also why a genuinely mixed `:is(.van-cell, .page-hero)` cannot be detected.
 
-## 主题 token
+## Theme tokens
 
-名字含有文字属性词段的 token 走 `rem + vw` 混合公式，而不是普通长度的纯 `vw`：
+A token whose name contains a text-property word takes the `rem + vw` hybrid rather than the plain `vw` of an ordinary length:
 
 ```css
 :root {
@@ -128,20 +130,20 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 }
 ```
 
-两个都识别为字号。若按普通长度输出，组件库的文字将不再响应浏览器缩放——用户调大字号，页面上你写的文字变大了，组件里的没变。
+Both are recognised as font sizes. Emitted as ordinary lengths, the library's text would stop responding to browser zoom — the user increases the font size, your own text grows, and the text inside components does not.
 
-### 没有前缀的 token
+### Tokens without a prefix
 
-Varlet 的自定义属性不带库前缀，直接叫 `--field-padding`、`--icon-size-md`、`--card-width`，声明在一个光秃秃的 `:root` 上。注册表因此**不给它写 `tokenPrefix`**：认领这些名字等于认领 `--card-width` 本身，而任何一个项目都可能自己定义同名变量，误命中是静默的。
+Varlet's custom properties carry no library prefix: they are simply `--field-padding`, `--icon-size-md`, `--card-width`, declared on a bare `:root`. So the registry gives it **no `tokenPrefix`**: claiming those names means claiming `--card-width` itself, any project may define a variable of the same name, and a false match is silent.
 
-影响范围有限——Varlet 自己的样式表按路径匹配，照常落到 375 画布。但如果你按官方做法在**项目 CSS 里**覆盖主题：
+The blast radius is small — Varlet's own stylesheet matches by path and lands on the 375 canvas as usual. But if you override the theme **in your own CSS**, as the official docs suggest:
 
 ```css
-/* 你自己的文件，路径不在 @varlet 下，名字也没有前缀可认 */
+/* your own file: not under @varlet, and no prefix to recognise */
 :root { --field-padding: 16px }
 ```
 
-这一条不会被认领，需要显式写一条路由：
+that line is not claimed, and needs an explicit route:
 
 ```js
 adaptiveMatrix({
@@ -149,19 +151,19 @@ adaptiveMatrix({
 })
 ```
 
-### 同一个前缀，两张画布
+### One prefix, two canvases
 
-antd-mobile 把同一份样式表发布了两次：`bundle/` 画在 375 上，`2x/bundle/` 画在 750 上。类名和 token 名一模一样（实测 5.42.3：后者每一个长度恰好是前者的两倍，`font-size: 16px` 对应 `32px`），**只有路径能区分**。
+antd-mobile publishes the same stylesheet twice: `bundle/` drawn on 375 and `2x/bundle/` drawn on 750. The class names and token names are identical (measured on 5.42.3: every length in the latter is exactly double the former, `font-size: 16px` against `32px`), and **only the path tells them apart**.
 
-只按 `.adm-` 前缀路由的话，2x 产物会按 375 换算，页面上每一个尺寸都是应有的两倍——没有报错，没有告警，全局偏大。
+Routing on the `.adm-` prefix alone would convert the 2x artifact against 375, making every size on the page exactly twice what it should be — no error, no warning, just uniformly too big.
 
-所以 `antd-mobile-2x` 这个条目是**限定路径**的：它的前缀通道要求路径同时命中才算数。限定路径的路由先于不限定的路由测试，因为「类名加路径」比「只有类名」更具体：
+So the `antd-mobile-2x` entry is **path-scoped**: its prefix channel only counts when the path matches too. Path-scoped routes are tested before unscoped ones, because "class name plus path" is more specific than "class name alone":
 
-- 编译 `2x/bundle/style.css` → 750 画布；
-- 编译 `bundle/style.css` → 375 画布；
-- 打包器把依赖内联、路径已经不存在时 → 退回 375，因为那是默认产物。
+- compiling `2x/bundle/style.css` → the 750 canvas;
+- compiling `bundle/style.css` → the 375 canvas;
+- when a bundler has inlined the dependency and the path no longer exists → falls back to 375, which is the default artifact.
 
-自动模式下两条都在，不需要配置。自己的库有同样情况时，`scoped: true` 是同一个开关：
+Both entries are present in automatic mode, with nothing to configure. When your own library has the same shape, `scoped: true` is the same switch:
 
 ```js
 adaptiveMatrix({
@@ -171,23 +173,23 @@ adaptiveMatrix({
 })
 ```
 
-`scoped` 却不给 `file` 会直接报错——限定路径是它认领别人前缀的全部理由，没有路径就退化成一个靠声明顺序决定胜负的重复条目。
+`scoped` without `file` is an error — the path scope is the entire reason it may claim someone else's prefix, and without it the entry degrades into a duplicate decided by declaration order.
 
-## 自动模式下被保留的前缀
+## Prefixes held back in automatic mode
 
-`naive-ui`（`.n-`）、`quasar`（`.q-`）、`taro-ui`（`.at-`）的前缀确实是官方前缀，但也和普通业务类名难以区分。自动模式下这三项**只按文件路径匹配**。
+The prefixes of `naive-ui` (`.n-`), `quasar` (`.q-`) and `taro-ui` (`.at-`) really are the official ones, but they are also hard to tell apart from ordinary application class names. In automatic mode those three **match by file path only**.
 
-显式写出库名即表示该前缀在当前代码库中安全，此时前缀通道恢复：
+Naming the library explicitly states that its prefix is safe in this codebase, and the prefix channel comes back:
 
 ```js
 adaptiveMatrix({ libraries: ['vant', 'naive-ui'] })
 ```
 
-误命中是静默的——它会按错误画布缩放某个元素，或跳过本该缩放的元素，没有报错也没有警告。默认从严，是因为错误的适配比没有适配更难发现。
+A false match is silent — it scales an element against the wrong canvas, or skips an element that should have scaled, with no error and no warning. The default is strict because a wrong adaptation is harder to find than a missing one.
 
-## 覆盖内置项
+## Overriding a built-in entry
 
-用 `extends` 只改一项，其余继承。`name` 也随之继承，诊断信息与派生画布名仍指向读者认得的那个库：
+Use `extends` to change one field and inherit the rest. `name` is inherited too, so diagnostics and the derived canvas name still point at the library a reader recognises:
 
 ```js
 adaptiveMatrix({
@@ -195,9 +197,9 @@ adaptiveMatrix({
 })
 ```
 
-这是唯一的入口。每个库会合成一张名为 `library:<名字>` 的画布，`library:` 是保留前缀——在 `profiles` 里直接写 `'library:vant'` 会被合成结果覆盖，等于白写，所以这种配置直接报错并指回 `extends`。
+That is the only entry point. Each library synthesises a canvas named `library:<name>`, and `library:` is a reserved prefix — writing `'library:vant'` directly in `profiles` would be overwritten by the synthesised result and therefore have no effect, so that configuration is an error that points you back to `extends`.
 
-## 添加未收录的库
+## Adding a library that is not listed
 
 ```js
 adaptiveMatrix({
@@ -214,23 +216,23 @@ adaptiveMatrix({
 })
 ```
 
-给出数组即表示只启用列出的条目——上面的配置里，除 Vant 和 acme-ui 外的内置库都不生效。
+Providing an array means only the listed entries are enabled — in the configuration above, every built-in other than Vant and acme-ui is off.
 
-## 关闭
+## Turning it off
 
 ```js
 adaptiveMatrix({ libraries: false })
 ```
 
-之后仍可用 `routes` 显式改派、`exclude: /node_modules/`、`selectorExclude` 和注释指令自行处理。
+You can still handle things yourself with explicit `routes`, `exclude: /node_modules/`, `selectorExclude` and the comment directives.
 
-## 类型
+## Types
 
 ```ts
 type LibraryEntry =
-  | string                                              // 内置名称
-  | LibraryAdaptation                                   // 完整定义
-  | (Partial<LibraryAdaptation> & { extends: string })  // 基于内置项修改
+  | string                                              // a built-in name
+  | LibraryAdaptation                                   // a complete definition
+  | (Partial<LibraryAdaptation> & { extends: string })  // adjust a built-in
 
 interface LibraryAdaptation {
   name: string
@@ -243,23 +245,23 @@ interface LibraryAdaptation {
 }
 ```
 
-`basedOn` 指定借用哪张 profile 的流体区间、单位与策略，默认 `defaultProfile`。派生画布只替换 `designWidth`，因此它与页面在同一个视口宽度上停止增长——这正是组件和页面能保持对齐的原因。
+`basedOn` says which profile's fluid range, unit and strategy to borrow; it defaults to `defaultProfile`. The derived canvas replaces only `designWidth`, so it stops growing at the same viewport width as the page — which is exactly why the components and the page stay aligned.
 
-派生画布还会继承所属 profile 的 `textAnchorWidth`（默认就是该 profile 的 `designWidth`），见下。
+A derived canvas also inherits its profile's `textAnchorWidth` (which by default is that profile's `designWidth`), see below.
 
-### 库画布的文字锚点
+### Where a library canvas anchors its text
 
-组件库画布与页面画布描述的是**同一份设计的两套单位**：Vant 画在 375、页面画在 750 时，Vant 的 16px 和页面的 32px 就是同一个尺寸，编译后在同一视口下必须渲染成同一个大小。
+A library canvas and a page canvas describe **the same design in two sets of units**: with Vant on 375 and the page on 750, Vant's 16px and the page's 32px are the same size, and after compilation they must render identically at any viewport.
 
-普通长度自动成立——两边都归结为 `值 ÷ 画布`。文字不然：为了让浏览器的文字缩放依然有效，文字保留了一段固定的 `rem`，而固定长度必须锚在某个宽度上。若两张画布各锚自己，这段 `rem` 会差整整一倍：
+Ordinary lengths get this for free — both reduce to `value ÷ canvas`. Text does not: to keep browser text zoom working, text retains a fixed `rem` component, and a fixed length only means anything relative to some width. If each canvas anchored to itself, that `rem` would be off by a factor of two:
 
 ```text
-页面 32px on 750  → clamp(1.59867rem, calc(1.3rem  + 1.49333vw), 1.86rem)
-Vant  16px on 375  → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)   ← 修正前
+page 32px on 750  → clamp(1.59867rem, calc(1.3rem  + 1.49333vw), 1.86rem)
+Vant 16px on 375  → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)   ← before the fix
 ```
 
-流体项两边本就相同，差的全在静态项。390px 视口下前者 26.62px、后者 16.22px——Vant 的文字小了约 40%，且 375 与 1440 上都看不出来（两张稿各自都对）。**750 稿的项目配 Vant 是国内移动端最常见的组合之一。**
+The fluid terms are already identical; the whole difference is in the static term. At a 390px viewport that is 26.62px against 16.22px — Vant's text about 40% too small, and invisible at both 375 and 1440 (each design file is correct on its own). **A 750-file project using Vant is one of the most common mobile combinations there is.**
 
-因此派生画布的文字锚点取所属 profile 的设计宽度，两边产出同一个公式。这是默认行为，不需要配置。原理与推导见[静态部分锚在哪张画布上](./architecture.md#静态部分锚在哪张画布上)。
+So a derived canvas takes its text anchor from the profile it belongs to, and both sides produce the same formula. This is the default and needs no configuration. For the reasoning and the derivation see [Which canvas the static part anchors to](./architecture.md#which-canvas-the-static-part-anchors-to).
 
-条目展开成若干条路由，追加在 `routes` 之后，所以你写的显式路由永远优先。
+Entries expand into routes appended after `routes`, so your explicit routes always win.

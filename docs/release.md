@@ -1,6 +1,8 @@
-# 发布与兼容性
+# Release and compatibility
 
-## 发布门禁
+**English** · [简体中文](./release.zh-CN.md)
+
+## The release gate
 
 ```bash
 npm ci
@@ -8,28 +10,28 @@ npm run check
 npm run pack:check
 ```
 
-`check` 必须同时通过 TypeScript、覆盖率、测试和 ESM/CJS 构建。覆盖率门禁为行/函数/语句 80%，分支 75%。
+`check` must pass TypeScript, coverage, the tests and the ESM/CJS build together. The coverage gate is 80% for lines/functions/statements and 75% for branches.
 
-## 产物
+## Artifacts
 
-- `dist/index.js` / `dist/index.cjs`：PostCSS 插件、预设、类型辅助；
-- `dist/runtime.js` / `dist/runtime.cjs`：可选 VisualViewport 观察器；
-- 对应 `.d.ts` 和 sourcemap。
+- `dist/index.js` / `dist/index.cjs`: the PostCSS plugin, the presets and the type helpers;
+- `dist/runtime.js` / `dist/runtime.cjs`: the optional VisualViewport observer;
+- matching `.d.ts` files and sourcemaps.
 
-## 浏览器策略
+## Browser policy
 
-编译器运行在 Node.js，浏览器只接收 CSS。默认输出依赖 `clamp()`；容器 profile 额外依赖容器查询单位。不建议为了理论上的旧环境牺牲所有用户的现代能力。
+The compiler runs on Node.js; browsers only ever receive CSS. The default output depends on `clamp()`, and container profiles additionally depend on container query units. Sacrificing modern capabilities for every user in the name of a hypothetical old environment is not recommended.
 
-「真实目标浏览器读不读得懂这份产物」不必靠估：
+Whether your real target browsers can read your output does not have to be estimated:
 
 ```bash
 npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
 ```
 
-产物里每一处超出目标的语法都会被列出来，连同不支持时丢掉的东西和关掉它的开关。完整的特性 × 版本表见[浏览器特性支持与降级](./compatibility.md)。
+Every piece of syntax in the output beyond your targets is listed, along with what is lost when it is unsupported and the switch that turns it off. For the full feature × version matrix see [Browser support and degradation](./compatibility.md).
 
-## 版本策略
+## Versioning policy
 
-- patch：修复转换、类型或文档，不改变默认输出语义；
-- minor：新增可选 profile、策略、运行时变量；
-- major：默认公式、指令、输出顺序或最低运行环境变化。
+- patch: fixes to conversion, types or documentation, with no change to default output semantics;
+- minor: new optional profiles, strategies or runtime variables;
+- major: a change to the default formula, the directives, the output order, or the minimum runtime.

@@ -1,24 +1,26 @@
-# 架构与转换公式
+# Architecture and formulas
 
-数字是怎么算出来的，以及编译器刻意不做的事。选项速查见[配置参考](./configuration.md)。
+**English** · [简体中文](./architecture.zh-CN.md)
 
-## 编译流程
+Where the numbers come from, and what the compiler deliberately does not do. For a quick option lookup see the [Configuration reference](./configuration.md).
 
-1. 插件初始化时把 `libraries` 展开成路由，追加在 `routes` 之后。
-2. 根据文件路径执行 `include` / `exclude`。
-3. 为每条规则解析归属画布，优先级见[配置参考](./configuration.md#adaptiveroute)：`@adaptive` > 属性名路由 > 选择器路由 > 文件路由 > `defaultProfile`。
-4. 使用 PostCSS AST 遍历声明，属性和值经过过滤器。
-5. 使用 `postcss-value-parser` 解析值，跳过字符串和 URL 函数。
-6. 把目标长度转换成有界流体表达式。
-7. 规则内声明处理完毕后，若启用 `fixedContainingBlock` 且该规则自身声明了 `position: fixed`，修正其行内轴 inset 与宽度。
-8. 把 `@adaptive` 改写为 `@media` 或 `@container`。
-9. 如显式启用，最后追加低优先级根布局基础层。
+## The pipeline
 
-第 7 步在第 6 步之后，因此它包裹的是换算后的流体值而不是原始像素。
+1. On initialisation, `libraries` is expanded into routes appended after `routes`.
+2. `include` / `exclude` are applied by file path.
+3. Each rule's canvas is resolved, with the priority given in the [Configuration reference](./configuration.md#adaptiveroute): `@adaptive` > property route > selector route > file route > `defaultProfile`.
+4. Declarations are walked over the PostCSS AST, with properties and values passing through the filters.
+5. Values are parsed with `postcss-value-parser`, skipping strings and URL functions.
+6. Target lengths are converted into bounded fluid expressions.
+7. Once a rule's declarations are done, if `fixedContainingBlock` is enabled and the rule itself declares `position: fixed`, its inline-axis insets and width are corrected.
+8. `@adaptive` is rewritten as `@media` or `@container`.
+9. If explicitly enabled, the low-priority root foundation layer is appended last.
 
-## 普通长度
+Step 7 comes after step 6, so what it wraps is the converted fluid value rather than the original pixels.
 
-设设计宽度为 `D`、设计值为 `P`、流体下限和上限为 `L`、`U`。
+## Ordinary lengths
+
+Let the design width be `D`, the design value `P`, and the fluid lower and upper bounds `L` and `U`.
 
 ```text
 preferred = P / D × 100vw
@@ -27,124 +29,124 @@ maximum   = P × U / D px
 result    = clamp(minimum, preferred, maximum)
 ```
 
-负数会对边界重新排序，保证 `clamp()` 的最小值始终小于最大值。
+Negative numbers reorder the bounds, so `clamp()`'s minimum is always below its maximum.
 
-### 单调性
+### Monotonicity
 
-`D`、`L`、`U` 为正数时，上式的**绝对值**对视口宽度单调不减：区间内按 `P` 的符号线性跟随，区间外是常数，且全程不改变符号。
+With `D`, `L` and `U` positive, the **absolute value** of the expression above is non-decreasing in viewport width: inside the range it follows linearly with the sign of `P`, outside it is constant, and it never changes sign.
 
-`P` 为正时这就是「单调不减」。`P` 为负时公式是单调不增的——`-16px` 在 375 稿上编译成 `clamp(-20.48px, -4.26667vw, -13.65333px)`，视口越宽值越小。负长度（负外边距、外溢、反向偏移）本来就是靠远离零来变大的，所以真正守恒的量是绝对值，不是数值本身。
+For positive `P` that is simply "non-decreasing". For negative `P` the formula is non-increasing — `-16px` on a 375 file compiles to `clamp(-20.48px, -4.26667vw, -13.65333px)`, whose value drops as the viewport widens. Negative lengths (negative margins, bleeds, reverse offsets) grow by moving away from zero, so the quantity that is actually conserved is the absolute value, not the signed number.
 
-这条性质有个直接用处：产物里任何「视口变宽、尺寸绝对值反而变小」的现象都不可能来自公式本身，只可能来自跨断点换了画布——也就是两张设计稿在同一个元素上给了互相矛盾的数字。命令行据此做接缝检查（见[断点处的倒退](./cli.md#断点处的倒退)），而且这个检查在这一类问题上是完备的：不会漏到别的宽度上去。
+That property has one direct use: nothing in the output where "the viewport widens and the absolute size gets smaller" can come from the formula itself. It can only come from a canvas change across a breakpoint — two design files giving contradictory numbers for the same element. The CLI uses this for its seam check (see [Going backwards at a breakpoint](./cli.md#going-backwards-at-a-breakpoint)), and the check is complete for this class of problem: it cannot escape to some other width.
 
-按绝对值比较不是细节。最早那版检查直接比数值，于是对每一条负长度都是反的：PC 稿要求更深的外溢会被报出来，而外溢在断点处几乎消失反倒不报。
+Comparing absolute values is not a detail. The first version of the check compared signed numbers, and was therefore inverted for every negative length: a desktop file asking for a deeper bleed got reported, while a bleed that nearly vanished at the breakpoint did not.
 
-## 文字长度与可访问性
+## Text lengths and accessibility
 
-纯 `vw` 文字无法充分响应浏览器文字缩放。设 `F` 为 `fontFluidity`：
+Text in plain `vw` cannot respond adequately to browser text zoom. Let `F` be `fontFluidity`:
 
 ```text
 preferred = P × (1 - F) rem-part + P × F / D × 100vw
 ```
 
-静态部分和上下界使用 `rem`，流体部分使用 `vw/cqi`。默认 `F = 0.35`，在设计宽度处仍严格等于设计值，同时在窗口变化与浏览器缩放之间取得平衡。
+The static part and both bounds use `rem`; the fluid part uses `vw`/`cqi`. The default `F = 0.35` is still exactly the design value at the design width, while balancing window changes against browser zoom.
 
-上下界同样用 `rem` 是关键的一步。用户把默认字号调大后，流体部分不跟着变，但下界跟着变——于是在高缩放档位上，`clamp()` 会落到下界，公式退化成纯 `rem`，缩放重新完全生效。
+Using `rem` for the bounds too is the crucial step. When the user raises the default font size, the fluid part does not follow but the lower bound does — so at high zoom levels `clamp()` lands on its lower bound, the formula degenerates to pure `rem`, and zoom is fully effective again.
 
-Chrome 实测（375px 视口，默认配置，`font-size: 16px`）：
+Measured in Chrome (375px viewport, default configuration, `font-size: 16px`):
 
-| 根字号 | 正文实际字号 | 相对 |
+| Root font size | Actual body size | Relative |
 | --- | --- | --- |
 | 16px | 16.00px | 100% |
 | 20px | 18.97px | 119% |
 | 24px | 22.77px | 142% |
 | 32px | 30.36px | 190% |
 
-同一组测量里，`width` 与 `padding` 全程保持 343px / 16px 不变——只有文字随缩放变化，布局尺寸不会跟着膨胀。
+In the same set of measurements, `width` and `padding` stayed at 343px / 16px throughout — only the text responds to zoom, layout sizes do not inflate with it.
 
-这组数字只覆盖默认配置的一个断面。项目应继续执行 WCAG 200% 缩放验收；编译公式不能替代真实可访问性测试。
+These numbers cover one cross-section of the default configuration. Projects should still run WCAG 200% zoom acceptance; a compilation formula is no substitute for real accessibility testing.
 
-### 静态部分锚在哪张画布上
+### Which canvas the static part anchors to
 
-`P × (1 - F)` 是一段固定长度，不随视口变化，所以它必须相对**某一个宽度**才有意义。默认就是 profile 自己的设计宽度：1440 稿上的 16px 就是 1440 处的 16px，说的是什么就是什么。
+`P × (1 - F)` is a fixed length that does not vary with the viewport, so it only means something relative to **some width**. By default that is the profile's own design width: 16px on a 1440 file is 16px at 1440, exactly as written.
 
-但组件库画布不是这样。Vant 画在 375 上，页面画在 750 上，两者描述的是**同一份设计的两套单位**——Vant 的 16px 和页面的 32px 是同一个尺寸。此时若各自锚在自己的画布上，两个 `rem` 部分会差整整一倍，在任何视口下都对不上：
+Library canvases are different. Vant is drawn on 375 and the page on 750, and the two describe **the same design in two sets of units** — Vant's 16px and the page's 32px are the same size. If each anchored to its own canvas, the two `rem` parts would differ by a factor of two and never line up at any viewport:
 
 ```text
-页面 32px on 750  → clamp(1.59867rem, calc(1.3rem  + 1.49333vw), 1.86rem)
-Vant  16px on 375  → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)   ← 修正前
+page 32px on 750  → clamp(1.59867rem, calc(1.3rem  + 1.49333vw), 1.86rem)
+Vant 16px on 375  → clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem)   ← before the fix
 ```
 
-流体项 `1.49333vw` 两边本来就相同（`P × F / D` 与画布同比例约掉了），差的全在静态项。实测 390px 视口下页面 26.62px、Vant 16.22px，Vant 的文字小了约 40%——而这是国内移动端相当常见的一组搭配。
+The fluid term `1.49333vw` is already identical on both sides (`P × F / D` cancels proportionally with the canvas); the whole difference is in the static term. Measured at a 390px viewport: 26.62px for the page, 16.22px for Vant — Vant's text about 40% too small, in a pairing that is extremely common on mobile.
 
-所以静态部分锚定的是 `textAnchorWidth`，组件库画布一律继承所属 profile 的锚点。实现上等价于「先把长度换算成锚点画布的单位，再照常套公式」：
+So the static part anchors to `textAnchorWidth`, and a library canvas always inherits the anchor of the profile it belongs to. The implementation is equivalent to "convert the length into the anchor canvas's units first, then apply the formula as usual":
 
 ```text
 P_anchor = P × A / D          A = textAnchorWidth
 preferred = P_anchor × (1 - F) rem-part + P_anchor × F / A × 100vw
 ```
 
-流体项完全不变（`P_anchor × F / A ≡ P × F / D`），只有静态项被归一化。非文字长度 `F = 1`，静态项恒为 0，产物逐字节不变——这也解释了为什么此前只有文字对不上，`padding` 一直是对的。
+The fluid term is entirely unchanged (`P_anchor × F / A ≡ P × F / D`); only the static term is normalised. For non-text lengths `F = 1`, the static term is always 0, and the output is byte-for-byte unchanged — which also explains why only text was misaligned before, while `padding` was always correct.
 
-`textAnchorWidth` 也可以在 profile 上显式设置，用于手写画布之间存在同样换算关系的场合。
+`textAnchorWidth` can also be set explicitly on a profile, for hand-written canvases with the same relationship between them.
 
-## 容器查询
+## Container queries
 
-Profile 的 `query.type` 为 `container` 时，`@adaptive` 输出 `@container`。通常同时把 `unit` 设为 `cqi`，使组件尺寸依赖自身容器而不是浏览器窗口。
+When a profile's `query.type` is `container`, `@adaptive` emits `@container`. You normally set `unit` to `cqi` at the same time, so component sizes depend on their own container rather than the browser window.
 
-容器必须由应用已有布局或 `root.container` 建立。不要让元素查询自己；为可复用组件选择稳定的祖先容器。
+The container must be established by the application's existing layout or by `root.container`. Do not let an element query itself; choose a stable ancestor container for a reusable component.
 
-## 不转换范围
+## What is never converted
 
-- `url()`、`local()`、`format()`；
-- 引号字符串；
-- 已含视口/容器单位的 `clamp()`、`min()`、`max()`——见下；
-- `@font-face`、`@page`、`@property`、`@counter-style` 里的声明——它们描述的是资源或页面盒子，不是元素。打印边距换成 `vw` 不是同一个边距；
-- 默认的 CSS 自定义属性（被组件库 `tokenPrefix` 认领的除外——认领本身即是开关）；
-- 小于 `minPixelValue` 的值；
-- 不超过 `hairline` 的绝对值；
-- 过滤器或注释明确排除的内容。
+- `url()`, `local()`, `format()`;
+- quoted strings;
+- `clamp()`, `min()`, `max()` that already contain a viewport or container unit — see below;
+- declarations inside `@font-face`, `@page`, `@property`, `@counter-style` — those describe a resource or a page box, not an element. A print margin turned into `vw` is not the same margin;
+- CSS custom properties by default (except those claimed by a library `tokenPrefix` — being claimed is itself the switch);
+- values below `minPixelValue`;
+- absolute values at or below `hairline`;
+- anything excluded by a filter or a comment.
 
-## 幂等
+## Idempotence
 
-`clamp()` / `min()` / `max()` 内部只要已经出现视口或容器单位，里面的 `px` 就原样保留。
+Inside `clamp()` / `min()` / `max()`, as soon as a viewport or container unit is present, the `px` in there is left alone.
 
-这类表达式是**已经写好的有界流体值**——可能出自作者之手，也可能出自本插件上一趟。它的 `px` 是这个表达式自己的边界，不是从设计稿上量来的尺寸，再换算一次等于缩放两次。
+Such an expression is **an already-written bounded fluid value** — possibly by the author, possibly by this plugin on a previous pass. Its `px` are that expression's own bounds, not a size measured off a design file, and converting again means scaling twice.
 
-直接结果是产物幂等：同一段 CSS 跑一遍和跑三遍结果完全相同。插件在 PostCSS 链里被挂了两次、或者组件库预编译过又被消费方编译一次，都不会产生嵌套 `clamp`。
+The direct result is idempotent output: the same CSS run once and run three times gives identical results. Neither the plugin being registered twice in a PostCSS chain, nor a component library that was pre-compiled and then compiled again by its consumer, produces nested clamps.
 
-范围刻意只限这三个函数。`calc(100vw - 32px)` 照常转换——那里的 `32px` 确实是设计稿尺寸，只是恰好挨着一个视口单位。
+The scope is deliberately limited to those three functions. `calc(100vw - 32px)` converts as usual — that `32px` really is a design-file size that simply happens to sit next to a viewport unit.
 
-幂等不止于长度换算，还包括另外两件事：
+Idempotence covers two more things beyond length conversion:
 
-- **忽略注释保留在产物里。** 被忽略的 `40px` 和没人管过的 `40px` 长得一模一样，注释一旦被吃掉，第二趟就会把它换算了。注释会被任何压缩器去掉，而作者的「别动这里」必须活过一趟以上。
-- **根容器基础样式只注入一次。** 产物开头有 `/* postcss-adaptive-matrix foundation */` 标记，第二趟见到它就整段跳过——既不会把 `max-inline-size: 480px` 这类固定上限当成设计稿尺寸再缩放，也不会叠出第二份。
+- **Ignore comments survive into the output.** An ignored `40px` and a `40px` nobody ever looked at are indistinguishable, so if the comment were dropped, the second pass would convert it. Any minifier removes the comments, and an author's "don't touch this" has to survive more than one pass.
+- **The root foundation is injected only once.** The output carries a `/* postcss-adaptive-matrix foundation */` marker, and a second pass that sees it skips the whole section — so a fixed ceiling like `max-inline-size: 480px` is never mistaken for a design-file size and scaled again, and no second copy is stacked on.
 
-一致性套件对**每一个**样例都断言了这一点：把产物再编译一遍必须原样返回。
+The conformance suite asserts this for **every** case: recompiling the output must return it unchanged.
 
-## 嵌套
+## Nesting
 
-原生 CSS 嵌套里，`@adaptive` 与条件组规则（`@media`、`@supports`、`@layer`、`@container`、`@scope`、`@starting-style`）内部的声明属于外层元素，照常转换：
+In native CSS nesting, declarations inside `@adaptive` and inside conditional group rules (`@media`, `@supports`, `@layer`, `@container`, `@scope`, `@starting-style`) belong to the outer element and convert as usual:
 
 ```css
 .card {
-  padding: 16px;          /* 默认画布 */
+  padding: 16px;          /* default canvas */
 
   @adaptive pc {
-    padding: 32px;        /* pc 画布，并改写成 @media */
+    padding: 32px;        /* pc canvas, rewritten as @media */
   }
 }
 ```
 
-插件没见过的 at-rule，内部的**规则**仍然会被处理，**直接声明**不会——未知语境下按元素样式处理是猜测。
+Inside an at-rule the plugin does not know, nested **rules** are still processed but **direct declarations** are not — treating them as element styles in an unknown context would be guessing.
 
-## fixed 修正的边界
+## The limits of the fixed correction
 
-`fixedContainingBlock` 是唯一一处编译器改写定位的地方，它刻意做得很窄：
+`fixedContainingBlock` is the one place the compiler rewrites positioning, and it is deliberately narrow:
 
-- 需要显式开启（`appPcPreset` 在建立居中列时默认开启，因为那正是问题出现的配置）；
-- 只处理**规则自身**声明了 `position: fixed` 的情况。从其它规则继承定位无法静态观察，按选择器组合去推测会制造隐藏的运行时耦合；
-- 只处理行内轴；
-- 只在值为 `0` 或 `100%` 这类无歧义形态上做替换，其余一律用 `calc()` 叠加，且幂等。
+- it must be enabled explicitly (`appPcPreset` enables it when it establishes a centred column, because that is exactly the configuration where the problem appears);
+- it only handles a rule that **itself** declares `position: fixed`. Inherited positioning from another rule cannot be observed statically, and guessing from selector combinations would create hidden runtime coupling;
+- it only handles the inline axis;
+- it only substitutes on unambiguous shapes such as `0` or `100%`, adding with `calc()` otherwise, and it is idempotent.
 
-除此之外，编译器不猜测设计意图，不自动移动侧栏，也不注入 JavaScript。复杂布局应由 CSS Grid、Flexbox、容器查询和明确的端口规则表达。
+Beyond that, the compiler does not guess at design intent, does not move sidebars for you, and injects no JavaScript. Complex layouts belong in CSS Grid, Flexbox, container queries and explicit rules per end.
