@@ -1,6 +1,7 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { evaluateLength, splitComponents } from './evaluate.js'
+import { ROOT_GUTTER_VARIABLE } from './fixed.js'
 import { allMatch, boundaryOf, widthConditions } from './media.js'
 import { collectTokens } from './tokens.js'
 
@@ -59,6 +60,33 @@ const EPSILON = 0.01
  * least one of them to have been generated.
  */
 const COMPILED = /\b(?:clamp|min|max|calc)\s*\(/i
+
+const GUTTER_REFERENCE = new RegExp(`var\\(\\s*${ROOT_GUTTER_VARIABLE}\\s*\\)`, 'gi')
+
+/**
+ * Drops the fixed-position gutter out of a value before it is compared.
+ *
+ * The gutter is `max(0px, (100vw - column) / 2)` — the distance from the
+ * viewport edge to the root column — and it is *meant* to step at a breakpoint,
+ * because that is where the column changes width. A tab bar authored as
+ * `left: 0` becomes `left: var(--adaptive-root-gutter)`, which on a 480px app
+ * column sits 144px in at 768px wide and, one pixel later on a 1920px desktop
+ * column, correctly sits flush at 0. Read as a design length that would be a
+ * step backwards; read as what it is, it is the correction working.
+ *
+ * Substituting zero rather than skipping the declaration keeps the rest of the
+ * value under scrutiny: `left: calc(clamp(…) + var(--adaptive-root-gutter))`
+ * still has its `clamp()` compared across the seam. Silencing the whole
+ * declaration would have hidden a genuine disagreement behind a correction this
+ * compiler added itself.
+ *
+ * Left in on purpose: this fires for every fixed element in a project using the
+ * two-canvas preset, which is most of them, and a check that cries wolf on the
+ * default configuration is a check people learn to skip.
+ */
+function withoutGutter(value: string): string {
+  return value.replace(GUTTER_REFERENCE, '0px')
+}
 
 /**
  * Walks the tree once, recording every declaration together with the width
@@ -206,8 +234,8 @@ export function findContinuityIssues(
       // redefined across the breakpoint is compared at the value that actually
       // applies on each side. `null` means the value reads something this
       // cannot pin down, and the pair is dropped.
-      const lowValue = tokens.resolve(low.value, breakpoint - PROBE)
-      const highValue = tokens.resolve(high.value, breakpoint + PROBE)
+      const lowValue = tokens.resolve(withoutGutter(low.value), breakpoint - PROBE)
+      const highValue = tokens.resolve(withoutGutter(high.value), breakpoint + PROBE)
       if (lowValue === null || highValue === null || lowValue === highValue) continue
       // Substitution happens first: a token can hold the generated formula
       // while the declaration reading it is a bare `var()`.

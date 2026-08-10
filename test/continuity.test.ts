@@ -216,10 +216,13 @@ describe('findContinuityIssues', () => {
   })
 
   it('ignores values it cannot put a number to', () => {
+    // A token this stylesheet never defines. It used to be spelled
+    // `--adaptive-root-gutter` here, which stopped being an example of an
+    // unresolvable value once the gutter acquired a meaning of its own.
     expect(
       check(`
         .bar { left: ${fluid(8)} }
-        @media (min-width: 768px) { .bar { left: var(--adaptive-root-gutter) } }
+        @media (min-width: 768px) { .bar { left: var(--theme-inset) } }
       `),
     ).toEqual([])
   })
@@ -336,5 +339,37 @@ describe('findContinuityIssues', () => {
         @media (min-width: 768px) { .a { width: 20px } }
       `),
     ).toHaveLength(1)
+  })
+})
+
+describe('the fixed-position gutter', () => {
+  /** The foundation the two-canvas preset writes when it corrects fixed elements. */
+  const foundation = `
+    :root { --adaptive-root-width: 100vw;
+            --adaptive-root-gutter: max(0px, (100vw - var(--adaptive-root-width)) / 2) }
+    @media (max-width: 767.98px) { :root { --adaptive-root-width: 480px } }
+    @media (min-width: 768px) { :root { --adaptive-root-width: 1920px } }
+  `
+
+  it('is not a seam, however far it steps at the breakpoint', () => {
+    // A tab bar authored as `left: 0` sits 144px inside a 480px app column at
+    // 768px wide, and flush at 0 one pixel later against a 1920px desktop
+    // column. Read as a design length that is a large step backwards; read as
+    // what it is, it is the correction doing its job. Left in, this fires twice
+    // for every fixed element in the default preset.
+    expect(check(`${foundation} .tabbar { left: var(--adaptive-root-gutter) }`)).toEqual([])
+  })
+
+  it('still compares everything else in the same declaration', () => {
+    // Zeroing the gutter rather than skipping the declaration: the canvases
+    // genuinely disagree about the inset here, and a correction this compiler
+    // added itself must not be able to hide that.
+    const issues = check(`
+      ${foundation}
+      .tabbar { left: calc(${fluid(40)} + var(--adaptive-root-gutter)) }
+      @media (min-width: 768px) { .tabbar { left: calc(${fluid(20)} + var(--adaptive-root-gutter)) } }
+    `)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.prop).toBe('left')
   })
 })
