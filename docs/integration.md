@@ -169,3 +169,15 @@ npx adaptive-matrix src/styles/app.css -c postcss.config.mjs
 ```
 
 输出是逐条声明的前后对照，不用启动构建、不用开浏览器。上面那个「`from` 必须传」的坑，也可以用 `--from` 先试一遍再上线。完整用法见[命令行预览](./cli.md)。
+
+## 这一篇是跑过真实构建的
+
+本文关于 Vite 的每一条说法都由 `test/vite.test.ts` 里的**真实 Vite 构建**验证，而不是靠 `postcss().process` 模拟。构建脚手架包含一个自动发现的 `postcss.config.mjs`、一份从 `node_modules` 里引入的依赖 CSS、以及一个由 `@vitejs/plugin-vue` 同款方式提供的 `<style>` 块，然后断言：
+
+- 配置文件确实被 Vite 找到并生效（没生效时构建照样成功、样式表原样输出，没有任何地方会说话）；
+- 依赖的 CSS 按 `node_modules` 路径落到组件库画布，产出与页面上等价尺寸**逐字节相同**；
+- 带 query 串的 SFC id 能被包含式 `file` 路由命中；
+- 同样的输入再构建一次，产物完全一致（watch / HMR 会反复跑同一条流水线）；
+- 反过来，用 `/\.mobile\.css$/` 这种锚定结尾的写法，SFC 块确实静默留在默认画布上——上面第 3 条说的就是这件事，这条测试让它成为验证过的事实而不是记忆。
+
+Webpack 侧没有起真实构建。`postcss-loader` 做的事就是带着 `from` 调 `postcss.process`，而 Webpack 场景真正出过问题的是 CommonJS 入口能不能直接调用（0.4.0 修复），那一条由 `test/package.test.ts` 针对构建产物本身验证。为一条几乎没有独立风险的路径引入整套 Webpack 依赖，不划算。

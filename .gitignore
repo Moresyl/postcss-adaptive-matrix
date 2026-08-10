@@ -5,4 +5,6 @@ coverage/
 *.tgz
 # Library stylesheets downloaded by scripts/verify-libraries.ts
 .libcheck/
+# Fixture project built by test/vite.test.ts
+.vitecheck/
 
