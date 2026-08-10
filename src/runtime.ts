@@ -39,7 +39,6 @@ export function observeAdaptiveViewport(
   let frame = 0
 
   const update = (): AdaptiveViewportSnapshot | null => {
-    frame = 0
     if (!browserWindow || !target) return null
     const visual = browserWindow.visualViewport
     const width = finite(visual?.width, browserWindow.innerWidth)
@@ -57,9 +56,16 @@ export function observeAdaptiveViewport(
     return snapshot
   }
 
+  // Only the scheduler clears the handle. `update` is public, and having it
+  // clear the handle meant a manual call in front of a queued frame left that
+  // frame both pending and unrecorded — `destroy` then had nothing to cancel
+  // and the write landed on a torn-down observer one tick later.
   const schedule = () => {
     if (!browserWindow || frame) return
-    frame = browserWindow.requestAnimationFrame(update)
+    frame = browserWindow.requestAnimationFrame(() => {
+      frame = 0
+      update()
+    })
   }
 
   if (!browserWindow || !target) {
@@ -80,6 +86,9 @@ export function observeAdaptiveViewport(
     update,
     destroy() {
       if (frame) browserWindow.cancelAnimationFrame(frame)
+      // Cleared so a second destroy cannot cancel whatever the host has since
+      // reissued this handle to.
+      frame = 0
       browserWindow.removeEventListener('resize', schedule)
       browserWindow.removeEventListener('orientationchange', schedule)
       browserWindow.visualViewport?.removeEventListener('resize', schedule)
