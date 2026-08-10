@@ -354,6 +354,7 @@ function unwrapAtRule(atRule: AtRule): void {
 
 function transformAdaptiveAtRule(
   atRule: AtRule,
+  inherited: ActiveProfile,
   context: ProcessorContext,
   declarations: boolean,
 ): void {
@@ -388,6 +389,23 @@ function transformAdaptiveAtRule(
   )
   const query = adaptiveQueryParams(profile)
   if (!query) {
+    // Unwrapping is right when the profile says `query: false` — that is the
+    // author choosing to switch canvases some other way, usually by building
+    // one bundle per target. It is a trap when `query` was simply never set,
+    // which is the normal shape for a project that routes canvases by folder:
+    // asking for a *different* canvas here reads as "these rules are for that
+    // one", and what comes out is unconditional CSS that, being later in the
+    // file, wins at every viewport. Nothing else in the build says so.
+    if (profile.query === undefined && profileName !== inherited.name) {
+      context.result.warn(
+        `@${name} ${profileName} compiles against the "${profileName}" canvas but ` +
+          `profile "${profileName}" declares no query, so these rules stay ` +
+          `unconditional and override the ones around them at every viewport. ` +
+          `Give the profile a query (e.g. query: '(min-width: 768px)'), or set ` +
+          `query: false to say the switch happens outside CSS.`,
+        { node: atRule, plugin: PLUGIN_NAME },
+      )
+    }
     unwrapAtRule(atRule)
     return
   }
@@ -430,7 +448,7 @@ function processContainer(
     if (node.name.toLowerCase() === context.atRuleName) {
       // Nested in a rule, `@adaptive` wraps that rule's own declarations; at the
       // root it wraps rules. Passing the flag down keeps both readings correct.
-      transformAdaptiveAtRule(node, context, declarations)
+      transformAdaptiveAtRule(node, active, context, declarations)
     } else if (node.nodes) {
       processContainer(
         node,

@@ -192,6 +192,55 @@ describe('adaptiveMatrix', () => {
     expect(failure).not.toContain('left as authored')
   })
 
+  describe('@adaptive on a profile that declares no query', () => {
+    // A project that splits its two designs across folders routes canvases by
+    // path and has no reason to give either profile a query. Reaching for
+    // `@adaptive pc` inside a shared component then reads as "these rules are
+    // for the desktop canvas" and compiles as "these rules are unconditional
+    // and, being last, win everywhere". Nothing in the build says otherwise.
+    const folderSplit = {
+      defaultProfile: 'app',
+      profiles: {
+        app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 } },
+        pc: { designWidth: 1440, fluid: { minWidth: 1024, maxWidth: 1920 } },
+      },
+    } as const
+
+    const shared = '.shared { padding: 32px }\n@adaptive pc { .shared { padding: 48px } }'
+
+    it('warns that the rules stay unconditional, and says how to fix it', async () => {
+      const result = await process(shared, folderSplit)
+
+      expect(result.warnings()).toHaveLength(1)
+      const text = result.warnings()[0]!.text
+      expect(text).toContain('declares no query')
+      expect(text).toContain('unconditional')
+      expect(text).toContain('query: false')
+      // The compilation itself is unchanged: the canvas was applied, and both
+      // rules are still there. Only the warning is new.
+      expect(result.css).toContain('clamp(34.13333px, 3.33333vw, 64px)')
+      expect(result.css).not.toContain('@media')
+    })
+
+    it('stays silent when query: false says the switch happens elsewhere', async () => {
+      // One bundle per target, or a canvas chosen by an environment flag. The
+      // author has already answered the question the warning would ask.
+      const result = await process(shared, {
+        ...folderSplit,
+        profiles: { ...folderSplit.profiles, pc: { ...folderSplit.profiles.pc, query: false } },
+      })
+
+      expect(result.warnings()).toHaveLength(0)
+      expect(result.css).toContain('clamp(34.13333px, 3.33333vw, 64px)')
+    })
+
+    it('stays silent when the block names the canvas the rules are already on', async () => {
+      // Nothing is being switched, so nothing can be lost by unwrapping.
+      const result = await process('@adaptive app { .a { padding: 32px } }', folderSplit)
+      expect(result.warnings()).toHaveLength(0)
+    })
+  })
+
   it('recognises the at-rule whatever its case, as a browser would', async () => {
     // At-keywords are ASCII case-insensitive. Matching exactly would leave
     // `@ADAPTIVE` unrecognised, and browsers discard an at-rule they do not

@@ -101,6 +101,71 @@ export default {
 
 普通规则按默认 `app` 画布转换；`@adaptive pc` 块按 1440 画布转换，并包裹进 PC 媒体查询。
 
+## 另一种双端：两套页面代码，按文件夹分
+
+上面那种写法是**一套页面、两张稿**——共有的部分只写一遍，差异放进 `@adaptive pc`。
+
+还有一种常见做法是**两套页面代码**：`src/mobile/**` 和 `src/pc/**` 各自完整一份，路由或入口决定进哪一套。这种项目不需要在 CSS 里写 `@adaptive`，用文件路由就够了：
+
+```js
+{
+  defaultProfile: 'app',
+  profiles: {
+    app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 } },
+    pc:  { designWidth: 1440, fluid: { minWidth: 1024, maxWidth: 1920 } },
+  },
+  routes: [
+    { profile: 'pc',  file: [/[\\/]pc[\\/]/] },
+    { profile: 'app', file: [/[\\/]mobile[\\/]/] },
+  ],
+}
+```
+
+同样一行 `padding: 32px`，落在哪个文件夹就按哪张稿换算：
+
+| 文件 | 产物 |
+| --- | --- |
+| `src/mobile/home/index.vue` | `clamp(13.65333px, 4.26667vw, 25.6px)` |
+| `src/pc/home/index.vue` | `clamp(22.75556px, 2.22222vw, 42.66667px)` |
+
+**关键一点：文件路由只决定"按哪张稿换算"，不会给规则套媒体查询。** 这正是这类项目需要的——哪套页面显示已经由路由/入口决定了，CSS 不该再管一遍。上面两条产物都是无条件的。
+
+SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），所以 `file` 要按包含写、不要锚定结尾，见[构建工具集成](./integration.md#3-vue-sfc-的路径带-query-串)。
+
+### 共用组件落在哪张画布上
+
+`src/components/**` 两边都用，两条路由都不命中，于是走 `defaultProfile`。三个选择：
+
+1. **就用默认画布**——组件本来就该在移动端和 PC 端长一样时，这是对的；
+2. **按用途再拆一层文件夹**，`src/components/mobile/**` 与 `src/components/pc/**`，各自命中路由；
+3. **在组件里用 `@adaptive pc`**——但这条在本节的配置下有个坑，见下。
+
+### 坑：`query` 没设置时 `@adaptive` 会变成无条件规则
+
+这一节的两个 profile 都没有 `query`，因为切换本来就不由 CSS 负责。但一旦有人在共用组件里写：
+
+```css
+.shared-card { padding: 32px }
+@adaptive pc { .shared-card { padding: 48px } }
+```
+
+`pc` 画布没有 `query`,外壳无处可套,于是被拆开——两条规则都是无条件的,而后一条在文件里更靠后,**在任何视口都会赢**:
+
+```css
+.shared-card { padding: clamp(13.65333px, 4.26667vw, 25.6px) }
+.shared-card { padding: clamp(34.13333px, 3.33333vw, 64px) }   /* 永远是这条生效 */
+```
+
+编译器会为此告警并给出两个出口：给 `pc` 加上 `query`，或者写 `query: false` 表明切换发生在 CSS 之外（一端一个产物、或按环境变量选画布）。写了 `query: false` 就不再提示——那是你已经回答过的问题。
+
+同一张画布上的 `@adaptive app` 不告警：没有切换，拆开也不丢东西。
+
+### 组件库不用管
+
+移动端的 Vant、PC 端的 Element Plus 都在 `node_modules` 里，两条文件夹路由都不命中，各自由内置注册表认领——Vant 走 375 画布，Element Plus 保留像素。不需要额外配置。
+
+唯一要注意的是**你写的路由优先于组件库路由**，所以文件夹正则要写得足够具体：`/[\\/]pc[\\/]/` 只匹配路径里独立的 `pc` 段，而 `/pc/` 这种写法会误伤任何路径里带 `pc` 三个字母的依赖。
+
 ## 有界流体
 
 ![有界流体区间](./assets/fluid-range.svg)
