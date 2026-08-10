@@ -281,3 +281,47 @@ describe('runCli', () => {
     expect(out.includes(ESC)).toBe(true)
   })
 })
+
+describe('runCli --targets', () => {
+  it('names the feature, the browser, what breaks and the switch to flip', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--no-color', '--targets', 'ios_saf 13'])).toBe(0)
+    expect(out).toContain('needs clamp(), min(), max()')
+    // Short by a point release — clamp() landed in iOS 13.4.
+    expect(out).toContain('iOS Safari 13 < 13.4-13.7')
+    expect(out).toContain("instead: strategy: 'viewport'")
+  })
+
+  it('says so plainly when every target is covered', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    await runCli([path, '--no-color', '--targets', 'ios_saf 17, chrome 120'])
+    expect(out).toContain('every target reads all')
+    expect(out).not.toContain('needs ')
+  })
+
+  it('audits nothing without the flag', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    await runCli([path, '--no-color'])
+    expect(out).not.toContain('needs ')
+    expect(out).not.toContain('every target reads')
+  })
+
+  it('refuses a target it has no data for instead of passing it', async () => {
+    // Accepting the run and printing a clean report would answer a question
+    // about Netscape that was never actually asked of anything.
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--targets', 'netscape 4'])).toBe(1)
+    expect(err).toContain('No support data for "netscape"')
+  })
+
+  it('refuses a target with no version', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--targets', 'safari'])).toBe(1)
+    expect(err).toContain('Could not read target "safari"')
+  })
+})

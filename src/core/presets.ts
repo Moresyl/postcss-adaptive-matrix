@@ -41,7 +41,8 @@ export function appPcPreset(
           container: options.container ?? false,
           containerName: 'adaptive-root',
           safeAreaVariables: true,
-          layer: 'adaptive-matrix',
+          layer: options.rootLayer ?? 'adaptive-matrix',
+          ...(options.rootLogical === undefined ? {} : { logical: options.rootLogical }),
           // On by default: both profiles above set `rootMaxWidth`, so this
           // preset is precisely the configuration in which a fixed element
           // stops agreeing with the page it sits on.

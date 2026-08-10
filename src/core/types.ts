@@ -149,6 +149,21 @@ export interface RootFoundationOptions {
    */
   fixedContainingBlock?: boolean
   /**
+   * Whether the foundation writes logical properties. Defaults to true.
+   *
+   * `inline-size`, `margin-inline` and `max-inline-size` say the same thing as
+   * `width`, `margin-left`/`margin-right` and `max-width` for as long as the
+   * page runs left-to-right, and something better once it does not. They are
+   * also the newest thing the foundation depends on when nothing else is
+   * enabled, and the failure is the quiet kind: a browser that cannot read
+   * `margin-inline: auto` drops that declaration alone, leaving a column of
+   * exactly the right width pinned to the left edge of the screen.
+   *
+   * Set to false to write the physical spellings instead. On a horizontal page
+   * this costs nothing.
+   */
+  logical?: boolean
+  /**
    * Which files receive the foundation. Defaults to all of them.
    *
    * The foundation is global CSS, but PostCSS sees one file at a time and has
@@ -252,6 +267,17 @@ export interface AppPcPresetOptions {
   fixedContainingBlock?: boolean
   /** Restricts the root foundation to matching files. See `RootFoundationOptions.injectTo`. */
   rootInjectTo?: FileMatcher | FileMatcher[]
+  /**
+   * Cascade layer the foundation is written into, or false for no layer.
+   * Defaults to `'adaptive-matrix'`. See `RootFoundationOptions.layer`.
+   *
+   * Present on the preset because it is a support switch as much as a cascade
+   * one: a browser without `@layer` drops the whole block, and reaching that
+   * switch should not require abandoning the preset. Same for `rootLogical`.
+   */
+  rootLayer?: string | false
+  /** Whether the foundation writes logical properties. See `RootFoundationOptions.logical`. */
+  rootLogical?: boolean
 }
 
 export interface AtomicCssOptions {

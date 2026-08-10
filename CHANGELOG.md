@@ -2,6 +2,21 @@
 
 ## 未发布
 
+### 浏览器特性支持审计与降级
+
+- 新增 `auditCompatibility(css, targets)`：给一串「浏览器 + 你要支持的最低版本」，逐条列出产物里超出目标的语法、不支持时丢掉的东西、以及关掉它的开关。审计读的是**编译产物文本**而不是配置——这是让审计和输出永远不会走偏的唯一做法，经预设、经组件库路由、经手写 CSS 进来的特性一样能看见。同时导出 `detectFeatures`、`COMPAT_FEATURES`、`FEATURE_SUPPORT`、`compatFeature`，类型齐全。
+- 命令行新增 `--targets "safari 14, ios_saf 13"`，在对照表之后输出 `needs` 段。四行的顺序是有意的：先说丢什么，再说换成什么——「iOS Safari 13 太老了」单独拿出来没法行动，而 CSS 支持缺口真正要紧的一直是**跟着一起消失的有多少**。CSS 不报错，它丢弃：值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块，全程无声。特性表因此按「丢得多」排序，不按「谁更新」。
+- 覆盖 11 项：`@layer`、`:where()`、`@container` / 容器单位、`clamp()` / `min()` / `max()`、`vi`、逻辑属性、`var()`、`env(safe-area-inset-*)`、`vw`、原生嵌套。原生嵌套本编译器不产出（读进来的嵌套原样写回），列入是因为它是会被问到的问题，而靠模式识别它会把普通 CSS 误读成嵌套——报错比不报更糟。
+- 版本数据由 `scripts/capture-compat.mjs` 从 caniuse-lite 烘焙进 `src/core/compat-data.ts`，caniuse-lite 只是 devDependency，插件不增加任何运行时依赖，离线可审计。「某特性从哪个版本开始能用」是不会再变的历史；**使用率则故意不看**——0.4% 的用户算不算数是关于你的项目的决定，`browserslist` 已经是回答那个问题的地方。取的是「从此再没断过支持」的版本而非第一个出现 `y` 的版本（个别特性发布后被撤回过）。
+- `--targets` 收显式的名字与版本，不收 browserslist 查询：查询要拉进 browserslist 包，回答的是关于用户的问题而不是关于这份样式表的问题，而且**同一条查询会随数据库更新而改变含义**——代码一个字没动，下个月构建就红了。不认识的目标名报错并以 `1` 退出，不静默跳过：被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
+- caniuse 没有 `:where()` 和 `vi` 的独立条目，改用 `:is()` 与 `svh`/`lvh`/`dvh` 条目，并在数据里标出这是代理而非实测。两组都出自同一节规范、同批发布（`:where()` / `:is()`：Chrome 88、Firefox 78、Safari 14）。
+- 新增 `root.logical`（预设字段 `rootLogical`）：设为 `false` 时基础样式改写 `width` / `margin-left` / `margin-right` / `max-width`，而不是 `inline-size` / `margin-inline` / `max-inline-size`。**这是审计过程中发现的真实缺口**——逻辑属性是编译器产出的语法里唯一一个失败之后页面看起来还正常的：丢掉 `margin-inline: auto`，列宽完全正确、贴在屏幕左边；丢掉 `max-inline-size`，列铺满整屏。两种都不像故障，因而比一眼可见的崩塌更容易活着上线，而此前没有任何开关能避开它。横排页面上两种拼法等价，关掉不损失任何东西。预设同时新增 `rootLayer`，透传到 `layer`——同样是支持开关，不该为了够到它而放弃预设。
+- 文档新增[浏览器特性支持与降级](docs/compatibility.md)：特性 × 浏览器最低版本表、逐项的「谁产出它 / 丢什么 / 怎么关、代价是什么」，以及这份审计**不能**代替真机测试的边界（它只能证明目标浏览器解析得了这份 CSS 的语法；渲染差异、软键盘、地址栏是别的问题）。反过来，版本门槛这件事真机也测不了——手上那台 iOS 17 读得懂 `@layer`，对「15.4 以下读不懂」没有任何说明力。
+
+### 断点检查
+
+- 修正**默认预设上稳定误报两条 `shrinks`**：`root.fixedContainingBlock` 会把固定元素的 `left: 0` 改写成 `left: var(--adaptive-root-gutter)`，而这个留白**本来就该在断点处跳变**——列宽从 480 换到 1920，留白从 143.96px 正确地掉到 0。读成设计长度是倒退，读成它本身是修正在起作用。比较前把这个变量代成 `0px` 而不是整条跳过，`left: calc(clamp(…) + var(--adaptive-root-gutter))` 里的 `clamp()` 照样接受检查。在默认配置上就狂叫的检查，是会被学会跳过的检查。
+
 ### 原子化 CSS（Tailwind / UnoCSS）
 
 - 修正**工具类一个都换算不到**：这是静默的——手写 CSS 被缩放、工具类原样保留，两套尺寸从此对不齐，不报错。两个大版本各卡在一处。旧版（Tailwind 3、UnoCSS `presetUno` / `presetWind3`）把长度写成 `rem`，而编译器只读 `px`；新版（Tailwind 4、UnoCSS `presetWind4`）把长度整个搬进主题 token，`.p-4` 编译成 `padding: calc(var(--spacing) * 4)`，工具类里根本没有长度可读，而自定义属性默认不换算。

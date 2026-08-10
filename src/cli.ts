@@ -12,6 +12,11 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
+import {
+  type CompatAudit,
+  auditCompatibility,
+  resolveBrowser,
+} from './core/compat.js'
 import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
@@ -29,6 +34,8 @@ Options
       --from <path>    treat the input as if it lived here; file-based routes,
                        include/exclude and library paths all key off this
       --profile <name> override defaultProfile
+      --targets <list> audit the output against the oldest browsers you
+                       support, e.g. "safari 14, ios_saf 13, chrome 90"
       --all            list unchanged declarations too
       --css            print the compiled stylesheet instead of a diff
       --color          force colour; --no-color forces plain. Without either,
@@ -43,6 +50,11 @@ the viewport gets wider. Every formula this compiler emits grows with the
 viewport, so that can only happen where two canvases disagree about the same
 element across a breakpoint.
 
+With --targets it also reports "needs": a CSS feature in the output that one of
+those browsers cannot read, what that browser discards as a result, and the
+option that stops the feature being emitted. Known names are chrome, edge,
+safari, firefox, ios_saf and samsung; android and webview resolve to chrome.
+
 A .ts config needs a loader:
   npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js app.css -c cfg.ts
 `.trimStart()
@@ -52,6 +64,7 @@ interface CliArgs {
   config?: string
   from?: string
   profile?: string
+  targets?: Record<string, string>
   all: boolean
   css: boolean
   color: boolean
@@ -67,6 +80,42 @@ interface Change {
 }
 
 class CliError extends Error {}
+
+/**
+ * Reads `"safari 14, ios_saf 13"` into a target map.
+ *
+ * Deliberately not a browserslist query. A query like `> 0.5%` answers a
+ * question about your users, needs the browserslist package and its usage
+ * database to resolve, and changes meaning as the database updates — none of
+ * which belongs inside a preview command. Name the versions you mean.
+ */
+function parseTargets(input: string): Record<string, string> {
+  const targets: Record<string, string> = {}
+  for (const entry of input.split(',')) {
+    const text = entry.trim()
+    if (!text) continue
+    const match = /^([a-z_\s-]+?)\s*(?:[@>=<\s]+)\s*([\d.]+)$/i.exec(text)
+    if (!match) {
+      throw new CliError(
+        `Could not read target "${text}". Write a browser and a version, ` +
+          `such as "safari 14"; separate several with commas.`,
+      )
+    }
+    const [, name, version] = match as unknown as [string, string, string]
+    const browser = resolveBrowser(name)
+    if (!browser) {
+      throw new CliError(
+        `No support data for "${name.trim()}". Known targets: chrome, edge, ` +
+          `safari, firefox, ios_saf, samsung (android and webview mean chrome).`,
+      )
+    }
+    targets[browser] = version
+  }
+  if (!Object.keys(targets).length) {
+    throw new CliError('--targets needs at least one browser and version.')
+  }
+  return targets
+}
 
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
@@ -102,6 +151,9 @@ function parseArgs(argv: string[]): CliArgs {
         break
       case '--profile':
         args.profile = value()
+        break
+      case '--targets':
+        args.targets = parseTargets(value())
         break
       case '--all':
         args.all = true
@@ -200,11 +252,13 @@ async function compile(
   source: string,
   from: string,
   options: AdaptiveMatrixOptions,
+  targets?: Record<string, string>,
 ): Promise<{
   root: Root
   changes: Change[]
   warnings: string[]
   issues: ContinuityIssue[]
+  audit: CompatAudit | null
 }> {
   const root = postcss.parse(source, { from })
   const original = new Map<Declaration, string>()
@@ -234,6 +288,11 @@ async function compile(
     // The seam check compares `rem` against `px`, so it has to measure them
     // with the same ruler the compiler wrote them with.
     issues: findContinuityIssues(result.root, options.rootValue),
+    // Audited from the compiled text rather than from the options, so that a
+    // feature arriving through a preset, a library route or the authored CSS
+    // itself is caught the same as one this compiler chose to emit. The
+    // stylesheet is what ships; it is the only honest thing to read.
+    audit: targets ? auditCompatibility(result.root.toString(), targets) : null,
   }
 }
 
@@ -250,11 +309,47 @@ function paint(color: boolean) {
   }
 }
 
+/**
+ * Renders the browser-support findings.
+ *
+ * Says what breaks before saying what to do about it: "Safari 14 is too old"
+ * is not actionable on its own, and the interesting part of a CSS support gap
+ * is always how much of the stylesheet goes with it.
+ */
+function auditLines(audit: CompatAudit, c: ReturnType<typeof paint>): string[] {
+  const lines: string[] = []
+  for (const name of audit.unknownBrowsers) {
+    lines.push(
+      `  ${c.yellow('warning')} no support data for target "${name}" — it was not checked`,
+    )
+  }
+  for (const { feature, sample, shortfalls } of audit.findings) {
+    const who = shortfalls
+      .map(({ name, target, since }) =>
+        since === null ? `${name} (never)` : `${name} ${target} < ${since}`,
+      )
+      .join(', ')
+    lines.push(`  ${c.yellow('needs')} ${c.bold(feature.title)} ${c.dim('—')} ${who}`)
+    lines.push(c.dim(`          from: ${feature.emittedBy}`))
+    lines.push(c.dim(`          seen: ${sample}`))
+    lines.push(c.dim(`          if unsupported: ${feature.failure}`))
+    lines.push(c.dim(`          instead: ${feature.fallback}`))
+  }
+  if (!audit.findings.length && !audit.unknownBrowsers.length) {
+    const covered = audit.satisfied.length
+    lines.push(
+      c.dim(`  every target reads all ${covered} CSS features in this output`),
+    )
+  }
+  return lines
+}
+
 function report(
   label: string,
   changes: Change[],
   warnings: string[],
   issues: ContinuityIssue[],
+  audit: CompatAudit | null,
   args: CliArgs,
   profiles: string[],
 ): { converted: number; lines: string[] } {
@@ -306,6 +401,8 @@ function report(
       ),
     )
   }
+
+  if (audit) lines.push(...auditLines(audit, c))
 
   const unchanged = changes.length - converted.length
   lines.push(
@@ -369,7 +466,12 @@ export async function runCli(argv: string[]): Promise<number> {
     let total = 0
     for (const input of inputs) {
       const from = args.from ? resolve(args.from) : input.from
-      const { root, changes, warnings, issues } = await compile(input.source, from, options)
+      const { root, changes, warnings, issues, audit } = await compile(
+        input.source,
+        from,
+        options,
+        args.targets,
+      )
 
       if (args.css) {
         // Warnings go to stderr so that `--css > out.css` still shows them and
@@ -385,6 +487,7 @@ export async function runCli(argv: string[]): Promise<number> {
         changes,
         warnings,
         issues,
+        audit,
         args,
         profiles,
       )

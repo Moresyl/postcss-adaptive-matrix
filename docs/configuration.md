@@ -183,6 +183,7 @@ interface RootFoundationOptions {
   containerName?: string
   safeAreaVariables?: boolean
   layer?: string | false
+  logical?: boolean
   fixedContainingBlock?: boolean
   injectTo?: FileMatcher | FileMatcher[]
 }
@@ -203,6 +204,16 @@ root: { selector: '#app', injectTo: 'src/styles/main' }
 匹配方式与 `include` 相同：字符串按包含判断，正则按路径测试，函数自行决定。`appPcPreset` 的对应字段是 `rootInjectTo`。
 
 匹配不上不报错，只是一份都不注入——用[命令行预览](./cli.md)确认入口文件里出现了新增声明。
+
+### logical
+
+默认 `true`，基础样式写逻辑属性：`inline-size`、`margin-inline`、`max-inline-size`。
+
+设为 `false` 改写 `width`、`margin-left` / `margin-right`、`max-width`。横排页面上两者等价，所以这个开关只有一个用途：**给读不懂逻辑属性的浏览器兜底**（Safari 15 / iOS 15.0 / Chrome 89 以下）。
+
+它值得单独有个开关，是因为这是本插件产出的语法里唯一一个失败之后页面看起来还正常的：丢掉 `margin-inline: auto`，列宽完全正确、贴在屏幕左边；丢掉 `max-inline-size`，列铺满整屏。两种都不像故障。完整的失败清单与降级路径见[浏览器特性支持与降级](./compatibility.md)。
+
+`appPcPreset` 的对应字段是 `rootLogical`；同理还有 `rootLayer`，透传到 `layer`。
 
 ### fixedContainingBlock
 
@@ -238,3 +249,5 @@ adaptiveMatrix({
 ```
 
 这会输出原始 `px` 后再输出 `vw`。是否使用该方案应由真实目标浏览器决定；现代项目优先使用默认 `clamp`。
+
+「真实目标浏览器」不必靠猜——`npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` 会把产物里每一处超出目标的语法列出来，连同不支持时丢掉的东西和关掉它的开关。见[浏览器特性支持与降级](./compatibility.md)。

@@ -18,7 +18,15 @@ npm run pack:check
 
 ## 浏览器策略
 
-编译器运行在 Node.js，浏览器只接收 CSS。默认输出依赖 `clamp()`；容器 profile 额外依赖容器查询单位。生产项目应按 Browserslist 和真实 WebView 版本决定是否采用 `strategy: 'viewport'` 或额外降级，不建议为了理论上的旧环境牺牲所有用户的现代能力。
+编译器运行在 Node.js，浏览器只接收 CSS。默认输出依赖 `clamp()`；容器 profile 额外依赖容器查询单位。不建议为了理论上的旧环境牺牲所有用户的现代能力。
+
+「真实目标浏览器读不读得懂这份产物」不必靠估：
+
+```bash
+npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
+```
+
+产物里每一处超出目标的语法都会被列出来，连同不支持时丢掉的东西和关掉它的开关。完整的特性 × 版本表见[浏览器特性支持与降级](./compatibility.md)。
 
 ## 版本策略
 

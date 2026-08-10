@@ -185,8 +185,9 @@ src/styles/app.css
 | [配置参考](./docs/configuration.md) | 全部选项、类型与默认值 |
 | [架构与转换公式](./docs/architecture.md) | 编译流程、数学公式、幂等、实现边界 |
 | [可选运行时](./docs/runtime.md) | VisualViewport 观察器：软键盘、地址栏、WebView |
+| [浏览器特性支持与降级](./docs/compatibility.md) | 特性 × 版本表、不支持时丢什么、每一项怎么关 |
 | [迁移指南](./docs/migration.md) | 从其它 px 换算方案迁移 |
-| [发布与兼容性](./docs/release.md) | 产物、浏览器策略、版本策略 |
+| [发布与兼容性](./docs/release.md) | 产物、Node 版本、版本策略 |
 | [一致性套件](./conformance/README.md) | 语言无关的行为规范 |
 | [完整示例](./examples/app-pc/) | 可运行的 App + PC 工程 |
 

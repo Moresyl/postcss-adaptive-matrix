@@ -384,6 +384,22 @@ describe('presets and foundation', () => {
     }
   })
 
+  it('passes the two support switches through to the foundation', async () => {
+    // Both exist for browsers that would otherwise discard something: no
+    // `@layer` takes the whole block, no logical properties leaves the column
+    // pinned to the left edge. Reaching either should not cost you the preset.
+    const result = await process(
+      '.a { width: 10px }',
+      appPcPreset({ rootSelector: '#app', rootLayer: false, rootLogical: false }),
+    )
+    expect(result.css).not.toContain('@layer')
+    expect(result.css).not.toContain('inline-size')
+    expect(result.css).toContain('max-width: 480px')
+    expect(result.css).toContain('margin-left: auto')
+    // Still the foundation, just spelled for an older browser.
+    expect(result.css).toContain(':where(#app)')
+  })
+
   it('exposes the named preset collection', () => {
     expect(presets.appPc).toBe(appPcPreset)
     expect(appPcPreset({ container: true, rootSelector: '.shell' }).root).toMatchObject({

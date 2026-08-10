@@ -11,8 +11,9 @@
 | 查某个选项叫什么、默认值是多少 | [配置参考](./configuration.md) |
 | 想知道数字是怎么算出来的 | [架构与转换公式](./architecture.md) |
 | 软键盘 / 地址栏 / WebView 把布局顶歪了 | [可选运行时](./runtime.md) |
+| 要支持某个旧 Safari / WebView | [浏览器特性支持与降级](./compatibility.md) |
 | 从现有的 px 换算方案换过来 | [迁移指南](./migration.md) |
-| 发版、产物、浏览器支持 | [发布与兼容性](./release.md) |
+| 发版、产物、Node 版本 | [发布与兼容性](./release.md) |
 
 规范与示例：
 

@@ -31,6 +31,7 @@ cat app.css | adaptive-matrix --from src/app.css
 | `-c, --config <path>` | 默认导出插件选项的模块 |
 | `--from <path>` | 把输入当作位于这个路径 |
 | `--profile <name>` | 覆盖 `defaultProfile` |
+| `--targets <list>` | 按你要支持的最低浏览器版本审计产物，如 `"safari 14, ios_saf 13"` |
 | `--all` | 连未改动的声明一起列出 |
 | `--css` | 打印编译后的完整 CSS，而不是对照表 |
 | `--color` / `--no-color` | 强制开/关颜色；都不写则跟随终端，并遵守 `NO_COLOR` |
@@ -166,6 +167,38 @@ const issues = findContinuityIssues(result.root)
 if (issues.length) throw new Error(`${issues.length} 处断点倒退`)
 ```
 
+## 目标浏览器读不懂的语法
+
+`--targets` 收一串「浏览器 + 你打算支持的最低版本」，逐条对着**编译产物**核：
+
+```bash
+npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
+```
+
+```
+  needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
+          from: root.layer, which appPcPreset sets to 'adaptive-matrix' ...
+          seen: @layer adaptive-matrix { :where(#app) {
+          if unsupported: The whole @layer block is dropped, so the entire root
+          foundation goes with it ...
+          instead: root.layer: false emits the same rules unwrapped. ...
+  needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
+```
+
+四行的顺序是有意的：先说**丢什么**，再说**换成什么**。「iOS Safari 13 太老了」单独拿出来没法行动，而 CSS 支持缺口真正要紧的一直是「跟着一起消失的有多少」——值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。
+
+上面 `clamp()` 那条差的是**一个小版本**：13.4 就有了。人工比对版本号时这种差距最容易看漏。
+
+目标全都够用时只有一行：
+
+```
+  every target reads all 7 CSS features in this output
+```
+
+已知名字：`chrome`、`edge`、`safari`、`firefox`、`ios_saf`、`samsung`；`android`、`webview` 归到 `chrome`。名字不认识会报错并以 `1` 退出，不会静默跳过——被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
+
+完整的特性 × 版本表、每一项的降级路径，以及编程式 API，见[浏览器特性支持与降级](./compatibility.md)。
+
 ## 看整份产物
 
 要接着给别的工具处理，用 `--css`：
@@ -184,5 +217,6 @@ npx adaptive-matrix src/app.css --css > out.css
 - `@media (min-width: 768px) › .page` —— 声明所在位置由外向内。`@adaptive pc` 编译后就是这个样子，同一个 `.page` 出现两次是正常的
 - `warning ...` —— 编译器的告警，原样透传
 - `shrinks ...` —— 跨断点时尺寸倒退，见[断点处的倒退](#断点处的倒退)
+- `needs ...` —— 目标浏览器读不懂的语法，只在传了 `--targets` 时出现，见[目标浏览器读不懂的语法](#目标浏览器读不懂的语法)
 
 表头的 `+5 library canvases` 是内置组件库各自的画布。它们由注册表生成，不是你能在 `@adaptive` 里写的名字，所以只报个数。完整清单见[组件库适配](./libraries.md)。

@@ -9,6 +9,22 @@ export { BUILT_IN_LIBRARIES, defineLibraries } from './core/libraries.js'
 // one, or as an assertion in a visual-regression suite.
 export { findContinuityIssues } from './core/continuity.js'
 export type { ContinuityIssue } from './core/continuity.js'
+// Same reasoning, for browser support: the audit reads compiled CSS text, so a
+// build can assert on it without this package having any say in the matter.
+export {
+  auditCompatibility,
+  compatFeature,
+  detectFeatures,
+  COMPAT_FEATURES,
+  FEATURE_SUPPORT,
+} from './core/compat.js'
+export type {
+  CompatAudit,
+  CompatFeature,
+  CompatFeatureId,
+  CompatFinding,
+  CompatShortfall,
+} from './core/compat.js'
 
 export function defineConfig<T extends AdaptiveMatrixOptions>(config: T): T {
   return config

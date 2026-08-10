@@ -52,9 +52,31 @@ function block(prelude: string, body: string[], depth = 0): string {
   return indent(`${prelude} {\n${body.map((line) => INDENT + line).join('\n')}\n}`, depth)
 }
 
+/**
+ * The foundation's own property names, in whichever spelling is configured.
+ *
+ * Only the three the foundation writes itself. `container` has no physical
+ * spelling and needs none: container queries arrived long after logical
+ * properties everywhere they exist at all, so a browser that can read the
+ * shorthand can certainly read `inline-size` beside it.
+ */
+function widthProperty(rootOptions: RootFoundationOptions): string {
+  return rootOptions.logical === false ? 'width' : 'inline-size'
+}
+
+function maxWidthProperty(rootOptions: RootFoundationOptions): string {
+  return rootOptions.logical === false ? 'max-width' : 'max-inline-size'
+}
+
+function centreDeclarations(rootOptions: RootFoundationOptions): string[] {
+  return rootOptions.logical === false
+    ? ['margin-left: auto;', 'margin-right: auto;']
+    : ['margin-inline: auto;']
+}
+
 function rootDeclarations(rootOptions: RootFoundationOptions): string[] {
-  const declarations = ['inline-size: 100%;']
-  if (rootOptions.center ?? true) declarations.push('margin-inline: auto;')
+  const declarations = [`${widthProperty(rootOptions)}: 100%;`]
+  if (rootOptions.center ?? true) declarations.push(...centreDeclarations(rootOptions))
   if (rootOptions.container) {
     const name = rootOptions.containerName ?? 'adaptive-root'
     declarations.push(`container: ${name} / inline-size;`)
@@ -101,7 +123,9 @@ export function buildFoundationCss(
   for (const profile of Object.values(options.profiles)) {
     if (profile.rootMaxWidth == null) continue
     const detail = queryDetails(profile)
-    const declarations = [`max-inline-size: ${profile.rootMaxWidth}px;`]
+    const declarations = [
+      `${maxWidthProperty(rootOptions)}: ${profile.rootMaxWidth}px;`,
+    ]
     const scoped = correctsFixed
       ? [
           block(selector, declarations, detail ? 1 : 0),
