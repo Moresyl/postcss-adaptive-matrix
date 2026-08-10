@@ -1,7 +1,22 @@
 # App + desktop example
 
-Run `npm run build` in the repository root first, then process `input.css` with any PostCSS runner. This example demonstrates: a 375 app design file, a 1440 desktop design file, safe-area variables, hairline preservation, zoomable text and a width-capped root container.
+**English** · [简体中文](./README.zh-CN.md)
 
-## 中文
+Build the compiler once in the repository root, then process `input.css` with any PostCSS runner:
 
-先在项目根目录执行 `npm run build`，再使用任意 PostCSS runner 处理 `input.css`。该示例展示：App 375 设计稿、PC 1440 设计稿、安全区变量、细线保留、可缩放字体和根容器限宽。
+```bash
+npm run build
+node dist/cli.js examples/app-pc/input.css \
+  -c examples/app-pc/adaptive.config.mjs \
+  --targets "ios_saf 13, chrome 90"
+```
+
+`adaptive.config.mjs` holds the options; `postcss.config.mjs` imports them, so running this through PostCSS instead compiles exactly the same thing. `--targets` is optional and prints the browser-support audit after the table.
+
+What this example shows:
+
+- a 375 app design file and a 1440 desktop design file in one build;
+- safe-area variables for notched screens;
+- hairline preservation, so a 1px border stays 1px;
+- text written as `rem + vw`, so browser zoom still reaches it;
+- a root container capped at a maximum width and centred.

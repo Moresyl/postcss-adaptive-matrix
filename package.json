@@ -81,7 +81,8 @@
     "test:coverage": "vitest run --coverage",
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
-    "check": "npm run build && npm run typecheck && npm run test:coverage",
+    "docs:check": "node scripts/check-docs.mjs",
+    "check": "npm run build && npm run typecheck && npm run docs:check && npm run test:coverage",
     "pack:check": "npm pack --dry-run",
     "prepublishOnly": "npm run check"
   },

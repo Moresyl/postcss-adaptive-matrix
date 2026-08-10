@@ -1,13 +1,6 @@
-import adaptiveMatrix, { appPcPreset } from '../../dist/index.js'
+import adaptiveMatrix from '../../dist/index.js'
+import options from './adaptive.config.mjs'
 
 export default {
-  plugins: [
-    adaptiveMatrix(
-      appPcPreset({
-        appDesignWidth: 375,
-        pcDesignWidth: 1440,
-        rootSelector: '#app',
-      }),
-    ),
-  ],
+  plugins: [adaptiveMatrix(options)],
 }

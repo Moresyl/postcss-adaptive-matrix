@@ -29,6 +29,7 @@ export type CompatFeatureId =
   | 'cascade-layers'
   | 'env-function'
   | 'where-pseudo'
+  | 'has-pseudo'
   | 'custom-properties'
   | 'logical-properties'
   | 'nesting'
@@ -94,6 +95,18 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     fallback:
       'root: false removes the foundation entirely, which is blunt but is the supported path. There is no option to emit the bare selector, because the zero specificity is the point: it is what lets your own CSS override the foundation without a specificity contest.',
     detect: /:where\(/i,
+  },
+  {
+    id: 'has-pseudo',
+    title: ':has()',
+    source: 'css-has',
+    emittedBy:
+      'nothing. Like native nesting, it reaches your output only from your own CSS or from a component library — but unlike nesting it is unmistakable in the text, so the audit reports it rather than guessing.',
+    failure:
+      'The selector is unreadable and the whole rule is dropped. Worth singling out because of *when* support arrived rather than how bad the failure is: :has() is the newest selector in everyday use, and Firefox only shipped it in 121 — years after Chrome 105 and Safari 15.4. A stylesheet that looks fine in three browsers can lose entire rules in the fourth.',
+    fallback:
+      'None from this compiler; the fix is in the selector. Rewrite the rule so the condition is expressed on the element itself — a class the component already sets, or :not(:empty) where that is what was meant. The compiler does route such rules correctly either way: a :has() argument names what an element contains, not which design file it was drawn on, so it is excluded from canvas matching.',
+    detect: /:has\(/i,
   },
   {
     id: 'container-queries',

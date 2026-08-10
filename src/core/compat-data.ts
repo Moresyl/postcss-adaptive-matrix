@@ -81,6 +81,15 @@ export const FEATURE_SUPPORT = {
     ios_saf: '14.0-14.4',
     samsung: '15.0',
   },
+  /** :has() CSS relational pseudo-class */
+  'css-has': {
+    chrome: '105',
+    edge: '105',
+    safari: '15.4',
+    firefox: '121',
+    ios_saf: '15.4',
+    samsung: '20',
+  },
   /** CSS Variables (Custom Properties) */
   'css-variables': {
     chrome: '49',

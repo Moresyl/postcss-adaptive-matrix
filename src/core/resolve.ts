@@ -1,4 +1,5 @@
 import { matchesAnyPattern, matchesFile, toArray } from './matchers.js'
+import { routingSelector } from './selectors.js'
 import type {
   ActiveProfile,
   AdaptiveRoute,
@@ -74,12 +75,18 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     /**
      * Refines a file-level choice once a selector is known. `inherited` is
      * returned untouched when it came from `@adaptive` or when nothing matches.
+     *
+     * Takes the selector as authored and reduces it to what it is *about*
+     * before matching — see `routingSelector`. Doing that here rather than in
+     * the caller keeps it out of the way when no route tests selectors at all,
+     * which is the whole cost of the feature for a project that disables it.
      */
     forSelector(inherited: ActiveProfile, selector: string, file: string): ActiveProfile {
       if (inherited.explicit || !hasSelectorRoutes) return inherited
+      const subject = routingSelector(selector)
       for (const route of routes) {
         if (!route.selector.length) continue
-        if (!matchesAnyPattern(route.selector, selector)) continue
+        if (!matchesAnyPattern(route.selector, subject)) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         return activate(route.profile)
       }

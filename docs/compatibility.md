@@ -24,6 +24,7 @@ So the order to work through is not "which feature is newest" but **how much is 
 | --- | --- | --- | --- | --- | --- | --- |
 | `@layer` | 99 | 99 | 15.4 | 15.4 | 97 | 18.0 |
 | `:where()` ¹ | 88 | 88 | 14 | 14.0 | 78 | 15.0 |
+| `:has()` ³ | 105 | 105 | 15.4 | 15.4 | **121** | 20 |
 | `@container` / `container-type` | 106 | 106 | 16.0 | 16.0 | 110 | 20 |
 | `clamp()` `min()` `max()` | 79 | 79 | 13.1 | 13.4 | 75 | 12.0 |
 | `cqw` / `cqi` | 105 | 105 | 16.0 | 16.0 | 110 | 20 |
@@ -36,7 +37,9 @@ So the order to work through is not "which feature is newest" but **how much is 
 
 ¹ caniuse has no separate entry for `:where()`, so this uses `:is()`. Not a stand-in of convenience: both come from the same section of the specification and shipped together in Chrome 88, Firefox 78 and Safari 14.
 ² Likewise, `vi` uses the `svh` / `lvh` / `dvh` entry — same spec batch, same releases.
-³ The compiler **does not emit** nesting; it is listed only because it is a question that gets asked. See below.
+³ Neither `:has()` nor native nesting is **emitted** by the compiler; both are listed because they reach your output through your own CSS or a component library, and shipping them is still shipping them. Nesting cannot be detected without guessing, so it is not; `:has()` can, so it is. See below.
+
+Read that `:has()` row across rather than down. Chrome had it in 2022 and Safari before that, and Firefox did not until the end of 2023 — the widest gap in the table between the first browser and the last. It is the one row where a stylesheet can look completely correct in three browsers while losing whole rules in the fourth.
 
 Data from caniuse-lite `1.0.30001809`, baked into `src/core/compat-data.ts` by `scripts/capture-compat.mjs`.
 
@@ -57,6 +60,16 @@ Data from caniuse-lite `1.0.30001809`, baked into `src/core/compat-data.ts` by `
 **What is lost**: an unreadable selector voids the whole rule — the same outcome as losing `@layer`, just one rule at a time.
 
 **How to switch it off**: `root: false`, removing the foundation entirely. Blunt, but it is the supported path. There is no option to emit a bare selector, because **zero specificity is the entire reason it is there**: it lets your CSS override the foundation without a specificity fight. Offering that switch would be offering a switch that silently changes cascade behaviour.
+
+### `:has()`
+
+**What emits it**: nothing here. It arrives from your own CSS or from a component library, survives the pass untouched, and ships.
+
+**What is lost**: the whole rule, like any unreadable selector. What makes it worth its own row is not the size of the failure but *when* support arrived. `:has()` is the newest selector in everyday use, and the four engines are years apart on it — Chrome 105 in August 2022, Safari 15.4 before that, Firefox not until 121 in December 2023. A stylesheet that has been reviewed in Chrome and Safari can be silently missing rules in an older Firefox.
+
+**How to switch it off**: not a switch — a rewrite. Express the condition on the element itself: a class the component already sets when it has the child, or `:not(:empty)` where that is what `:has(*)` was standing in for.
+
+Routing is not affected either way. A `:has()` argument names what an element *contains*, not which design file it was drawn on, so it is removed before a rule's canvas is decided — `.page-card:has(.van-icon)` is a page card, whatever it happens to hold. See [Component libraries](./libraries.md#what-a-selector-is-about).
 
 ### `@container` and the container units `cqw` / `cqi`
 

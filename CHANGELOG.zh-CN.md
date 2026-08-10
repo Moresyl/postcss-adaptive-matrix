@@ -11,6 +11,21 @@
 - 告警会说出**拆分要付什么代价**，是算出来的而不是丢给读者：`:is()` 以其最高的那一支的特异度匹配每一支，所以把分支拆开只有在它们本来就一致时才是免费的。不一致时，告警指明降幅——`:is() matches every branch at its highest, 1-1-0, so ".page-hero" would drop to 0-1-0`。这才让建议可执行；一个照做之后会悄悄改变层叠的告警，是会被学会无视的告警。每条规则只报一次：剩下的列表成因相同、修法相同。
 - 新增 `src/core/selectors.ts`，零依赖：`splitSelectorList`、`routingSelector`、`nestedSelectorLists`、`specificity`、`compareSpecificity`、`formatSpecificity`、`splitIsSpecificityNeutral`。拆分识别字符串与属性选择器，`[data-x="a)b"], .c` 会正确拆成两支——只数括号会拆错。特异度按 Selectors Level 4 计算，含 `:where()` 计零、`:is()` / `:not()` / `:has()` 取最高分支、`:nth-child(n of S)` 计一个伪类加 `S` 的最高分支，以及四个单冒号历史写法的伪元素（`:before`、`:after`、`:first-line`、`:first-letter`）按元素计。新增 40 条单元测试。
 
+### 浏览器特性支持审计
+
+- **`:has()` 纳入审计。** 它是日常在用的选择器里最新的一个，四个引擎之间隔了好几年——Chrome 105（2022 年 8 月）、Safari 15.4，而 Firefox 要到 121（2023 年 12 月）。这是表里首尾差距最大的一行，而且失败发生在选择器层面：整条规则作废。一份在 Chrome 和 Safari 上验收过的样式表，在旧一点的 Firefox 里可能正无声地少着若干条规则。编译器不产出 `:has()`，它从你自己的 CSS 或组件库进来、原样穿过这一趟——而这正是「读**产物**」的审计能看见它的原因。与原生嵌套不同，它在文本里毫不含糊，所以是识别出来的，不是猜的。
+- `scripts/capture-compat.mjs` 加入 `css-has` 并重新烘焙进 `src/core/compat-data.ts`；仍然不引入任何运行时依赖。
+
+### 文档
+
+- 新增 `scripts/check-docs.mjs`，接进 `npm run check`，因而也进了 CI。它校验每个本地链接可达、每个 `#锚点` 对得上真实标题，以及**每一页都有另一种语言的对应页、并且在顶部链接过去**。真正划算的是最后一条：两种语言是分别写的而不是翻译的——这既是它们读起来顺的原因，也是其中一份可以悄悄不存在的原因。它当场查出两处：`CODE_OF_CONDUCT` 只有中文内容却挂着英文文件名，示例 README 把两种语言堆在同一个文件里。
+- 锚点检查按 `/\r?\n/` 切行。Windows 上这里每个文件都是 CRLF，行尾的 `\r` 会让非多行模式下的 `$` 匹配不上，而 `.` 也不匹配它——于是直接按 `'\n'` 切会一条标题都找不到，把仓库里所有锚点全报成坏的。这不是假想，这是这个检查第一版的真实表现。
+- `examples/app-pc` 新增 `adaptive.config.mjs`，单独导出配置本身；`postcss.config.mjs` 改为 import 它。两个 runner 要的形状不同——PostCSS 要 `{ plugins: [...] }`，CLI 要配置本身——而把画布写两遍正是两边最后描述出两张不同设计稿的方式。示例 README 现在给的是真能跑起来的命令，含 `--targets`。
+
+### 性能
+
+- `routingSelector` 对不含 `:` 的选择器立即返回，而绝大多数选择器都不含；同时这道还原挪进了 `forSelector` 内部——在「压根不做选择器路由」的那道判断之后。配了 `libraries: false` 的项目现在为这个特性一分钱都不用付。utility-framework 语料上的编译器耗时：4.38ms → 3.58ms。
+
 ### 一致性套件
 
 - 原子化用例补入 `space-x-4` 与 `divide-y-2`。此前整个套件里**一个功能性伪类都没有**，而这两个是日常工具类。同一个工具类，三种毫不相干的真实形状：Tailwind 4 把整体裹进 `:where(...)`，UnoCSS wind3 写成扁平的 `> :not([hidden]) ~ :not([hidden])`，UnoCSS wind4 直接产出带 `&` 的*原生嵌套*。现在同样的 2px 在三者中都得到一模一样的 `clamp(1.70667px, 0.53333vw, 2.56px)`，`border` 的细线三者都保住，wind4 的原生嵌套原样写回。

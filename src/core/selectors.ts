@@ -196,6 +196,10 @@ export function splitSelectorList(selector: string): string[] {
  * exclusion does not collapse to the empty string.
  */
 export function routingSelector(selector: string): string {
+  // Nothing to exclude without a pseudo-class, and most selectors in a
+  // stylesheet have none. This runs on every rule of every file, so the check
+  // that skips the rewrite entirely is worth more than anything inside it.
+  if (!selector.includes(':')) return selector
   let output = ''
   let index = 0
   while (index < selector.length) {

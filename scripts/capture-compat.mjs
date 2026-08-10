@@ -56,6 +56,7 @@ const FEATURES = [
   'css-cascade-layers',
   'css-env-function',
   'css-matches-pseudo',
+  'css-has',
   'css-variables',
   'css-logical-props',
   'css-nesting',

@@ -41,9 +41,17 @@ function ids(css: string): CompatFeatureId[] {
   return detectFeatures(css).map(({ feature }) => feature.id)
 }
 
-/** A configuration that turns the feature on, and the switch that turns it off. */
+/**
+ * A configuration that turns the feature on, and the switch that turns it off.
+ *
+ * `nesting` and `has-pseudo` are absent because the compiler emits neither: both
+ * reach the output from the source and there is no option that produces them.
+ * The exhaustive `Record` is what forces that decision to be made explicitly —
+ * a new feature cannot be added to the table without either an emitter here or
+ * a deliberate exclusion.
+ */
 const EMITTERS: Record<
-  Exclude<CompatFeatureId, 'nesting'>,
+  Exclude<CompatFeatureId, 'nesting' | 'has-pseudo'>,
   { css: string; on: AdaptiveMatrixOptions; off: AdaptiveMatrixOptions }
 > = {
   'cascade-layers': {
@@ -158,6 +166,29 @@ describe('detection', () => {
     expect(found).not.toContain('logical-viewport-units')
     expect(found).not.toContain('container-query-units')
     expect(found).not.toContain('viewport-units')
+  })
+
+  it('reports :has() that came in through the source', async () => {
+    // The compiler emits no `:has()`. It survives the pass, and surviving is
+    // exactly why it belongs in an audit that reads the output: the rule ships
+    // whether or not this plugin wrote it, and Firefox read nothing before 121.
+    const css = await compile('.card:has(.badge) { padding: 16px }')
+    expect(css).toContain(':has(.badge)')
+    expect(ids(css)).toContain('has-pseudo')
+
+    const audit = auditCompatibility(css, { firefox: '115', chrome: '120' })
+    const finding = audit.findings.find((entry) => entry.feature.id === 'has-pseudo')!
+    expect(finding.shortfalls.map((shortfall) => shortfall.browser)).toEqual(['firefox'])
+    expect(finding.shortfalls[0]!.since).toBe('121')
+  })
+
+  it('does not read :not() or a --has- token as :has()', () => {
+    // The two things in a real stylesheet that look like it. A `:has(` written
+    // inside a string is not covered, here or by any other entry in the table:
+    // detection reads text, and no feature is worth a CSS parser to rule out a
+    // stylesheet whose content property quotes a selector.
+    const css = '.a:not(.b) { --has-badge: 1px; padding: 8px }'
+    expect(ids(css)).not.toContain('has-pseudo')
   })
 
   it('starts from the beginning on every call', () => {

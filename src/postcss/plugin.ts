@@ -32,7 +32,6 @@ import {
   compareSpecificity,
   formatSpecificity,
   nestedSelectorLists,
-  routingSelector,
   specificity,
   splitIsSpecificityNeutral,
   splitSelectorList,
@@ -217,11 +216,7 @@ function transformRule(
     return
   }
 
-  const active = context.resolver.forSelector(
-    inherited,
-    routingSelector(rule.selector),
-    context.file,
-  )
+  const active = context.resolver.forSelector(inherited, rule.selector, context.file)
   warnOnSplitSelectorList(rule, inherited, active, context)
   processContainer(rule, active, context, true)
 
@@ -263,11 +258,7 @@ function warnOnSplitSelectorList(
   if (!rule.selector.includes(',')) return
 
   const canvasOf = (part: string): string => {
-    const resolved = context.resolver.forSelector(
-      inherited,
-      routingSelector(part),
-      context.file,
-    )
+    const resolved = context.resolver.forSelector(inherited, part, context.file)
     return resolved.convert ? resolved.name : '(not converted)'
   }
   const winner = active.convert ? active.name : '(not converted)'
