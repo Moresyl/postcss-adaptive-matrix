@@ -134,11 +134,16 @@ describe('registry invariants', () => {
     ).toThrow(/reserved "library:" prefix.*extends: 'vant'/s)
   })
 
-  it('keeps class prefixes unambiguous across libraries', () => {
+  // A scoped entry describes a second canvas for a prefix another entry already
+  // owns, and settles the overlap by path rather than by declaration order — so
+  // it is exempt from uniqueness, and only it is.
+  const unscoped = all.filter((library) => !library.scoped)
+
+  it('keeps class prefixes unambiguous across unscoped libraries', () => {
     // Nested prefixes would make routing depend on registry order: `.ant-` and
     // `.ant-mobile-` would both match the same selector, and the winner would be
     // whichever happened to be declared first.
-    const prefixes = all.map((library) => library.prefix).filter(Boolean) as string[]
+    const prefixes = unscoped.map((library) => library.prefix).filter(Boolean) as string[]
     expect(new Set(prefixes).size).toBe(prefixes.length)
     for (const a of prefixes) {
       for (const b of prefixes) {
@@ -147,13 +152,32 @@ describe('registry invariants', () => {
     }
   })
 
-  it('keeps token prefixes unambiguous across libraries', () => {
-    const tokens = all.map((library) => library.tokenPrefix).filter(Boolean) as string[]
+  it('keeps token prefixes unambiguous across unscoped libraries', () => {
+    const tokens = unscoped.map((library) => library.tokenPrefix).filter(Boolean) as string[]
     expect(new Set(tokens).size).toBe(tokens.length)
     for (const a of tokens) {
       for (const b of tokens) {
         if (a !== b) expect(b.startsWith(a), `${b} starts with ${a}`).toBe(false)
       }
+    }
+  })
+
+  it('gives every scoped entry the path it needs to be told apart', () => {
+    // Scoping is the whole of a scoped entry's claim to a prefix someone else
+    // owns. Without a path it would be an unscoped duplicate that routes by
+    // declaration order — the ambiguity the two tests above exist to prevent.
+    for (const library of all) {
+      if (!library.scoped) continue
+      expect(library.file, library.name).toBeDefined()
+      expect(
+        all.some(
+          (other) =>
+            other !== library &&
+            !other.scoped &&
+            (other.prefix === library.prefix || other.tokenPrefix === library.tokenPrefix),
+        ),
+        `${library.name} is scoped but shares no prefix with anything`,
+      ).toBe(true)
     }
   })
 
@@ -320,5 +344,56 @@ describe('library routing', () => {
     const explicit = { name: 'app', profile: PROFILES.app!, explicit: true, convert: true }
     expect(resolver.forSelector(explicit, '.van-button', '/src/app.css').name).toBe('app')
     expect(resolver.forCustomProperty(explicit, '--van-padding-md', '/src/app.css')).toBeUndefined()
+  })
+})
+
+describe('one prefix, two canvases', () => {
+  // antd-mobile ships `bundle/style.css` drawn for 375 and `2x/bundle/style.css`
+  // drawn for 750 — verified against 5.42.3, where every length in the second is
+  // exactly double the first (`font-size: 16px` becomes `32px`). The class names
+  // are identical, so only the path separates them. Left to the `.adm-` selector
+  // route alone, the 2x build would compile against a 375 canvas and render at
+  // twice the intended size, on every element, with nothing to show for it.
+  const resolver = createProfileResolver(
+    resolveOptions({ profiles: PROFILES, defaultProfile: 'app' }),
+  )
+  const oneX = '/app/node_modules/antd-mobile/bundle/style.css'
+  const twoX = '/app/node_modules/antd-mobile/2x/bundle/style.css'
+
+  it('reads the canvas from the path before the class', () => {
+    expect(resolver.forSelector(resolver.forFile(twoX), '.adm-button', twoX).name).toBe(
+      'library:antd-mobile-2x',
+    )
+    expect(resolver.forSelector(resolver.forFile(oneX), '.adm-button', oneX).name).toBe(
+      'library:antd-mobile',
+    )
+  })
+
+  it('scopes the theme tokens the same way', () => {
+    expect(
+      resolver.forCustomProperty(resolver.forFile(twoX), '--adm-color-primary', twoX)?.name,
+    ).toBe('library:antd-mobile-2x')
+    expect(
+      resolver.forCustomProperty(resolver.forFile(oneX), '--adm-color-primary', oneX)?.name,
+    ).toBe('library:antd-mobile')
+  })
+
+  it('falls back to the plain entry where no path says otherwise', () => {
+    // A bundler that inlines vendor CSS leaves no path to read. The 1x build is
+    // the default one, so it is the better guess of the two.
+    const inlined = '/src/app.css'
+    expect(
+      resolver.forSelector(resolver.forFile(inlined), '.adm-button', inlined).name,
+    ).toBe('library:antd-mobile')
+  })
+
+  it('refuses a scoped library with no path to scope it to', () => {
+    expect(() =>
+      resolveOptions({
+        profiles: PROFILES,
+        defaultProfile: 'app',
+        libraries: [{ name: 'mine', designWidth: 375, prefix: 'my-', scoped: true }],
+      }),
+    ).toThrow(/scoped but names no file/)
   })
 })

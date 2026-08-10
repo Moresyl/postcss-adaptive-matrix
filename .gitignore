@@ -3,4 +3,6 @@ node_modules/
 dist/
 coverage/
 *.tgz
+# Library stylesheets downloaded by scripts/verify-libraries.ts
+.libcheck/
 

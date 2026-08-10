@@ -43,6 +43,24 @@ const PROBE = 0.05
 const EPSILON = 0.01
 
 /**
+ * Marks a value as compiler output rather than something a person typed.
+ *
+ * Bounded fluid sizing has no unwrapped form — every viewport-relative length
+ * this compiler emits sits inside one of these functions, and no expected
+ * output in the conformance suite contains a bare `vw`.
+ *
+ * The distinction matters because the completeness argument above only covers
+ * formulas *this* compiler produced. A stylesheet it deliberately leaves alone
+ * can shrink at a breakpoint because its author decided it should: Quasar draws
+ * `.q-tooltip` with 16px of padding on a phone and 10px from 600px up, which is
+ * a touch-target decision, not two canvases disagreeing. Reporting that as a
+ * seam is noise — the author typed both numbers and meant them. A seam is worth
+ * flagging precisely when nobody ever compared the two sides, which requires at
+ * least one of them to have been generated.
+ */
+const COMPILED = /\b(?:clamp|min|max|calc)\s*\(/i
+
+/**
  * Walks the tree once, recording every declaration together with the width
  * conditions and cascade layer it sits under.
  *
@@ -188,6 +206,9 @@ export function findContinuityIssues(root: Root): ContinuityIssue[] {
       const lowValue = tokens.resolve(low.value, breakpoint - PROBE)
       const highValue = tokens.resolve(high.value, breakpoint + PROBE)
       if (lowValue === null || highValue === null || lowValue === highValue) continue
+      // Substitution happens first: a token can hold the generated formula
+      // while the declaration reading it is a bare `var()`.
+      if (!COMPILED.test(lowValue) && !COMPILED.test(highValue)) continue
 
       const lowParts = splitComponents(lowValue)
       const highParts = splitComponents(highValue)

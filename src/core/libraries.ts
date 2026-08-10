@@ -49,10 +49,16 @@ const REGISTRY: Record<string, RegistryEntry> = {
     file: [/[\\/]@nutui[\\/]/],
   },
   varlet: {
+    // No `tokenPrefix`. Varlet names its custom properties after the component
+    // and nothing else — `--field-padding`, `--icon-size-md`, `--card-width` —
+    // declared on a bare `:root`. Claiming those by name would mean claiming
+    // `--card-width` in general, which any application may define for itself,
+    // and the registry only takes prefixes nobody else can plausibly own. Its
+    // own stylesheet still routes by path; a theme override written in project
+    // CSS needs an explicit route.
     name: 'varlet',
     designWidth: 375,
     prefix: 'var-',
-    tokenPrefix: '--var-',
     file: [/[\\/]@varlet[\\/]/],
   },
   'antd-mobile': {
@@ -60,7 +66,21 @@ const REGISTRY: Record<string, RegistryEntry> = {
     designWidth: 375,
     prefix: 'adm-',
     tokenPrefix: '--adm-',
-    file: [/[\\/]antd-mobile[\\/]/],
+    // Anything but the 2x tree, which is the same CSS drawn twice as large.
+    file: [/[\\/]antd-mobile[\\/](?!2x[\\/])/],
+  },
+  'antd-mobile-2x': {
+    // antd-mobile publishes its stylesheet twice: `bundle/` drawn for 375 and
+    // `2x/bundle/` drawn for 750, class for class and token for token. Only the
+    // path tells them apart, so this entry is scoped to it — without that, the
+    // `.adm-` route above would claim the 2x rules and render every length at
+    // double size, silently and everywhere.
+    name: 'antd-mobile-2x',
+    designWidth: 750,
+    prefix: 'adm-',
+    tokenPrefix: '--adm-',
+    file: [/[\\/]antd-mobile[\\/]2x[\\/]/],
+    scoped: true,
   },
   'taro-ui': {
     name: 'taro-ui',
@@ -232,6 +252,10 @@ export function expandLibraries(
   defaultProfile: string,
 ): LibraryExpansion {
   const derived: Record<string, AdaptiveProfile> = {}
+  // Scoped routes are collected apart so they can be tested first: demanding a
+  // path as well as a class is the more specific claim, and two libraries can
+  // share a prefix while disagreeing about the canvas behind it.
+  const scoped: AdaptiveRoute[] = []
   const routes: AdaptiveRoute[] = []
 
   for (const library of libraries) {
@@ -268,13 +292,25 @@ export function expandLibraries(
     }
 
     // Separate routes per axis: a route requires every axis it declares to
-    // match, and a library matching by class must not also demand a file path.
-    if (selector.length) routes.push({ profile, selector })
-    if (property.length) routes.push({ profile, property })
-    if (file.length) routes.push({ profile, file })
+    // match, and a library matching by class must not also demand a file path
+    // — unless it says otherwise, because its prefix alone is not conclusive.
+    if (library.scoped) {
+      if (!file.length) {
+        throw new Error(
+          `[postcss-adaptive-matrix] Library "${library.name}" is scoped but names no file to scope it to.`,
+        )
+      }
+      if (selector.length) scoped.push({ profile, selector, file })
+      if (property.length) scoped.push({ profile, property, file })
+      scoped.push({ profile, file })
+    } else {
+      if (selector.length) routes.push({ profile, selector })
+      if (property.length) routes.push({ profile, property })
+      if (file.length) routes.push({ profile, file })
+    }
   }
 
-  return { profiles: derived, routes }
+  return { profiles: derived, routes: [...scoped, ...routes] }
 }
 
 /** Convenience for configs: `libraries: [...]` without repeating the type. */

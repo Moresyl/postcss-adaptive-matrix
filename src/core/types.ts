@@ -84,6 +84,21 @@ export interface LibraryAdaptation {
   tokenPrefix?: string | string[]
   /** Paths, for builds that keep vendor CSS in its own files. */
   file?: FileMatcher | FileMatcher[]
+  /**
+   * Requires `file` to match before `prefix` or `tokenPrefix` count.
+   *
+   * Normally a class prefix routes on its own, so vendor CSS still lands on the
+   * right canvas after a bundler inlines it and the path is gone. That breaks
+   * down when one prefix spans two canvases: antd-mobile publishes the same
+   * `.adm-` classes twice, drawn for 375 under `bundle/` and for 750 under
+   * `2x/`, and a prefix alone cannot say which of the two a rule came from.
+   * Scoping the prefix to the path lets both be described at once.
+   *
+   * Scoped routes are tested before unscoped ones, being the more specific
+   * claim. So a scoped variant wins wherever its path matches, and the plain
+   * entry still catches the same classes everywhere else.
+   */
+  scoped?: boolean
   /** Profile whose fluid range, unit and strategy the derived canvas borrows. */
   basedOn?: string
 }

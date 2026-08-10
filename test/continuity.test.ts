@@ -68,6 +68,17 @@ describe('splitComponents', () => {
 
 const check = (css: string) => findContinuityIssues(postcss.parse(css))
 
+/**
+ * A fixed pixel value written the way the compiler writes one.
+ *
+ * The check only looks at declarations it produced — a stylesheet it leaves
+ * alone may shrink at a breakpoint because its author meant it to. Fixtures
+ * therefore cannot be bare `40px`, or every negative case below would pass for
+ * that reason instead of the one it names. `min(Npx, 100vw)` is N at any width
+ * the tests probe, so the arithmetic stays as obvious as a literal.
+ */
+const fluid = (value: number) => `min(${value}px, 100vw)`
+
 describe('findContinuityIssues', () => {
   it('finds a length that shrinks as the viewport grows', () => {
     // Measured in Chrome before this check existed: a card authored at 16px on
@@ -140,22 +151,22 @@ describe('findContinuityIssues', () => {
 
   it('compares shorthand components one by one', () => {
     const issues = check(`
-      .a { margin: 10px 40px }
-      @media (min-width: 768px) { .a { margin: 20px 30px } }
+      .a { margin: ${fluid(10)} ${fluid(40)} }
+      @media (min-width: 768px) { .a { margin: ${fluid(20)} ${fluid(30)} } }
     `)
 
     // The first component grew and the second shrank; only the second is a step
     // backwards, and reporting the declaration as a whole would hide which.
     expect(issues).toHaveLength(1)
-    expect(issues[0]!.below.value).toBe('40px')
-    expect(issues[0]!.above.value).toBe('30px')
+    expect(issues[0]!.below.value).toBe(fluid(40))
+    expect(issues[0]!.above.value).toBe(fluid(30))
   })
 
   it('says nothing when the component counts differ', () => {
     expect(
       check(`
-        .a { margin: 10px 40px }
-        @media (min-width: 768px) { .a { margin: 5px } }
+        .a { margin: ${fluid(10)} ${fluid(40)} }
+        @media (min-width: 768px) { .a { margin: ${fluid(5)} } }
       `),
     ).toEqual([])
   })
@@ -165,9 +176,9 @@ describe('findContinuityIssues', () => {
     // that never happens on browsers without the feature.
     expect(
       check(`
-        .a { width: 40px }
+        .a { width: ${fluid(40)} }
         @supports (display: grid) {
-          @media (min-width: 768px) { .a { width: 20px } }
+          @media (min-width: 768px) { .a { width: ${fluid(20)} } }
         }
       `),
     ).toEqual([])
@@ -176,10 +187,10 @@ describe('findContinuityIssues', () => {
   it('drops a group whose media query is not a plain width test', () => {
     expect(
       check(`
-        .a { width: 40px }
-        @media print, (min-width: 768px) { .a { width: 20px } }
-        .b { width: 40px }
-        @media (min-width: 768px) and (orientation: landscape) { .b { width: 20px } }
+        .a { width: ${fluid(40)} }
+        @media print, (min-width: 768px) { .a { width: ${fluid(20)} } }
+        .b { width: ${fluid(40)} }
+        @media (min-width: 768px) and (orientation: landscape) { .b { width: ${fluid(20)} } }
       `),
     ).toEqual([])
   })
@@ -189,8 +200,8 @@ describe('findContinuityIssues', () => {
     // source order no longer decides the winner.
     expect(
       check(`
-        @layer base { .a { width: 40px } }
-        @media (min-width: 768px) { .a { width: 20px } }
+        @layer base { .a { width: ${fluid(40)} } }
+        @media (min-width: 768px) { .a { width: ${fluid(20)} } }
       `),
     ).toEqual([])
   })
@@ -198,8 +209,8 @@ describe('findContinuityIssues', () => {
   it('checks within a single layer, where source order still decides', () => {
     expect(
       check(`
-        @layer base { .a { width: 40px } }
-        @layer base { @media (min-width: 768px) { .a { width: 20px } } }
+        @layer base { .a { width: ${fluid(40)} } }
+        @layer base { @media (min-width: 768px) { .a { width: ${fluid(20)} } } }
       `),
     ).toHaveLength(1)
   })
@@ -207,7 +218,7 @@ describe('findContinuityIssues', () => {
   it('ignores values it cannot put a number to', () => {
     expect(
       check(`
-        .bar { left: 0 }
+        .bar { left: ${fluid(8)} }
         @media (min-width: 768px) { .bar { left: var(--adaptive-root-gutter) } }
       `),
     ).toEqual([])
@@ -218,9 +229,9 @@ describe('findContinuityIssues', () => {
     // library is most of the file: Vant 4.10.0 reads 1173 of its 3198 ordinary
     // declarations entirely through tokens.
     const issues = check(`
-      :root,:host { --card-width: 40px }
+      :root,:host { --card-width: ${fluid(40)} }
       .a { width: var(--card-width) }
-      @media (min-width: 768px) { .a { width: 20px } }
+      @media (min-width: 768px) { .a { width: ${fluid(20)} } }
     `)
 
     expect(issues).toHaveLength(1)
@@ -232,15 +243,15 @@ describe('findContinuityIssues', () => {
     // The rule never changes. What it reads does — and the author, looking at
     // one `width` in one place, has nothing to compare.
     const issues = check(`
-      :root { --card-width: 40px }
-      @media (min-width: 768px) { :root { --card-width: 20px } }
+      :root { --card-width: ${fluid(40)} }
+      @media (min-width: 768px) { :root { --card-width: ${fluid(20)} } }
       .a { width: var(--card-width) }
     `)
 
     expect(issues).toHaveLength(1)
     expect(issues[0]!.breakpoint).toBe(768)
-    expect(issues[0]!.below.value).toBe('40px')
-    expect(issues[0]!.above.value).toBe('20px')
+    expect(issues[0]!.below.value).toBe(fluid(40))
+    expect(issues[0]!.above.value).toBe(fluid(20))
   })
 
   it('declines a token a theme class can override', () => {
@@ -248,18 +259,18 @@ describe('findContinuityIssues', () => {
     // and no width tells you which one an element sits beneath.
     expect(
       check(`
-        :root { --card-width: 40px }
-        .dark { --card-width: 30px }
+        :root { --card-width: ${fluid(40)} }
+        .dark { --card-width: ${fluid(30)} }
         .a { width: var(--card-width) }
-        @media (min-width: 768px) { .a { width: 20px } }
+        @media (min-width: 768px) { .a { width: ${fluid(20)} } }
       `),
     ).toEqual([])
   })
 
   it('respects max-width bounds, not just min-width', () => {
     const issues = check(`
-      @media (max-width: 767.98px) { .a { width: 40px } }
-      @media (min-width: 768px) { .a { width: 20px } }
+      @media (max-width: 767.98px) { .a { width: ${fluid(40)} } }
+      @media (min-width: 768px) { .a { width: ${fluid(20)} } }
     `)
 
     expect(issues).toHaveLength(1)
@@ -270,8 +281,8 @@ describe('findContinuityIssues', () => {
     // `(max-width: 767.98px)` and `(min-width: 768px)` are two boundaries
     // describing one transition. Probing each would report the same step twice.
     const issues = check(`
-      @media (max-width: 767.98px) { .a { font-size: 20px } }
-      @media (min-width: 768px) { .a { font-size: 10px } }
+      @media (max-width: 767.98px) { .a { font-size: ${fluid(20)} } }
+      @media (min-width: 768px) { .a { font-size: ${fluid(10)} } }
     `)
 
     expect(issues).toHaveLength(1)
@@ -282,14 +293,14 @@ describe('findContinuityIssues', () => {
     // gutter gets wider, so shrinking here is the whole point.
     expect(
       check(`
-        :root { --adaptive-root-width: 100vw }
-        @media (min-width: 768px) { :root { --adaptive-root-width: 600px } }
+        :root { --adaptive-root-width: ${fluid(1000)} }
+        @media (min-width: 768px) { :root { --adaptive-root-width: ${fluid(600)} } }
       `),
     ).toEqual([])
   })
 
   it('says nothing about a stylesheet with no breakpoints at all', () => {
-    expect(check('.a { width: 40px } .a { width: 20px }')).toEqual([])
+    expect(check(`.a { width: ${fluid(40)} } .a { width: ${fluid(20)} }`)).toEqual([])
   })
 
   it('does not treat a nested rule as its own selector', () => {
@@ -297,9 +308,33 @@ describe('findContinuityIssues', () => {
     // check models — so it declines rather than reporting against `& span`.
     expect(
       check(`
-        .a { span { width: 40px } }
-        @media (min-width: 768px) { .a { span { width: 20px } } }
+        .a { span { width: ${fluid(40)} } }
+        @media (min-width: 768px) { .a { span { width: ${fluid(20)} } } }
       `),
     ).toEqual([])
+  })
+
+  it('leaves a stylesheet it did not compile alone', () => {
+    // Quasar 2.19 draws `.q-tooltip` with 16px of padding on a phone and 10px
+    // from 600px up. That is a touch-target decision, taken deliberately, with
+    // both numbers written by hand — not two canvases disagreeing. Quasar is a
+    // `designWidth: false` entry, so neither side was converted, and the
+    // monotonicity argument that makes this check complete says nothing about
+    // lengths the compiler never touched. Reporting them is noise.
+    expect(
+      check(`
+        .q-tooltip { padding: 6px 10px }
+        @media (max-width: 599.98px) { .q-tooltip { padding: 8px 16px } }
+      `),
+    ).toEqual([])
+
+    // One converted side is enough: that is a canvas boundary, and nobody
+    // compared the two numbers.
+    expect(
+      check(`
+        .a { width: ${fluid(40)} }
+        @media (min-width: 768px) { .a { width: 20px } }
+      `),
+    ).toHaveLength(1)
   })
 })

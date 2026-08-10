@@ -41,28 +41,44 @@ Vant 的三项按 375 换算，Element Plus 原样保留，页面按 750 换算�
 
 移动端——按各自设计画布换算：
 
-| 名称 | 设计宽度 | 类名前缀 | Token 前缀 |
-| --- | --- | --- | --- |
-| `vant` | 375 | `van-` | `--van-` |
-| `nutui` | 375 | `nut-` | `--nut-` |
-| `varlet` | 375 | `var-` | `--var-` |
-| `antd-mobile` | 375 | `adm-` | `--adm-` |
-| `taro-ui` | 750 | `at-` * | — |
+| 名称 | 设计宽度 | 类名前缀 | Token 前缀 | 前缀命中率 |
+| --- | --- | --- | --- | --- |
+| `vant` | 375 | `van-` | `--van-` | 1288/1407 |
+| `nutui` | 375 | `nut-` | `--nut-` | 1398/1497 |
+| `varlet` | 375 | `var-` | — † | 1749/1879 |
+| `antd-mobile` | 375 | `adm-` | `--adm-` | 798/829 |
+| `antd-mobile-2x` | 750 | `adm-` ‡ | `--adm-` ‡ | 798/829 |
+| `taro-ui` | 750 | `at-` * | — | 711/722 |
 
 桌面端——按真实像素绘制，正确的适配就是不动它：
 
-| 名称 | 设计宽度 | 类名前缀 | Token 前缀 |
-| --- | --- | --- | --- |
-| `element-plus` | 保留像素 | `el-` | `--el-` |
-| `antd` | 保留像素 | `ant-` | — |
-| `arco-design` | 保留像素 | `arco-` | — |
-| `naive-ui` | 保留像素 | `n-` * | — |
-| `quasar` | 保留像素 | `q-` * | — |
-| `mui` | 保留像素 | `Mui` | — |
+| 名称 | 设计宽度 | 类名前缀 | Token 前缀 | 前缀命中率 |
+| --- | --- | --- | --- | --- |
+| `element-plus` | 保留像素 | `el-` | `--el-` | 3180/3251 |
+| `antd` | 保留像素 | `ant-` | — | 5941/6050 |
+| `arco-design` | 保留像素 | `arco-` | — | 3462/3763 |
+| `naive-ui` | 保留像素 | `n-` * | — | 运行时生成 |
+| `quasar` | 保留像素 | `q-` * | — | 2080/3363 |
+| `mui` | 保留像素 | `Mui` | — | 运行时生成 |
 
 每一项同时按包路径匹配（如 `/vant/`、`/@nutui/`），因此产物是否分文件都能工作。
 
-标 `*` 的三个前缀在自动模式下不启用，原因见下。
+标 `*` 的三个前缀在自动模式下不启用，原因见下。† 见[没有前缀的 token](#没有前缀的-token)，‡ 见[同一个前缀，两张画布](#同一个前缀两张画布)。
+
+### 这张表是核对过的
+
+「前缀命中率」是该库**已发布样式表**里含此前缀的规则数 ÷ 总规则数，实测得到，不是照文档抄的。核对脚本在仓库里，可以自己跑：
+
+```bash
+npx tsx scripts/verify-libraries.ts          # 全部
+npx tsx scripts/verify-libraries.ts vant     # 单个
+```
+
+它会下载每个库的发布产物，用真实的 `node_modules` 路径编译，然后检查：前缀与 token 前缀是否真的存在、路由落到哪张画布、是否幂等、有无告警、断点接缝检查是否误报。当前 12 项全部通过。
+
+**未覆盖的一项：设计宽度。** 一张 CSS 里看不出它画在多宽的稿子上，这一列来自各库自己的文档，脚本核对不了。
+
+`naive-ui` 与 `mui` 的样式在运行时生成，磁盘上没有样式表——不经过 PostCSS，也就无从核对。条目仍然有用：它们是「保留像素」，所以你手写的 `.n-button` 覆盖样式不会被缩放。
 
 清单可以从代码读取：
 
@@ -113,6 +129,49 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 ```
 
 两个都识别为字号。若按普通长度输出，组件库的文字将不再响应浏览器缩放——用户调大字号，页面上你写的文字变大了，组件里的没变。
+
+### 没有前缀的 token
+
+Varlet 的自定义属性不带库前缀，直接叫 `--field-padding`、`--icon-size-md`、`--card-width`，声明在一个光秃秃的 `:root` 上。注册表因此**不给它写 `tokenPrefix`**：认领这些名字等于认领 `--card-width` 本身，而任何一个项目都可能自己定义同名变量，误命中是静默的。
+
+影响范围有限——Varlet 自己的样式表按路径匹配，照常落到 375 画布。但如果你按官方做法在**项目 CSS 里**覆盖主题：
+
+```css
+/* 你自己的文件，路径不在 @varlet 下，名字也没有前缀可认 */
+:root { --field-padding: 16px }
+```
+
+这一条不会被认领，需要显式写一条路由：
+
+```js
+adaptiveMatrix({
+  routes: [{ profile: 'library:varlet', property: ['--field-', '--icon-size-'] }],
+})
+```
+
+### 同一个前缀，两张画布
+
+antd-mobile 把同一份样式表发布了两次：`bundle/` 画在 375 上，`2x/bundle/` 画在 750 上。类名和 token 名一模一样（实测 5.42.3：后者每一个长度恰好是前者的两倍，`font-size: 16px` 对应 `32px`），**只有路径能区分**。
+
+只按 `.adm-` 前缀路由的话，2x 产物会按 375 换算，页面上每一个尺寸都是应有的两倍——没有报错，没有告警，全局偏大。
+
+所以 `antd-mobile-2x` 这个条目是**限定路径**的：它的前缀通道要求路径同时命中才算数。限定路径的路由先于不限定的路由测试，因为「类名加路径」比「只有类名」更具体：
+
+- 编译 `2x/bundle/style.css` → 750 画布；
+- 编译 `bundle/style.css` → 375 画布；
+- 打包器把依赖内联、路径已经不存在时 → 退回 375，因为那是默认产物。
+
+自动模式下两条都在，不需要配置。自己的库有同样情况时，`scoped: true` 是同一个开关：
+
+```js
+adaptiveMatrix({
+  libraries: [
+    { name: 'acme-2x', designWidth: 750, prefix: 'acme-', file: [/[\\/]acme[\\/]2x[\\/]/], scoped: true },
+  ],
+})
+```
+
+`scoped` 却不给 `file` 会直接报错——限定路径是它认领别人前缀的全部理由，没有路径就退化成一个靠声明顺序决定胜负的重复条目。
 
 ## 自动模式下被保留的前缀
 
@@ -179,6 +238,7 @@ interface LibraryAdaptation {
   prefix?: string | string[]
   tokenPrefix?: string | string[]
   file?: FileMatcher | FileMatcher[]
+  scoped?: boolean
   basedOn?: string
 }
 ```
