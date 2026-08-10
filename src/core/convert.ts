@@ -94,22 +94,40 @@ function format(value: number, precision: number): string {
   return String(round(value, precision))
 }
 
+function resolveWidth(
+  source: number | ((context: ProfileContext) => number),
+  profileName: string,
+  file: string,
+  field: string,
+): number {
+  const context: ProfileContext = { file, profile: profileName }
+  const width = typeof source === 'function' ? source(context) : source
+  if (!Number.isFinite(width) || width <= 0) {
+    throw new Error(
+      `[postcss-adaptive-matrix] Profile "${profileName}" returned an invalid ${field}. Expected a positive finite number.`,
+    )
+  }
+  return width
+}
+
 export function resolveDesignWidth(
   profileName: string,
   profile: AdaptiveProfile,
   file: string,
 ): number {
-  const context: ProfileContext = { file, profile: profileName }
-  const width =
-    typeof profile.designWidth === 'function'
-      ? profile.designWidth(context)
-      : profile.designWidth
-  if (!Number.isFinite(width) || width <= 0) {
-    throw new Error(
-      `[postcss-adaptive-matrix] Profile "${profileName}" returned an invalid designWidth. Expected a positive finite number.`,
-    )
+  return resolveWidth(profile.designWidth, profileName, file, 'designWidth')
+}
+
+/** See `AdaptiveProfile.textAnchorWidth`. Falls back to the profile's own canvas. */
+export function resolveTextAnchorWidth(
+  profileName: string,
+  profile: AdaptiveProfile,
+  file: string,
+): number {
+  if (profile.textAnchorWidth === undefined) {
+    return resolveDesignWidth(profileName, profile, file)
   }
-  return width
+  return resolveWidth(profile.textAnchorWidth, profileName, file, 'textAnchorWidth')
 }
 
 /**
@@ -183,6 +201,7 @@ function boundaryValue(
 function convertResolvedLength(
   pixels: number,
   designWidth: number,
+  anchorWidth: number,
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
@@ -204,8 +223,19 @@ function convertResolvedLength(
   const fluidity = accessibleText
     ? (profile.fontFluidity ?? options.fontFluidity)
     : 1
-  const start = boundaryValue(pixels, designWidth, fluidity, profile.fluid.minWidth)
-  const end = boundaryValue(pixels, designWidth, fluidity, profile.fluid.maxWidth)
+
+  // Restated in the anchor canvas's units, after which the anchor *is* the
+  // design width and the two formulas below are the ordinary ones. The fluid
+  // term comes out unchanged either way — `scaled * f * 100 / anchorWidth` is
+  // `pixels * f * 100 / designWidth` — so only the static half moves. With no
+  // static half there is nothing to restate, and skipping the arithmetic keeps
+  // a purely fluid length bit-for-bit what it was.
+  const anchored = fluidity !== 1 && anchorWidth !== designWidth
+  const scaled = anchored ? (pixels * anchorWidth) / designWidth : pixels
+  const canvas = anchored ? anchorWidth : designWidth
+
+  const start = boundaryValue(scaled, canvas, fluidity, profile.fluid.minWidth)
+  const end = boundaryValue(scaled, canvas, fluidity, profile.fluid.maxWidth)
   const boundaryUnit = accessibleText ? 'rem' : 'px'
   const divisor = accessibleText ? 16 : 1
   const lowerBound = format(Math.min(start, end) / divisor, options.precision)
@@ -214,8 +244,8 @@ function convertResolvedLength(
   if (lowerBound === upperBound) return `${lowerBound}${boundaryUnit}`
 
   const preferred = preferredValue(
-    pixels,
-    designWidth,
+    scaled,
+    canvas,
     fluidity,
     unit,
     accessibleText,
@@ -235,6 +265,7 @@ export function convertLength(
   return convertResolvedLength(
     pixels,
     resolveDesignWidth(profileName, profile, file),
+    resolveTextAnchorWidth(profileName, profile, file),
     isAccessibleTextProperty(property, options),
     profile,
     options,
@@ -270,6 +301,7 @@ function isAlreadyBounded(node: Node): boolean {
 function convertResolvedValue(
   value: string,
   designWidth: number,
+  anchorWidth: number,
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
@@ -291,6 +323,7 @@ function convertResolvedValue(
       const converted = convertResolvedLength(
         pixels,
         designWidth,
+        anchorWidth,
         accessibleText,
         profile,
         options,
@@ -313,6 +346,7 @@ export function convertValue(
   return convertResolvedValue(
     value,
     resolveDesignWidth(profileName, profile, file),
+    resolveTextAnchorWidth(profileName, profile, file),
     isAccessibleTextProperty(property, options),
     profile,
     options,
@@ -332,7 +366,7 @@ const MAX_CACHE_ENTRIES = 20_000
  */
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const unitLower = options.unitToConvert.toLowerCase()
-  const widths = new Map<string, number>()
+  const widths = new Map<string, [design: number, anchor: number]>()
   const textProperties = new Map<string, boolean>()
   const values = new Map<string, string>()
 
@@ -361,11 +395,15 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       file: string,
     ): string {
       const widthKey = `${profileName} ${file}`
-      let designWidth = widths.get(widthKey)
-      if (designWidth === undefined) {
-        designWidth = resolveDesignWidth(profileName, profile, file)
-        widths.set(widthKey, designWidth)
+      let resolvedWidths = widths.get(widthKey)
+      if (resolvedWidths === undefined) {
+        resolvedWidths = [
+          resolveDesignWidth(profileName, profile, file),
+          resolveTextAnchorWidth(profileName, profile, file),
+        ]
+        widths.set(widthKey, resolvedWidths)
       }
+      const [designWidth, anchorWidth] = resolvedWidths
 
       let accessibleText = textProperties.get(property)
       if (accessibleText === undefined) {
@@ -373,13 +411,16 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
         textProperties.set(property, accessibleText)
       }
 
-      const key = `${profileName} ${designWidth} ${accessibleText ? 1 : 0} ${value}`
+      // The anchor belongs in the key alongside the design width: two canvases
+      // can agree on the latter and still write text differently.
+      const key = `${profileName} ${designWidth} ${anchorWidth} ${accessibleText ? 1 : 0} ${value}`
       const cached = values.get(key)
       if (cached !== undefined) return cached
 
       const converted = convertResolvedValue(
         value,
         designWidth,
+        anchorWidth,
         accessibleText,
         profile,
         options,

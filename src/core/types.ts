@@ -30,6 +30,27 @@ export interface AdaptiveProfile {
   strategy?: OutputStrategy
   /** 0 is static text, 1 is pure viewport text. Kept below 1 for zoom support. */
   fontFluidity?: number
+  /**
+   * Canvas the non-fluid half of a text size is measured against. Defaults to
+   * `designWidth`.
+   *
+   * Text keeps part of its size in `rem` so browser zoom still reaches it, and
+   * that part is a fixed length — it does not scale with the viewport, so it
+   * has to be pinned to *some* width. Pinning it to the profile's own canvas is
+   * right for a canvas that means what it says: 16px on a 1440 desktop design
+   * is 16px at 1440.
+   *
+   * It is wrong for a canvas that is a re-description of the same design at a
+   * different scale. Vant's 375 canvas next to a page drawn on 750 describes
+   * one design in two unit systems, where Vant's 16px and the page's 32px are
+   * the same size; anchoring each to its own canvas makes the `rem` halves
+   * differ by a factor of two and the two never agree at any viewport. Library
+   * canvases therefore inherit the anchor of the profile they derive from.
+   *
+   * Purely fluid lengths are unaffected: with no static half there is nothing
+   * to anchor, which is why ordinary lengths already agreed across canvases.
+   */
+  textAnchorWidth?: number | ((context: ProfileContext) => number)
   /** Optional maximum width applied to the configured root inside this profile. */
   rootMaxWidth?: number
 }

@@ -47,6 +47,7 @@ propList: ['*', '!border*', '!box-shadow']
 | `unitToConvert: ''` | 匹配不到任何长度，与没装插件无法区分 |
 | `atRuleName: 'media'` | 样式表里每个 `@media` 都被当成画布名读取并改写。At-keyword 大小写不敏感，`MEDIA` 是同一个冲突 |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
+| `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
 
 `unit` 与 `strategy` 在 profile 级别同样校验。
 
@@ -135,11 +136,14 @@ interface AdaptiveProfile {
   unit?: 'vw' | 'vi' | 'cqw' | 'cqi'
   strategy?: 'clamp' | 'viewport'
   fontFluidity?: number
+  textAnchorWidth?: number | ((context: { file: string; profile: string }) => number)
   rootMaxWidth?: number
 }
 ```
 
 `query: false` 会移除 `@adaptive` 外壳但保留内部规则，适合构建不同产物时由环境选择 profile。
+
+`textAnchorWidth` 默认等于 `designWidth`，只影响文字：文字有一段固定的 `rem`（用于保留浏览器缩放），固定长度必须相对某个宽度才有意义。手写画布用自己的设计宽度是对的；但当两张画布描述的是**同一份设计的两套单位**时（组件库画在 375、页面画在 750，Vant 的 16px 就是页面的 32px），各自锚在自己身上会让两边在任何视口下都对不上。组件库画布因此一律继承所属 profile 的锚点，无需配置。原理与实测见[静态部分锚在哪张画布上](./architecture.md#静态部分锚在哪张画布上)。
 
 ## RootFoundationOptions
 

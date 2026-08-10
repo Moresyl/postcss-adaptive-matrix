@@ -80,6 +80,31 @@ describe('configuration validation', () => {
       convertLength(10, 'width', 'dynamic', options.profiles.dynamic!, options, ''),
     ).toThrow('invalid designWidth')
   })
+
+  it('rejects a textAnchorWidth that is not a positive width', () => {
+    const withAnchor = (textAnchorWidth: unknown) =>
+      resolveOptions({
+        defaultProfile: 'a',
+        profiles: {
+          a: {
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            textAnchorWidth: textAnchorWidth as never,
+          },
+        },
+      })
+    expect(() => withAnchor(0)).toThrow(/positive textAnchorWidth/)
+    expect(() => withAnchor(-750)).toThrow(/positive textAnchorWidth/)
+    expect(() => withAnchor(Number.NaN)).toThrow(/positive textAnchorWidth/)
+    expect(() => withAnchor(750)).not.toThrow()
+    expect(() => withAnchor(undefined)).not.toThrow()
+
+    // A function is only knowable per file, so it is checked where it is called.
+    const options = withAnchor(() => 0)
+    expect(() =>
+      convertLength(10, 'font-size', 'a', options.profiles.a!, options, ''),
+    ).toThrow('invalid textAnchorWidth')
+  })
 })
 
 describe('matchers and math helpers', () => {

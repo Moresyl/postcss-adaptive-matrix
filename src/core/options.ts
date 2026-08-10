@@ -114,6 +114,15 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
     )
   }
   if (
+    profile.textAnchorWidth != null &&
+    typeof profile.textAnchorWidth !== 'function' &&
+    (!Number.isFinite(profile.textAnchorWidth) || profile.textAnchorWidth <= 0)
+  ) {
+    throw new RangeError(
+      `[postcss-adaptive-matrix] Profile "${name}" requires a positive textAnchorWidth.`,
+    )
+  }
+  if (
     profile.fontFluidity != null &&
     (profile.fontFluidity < 0 || profile.fontFluidity > 1)
   ) {

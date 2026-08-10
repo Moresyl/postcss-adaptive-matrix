@@ -248,6 +248,24 @@ describe('expandLibraries', () => {
     expect(derived.unit).toBe('vw')
   })
 
+  it('anchors library text to the base canvas rather than its own', () => {
+    // Vant's 375 and a page's 750 describe one design in two unit systems, so
+    // the fixed `rem` half of a text size has to be measured against a width
+    // both agree on. Anchoring each canvas to itself makes Vant's 16px and the
+    // page's 32px — the same size, by construction — differ at every viewport.
+    const { profiles } = expandLibraries([resolveLibrary('vant')], PROFILES, 'app')
+    expect(profiles['library:vant']!.textAnchorWidth).toBe(750)
+  })
+
+  it('carries an explicit base anchor down to the library canvas', () => {
+    const { profiles } = expandLibraries(
+      [resolveLibrary('vant')],
+      { app: { ...PROFILES.app!, textAnchorWidth: 390 } },
+      'app',
+    )
+    expect(profiles['library:vant']!.textAnchorWidth).toBe(390)
+  })
+
   it('never lets a library canvas emit a media wrapper', () => {
     const { profiles } = expandLibraries([resolveLibrary('vant')], PROFILES, 'app')
     expect(profiles[libraryProfileName(resolveLibrary('vant'))]!.query).toBe(false)

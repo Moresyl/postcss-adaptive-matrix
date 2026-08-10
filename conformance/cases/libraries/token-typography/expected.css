@@ -1,11 +1,11 @@
 :root {
-  --van-font-size-md: clamp(0.83008rem, calc(0.56875rem + 1.30667vw), 1.05875rem);
-  --van-cell-font-size: clamp(0.83008rem, calc(0.56875rem + 1.30667vw), 1.05875rem);
-  --van-line-height-md: clamp(1.18583rem, calc(0.8125rem + 1.86667vw), 1.5125rem);
+  --van-font-size-md: clamp(1.39883rem, calc(1.1375rem + 1.30667vw), 1.6275rem);
+  --van-cell-font-size: clamp(1.39883rem, calc(1.1375rem + 1.30667vw), 1.6275rem);
+  --van-line-height-md: clamp(1.99833rem, calc(1.625rem + 1.86667vw), 2.325rem);
   --van-padding-md: clamp(13.65333px, 4.26667vw, 25.6px);
   --brand-gap: 16px;
 }
 
 .van-cell {
-  font-size: clamp(0.83008rem, calc(0.56875rem + 1.30667vw), 1.05875rem);
+  font-size: clamp(1.39883rem, calc(1.1375rem + 1.30667vw), 1.6275rem);
 }

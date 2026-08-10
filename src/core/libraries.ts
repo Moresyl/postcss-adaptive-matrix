@@ -288,7 +288,17 @@ export function expandLibraries(
       // layout at a breakpoint, and a library canvas is neither. Keeping it
       // would emit one duplicate root cap per library into the foundation.
       const { rootMaxWidth: _rootMaxWidth, ...canvas } = base
-      derived[profile] = { ...canvas, designWidth: library.designWidth, query: false }
+      derived[profile] = {
+        ...canvas,
+        designWidth: library.designWidth,
+        query: false,
+        // The base canvas, not the library's own. Vant's 375 and a page drawn
+        // on 750 are two unit systems for one design, so the fixed `rem` half
+        // of a text size has to be measured against a width both agree on or
+        // the same size comes out different on either side of the boundary.
+        // See `AdaptiveProfile.textAnchorWidth`.
+        textAnchorWidth: base.textAnchorWidth ?? base.designWidth,
+      }
     }
 
     // Separate routes per axis: a route requires every axis it declares to

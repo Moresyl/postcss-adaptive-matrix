@@ -203,4 +203,47 @@ describe('properties that hold for every canvas', () => {
       }
     }
   })
+
+  it('renders one design the same size however its canvas is scaled', async () => {
+    // A library canvas and the page canvas are often two unit systems for one
+    // design: Vant draws on 375, a page drawn on 750 writes every length twice
+    // as large, and 16px there and 32px here are the same size. Nothing about
+    // that survives into the output unless the compiler makes it — so state it.
+    //
+    // Purely fluid lengths get this for free, both sides reducing to
+    // `value / canvas`. Text does not: it keeps part of its size in a fixed
+    // `rem` so browser zoom still reaches it, and a fixed length has to be
+    // measured against a width the two canvases agree on.
+    const pick = generator(51015)
+    for (let index = 0; index < 150; index += 1) {
+      const designWidth = pick(DESIGN_WIDTHS)
+      const ratio = pick([0.5, 2, 1.5, 0.75, 4])
+      const libraryWidth = designWidth * ratio
+      const minWidth = pick(MIN_WIDTHS)
+      const profile = {
+        designWidth,
+        fluid: { minWidth, maxWidth: minWidth + pick(SPANS) },
+      }
+      const value = pick(VALUES)
+      const property = pick(PROPERTIES)
+      const options = {
+        libraries: [{ name: 'probe', designWidth: libraryWidth, prefix: 'pb-' }],
+      }
+
+      const page = converted(await compile(`.a { ${property}: ${value}px }`, profile, options))
+      const routed = await compile(`.pb-a { ${property}: ${value * ratio}px }`, profile, options)
+      const library = converted(routed.replace('.pb-a {', '.a {'))
+      // A hairline stays a hairline: 1px in the library's CSS is a device pixel
+      // rather than a measurement, and its 2px counterpart on the page is not.
+      // Those rows have no shared size to compare.
+      if (!page || !library) continue
+
+      const label = `${property}: ${value}px on ${designWidth} vs ${value * ratio}px on ${libraryWidth}`
+      for (const width of [minWidth, 320, 390, 768, 1440]) {
+        const here = evaluateLength(page, { ...CONTEXT, width })
+        const there = evaluateLength(library, { ...CONTEXT, width })
+        expect(Math.abs(here! - there!), `${label} at ${width}px`).toBeLessThan(TOLERANCE)
+      }
+    }
+  })
 })
