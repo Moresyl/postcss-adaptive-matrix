@@ -28,6 +28,16 @@ import {
 } from '../core/matchers.js'
 import { resolveOptions } from '../core/options.js'
 import { createProfileResolver, type ProfileResolver } from '../core/resolve.js'
+import {
+  compareSpecificity,
+  formatSpecificity,
+  nestedSelectorLists,
+  routingSelector,
+  specificity,
+  splitIsSpecificityNeutral,
+  splitSelectorList,
+  type Specificity,
+} from '../core/selectors.js'
 import type {
   ActiveProfile,
   AdaptiveMatrixOptions,
@@ -207,36 +217,15 @@ function transformRule(
     return
   }
 
-  const active = context.resolver.forSelector(inherited, rule.selector, context.file)
+  const active = context.resolver.forSelector(
+    inherited,
+    routingSelector(rule.selector),
+    context.file,
+  )
   warnOnSplitSelectorList(rule, inherited, active, context)
   processContainer(rule, active, context, true)
 
   if (context.correctsFixed) correctFixedRule(rule)
-}
-
-/**
- * Splits a selector list on top-level commas.
- *
- * Commas also appear inside `:is()`, `:not()` and attribute values, where they
- * separate arguments rather than selectors — so bracket depth has to be tracked
- * rather than the string simply split.
- */
-function splitSelectorList(selector: string): string[] {
-  const parts: string[] = []
-  let depth = 0
-  let current = ''
-  for (const character of selector) {
-    if (character === '(' || character === '[') depth += 1
-    else if (character === ')' || character === ']') depth -= 1
-    else if (character === ',' && depth === 0) {
-      parts.push(current)
-      current = ''
-      continue
-    }
-    current += character
-  }
-  parts.push(current)
-  return parts.map((part) => part.trim()).filter(Boolean)
 }
 
 /**
@@ -253,11 +242,15 @@ function splitSelectorList(selector: string): string[] {
  * output, and the fix is not always mechanical. Naming the problem leaves the
  * decision where it belongs.
  *
- * Commas inside `:is()`, `:not()` and attribute values are arguments, not
- * selector boundaries, so they are not split — which means a genuinely mixed
- * `:is(.van-cell, .page-hero)` goes unreported. Reaching inside functional
- * pseudo-classes would need real specificity arithmetic to say anything useful
- * about the fix, and a warning nobody can act on is worse than none.
+ * `:is(.van-cell, .page-hero)` is the same problem one bracket deeper, and it
+ * is checked too — the comma is an argument separator rather than a selector
+ * boundary, but the ambiguity it creates is identical. What differs is the cost
+ * of the fix: `:is()` matches every branch at the specificity of its highest
+ * one, so splitting is only free when the branches already agree. That is
+ * arithmetic, so the warning does it rather than leaving it to the reader.
+ *
+ * `:not()` and `:has()` are not checked, because their arguments never reach
+ * routing in the first place — see `routingSelector`.
  */
 function warnOnSplitSelectorList(
   rule: Rule,
@@ -269,25 +262,59 @@ function warnOnSplitSelectorList(
   if (inherited.explicit || !context.resolver.hasSelectorRoutes) return
   if (!rule.selector.includes(',')) return
 
-  const parts = splitSelectorList(rule.selector)
-  if (parts.length < 2) return
-
   const canvasOf = (part: string): string => {
-    const resolved = context.resolver.forSelector(inherited, part, context.file)
+    const resolved = context.resolver.forSelector(
+      inherited,
+      routingSelector(part),
+      context.file,
+    )
     return resolved.convert ? resolved.name : '(not converted)'
   }
   const winner = active.convert ? active.name : '(not converted)'
-  const disagreeing = parts.filter((part) => canvasOf(part) !== winner)
-  if (!disagreeing.length) return
+  const disagree = (parts: string[]): string[] =>
+    parts.filter((part) => canvasOf(part) !== winner)
 
-  const [first] = disagreeing
-  context.result.warn(
-    `Selector list spans more than one canvas: "${first}" belongs to ` +
-      `${canvasOf(first!)} but the whole rule is compiled against ${winner}, ` +
-      'because one declaration can only have one result. ' +
-      'Split it into separate rules to give each selector its own canvas.',
-    { node: rule, plugin: PLUGIN_NAME },
-  )
+  const top = splitSelectorList(rule.selector)
+  const strayTop = top.length > 1 ? disagree(top) : []
+  if (strayTop.length) {
+    context.result.warn(
+      `Selector list spans more than one canvas: "${strayTop[0]}" belongs to ` +
+        `${canvasOf(strayTop[0]!)} but the whole rule is compiled against ${winner}, ` +
+        'because one declaration can only have one result. ' +
+        'Split it into separate rules to give each selector its own canvas.',
+      { node: rule, plugin: PLUGIN_NAME },
+    )
+    // The rule already needs splitting; a second warning about the brackets
+    // inside one of its branches would just be the same instruction again.
+    return
+  }
+
+  for (const list of nestedSelectorLists(rule.selector)) {
+    const stray = disagree(list.parts)
+    if (!stray.length) continue
+    const cost = splitIsSpecificityNeutral(list)
+      ? `Splitting is specificity-neutral here, since every branch is ${formatSpecificity(specificity(list.parts[0]!))}.`
+      : `Splitting is not specificity-neutral: :${list.pseudo}() matches every branch at its highest, ` +
+        `${formatSpecificity(highestOf(list.parts))}, so "${stray[0]}" would drop to ` +
+        `${formatSpecificity(specificity(stray[0]!))}.`
+    context.result.warn(
+      `Selector list inside :${list.pseudo}() spans more than one canvas: ` +
+        `"${stray[0]}" belongs to ${canvasOf(stray[0]!)} but the whole rule is ` +
+        `compiled against ${winner}, because one declaration can only have one result. ` +
+        `Give each branch its own rule. ${cost}`,
+      { node: rule, plugin: PLUGIN_NAME },
+    )
+    // One report per rule: the remaining lists have the same cause and the
+    // same fix, and a rule buried in warnings gets skipped wholesale.
+    return
+  }
+}
+
+/** Highest specificity among a set of branches, for the warning text. */
+function highestOf(parts: readonly string[]): Specificity {
+  return parts
+    .map(specificity)
+    .reduce((best, entry) => (compareSpecificity(entry, best) > 0 ? entry : best))
 }
 
 function unknownProfile(

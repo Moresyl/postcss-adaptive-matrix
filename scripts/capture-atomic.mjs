@@ -33,8 +33,17 @@ const CASES = join(dirname(fileURLToPath(import.meta.url)), '..', 'conformance',
  * token directly, `text-lg` and `leading-7` carry the type scale, `border` is a
  * hairline that must survive, `border-2` is a real length that must not, and
  * `p-[13px]` is the escape hatch back to literal pixels.
+ *
+ * `space-x-4` and `divide-y-2` are here for their selectors rather than their
+ * lengths. One utility, three unrelated shapes: Tailwind 4 wraps the whole
+ * thing in `:where(...)`, UnoCSS wind3 writes a flat `> :not([hidden]) ~
+ * :not([hidden])`, and UnoCSS wind4 emits *native nesting* with `&`. All three
+ * put a selector this compiler has to route on inside a functional
+ * pseudo-class whose argument names an element the rule does not style — the
+ * exact shape that used to send a rule to the wrong canvas.
  */
-const CLASSES = 'p-4 px-6 gap-8 text-lg leading-7 w-64 max-w-md rounded-lg border border-2 p-[13px]'
+const CLASSES =
+  'p-4 px-6 gap-8 text-lg leading-7 w-64 max-w-md rounded-lg border border-2 p-[13px] space-x-4 divide-y-2'
 
 const version = (pkg) =>
   JSON.parse(readFileSync(join('node_modules', pkg, 'package.json'), 'utf8')).version

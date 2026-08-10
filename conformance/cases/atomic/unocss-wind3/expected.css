@@ -5,6 +5,8 @@
 .max-w-md{max-width:clamp(382.29333px, 119.46667vw, 573.44px);}
 .w-64{width:clamp(218.45333px, 68.26667vw, 327.68px);}
 .gap-8{gap:clamp(27.30667px, 8.53333vw, 40.96px);}
+.space-x-4>:not([hidden])~:not([hidden]){--un-space-x-reverse:0;margin-left:calc(clamp(13.65333px, 4.26667vw, 20.48px) * calc(1 - var(--un-space-x-reverse)));margin-right:calc(clamp(13.65333px, 4.26667vw, 20.48px) * var(--un-space-x-reverse));}
+.divide-y-2>:not([hidden])~:not([hidden]){--un-divide-y-reverse:0;border-top-width:calc(clamp(1.70667px, 0.53333vw, 2.56px) * calc(1 - var(--un-divide-y-reverse)));border-bottom-width:calc(clamp(1.70667px, 0.53333vw, 2.56px) * var(--un-divide-y-reverse));}
 .border{border-width:1px;}
 .border-2{border-width:clamp(1.70667px, 0.53333vw, 2.56px);}
 .rounded-lg{border-radius:clamp(6.82667px, 2.13333vw, 10.24px);}

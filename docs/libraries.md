@@ -117,7 +117,31 @@ This warns, naming the selector that lost. Splitting into two rules fixes it:
 .page-hero { padding: 16px }
 ```
 
-Commas inside `:is()`, `:not()` and attribute values are argument separators, not selector boundaries, and are not split — which is also why a genuinely mixed `:is(.van-cell, .page-hero)` cannot be detected.
+Commas inside attribute values are not selector boundaries and are never split.
+
+Commas inside `:is()` and `:where()` are argument separators rather than selector boundaries, but the ambiguity they create is exactly the same one — `:is(.van-cell, .page-hero)` is still one declaration wanted on two canvases — so they warn too. What differs is the price of the fix, and the warning works that out rather than leaving it to you: `:is()` matches every branch at the specificity of its **highest** one, so pulling the branches apart is free only when they already agree. When they do not, the warning says so and names what the split would cost:
+
+```
+Selector list inside :is() spans more than one canvas: ".page-hero" belongs to app
+but the whole rule is compiled against library:vant, because one declaration can
+only have one result. Give each branch its own rule. Splitting is not
+specificity-neutral: :is() matches every branch at its highest, 1-1-0, so
+".page-hero" would drop to 0-1-0.
+```
+
+## What a selector is *about*
+
+`:not()` and `:has()` do not route at all — not their arguments, anyway:
+
+```css
+.page-hero:not(.van-cell) { padding: 16px }
+```
+
+This rule styles page elements. It styles exactly the ones that are **not** Vant cells. Reading `.van-cell` out of it and sending the rule to Vant's 375 canvas gives a padding twice the size the author asked for, and nothing in the output says so. The same goes for `:has()`: `.page-card:has(.van-icon)` is a page card, whatever it happens to contain.
+
+So routing looks at the **subject** of the selector, and the arguments of `:not()` and `:has()` are removed before anything is matched. `:is()` and `:where()` are the opposite case — their arguments *are* alternatives for the subject — which is why those are kept, and why they are the ones that can straddle canvases and warn.
+
+This matters more than the hand-written example suggests, because atomic CSS frameworks emit these shapes constantly. One `space-x-4` compiles to `:where(& > :not([hidden]) ~ :not([hidden]))` in Tailwind 4, to a flat `> :not([hidden]) ~ :not([hidden])` in UnoCSS wind3, and to native nesting in UnoCSS wind4 — three unrelated spellings of one utility, all of them putting a selector inside a functional pseudo-class whose argument names an element the rule does not style.
 
 ## Theme tokens
 

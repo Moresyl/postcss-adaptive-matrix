@@ -1,7 +1,10 @@
 /* Captured from UnoCSS 66.7.5 preset-wind4. Regenerate with scripts/capture-atomic.mjs. */
 /* layer: properties */
-@supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))){*, ::before, ::after, ::backdrop{--un-leading:initial;}}
+@supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))){*, ::before, ::after, ::backdrop{--un-border-style:solid;--un-divide-y-reverse:initial;--un-leading:initial;--un-space-x-reverse:initial;}}
 @property --un-leading{syntax:"*";inherits:false;}
+@property --un-space-x-reverse{syntax:"*";inherits:false;initial-value:0;}
+@property --un-border-style{syntax:"*";inherits:false;initial-value:solid;}
+@property --un-divide-y-reverse{syntax:"*";inherits:false;initial-value:0;}
 /* layer: theme */
 :root, :host { --spacing: clamp(3.41333px, 1.06667vw, 5.12px); --container-md: clamp(382.29333px, 119.46667vw, 573.44px); --radius-lg: clamp(6.82667px, 2.13333vw, 10.24px); --text-lg-fontSize: clamp(1.06725rem, calc(0.73125rem + 1.68vw), 1.23525rem); --text-lg-lineHeight: clamp(1.66017rem, calc(1.1375rem + 2.61333vw), 1.9215rem); --font-sans: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"; --font-mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; --default-font-family: var(--font-sans); --default-monoFont-family: var(--font-mono); }
 /* layer: default */
@@ -16,3 +19,9 @@
 .gap-8{gap:calc(var(--spacing) * 8);}
 .max-w-md{max-width:var(--container-md);}
 .w-64{width:calc(var(--spacing) * 64);}
+.divide-y-2{
+:where(&>:not(:last-child)){--un-divide-y-reverse:0;border-top-width:calc(clamp(1.70667px, 0.53333vw, 2.56px) * var(--un-divide-y-reverse));border-top-style:var(--un-border-style);border-bottom-width:calc(clamp(1.70667px, 0.53333vw, 2.56px) * calc(1 - var(--un-divide-y-reverse)));border-bottom-style:var(--un-border-style);}
+}
+.space-x-4{
+:where(&>:not(:last-child)){--un-space-x-reverse:0;margin-inline-start:calc(calc(var(--spacing) * 4) * var(--un-space-x-reverse));margin-inline-end:calc(calc(var(--spacing) * 4) * calc(1 - var(--un-space-x-reverse)));}
+}

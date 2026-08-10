@@ -5,6 +5,8 @@
 .max-w-md{max-width:28rem;}
 .w-64{width:16rem;}
 .gap-8{gap:2rem;}
+.space-x-4>:not([hidden])~:not([hidden]){--un-space-x-reverse:0;margin-left:calc(1rem * calc(1 - var(--un-space-x-reverse)));margin-right:calc(1rem * var(--un-space-x-reverse));}
+.divide-y-2>:not([hidden])~:not([hidden]){--un-divide-y-reverse:0;border-top-width:calc(2px * calc(1 - var(--un-divide-y-reverse)));border-bottom-width:calc(2px * var(--un-divide-y-reverse));}
 .border{border-width:1px;}
 .border-2{border-width:2px;}
 .rounded-lg{border-radius:0.5rem;}

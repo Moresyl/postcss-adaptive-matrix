@@ -65,10 +65,10 @@ export interface AdaptiveProfile {
 export interface AdaptiveRoute {
   /** Target profile, or `false` to leave matching lengths in fixed pixels. */
   profile: string | false
-  file?: FileMatcher | FileMatcher[]
-  selector?: Pattern | Pattern[]
+  file?: FileMatcher | readonly FileMatcher[]
+  selector?: Pattern | readonly Pattern[]
   /** Custom-property prefixes, e.g. `--van-`. Routes tokens declared on `:root`. */
-  property?: string | string[]
+  property?: string | readonly string[]
 }
 
 /**
@@ -94,7 +94,7 @@ export interface LibraryAdaptation {
    */
   designWidth: number | false
   /** Class prefixes, without the dot. Matched on selectors, so inlined CSS still routes. */
-  prefix?: string | string[]
+  prefix?: string | readonly string[]
   /**
    * Custom-property prefixes, e.g. `--van-`.
    *
@@ -102,9 +102,9 @@ export interface LibraryAdaptation {
    * carries no class prefix. Converting the token declaration once makes every
    * `var()` reference fluid without rewriting a single component rule.
    */
-  tokenPrefix?: string | string[]
+  tokenPrefix?: string | readonly string[]
   /** Paths, for builds that keep vendor CSS in its own files. */
-  file?: FileMatcher | FileMatcher[]
+  file?: FileMatcher | readonly FileMatcher[]
   /**
    * Requires `file` to match before `prefix` or `tokenPrefix` count.
    *
@@ -177,14 +177,14 @@ export interface RootFoundationOptions {
    * like `include`: a string is a substring test, a regular expression is
    * tested against the path, a function decides for itself.
    */
-  injectTo?: FileMatcher | FileMatcher[]
+  injectTo?: FileMatcher | readonly FileMatcher[]
 }
 
 export interface AdaptiveMatrixOptions {
   profiles?: Record<string, AdaptiveProfile>
   defaultProfile?: string
   /** Evaluated in order; the first match wins. `@adaptive` always outranks these. */
-  routes?: AdaptiveRoute[]
+  routes?: readonly AdaptiveRoute[]
   /**
    * Component libraries to adapt.
    *
@@ -196,7 +196,7 @@ export interface AdaptiveMatrixOptions {
    * Entries expand into routes evaluated after `routes`, so an explicit route
    * always wins.
    */
-  libraries?: LibraryEntry[] | 'auto' | false
+  libraries?: readonly LibraryEntry[] | 'auto' | false
   atRuleName?: string
   strategy?: OutputStrategy
   unit?: ScaleUnit
@@ -223,12 +223,12 @@ export interface AdaptiveMatrixOptions {
   /** Values with an absolute size at or below this number stay in px. */
   hairline?: number
   fontFluidity?: number
-  textProperties?: string[]
-  propList?: string[]
-  selectorExclude?: Pattern[]
-  valueExclude?: Pattern[]
-  include?: FileMatcher | FileMatcher[]
-  exclude?: FileMatcher | FileMatcher[]
+  textProperties?: readonly string[]
+  propList?: readonly string[]
+  selectorExclude?: readonly Pattern[]
+  valueExclude?: readonly Pattern[]
+  include?: FileMatcher | readonly FileMatcher[]
+  exclude?: FileMatcher | readonly FileMatcher[]
   transformCustomProperties?: boolean
   preserveOriginal?: boolean
   root?: RootFoundationOptions | false
@@ -243,8 +243,8 @@ export interface ResolvedAdaptiveMatrixOptions
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
   root: RootFoundationOptions | false
-  include?: FileMatcher | FileMatcher[]
-  exclude?: FileMatcher | FileMatcher[]
+  include?: FileMatcher | readonly FileMatcher[]
+  exclude?: FileMatcher | readonly FileMatcher[]
   /** Built-in names already looked up, so nothing downstream consults the registry. */
   libraries: LibraryAdaptation[]
 }

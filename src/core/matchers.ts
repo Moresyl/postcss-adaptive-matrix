@@ -1,5 +1,17 @@
 import type { FileMatcher, Pattern } from './types.js'
 
+/**
+ * One value or several, always as a fresh mutable array.
+ *
+ * Copies rather than passing the caller's array through: options are the
+ * user's object, and a configuration reused across two PostCSS instances
+ * should not be able to observe what this plugin did to it.
+ */
+export function toArray<T>(value: T | readonly T[] | undefined): T[] {
+  if (value === undefined) return []
+  return Array.isArray(value) ? [...(value as readonly T[])] : [value as T]
+}
+
 function resettableTest(pattern: RegExp, value: string): boolean {
   pattern.lastIndex = 0
   return pattern.test(value)
@@ -12,18 +24,19 @@ export function matchesPattern(pattern: Pattern, value: string): boolean {
 }
 
 export function matchesAnyPattern(
-  patterns: readonly Pattern[],
+  patterns: readonly Pattern[] | undefined,
   value: string,
 ): boolean {
+  if (!patterns) return false
   return patterns.some((pattern) => matchesPattern(pattern, value))
 }
 
 export function matchesFile(
-  matchers: FileMatcher | FileMatcher[] | undefined,
+  matchers: FileMatcher | readonly FileMatcher[] | undefined,
   file: string,
 ): boolean {
   if (!matchers) return false
-  const list = Array.isArray(matchers) ? matchers : [matchers]
+  const list = toArray(matchers)
   return list.some((matcher) => {
     if (typeof matcher === 'function') return matcher(file)
     return matchesPattern(matcher, file)

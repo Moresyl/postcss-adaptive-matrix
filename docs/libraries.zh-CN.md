@@ -117,7 +117,31 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 .page-hero { padding: 16px }
 ```
 
-`:is()`、`:not()` 和属性值里的逗号是参数分隔符，不是选择器边界，不会被拆开——也因此 `:is(.van-cell, .page-hero)` 这种真正混合的写法查不出来。
+属性值里的逗号不是选择器边界，永远不拆。
+
+`:is()`、`:where()` 里的逗号是参数分隔符而非选择器边界，但它造成的歧义与上面完全是同一个——`:is(.van-cell, .page-hero)` 依然是一条声明想要两个画布——所以同样会告警。不同的只是修复的代价，而这笔账由告警替你算：`:is()` 以其**最高**的那一支的特异度匹配每一支，因此把分支拆开只有在它们本来就一致时才是免费的。不一致时，告警会说出来，并指明拆分要付什么：
+
+```
+Selector list inside :is() spans more than one canvas: ".page-hero" belongs to app
+but the whole rule is compiled against library:vant, because one declaration can
+only have one result. Give each branch its own rule. Splitting is not
+specificity-neutral: :is() matches every branch at its highest, 1-1-0, so
+".page-hero" would drop to 0-1-0.
+```
+
+## 一个选择器到底在说谁
+
+`:not()` 和 `:has()` 根本不参与路由——至少它们的参数不参与：
+
+```css
+.page-hero:not(.van-cell) { padding: 16px }
+```
+
+这条规则修饰的是页面元素，而且恰恰是那些**不是** Vant cell 的元素。从中读出 `.van-cell` 并把整条规则送去 Vant 的 375 画布，得到的 padding 正好是作者要的两倍，而产物里没有任何东西会提示这件事。`:has()` 同理：`.page-card:has(.van-icon)` 是一张页面卡片，不管它里面装了什么。
+
+所以路由看的是选择器的**主体**，`:not()` 与 `:has()` 的参数在做任何匹配之前就被摘掉。`:is()` 和 `:where()` 是反过来的一类——它们的参数**就是**主体的候选项——所以那些被保留，也正因如此它们才是会跨画布、会告警的那一类。
+
+这件事比上面这个手写例子看起来更要紧，因为原子化 CSS 框架成批产出这些形状。同一个 `space-x-4`，Tailwind 4 编译成 `:where(& > :not([hidden]) ~ :not([hidden]))`，UnoCSS wind3 编译成扁平的 `> :not([hidden]) ~ :not([hidden])`，UnoCSS wind4 则直接产出原生嵌套——一个工具类三种毫不相干的写法，而三者都把一个选择器塞进了功能性伪类里，且那个参数指的并不是这条规则修饰的元素。
 
 ## 主题 token
 

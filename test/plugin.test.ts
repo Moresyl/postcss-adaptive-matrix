@@ -582,3 +582,99 @@ describe('withAtomicCss', () => {
     expect(formula).toContain('rem')
   })
 })
+
+describe('selectors that mention a library without being one', () => {
+  const options = {
+    defaultProfile: 'app',
+    profiles: { app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 } } },
+    libraries: ['vant'],
+  } as const
+
+  /** What `.page-hero { padding: 16px }` compiles to on the project canvas. */
+  const onPage = 'clamp(6.82667px, 2.13333vw, 12.8px)'
+  /** The same 16px read as a Vant length, which is twice the size. */
+  const onVant = 'clamp(13.65333px, 4.26667vw, 25.6px)'
+
+  it('does not route a rule by an element it excludes', async () => {
+    // `.page-hero:not(.van-cell)` matches no Vant component whatsoever — the
+    // argument names what is *excluded*. Routing on the raw text put the whole
+    // rule on Vant's 375 canvas and every length came out twice the size, with
+    // nothing anywhere saying so.
+    const result = await process('.page-hero:not(.van-cell) { padding: 16px }', options)
+
+    expect(result.css).toContain(onPage)
+    expect(result.css).not.toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
+  it('does not route a rule by what it merely contains', async () => {
+    const result = await process('.page-hero:has(> .van-icon) { padding: 16px }', options)
+
+    expect(result.css).toContain(onPage)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
+  it('still routes on the part that does match', async () => {
+    const result = await process('.van-cell:not(.page-hero) { padding: 16px }', options)
+
+    expect(result.css).toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
+  describe('a genuinely mixed list inside :is()', () => {
+    it('reports it, and says splitting is free when the branches agree', async () => {
+      const result = await process(':is(.van-cell, .page-hero) { padding: 16px }', options)
+
+      expect(result.warnings()).toHaveLength(1)
+      const text = result.warnings()[0]!.text
+      expect(text).toContain('inside :is()')
+      expect(text).toContain('.page-hero')
+      expect(text).toContain('one declaration can only have one result')
+      expect(text).toContain('specificity-neutral')
+      expect(text).toContain('0-1-0')
+      // Reported, not rewritten: the author still gets back what they wrote.
+      expect(result.css).toContain(':is(.van-cell, .page-hero)')
+    })
+
+    it('says what splitting would cost when the branches do not agree', async () => {
+      // `:is()` matches every branch at its highest, so `.page-hero` matches at
+      // 1-0-0 today and would drop to 0-1-0 on its own — which can hand the
+      // element to a rule that used to lose.
+      const result = await process(':is(#main .van-cell, .page-hero) { padding: 16px }', options)
+
+      const text = result.warnings()[0]!.text
+      expect(text).toContain('not specificity-neutral')
+      expect(text).toContain('1-1-0')
+      expect(text).toContain('0-1-0')
+    })
+
+    it('reports a :where() list too, where splitting is always free', async () => {
+      const result = await process(':where(.van-cell, .page-hero) { padding: 16px }', options)
+
+      const text = result.warnings()[0]!.text
+      expect(text).toContain('inside :where()')
+      expect(text).toContain('specificity-neutral')
+    })
+
+    it('stays quiet when every branch lands on the same canvas', async () => {
+      const result = await process(':is(.van-cell, .van-button) { padding: 16px }', options)
+      expect(result.warnings()).toHaveLength(0)
+    })
+
+    it('does not report the brackets twice over for one rule', async () => {
+      const result = await process(
+        ':is(.van-cell, .page-hero), :is(.van-tag, .page-foot) { padding: 16px }',
+        options,
+      )
+      expect(result.warnings()).toHaveLength(1)
+    })
+
+    it('defers to @adaptive, which already decided', async () => {
+      const result = await process(
+        '@adaptive app { :is(.van-cell, .page-hero) { padding: 16px } }',
+        options,
+      )
+      expect(result.warnings()).toHaveLength(0)
+    })
+  })
+})

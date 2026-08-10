@@ -1,15 +1,10 @@
-import { matchesAnyPattern, matchesFile } from './matchers.js'
+import { matchesAnyPattern, matchesFile, toArray } from './matchers.js'
 import type {
   ActiveProfile,
   AdaptiveRoute,
   Pattern,
   ResolvedAdaptiveMatrixOptions,
 } from './types.js'
-
-function toArray<T>(value: T | T[] | undefined): T[] {
-  if (value === undefined) return []
-  return Array.isArray(value) ? value : [value]
-}
 
 /**
  * Decides which design canvas a piece of CSS belongs to.

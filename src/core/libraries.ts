@@ -1,3 +1,4 @@
+import { toArray } from './matchers.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -134,11 +135,6 @@ const REGISTRY: Record<string, RegistryEntry> = {
 }
 
 export const BUILT_IN_LIBRARIES = Object.freeze(Object.keys(REGISTRY).sort())
-
-function toArray<T>(value: T | T[] | undefined): T[] {
-  if (value === undefined) return []
-  return Array.isArray(value) ? value : [value]
-}
 
 /**
  * Matches a class prefix anywhere a class can appear.

@@ -2,6 +2,23 @@
 
 **English** · [简体中文](./CHANGELOG.zh-CN.md)
 
+## Unreleased
+
+### Selector routing
+
+- Fixed **`:not()` and `:has()` arguments deciding which canvas a rule lands on**. `.page-hero:not(.van-cell)` styles page elements — precisely the ones that are *not* Vant cells — and was being sent to Vant's 375 canvas because the substring `.van-cell` appeared somewhere in the text. Every length in such a rule came out at exactly twice its intended size, silently. Routing now reads the **subject** of the selector: the arguments of `:not()` and `:has()` name an element other than the one being styled and are removed before matching, while `:is()` / `:where()` / `:matches()` / `-*-any()` arguments are kept, since those genuinely are alternatives for the subject. Measured against 22,761 rules in 11 published component-library stylesheets, 1,035 of which contain `:not()` or `:has()`: **zero** change canvas, because library CSS always carries its own prefix outside the exclusion. The fix costs nothing and closes a hole that application code walks into.
+- **`:is()` and `:where()` lists spanning two canvases now warn.** This was previously documented as undetectable. `:is(.van-cell, .page-hero) { padding: 16px }` is one declaration wanted on two canvases, the same problem as a comma-separated list one bracket deeper, and it was going through unreported.
+- The warning states **what splitting would cost**, computed rather than left to the reader: `:is()` matches every branch at the specificity of its highest one, so pulling the branches apart is free only when they already agree. When they do not, the warning names the drop — `:is() matches every branch at its highest, 1-1-0, so ".page-hero" would drop to 0-1-0`. This is what makes the advice actionable; a warning whose fix silently changes the cascade is a warning people learn to ignore. One report per rule: the remaining lists have the same cause and the same fix.
+- New `src/core/selectors.ts`, dependency-free: `splitSelectorList`, `routingSelector`, `nestedSelectorLists`, `specificity`, `compareSpecificity`, `formatSpecificity`, `splitIsSpecificityNeutral`. Splitting is string-aware and attribute-aware, so `[data-x="a)b"], .c` splits into two — naive bracket counting gets that wrong. Specificity follows Selectors Level 4, including `:where()` counting zero, `:is()` / `:not()` / `:has()` taking their highest branch, `:nth-child(n of S)` counting as a pseudo-class plus the highest of `S`, and the four legacy single-colon pseudo-elements (`:before`, `:after`, `:first-line`, `:first-letter`) counting as elements. 40 new unit tests.
+
+### Conformance
+
+- The atomic fixtures gained `space-x-4` and `divide-y-2`, which had left the suite with **no functional pseudo-classes at all** despite being everyday utilities. One utility, three unrelated real shapes: Tailwind 4 wraps the whole thing in `:where(...)`, UnoCSS wind3 writes a flat `> :not([hidden]) ~ :not([hidden])`, and UnoCSS wind4 emits *native nesting* with `&`. All three now produce an identical `clamp(1.70667px, 0.53333vw, 2.56px)` for the same 2px, the `border` hairline survives in all three, and wind4's native nesting is written back unchanged.
+
+### Types
+
+- Every array-valued option now accepts a `readonly` array: `routes`, `libraries`, `textProperties`, `propList`, `selectorExclude`, `valueExclude`, `include`, `exclude`, `root.injectTo`, and the `file` / `selector` / `property` / `prefix` / `tokenPrefix` fields of routes and library definitions. `unitToConvert` already did, which made the API inconsistent: a configuration written with `as const` — the natural way to write one in TypeScript — type-errored on every field but that one.
+
 ## 0.5.0 — 2026-08-10
 
 ### Documentation

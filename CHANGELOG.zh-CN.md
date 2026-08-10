@@ -2,6 +2,23 @@
 
 [English](./CHANGELOG.md) · **简体中文**
 
+## 未发布
+
+### 选择器路由
+
+- 修正 **`:not()` 与 `:has()` 的参数在决定规则落到哪块画布**。`.page-hero:not(.van-cell)` 修饰的是页面元素——恰恰是那些*不是* Vant cell 的元素——却因为文本里某处出现了 `.van-cell` 这串字符而被送去 Vant 的 375 画布。这类规则里每一个长度都会变成应有尺寸的整两倍，而且是静默的。路由现在读的是选择器的**主体**：`:not()` 与 `:has()` 的参数指的是被修饰元素之外的另一个元素，在匹配之前就被摘掉；`:is()` / `:where()` / `:matches()` / `-*-any()` 的参数保留，因为那些确实是主体的候选项。在 11 份已发布组件库样式表、22,761 条规则上实测，其中 1,035 条含 `:not()` 或 `:has()`：画布归属**零**变化——库 CSS 的自身前缀总是落在被摘掉的部分之外。这个修复不付任何代价，堵上的是应用代码会一头撞进去的洞。
+- **`:is()` / `:where()` 内部跨画布的列表现在会告警。** 此前文档把它写成「查不出来」。`:is(.van-cell, .page-hero) { padding: 16px }` 是一条声明想要两个画布，和逗号列表是同一个问题、只深了一层括号，而它一直在无声通过。
+- 告警会说出**拆分要付什么代价**，是算出来的而不是丢给读者：`:is()` 以其最高的那一支的特异度匹配每一支，所以把分支拆开只有在它们本来就一致时才是免费的。不一致时，告警指明降幅——`:is() matches every branch at its highest, 1-1-0, so ".page-hero" would drop to 0-1-0`。这才让建议可执行；一个照做之后会悄悄改变层叠的告警，是会被学会无视的告警。每条规则只报一次：剩下的列表成因相同、修法相同。
+- 新增 `src/core/selectors.ts`，零依赖：`splitSelectorList`、`routingSelector`、`nestedSelectorLists`、`specificity`、`compareSpecificity`、`formatSpecificity`、`splitIsSpecificityNeutral`。拆分识别字符串与属性选择器，`[data-x="a)b"], .c` 会正确拆成两支——只数括号会拆错。特异度按 Selectors Level 4 计算，含 `:where()` 计零、`:is()` / `:not()` / `:has()` 取最高分支、`:nth-child(n of S)` 计一个伪类加 `S` 的最高分支，以及四个单冒号历史写法的伪元素（`:before`、`:after`、`:first-line`、`:first-letter`）按元素计。新增 40 条单元测试。
+
+### 一致性套件
+
+- 原子化用例补入 `space-x-4` 与 `divide-y-2`。此前整个套件里**一个功能性伪类都没有**，而这两个是日常工具类。同一个工具类，三种毫不相干的真实形状：Tailwind 4 把整体裹进 `:where(...)`，UnoCSS wind3 写成扁平的 `> :not([hidden]) ~ :not([hidden])`，UnoCSS wind4 直接产出带 `&` 的*原生嵌套*。现在同样的 2px 在三者中都得到一模一样的 `clamp(1.70667px, 0.53333vw, 2.56px)`，`border` 的细线三者都保住，wind4 的原生嵌套原样写回。
+
+### 类型
+
+- 所有取数组的选项现在都接受 `readonly` 数组：`routes`、`libraries`、`textProperties`、`propList`、`selectorExclude`、`valueExclude`、`include`、`exclude`、`root.injectTo`，以及路由与库定义里的 `file` / `selector` / `property` / `prefix` / `tokenPrefix`。`unitToConvert` 本来就接受，这让 API 自相矛盾：用 `as const` 写的配置——在 TypeScript 里这是最自然的写法——除了那一个字段之外每个都报类型错误。
+
 ## 0.5.0 — 2026-08-10
 
 ### 文档
