@@ -145,14 +145,100 @@ appPcPreset({
 
 ---
 
-## 原子化 CSS
+## 原子化 CSS：Tailwind 与 UnoCSS
 
-UnoCSS、Tailwind 生成的工具类 CSS 会经过 PostCSS，因此同样会被换算。这通常正是你要的：`p-4` 生成的 `padding: 16px` 和你手写的 `padding: 16px` 应该得到同一个结果。
+工具类 CSS 同样经过 PostCSS，所以同样会被换算——这正是你要的：`p-4` 和你手写的 `padding: 16px` 说的是同一个尺寸，应该得到同一个结果。
 
-两点注意：
+**但默认配置一个都读不到，而且不报错。** 装上插件跑一遍，手写的部分被换算了、工具类原样不动，两套尺寸从此对不齐。原因有两个，取决于你用的大版本。
 
-- 如果原子化框架配了 rem 输出，产出的是 `rem` 而不是 `px`，本插件默认只认 `px`，不会处理。需要处理就把框架切回 px 输出（UnoCSS 的 `@unocss/preset-rem-to-px` 就是干这个的）。
-- 工具类没有类名前缀特征，所以它们走 `defaultProfile`。要让某一批工具类走别的画布，用 `routes` 的 `selector` 通道。
+包一层就都解决了：
+
+```js
+import adaptiveMatrix, { appPcPreset, withAtomicCss } from 'postcss-adaptive-matrix'
+
+export default {
+  plugins: [adaptiveMatrix(withAtomicCss(appPcPreset({ rootSelector: '#app' })))],
+}
+```
+
+`withAtomicCss` 是**包装**不是替换：你原有的 `profiles`、`routes`、`root` 全部保留，它只往上加需要的两件事。下面解释这两件事分别在挡什么。
+
+### 挡路的第一件事：单位是 rem
+
+Tailwind 3、UnoCSS `presetUno` / `presetWind3` 把长度直接写成 `rem`：
+
+```css
+.p-4      { padding: 1rem }          /* 不是 16px */
+.text-lg  { font-size: 1.125rem; line-height: 1.75rem }
+.border   { border-width: 1px }      /* 边框仍然是 px */
+.p-\[13px\] { padding: 13px }        /* 方括号任意值也是 px */
+```
+
+同一张表里两种单位都有。所以要读的是**两种**，不是把 `px` 改成 `rem`：只读 `rem` 会漏掉所有边框宽度和方括号值，只读 `px` 会漏掉间距和字号。`withAtomicCss` 做的第一件事就是把 `rem` 加进 `unitToConvert`。
+
+页面如果写了 `html { font-size: 62.5% }`，再配一个 `rootValue: 10`，读和写两头一起改，见[配置参考](./configuration.md#unittoconvert-与-rootvalue)。
+
+### 挡路的第二件事：长度根本不在工具类里
+
+Tailwind 4 和 UnoCSS `presetWind4` 换了形状——工具类里没有长度，只有一个变量引用：
+
+```css
+:root { --spacing: 0.25rem; --text-lg: 1.125rem; --radius-lg: 0.5rem }
+
+.p-4       { padding: calc(var(--spacing) * 4) }
+.gap-8     { gap: calc(var(--spacing) * 8) }
+.rounded-lg{ border-radius: var(--radius-lg) }
+.text-lg   { font-size: var(--text-lg) }
+```
+
+`var()` 是不透明的，编译器看不进去。所以要在**源头**认领这些主题 token。自定义属性默认不换算（要么被显式认领，要么开 `transformCustomProperties`），`withAtomicCss` 加的正是这条认领路由。
+
+认领 token 之后工具类不用动也对了：
+
+```css
+--spacing: clamp(3.41333px, 1.06667vw, 5.12px);
+.p-4 { padding: calc(var(--spacing) * 4) }
+```
+
+`calc(clamp(a, b, c) * 4)` 等价于 `clamp(4a, 4b, 4c)`（正系数下乘法可以穿过 clamp），结果与直接换算 `16px` 逐位相同。
+
+被认领的 token 前缀：`--spacing`、`--text-`、`--leading-`、`--radius-`、`--container-`。三个**故意不在**列表里：
+
+| 没认领 | 原因 |
+| --- | --- |
+| `--breakpoint-*` | 它是画布**切换**的宽度。缩放它等于移动断点本身，而且没有任何地方会提示 |
+| `--tracking-*` | 用 `em` 发布，而 `em` 依附的字号已经被做成流体了，再缩一次是叠加 |
+| `--shadow-*` | 阴影的像素是按屏幕尺度画的层次感，不是设计稿上量出来的长度 |
+
+主题里自己扩展的长度族用 `tokenPrefixes` 补：
+
+```js
+withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
+```
+
+### 字号 token 照样可缩放
+
+`--text-lg` 这种名字不长得像字体属性，但它承载的就是字号。默认的 `textProperties` 里包含 `--text-*` 与 `--leading-*`，所以它拿到的是和手写 `font-size` 完全相同的 `rem + vw` 混合公式，浏览器文字缩放不受影响：
+
+```css
+--text-lg: clamp(1.06725rem, calc(0.73125rem + 1.68vw), 1.23525rem);
+```
+
+这一条对没有被认领的 token 不起作用——它只决定一个已经要换算的长度**怎么写**，不决定它换不换算。
+
+### 这一节是对着真实产物写的
+
+`conformance/cases/atomic/` 下的三个用例，输入是 Tailwind CSS 4.3.3、UnoCSS 66.7.5 `presetWind3`、UnoCSS 66.7.5 `presetWind4` 的**真实产物原文**，不是手写的仿制品——上面那两种形状的差别大到手写必然写成想象中的样子。用 `scripts/capture-atomic.mjs` 重新抓取。
+
+这两个框架不是 devDependency：抓下来的 CSS 就是全部输入，把 `npm test` 绑在别人的发版节奏上换不来额外信息。
+
+### 另一条路
+
+不想加配置也可以让框架输出 px：UnoCSS 的 `@unocss/preset-rem-to-px`，Tailwind 3 改 `theme.spacing`。Tailwind 4 没有这条路——它的形状是 token 间接引用，与单位无关。
+
+### 工具类走哪张画布
+
+工具类没有类名前缀特征，所以它们走 `defaultProfile`。要让某一批工具类走别的画布，用 `routes` 的 `selector` 通道；主题 token 整体改派用 `withAtomicCss(base, { profile: 'pc' })`。
 
 ## 组件库按需引入
 

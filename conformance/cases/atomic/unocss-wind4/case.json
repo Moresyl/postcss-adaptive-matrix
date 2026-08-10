@@ -1,0 +1,31 @@
+{
+  "description": "real UnoCSS presetWind4 output: the same token-indirection shape as Tailwind CSS 4",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": {
+        "designWidth": 375,
+        "fluid": {
+          "minWidth": 320,
+          "maxWidth": 480
+        }
+      }
+    },
+    "unitToConvert": [
+      "px",
+      "rem"
+    ],
+    "routes": [
+      {
+        "profile": "app",
+        "property": [
+          "--spacing",
+          "--text-",
+          "--leading-",
+          "--radius-",
+          "--container-"
+        ]
+      }
+    ]
+  }
+}

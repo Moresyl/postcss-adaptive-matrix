@@ -1,0 +1,11 @@
+/* A page that sets `html { font-size: 62.5% }`, so one rem is ten pixels.
+   3.2rem is 32px there, and must come out the same as a literal 32px. */
+.written-in-rem {
+  padding: clamp(27.30667px, 8.53333vw, 40.96px);
+  font-size: clamp(3.03573rem, calc(2.08rem + 2.98667vw), 3.5136rem);
+}
+
+.written-in-px {
+  padding: clamp(27.30667px, 8.53333vw, 40.96px);
+  font-size: clamp(3.03573rem, calc(2.08rem + 2.98667vw), 3.5136rem);
+}

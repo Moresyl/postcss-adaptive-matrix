@@ -40,16 +40,34 @@ const VIEWPORT_RELATIVE = new RegExp(
  */
 const UNIT_PATTERNS = new Map<string, RegExp>()
 
-function unitPattern(unit: string): RegExp {
-  const cached = UNIT_PATTERNS.get(unit)
+function unitPattern(units: string[]): RegExp {
+  const key = units.join('|')
+  const cached = UNIT_PATTERNS.get(key)
   if (cached) return cached
-  const escaped = unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escaped = units
+    .map((unit) => unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')
+  // The unit is captured, not just matched: reading several units at once means
+  // each match has to say which one it was, both to know its pixel size and to
+  // put it back unchanged when a guard declines the conversion.
   const pattern = new RegExp(
-    `(^|[^a-zA-Z0-9_.-])(${NUMBER})${escaped}(?![a-zA-Z0-9_-])`,
+    `(^|[^a-zA-Z0-9_.-])(${NUMBER})(${escaped})(?![a-zA-Z0-9_-])`,
     'gi',
   )
-  UNIT_PATTERNS.set(unit, pattern)
+  UNIT_PATTERNS.set(key, pattern)
   return pattern
+}
+
+/**
+ * Pixels per authored unit.
+ *
+ * Only `rem` has an answer here. `em` is left at face value on purpose: it
+ * resolves against whatever font size the element inherited, which is a runtime
+ * fact no build-time constant can stand in for, and quietly treating it as
+ * `rem` would be wrong wherever the two differ — which is most of a stylesheet.
+ */
+function unitScale(unit: string, options: ResolvedAdaptiveMatrixOptions): number {
+  return unit.length === 3 && unit.toLowerCase() === 'rem' ? options.rootValue : 1
 }
 
 /**
@@ -175,12 +193,13 @@ function preferredValue(
   unit: ScaleUnit,
   accessibleText: boolean,
   precision: number,
+  rootValue: number,
 ): string {
   const fluidPart = format((pixels * fluidity * 100) / designWidth, precision)
   const staticPixels = pixels * (1 - fluidity)
   if (Math.abs(staticPixels) < 10 ** -precision) return `${fluidPart}${unit}`
   const staticPart = accessibleText
-    ? `${format(staticPixels / 16, precision)}rem`
+    ? `${format(staticPixels / rootValue, precision)}rem`
     : `${format(staticPixels, precision)}px`
   // A zero fluid term would only add `calc(x + 0vw)` noise around a static length.
   if (Number(fluidPart) === 0) return staticPart
@@ -205,13 +224,14 @@ function convertResolvedLength(
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
+  sourceUnit: string = options.unitToConvert[0]!,
 ): string {
-  if (!Number.isFinite(pixels)) return `${pixels}${options.unitToConvert}`
+  if (!Number.isFinite(pixels)) return `${pixels}${sourceUnit}`
   if (pixels === 0 || Math.abs(pixels) < options.minPixelValue) {
-    return `${format(pixels, options.precision)}${options.unitToConvert}`
+    return `${format(pixels, options.precision)}${sourceUnit}`
   }
   if (options.hairline > 0 && Math.abs(pixels) <= options.hairline) {
-    return `${format(pixels, options.precision)}${options.unitToConvert}`
+    return `${format(pixels, options.precision)}${sourceUnit}`
   }
 
   const unit = profile.unit ?? options.unit
@@ -237,7 +257,7 @@ function convertResolvedLength(
   const start = boundaryValue(scaled, canvas, fluidity, profile.fluid.minWidth)
   const end = boundaryValue(scaled, canvas, fluidity, profile.fluid.maxWidth)
   const boundaryUnit = accessibleText ? 'rem' : 'px'
-  const divisor = accessibleText ? 16 : 1
+  const divisor = accessibleText ? options.rootValue : 1
   const lowerBound = format(Math.min(start, end) / divisor, options.precision)
   const upperBound = format(Math.max(start, end) / divisor, options.precision)
   // Nothing can move between identical bounds, so a clamp() would be dead weight.
@@ -250,6 +270,7 @@ function convertResolvedLength(
     unit,
     accessibleText,
     options.precision,
+    options.rootValue,
   )
   return `clamp(${lowerBound}${boundaryUnit}, ${preferred}, ${upperBound}${boundaryUnit})`
 }
@@ -311,25 +332,32 @@ function convertResolvedValue(
   parsed.walk((node) => {
     if (shouldSkipFunction(node) || isAlreadyBounded(node)) return false
     if (node.type !== 'word') return undefined
-    node.value = node.value.replace(pattern, (match, prefix: string, number: string) => {
-      const pixels = Number.parseFloat(number)
-      if (
-        pixels === 0 ||
-        Math.abs(pixels) < options.minPixelValue ||
-        (options.hairline > 0 && Math.abs(pixels) <= options.hairline)
-      ) {
-        return match
-      }
-      const converted = convertResolvedLength(
-        pixels,
-        designWidth,
-        anchorWidth,
-        accessibleText,
-        profile,
-        options,
-      )
-      return `${prefix}${converted}`
-    })
+    node.value = node.value.replace(
+      pattern,
+      (match, prefix: string, number: string, unit: string) => {
+        // Guarded in pixels, not in authored numbers: `minPixelValue` and
+        // `hairline` describe how small a thing is on screen, and `0.0625rem`
+        // is the same hairline as `1px` however it was written.
+        const pixels = Number.parseFloat(number) * unitScale(unit, options)
+        if (
+          pixels === 0 ||
+          Math.abs(pixels) < options.minPixelValue ||
+          (options.hairline > 0 && Math.abs(pixels) <= options.hairline)
+        ) {
+          return match
+        }
+        const converted = convertResolvedLength(
+          pixels,
+          designWidth,
+          anchorWidth,
+          accessibleText,
+          profile,
+          options,
+          unit,
+        )
+        return `${prefix}${converted}`
+      },
+    )
     return undefined
   })
   return parsed.toString()
@@ -365,7 +393,7 @@ const MAX_CACHE_ENTRIES = 20_000
  * share cache entries too.
  */
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
-  const unitLower = options.unitToConvert.toLowerCase()
+  const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
   const widths = new Map<string, [design: number, anchor: number]>()
   const textProperties = new Map<string, boolean>()
   const values = new Map<string, string>()
@@ -384,7 +412,12 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
 
     /** Cheap rejection for declarations that cannot contain a convertible length. */
     mightContainUnit(value: string): boolean {
-      return containsIgnoreCase(value, unitLower)
+      // Loop rather than `some`, to keep the single-unit case — which is nearly
+      // every project, and runs on every declaration — free of a closure.
+      for (const unit of unitsLower) {
+        if (containsIgnoreCase(value, unit)) return true
+      }
+      return false
     },
 
     convert(

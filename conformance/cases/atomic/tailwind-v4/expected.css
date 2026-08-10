@@ -1,0 +1,68 @@
+/* Captured from Tailwind CSS 4.3.3. Regenerate with scripts/capture-atomic.mjs. */
+/*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
+@layer properties;
+:root, :host {
+  --spacing: clamp(3.41333px, 1.06667vw, 5.12px);
+  --container-md: clamp(382.29333px, 119.46667vw, 573.44px);
+  --text-lg: clamp(1.06725rem, calc(0.73125rem + 1.68vw), 1.23525rem);
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --radius-lg: clamp(6.82667px, 2.13333vw, 10.24px);
+}
+@layer theme, utilities;
+@layer theme;
+@layer utilities {
+  .w-64 {
+    width: calc(var(--spacing) * 64);
+  }
+  .max-w-md {
+    max-width: var(--container-md);
+  }
+  .gap-8 {
+    gap: calc(var(--spacing) * 8);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
+  }
+  .border {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+  }
+  .border-2 {
+    border-style: var(--tw-border-style);
+    border-width: clamp(1.70667px, 0.53333vw, 2.56px);
+  }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .p-\[13px\] {
+    padding: clamp(11.09333px, 3.46667vw, 16.64px);
+  }
+  .px-6 {
+    padding-inline: calc(var(--spacing) * 6);
+  }
+  .text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+  }
+  .leading-7 {
+    --tw-leading: calc(var(--spacing) * 7);
+    line-height: calc(var(--spacing) * 7);
+  }
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-border-style: solid;
+      --tw-leading: initial;
+    }
+  }
+}

@@ -2,6 +2,19 @@
 
 ## 未发布
 
+### 原子化 CSS（Tailwind / UnoCSS）
+
+- 修正**工具类一个都换算不到**：这是静默的——手写 CSS 被缩放、工具类原样保留，两套尺寸从此对不齐，不报错。两个大版本各卡在一处。旧版（Tailwind 3、UnoCSS `presetUno` / `presetWind3`）把长度写成 `rem`，而编译器只读 `px`；新版（Tailwind 4、UnoCSS `presetWind4`）把长度整个搬进主题 token，`.p-4` 编译成 `padding: calc(var(--spacing) * 4)`，工具类里根本没有长度可读，而自定义属性默认不换算。
+- `unitToConvert` 现在接受数组，一趟读多种单位。这不是锦上添花：这两个框架同一张产物里两种单位都有——间距和字号是 `rem`，而边框宽度、`p-[13px]` 这类方括号任意值是 `px`，各自描述同一张设计稿。只读 `rem` 会漏掉所有边框，只读 `px` 会漏掉所有间距，两种单选都是错的。`rem` 按 `rootValue` 折算成像素，其余单位按面值读取。
+- 修正 `unitToConvert: 'rem'` 一直把 `1.5rem` 当成 1.5 像素：换算前不折算，于是低于 `minPixelValue` 与 `hairline` 阈值而被整批跳过。这两道阈值现在一律按**像素**判定——`0.0625rem` 与 `1px` 是同一根细线，怎么写的不影响它有多细。
+- 新增 `rootValue`（默认 16），读写两头共用一把尺：既决定 `rem` 输入折合多少像素，也决定文字静态项写成多少 `rem`。`html { font-size: 62.5% }` 的项目配 `rootValue: 10` 即可。
+- 新增 `withAtomicCss(base, options?)`：**包装**而非替换现有配置，把 `rem` 补进 `unitToConvert`，并认领主题 token 前缀 `--spacing`、`--text-`、`--leading-`、`--radius-`、`--container-`。认领源头即可，工具类不用动——`calc(clamp(a, b, c) * 4)` 恒等于 `clamp(4a, 4b, 4c)`（正系数下乘法可穿过 clamp），产物与直接换算 `16px` 逐位相同。故意不认领三类：`--breakpoint-*` 是画布**切换**的宽度，缩放它等于移动断点本身；`--tracking-*` 用 `em` 发布，依附的字号已被做成流体，再缩一次是叠加；`--shadow-*` 的像素是按屏幕尺度画的层次感。自定义长度族用 `tokenPrefixes` 补。
+- 默认 `textProperties` 加入 `--text-*` 与 `--leading-*`：字号被发布成 token 时，名字不长得像字体属性，漏掉就意味着这个字号**失去浏览器缩放**。这一条只决定一个已经要换算的长度怎么写，不决定它换不换算，因此对未被认领的 token 不起作用。
+- 新增一致性用例 `atomic/{tailwind-v4,unocss-wind3,unocss-wind4}`，输入是三者的**真实产物原文**（Tailwind 4.3.3、UnoCSS 66.7.5 两个预设），用 `scripts/capture-atomic.mjs` 重抓。两个大版本的产物形状差别大到手写必然写成想象中的样子。这两个框架不设为 devDependency：抓下来的 CSS 就是全部输入，把 `npm test` 绑在别人的发版节奏上换不来额外信息。
+- 路由的 `property` 通道收到正则时立即报 `TypeError` 并说明正确写法。另两个通道都收正则，这里只收字符串前缀，此前的表现是运行中途 `prefix.toLowerCase is not a function`。
+
+**破坏性（类型）**：`ResolvedAdaptiveMatrixOptions.unitToConvert` 由 `string` 变为 `string[]`；`AdaptiveMatrixOptions.unitToConvert` 放宽为 `string | readonly string[]`，传字符串照旧。`findContinuityIssues` 新增可选第二参数 `rootFontSize`。
+
 ### 编译器
 
 - 修正跨画布的文字尺寸：**项目画布与组件库画布不一致时，该库的文字全错**。普通长度两边一直是一致的（都归结为 `值 ÷ 画布`），文字不是——文字保留一段固定的 `rem` 以便浏览器缩放仍然有效，而这段固定长度此前锚在各自的画布上。Vant 画在 375、页面画在 750 时，两者描述的是同一份设计的两套单位，Vant 的 16px 与页面的 32px 本是同一个尺寸，却在 390px 视口下分别渲染成 16.22px 与 26.62px——**小了约 40%**，而 375 与 1440 上都看不出来。750 稿的项目配 Vant 是国内移动端最常见的组合之一；antd-mobile 的 1x/2x 双份产物同理。

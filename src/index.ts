@@ -2,7 +2,7 @@ import { adaptiveMatrix } from './postcss/plugin.js'
 import type { AdaptiveMatrixOptions } from './core/types.js'
 
 export { adaptiveMatrix }
-export { appPcPreset, presets } from './core/presets.js'
+export { appPcPreset, presets, withAtomicCss } from './core/presets.js'
 export { BUILT_IN_LIBRARIES, defineLibraries } from './core/libraries.js'
 // Exported so a build can fail on what the CLI only prints. The check reads a
 // compiled `Root`, so it slots in as a PostCSS plugin of your own after this
@@ -21,6 +21,7 @@ export type {
   AdaptiveQuery,
   AdaptiveRoute,
   AppPcPresetOptions,
+  AtomicCssOptions,
   FileMatcher,
   LibraryAdaptation,
   OutputStrategy,

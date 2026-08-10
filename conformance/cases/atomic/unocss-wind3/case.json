@@ -1,0 +1,31 @@
+{
+  "description": "real UnoCSS presetWind3 output: lengths written literally in rem",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": {
+        "designWidth": 375,
+        "fluid": {
+          "minWidth": 320,
+          "maxWidth": 480
+        }
+      }
+    },
+    "unitToConvert": [
+      "px",
+      "rem"
+    ],
+    "routes": [
+      {
+        "profile": "app",
+        "property": [
+          "--spacing",
+          "--text-",
+          "--leading-",
+          "--radius-",
+          "--container-"
+        ]
+      }
+    ]
+  }
+}

@@ -14,7 +14,8 @@
 | `strategy` | `clamp` | `clamp` 或兼容型 `viewport` |
 | `unit` | `vw` | `vw`、`vi`、`cqw`、`cqi` |
 | `precision` | `5` | 0~12 位小数 |
-| `unitToConvert` | `px` | 输入单位 |
+| `unitToConvert` | `'px'` | 读取的输入单位，可传数组同时读多种 |
+| `rootValue` | `16` | 一个 `rem` 折合多少像素 |
 | `minPixelValue` | `0` | 小于该绝对值不转换 |
 | `hairline` | `1` | 不转换的细线阈值 |
 | `fontFluidity` | `0.35` | 文字流体比例，0~1 |
@@ -44,7 +45,8 @@ propList: ['*', '!border*', '!box-shadow']
 | --- | --- |
 | `unit: 'vm'` | 输出 `4.267vm`。它不是长度，浏览器整条声明丢弃，元素保留继承值 |
 | `strategy: 'viewpoint'` | 静默回退到 `clamp`，看起来像设置生效了 |
-| `unitToConvert: ''` | 匹配不到任何长度，与没装插件无法区分 |
+| `unitToConvert: ''` / `[]` | 匹配不到任何长度，与没装插件无法区分 |
+| `rootValue: 0` | 每个 `rem` 读成 0，输出侧再除零 |
 | `atRuleName: 'media'` | 样式表里每个 `@media` 都被当成画布名读取并改写。At-keyword 大小写不敏感，`MEDIA` 是同一个冲突 |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
 | `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
@@ -64,6 +66,32 @@ propList: ['*', '!border*', '!box-shadow']
 `warn` 与 `ignore` 都保留原文，而浏览器读不懂 `@adaptive`，会把**整块丢弃**——块里的样式全部消失。区别只在于有没有人告诉你。画布名区分大小写（它是你自己在 `profiles` 里写的键），`@adaptive PC` 找不到 `pc`。
 
 `@adaptive pc;` 这种没有块的写法会单独告警：没有块就没有任何东西被编译到那张画布上，它不会被改写成 `@media`。
+
+### unitToConvert 与 rootValue
+
+```ts
+unitToConvert?: string | readonly string[]   // 默认 'px'
+rootValue?: number                           // 默认 16
+```
+
+默认只读 `px`。传数组可以一次读多种单位——原子化 CSS 项目需要这个，见[构建工具集成](./integration.md#原子化-css)：
+
+```js
+unitToConvert: ['px', 'rem']
+```
+
+单位之间的换算规则只有一条：**`rem` 按 `rootValue` 折成像素，其它单位按面值读。**
+
+`em` 也按面值读，这是刻意的。`em` 相对的是元素继承来的字号，那是运行时才知道的事，构建期没有任何常数能替它。把 `em` 当 `rem` 处理，只在两者恰好相等的地方是对的——而那在一份样式表里是少数。
+
+`rootValue` 同时管两头：
+
+- 读的时候，`1rem` 折成多少像素；
+- 写的时候，文字的静态部分除以多少变成 `rem`。
+
+所以页面写了 `html { font-size: 62.5% }` 就配 `rootValue: 10`，`3.2rem` 与 `32px` 会得到完全一样的产物，两边都对。只配一头会错一头，因此这里没有第二个选项可配。
+
+`minPixelValue` 与 `hairline` 的阈值是**像素**，不是面值。框架把发丝线写成 `0.0625rem`、你手写成 `1px`，是同一根线，都会被 `hairline` 拦下。
 
 ## AdaptiveRoute
 

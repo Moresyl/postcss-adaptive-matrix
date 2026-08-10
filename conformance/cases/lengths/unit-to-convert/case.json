@@ -1,7 +1,7 @@
 {
-  "description": "unitToConvert retargets the compiler at a different source unit",
+  "description": "unitToConvert retargets the compiler at a different source unit, read at face value",
   "options": {
-    "unitToConvert": "rem",
+    "unitToConvert": "dp",
     "hairline": 0
   }
 }

@@ -1,0 +1,31 @@
+/* Shapes an atomic CSS framework emits: spacing and type in rem, borders and
+   arbitrary values in px, all in one stylesheet describing one design. */
+.p-4 {
+  padding: clamp(13.65333px, 4.26667vw, 20.48px);
+}
+
+.text-lg {
+  font-size: clamp(1.06725rem, calc(0.73125rem + 1.68vw), 1.23525rem);
+  line-height: clamp(1.66017rem, calc(1.1375rem + 2.61333vw), 1.9215rem);
+}
+
+.gap-x-8 {
+  column-gap: clamp(27.30667px, 8.53333vw, 40.96px);
+}
+
+.border {
+  border-width: 1px;
+}
+
+.p-\[13px\] {
+  padding: clamp(11.09333px, 3.46667vw, 16.64px);
+}
+
+/* The same size, written both ways. Both must land on the same length. */
+.written-in-rem {
+  margin: clamp(27.30667px, 8.53333vw, 40.96px);
+}
+
+.written-in-px {
+  margin: clamp(27.30667px, 8.53333vw, 40.96px);
+}

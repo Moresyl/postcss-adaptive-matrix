@@ -151,7 +151,10 @@ function effective(group: Entry[], width: number): Entry | undefined {
  * shorthand expansion, and silence whenever a value or a condition falls
  * outside what can be resolved to a number.
  */
-export function findContinuityIssues(root: Root): ContinuityIssue[] {
+export function findContinuityIssues(
+  root: Root,
+  rootFontSize: number = ROOT_FONT_SIZE,
+): ContinuityIssue[] {
   const { entries, poisoned } = collect(root)
   const tokens = collectTokens(root)
 
@@ -219,12 +222,12 @@ export function findContinuityIssues(root: Root): ContinuityIssue[] {
         const lowPx = evaluateLength(lowPart, {
           width: breakpoint - PROBE,
           height: NOMINAL_HEIGHT,
-          rootFontSize: ROOT_FONT_SIZE,
+          rootFontSize,
         })
         const highPx = evaluateLength(highPart, {
           width: breakpoint + PROBE,
           height: NOMINAL_HEIGHT,
-          rootFontSize: ROOT_FONT_SIZE,
+          rootFontSize,
         })
         if (lowPx === null || highPx === null) continue
         // Compared by magnitude, not by value. A negative length — an overhang,

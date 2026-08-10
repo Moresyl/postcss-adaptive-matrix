@@ -186,7 +186,24 @@ export interface AdaptiveMatrixOptions {
   strategy?: OutputStrategy
   unit?: ScaleUnit
   precision?: number
-  unitToConvert?: string
+  /**
+   * Units read as design-canvas lengths. An array reads several in one pass,
+   * which is what a project mixing hand-written CSS with an atomic framework
+   * needs: Tailwind and UnoCSS write spacing and type in `rem` but borders and
+   * arbitrary values like `p-[13px]` in `px`, so both units appear in the same
+   * stylesheet and both describe the same design.
+   *
+   * `rem` is read as `rootValue` pixels. Every other unit is read at face
+   * value — `em` deliberately included, since it answers to whatever font size
+   * the element inherited and no build-time number can stand in for that.
+   */
+  unitToConvert?: string | readonly string[]
+  /**
+   * Pixels per `rem`, used both when reading `rem` input and when writing the
+   * static half of a text length. Defaults to 16, the initial value browsers
+   * ship; change it only if the page actually sets a different root font size.
+   */
+  rootValue?: number
   minPixelValue?: number
   /** Values with an absolute size at or below this number stay in px. */
   hairline?: number
@@ -206,8 +223,10 @@ export interface AdaptiveMatrixOptions {
 export interface ResolvedAdaptiveMatrixOptions
   extends Omit<
     Required<AdaptiveMatrixOptions>,
-    'root' | 'include' | 'exclude' | 'libraries'
+    'root' | 'include' | 'exclude' | 'libraries' | 'unitToConvert'
   > {
+  /** Normalised to a list; a single unit resolves to a one-element array. */
+  unitToConvert: string[]
   root: RootFoundationOptions | false
   include?: FileMatcher | FileMatcher[]
   exclude?: FileMatcher | FileMatcher[]
@@ -233,6 +252,20 @@ export interface AppPcPresetOptions {
   fixedContainingBlock?: boolean
   /** Restricts the root foundation to matching files. See `RootFoundationOptions.injectTo`. */
   rootInjectTo?: FileMatcher | FileMatcher[]
+}
+
+export interface AtomicCssOptions {
+  /**
+   * Canvas the theme tokens are drawn on. Defaults to the base configuration's
+   * `defaultProfile`, which is right whenever the utilities are used across the
+   * whole application rather than on one side of a breakpoint.
+   */
+  profile?: string
+  /**
+   * Further custom-property prefixes to claim, for a theme extended with length
+   * families of its own — `--size-`, `--gutter-`, whatever `@theme` declares.
+   */
+  tokenPrefixes?: readonly string[]
 }
 
 /** A profile together with how it was selected. */

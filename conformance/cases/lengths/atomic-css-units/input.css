@@ -1,0 +1,31 @@
+/* Shapes an atomic CSS framework emits: spacing and type in rem, borders and
+   arbitrary values in px, all in one stylesheet describing one design. */
+.p-4 {
+  padding: 1rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.gap-x-8 {
+  column-gap: 2rem;
+}
+
+.border {
+  border-width: 1px;
+}
+
+.p-\[13px\] {
+  padding: 13px;
+}
+
+/* The same size, written both ways. Both must land on the same length. */
+.written-in-rem {
+  margin: 2rem;
+}
+
+.written-in-px {
+  margin: 32px;
+}

@@ -1,0 +1,7 @@
+{
+  "description": "rootValue sets the pixels-per-rem used both to read rem input and to write the static half of text",
+  "options": {
+    "unitToConvert": ["px", "rem"],
+    "rootValue": 10
+  }
+}

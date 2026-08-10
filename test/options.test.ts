@@ -45,6 +45,28 @@ describe('configuration validation', () => {
 
   it('rejects an empty unitToConvert, which would match no length at all', () => {
     expect(() => resolveOptions({ unitToConvert: '' })).toThrow(/unitToConvert cannot be empty/)
+    expect(() => resolveOptions({ unitToConvert: [] })).toThrow(/unitToConvert cannot be empty/)
+    // A list assembled from configuration can carry blanks; only a list that
+    // ends up with nothing in it is unusable.
+    expect(() => resolveOptions({ unitToConvert: ['  ', ''] })).toThrow(
+      /unitToConvert cannot be empty/,
+    )
+  })
+
+  it('normalises unitToConvert to a deduplicated, longest-first list', () => {
+    expect(resolveOptions({ unitToConvert: 'px' }).unitToConvert).toEqual(['px'])
+    expect(resolveOptions({ unitToConvert: [' px ', 'rem'] }).unitToConvert).toEqual(['rem', 'px'])
+    // Matching is case-insensitive, so `PX` is not a second unit to scan for.
+    expect(resolveOptions({ unitToConvert: ['px', 'PX', ''] }).unitToConvert).toEqual(['px'])
+  })
+
+  it('rejects a rootValue that cannot be a font size', () => {
+    expect(() => resolveOptions({ rootValue: 0 })).toThrow(/rootValue must be a positive number/)
+    expect(() => resolveOptions({ rootValue: -16 })).toThrow(/rootValue must be a positive number/)
+    expect(() => resolveOptions({ rootValue: Number.NaN })).toThrow(
+      /rootValue must be a positive number/,
+    )
+    expect(() => resolveOptions({ rootValue: 10 })).not.toThrow()
   })
 
   it('rejects an atRuleName that CSS already defines', () => {

@@ -1,6 +1,13 @@
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import adaptiveMatrix, { appPcPreset, defineConfig, presets } from '../src/index.js'
+import adaptiveMatrix, {
+  appPcPreset,
+  defineConfig,
+  presets,
+  withAtomicCss,
+} from '../src/index.js'
+import type { AdaptiveMatrixOptions } from '../src/index.js'
+import { resolveOptions } from '../src/core/options.js'
 
 async function process(
   css: string,
@@ -383,5 +390,179 @@ describe('presets and foundation', () => {
       selector: '.shell',
       container: true,
     })
+  })
+})
+
+describe('reading more than one source unit', () => {
+  const atomic = { unitToConvert: ['px', 'rem'] } as const
+
+  it('leaves rem alone under the default configuration', async () => {
+    // The default reads `px` only, so an atomic framework's output passes
+    // through untouched rather than being read as a pile of one-pixel lengths.
+    const result = await process('.p-4 { padding: 1rem }')
+    expect(result.css).toBe('.p-4 { padding: 1rem }')
+  })
+
+  it('gives a size written in rem and the same size written in px one answer', async () => {
+    const result = await process('.a { margin: 2rem } .b { margin: 32px }', atomic)
+    const [first, second] = result.css.split('} ')
+    expect(first).toContain('clamp(27.30667px, 8.53333vw, 40.96px)')
+    expect(second).toContain('clamp(27.30667px, 8.53333vw, 40.96px)')
+  })
+
+  it('measures the hairline and minPixelValue guards in pixels, not in authored numbers', async () => {
+    // A framework writing a hairline as `0.0625rem` means the same device pixel
+    // as one writing `1px`, and neither is a measurement off the design canvas.
+    const result = await process(
+      '.a { border-width: 0.0625rem; outline-width: 1px }',
+      atomic,
+    )
+    expect(result.css).toBe('.a { border-width: 0.0625rem; outline-width: 1px }')
+
+    const guarded = await process('.a { top: 0.5rem }', {
+      ...atomic,
+      minPixelValue: 16,
+    })
+    expect(guarded.css).toBe('.a { top: 0.5rem }')
+  })
+
+  it('reads em at face value, because no build-time number can stand in for it', async () => {
+    // `em` resolves against the element's inherited font size. Scaling it like
+    // `rem` would be right only where the two happen to agree.
+    const result = await process('.a { padding: 2em; margin: 2rem }', {
+      ...atomic,
+      unitToConvert: ['px', 'rem', 'em'],
+      hairline: 0,
+    })
+    expect(result.css).toContain('padding: clamp(1.70667px, 0.53333vw, 2.56px)')
+    expect(result.css).toContain('margin: clamp(27.30667px, 8.53333vw, 40.96px)')
+  })
+
+  it('honours rootValue on both sides of the conversion', async () => {
+    // `html { font-size: 62.5% }`: one rem is ten pixels going in, and the
+    // static half of a text length is written in those same tens going out.
+    const tens = { ...atomic, rootValue: 10 }
+    const result = await process('.a { padding: 3.2rem; font-size: 3.2rem }', tens)
+    const pixels = await process('.a { padding: 32px; font-size: 32px }', tens)
+    expect(result.css).toBe(pixels.css)
+
+    // Ten of these rem are what sixteen of the default ones measure.
+    const standard = await process('.a { font-size: 32px }', atomic)
+    const scaled = (css: string) => Number(/clamp\(([\d.]+)rem/.exec(css)![1])
+    expect(scaled(pixels.css) * 10).toBeCloseTo(scaled(standard.css) * 16, 4)
+  })
+
+  it('rejects a regular expression where a token prefix belongs', () => {
+    // The other two route channels take patterns, so this is the mistake people
+    // make. Untyped `.mjs` configuration means the type system will not catch it.
+    expect(() =>
+      resolveOptions({ routes: [{ profile: 'app', property: [/^--spacing$/ as never] }] }),
+    ).toThrow(/takes custom-property prefixes as strings.*regular expression/s)
+  })
+
+  it('does not let one unit shadow another that ends the same way', async () => {
+    // `rem` ends in `em`; a naive alternation could match the tail and leave a
+    // stray `r` in the output.
+    const result = await process('.a { padding: 1rem }', {
+      ...atomic,
+      unitToConvert: ['em', 'rem'],
+    })
+    expect(result.css).not.toContain('r clamp')
+    expect(result.css).toContain('padding: clamp(13.65333px, 4.26667vw, 20.48px)')
+  })
+})
+
+describe('withAtomicCss', () => {
+  it('adds rem and a theme-token route without discarding what it wraps', () => {
+    const base = defineConfig({
+      defaultProfile: 'mobile',
+      profiles: { mobile: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 } } },
+      routes: [{ profile: false as const, file: ['legacy/'] }],
+      preserveOriginal: true,
+    })
+    const wrapped = withAtomicCss(base)
+
+    expect(wrapped.unitToConvert).toEqual(['px', 'rem'])
+    expect(wrapped.preserveOriginal).toBe(true)
+    expect(wrapped.profiles).toBe(base.profiles)
+    // The caller's own route stays first, so a hand-written decision still wins.
+    expect(wrapped.routes![0]).toBe(base.routes![0])
+    expect(wrapped.routes![1]).toEqual({
+      profile: 'mobile',
+      property: ['--spacing', '--text-', '--leading-', '--radius-', '--container-'],
+    })
+  })
+
+  it('leaves the breakpoint scale alone', () => {
+    // Scaling `--breakpoint-md` would move the width a canvas switches at, and
+    // every downstream media query with it. Nothing would report that.
+    const claimed = withAtomicCss(appPcPreset()).routes!.at(-1)!.property as string[]
+    expect(claimed).not.toContain('--breakpoint-')
+    expect(claimed.some((prefix) => '--breakpoint-md'.startsWith(prefix))).toBe(false)
+    // `--tracking-*` is published in em, which already rides a fluid font size.
+    expect(claimed.some((prefix) => '--tracking-wide'.startsWith(prefix))).toBe(false)
+  })
+
+  it('does not add rem twice, and keeps an unusual source unit', () => {
+    expect(withAtomicCss({ unitToConvert: 'rem' }).unitToConvert).toEqual(['rem'])
+    expect(withAtomicCss({ unitToConvert: ['dp', 'REM'] }).unitToConvert).toEqual(['dp', 'REM'])
+    expect(withAtomicCss({ unitToConvert: 'dp' }).unitToConvert).toEqual(['dp', 'rem'])
+  })
+
+  it('restores the token text patterns when the caller took textProperties over', () => {
+    // Untouched by default — the defaults already carry them.
+    expect(withAtomicCss({} as AdaptiveMatrixOptions).textProperties).toBeUndefined()
+
+    const narrowed = withAtomicCss({ textProperties: ['font-size'] })
+    expect(narrowed.textProperties).toEqual(['font-size', '--text-*', '--leading-*'])
+    // Idempotent, so wrapping an already-wrapped configuration is harmless.
+    expect(withAtomicCss(narrowed).textProperties).toEqual(narrowed.textProperties)
+  })
+
+  it('accepts extra token families and an explicit canvas', () => {
+    const wrapped = withAtomicCss(appPcPreset(), {
+      profile: 'pc',
+      tokenPrefixes: ['--gutter-'],
+    })
+    expect(wrapped.routes!.at(-1)).toMatchObject({ profile: 'pc' })
+    expect(wrapped.routes!.at(-1)!.property).toContain('--gutter-')
+  })
+
+  it('scales a theme token and the utility that multiplies it to the same size', async () => {
+    // `.p-4` is `calc(var(--spacing) * 4)`, so the utility never sees a length.
+    // Multiplying through a clamp is exact for a positive factor, which is why
+    // claiming the token at its source is enough.
+    const options = withAtomicCss({
+      defaultProfile: 'app',
+      profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } } },
+    })
+    const result = await process(
+      ':root { --spacing: 0.25rem } .p-4 { padding: calc(var(--spacing) * 4) }',
+      options,
+    )
+    expect(result.css).toContain('--spacing: clamp(3.41333px, 1.06667vw, 5.12px)')
+
+    const direct = await process('.p-4 { padding: 16px }', options)
+    expect(direct.css).toContain('clamp(13.65333px, 4.26667vw, 20.48px)')
+    // 4 x each bound of the token's clamp is the literal 16px result.
+    for (const [token, literal] of [
+      [3.41333, 13.65333],
+      [1.06667, 4.26667],
+      [5.12, 20.48],
+    ]) {
+      expect(token! * 4).toBeCloseTo(literal!, 4)
+    }
+  })
+
+  it('gives a theme font size the same zoomable formula as a declared one', async () => {
+    const options = withAtomicCss({
+      defaultProfile: 'app',
+      profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } } },
+    })
+    const token = await process(':root { --text-lg: 1.125rem }', options)
+    const declared = await process('.x { font-size: 18px }', options)
+    const formula = /clamp\([^)]*\([^)]*\)[^)]*\)/.exec(declared.css)![0]
+    expect(token.css).toContain(formula)
+    expect(formula).toContain('rem')
   })
 })

@@ -231,7 +231,9 @@ async function compile(
     // Run on the compiled tree, not the source: the question is whether the
     // *output* is monotonic, and the numbers to compare only exist once the
     // canvases have been applied.
-    issues: findContinuityIssues(result.root),
+    // The seam check compares `rem` against `px`, so it has to measure them
+    // with the same ruler the compiler wrote them with.
+    issues: findContinuityIssues(result.root, options.rootValue),
   }
 }
 

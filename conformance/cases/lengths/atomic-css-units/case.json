@@ -1,0 +1,6 @@
+{
+  "description": "reads px and rem together, as Tailwind and UnoCSS output them side by side",
+  "options": {
+    "unitToConvert": ["px", "rem"]
+  }
+}
