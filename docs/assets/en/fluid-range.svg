@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360" role="img" aria-labelledby="title desc">
+  <title id="title">The bounded fluid range</title>
+  <desc id="desc">Plain vw grows linearly with the viewport and never stops; clamp holds its minimum below the fluid range, tracks the viewport inside it, and stops growing above the upper bound.</desc>
+
+  <style>
+    .h      { font: 600 14px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #1f2933 }
+    .lbl    { font: 400 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #6b7783 }
+    .tick   { font: 400 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #8b949e }
+    .axis   { stroke: #c3ccd6; stroke-width: 1.4 }
+    .grid   { stroke: #e6ebf0; stroke-width: 1; stroke-dasharray: 3 4 }
+    .plain  { stroke: #9aa5b1; stroke-width: 2.2; fill: none; stroke-dasharray: 6 5 }
+    .bounded{ stroke: #b83208; stroke-width: 2.8; fill: none; stroke-linejoin: round; stroke-linecap: round }
+    .zone   { fill: #b83208; opacity: .07 }
+    .dot    { fill: #b83208 }
+    .warn   { font: 400 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #9aa5b1 }
+    .key    { font: 400 12.5px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #1f2933 }
+
+    @media (prefers-color-scheme: dark) {
+      .h      { fill: #e6edf3 }
+      .lbl    { fill: #8b949e }
+      .tick   { fill: #6e7681 }
+      .axis   { stroke: #3d444d }
+      .grid   { stroke: #21262d }
+      .plain  { stroke: #6e7681 }
+      .bounded{ stroke: #ff9f7a }
+      .zone   { fill: #ff9f7a; opacity: .10 }
+      .dot    { fill: #ff9f7a }
+      .warn   { fill: #6e7681 }
+      .key    { fill: #e6edf3 }
+    }
+  </style>
+
+  <text class="h" x="30" y="32">How a size responds to viewport width</text>
+
+  <!-- Fluid range highlight, 320–600 -->
+  <rect class="zone" x="220" y="60" width="330" height="210"/>
+
+  <!-- Grid -->
+  <line class="grid" x1="220" y1="60" x2="220" y2="270"/>
+  <line class="grid" x1="550" y1="60" x2="550" y2="270"/>
+
+  <!-- Axes -->
+  <line class="axis" x1="80" y1="270" x2="850" y2="270"/>
+  <line class="axis" x1="80" y1="60"  x2="80"  y2="270"/>
+
+  <!-- Plain vw: one straight line all the way across, with no end -->
+  <path class="plain" d="M80 258 L850 76"/>
+  <text class="warn" x="850" y="62" text-anchor="end">plain vw — still growing</text>
+
+  <!-- clamp: lower plateau → linear segment → upper plateau -->
+  <path class="bounded" d="M80 213 L220 213 L550 137 L850 137"/>
+  <circle class="dot" cx="220" cy="213" r="4"/>
+  <circle class="dot" cx="550" cy="137" r="4"/>
+
+  <text class="lbl" x="96"  y="205">minimum</text>
+  <text class="lbl" x="800" y="129" text-anchor="end">maximum</text>
+  <!-- Above the clamp segment: the English label is wide enough that the
+       plain-vw line would otherwise run through its descenders. -->
+  <text class="lbl" x="385" y="166" text-anchor="middle">tracks the viewport</text>
+
+  <!-- Ticks -->
+  <text class="tick" x="220" y="290" text-anchor="middle">320px</text>
+  <text class="tick" x="550" y="290" text-anchor="middle">600px</text>
+  <text class="lbl"  x="385" y="310" text-anchor="middle">fluid range</text>
+  <text class="lbl"  x="850" y="290" text-anchor="end">viewport width →</text>
+  <text class="lbl"  x="70"  y="66"  text-anchor="end">size</text>
+
+  <!-- Legend -->
+  <line class="bounded" x1="80" y1="338" x2="118" y2="338"/>
+  <text class="key" x="128" y="342">clamp (default) — bounded at both ends</text>
+  <line class="plain" x1="420" y1="338" x2="458" y2="338"/>
+  <text class="key" x="468" y="342">plain vw — unbounded in both directions</text>
+</svg>
