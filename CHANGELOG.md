@@ -2,6 +2,21 @@
 
 **English** · [简体中文](./CHANGELOG.zh-CN.md)
 
+## 0.7.0 — 2026-08-11
+
+### JSON configuration
+
+- The CLI now accepts `adaptive.config.json`, strips its `$schema` metadata before compilation, and reports malformed or non-object JSON without exposing an internal stack trace.
+- The published JSON Schema describes `$schema`, so editors can complete and validate a JSON configuration against the same option model used by the documentation site.
+- JSON files are read with `readFile` and `JSON.parse`, preserving the package's Node 18 support; JavaScript configuration remains available for regular expressions and predicate functions.
+
+### Quality gates
+
+- Added ESLint, Prettier, VitePress source type-checking, documentation-site builds, and stricter coverage thresholds to `npm run check` and CI.
+- Added a ratio-based performance budget that compares compiler cost with PostCSS parse-and-print cost, avoiding unstable absolute timing limits on shared runners.
+- Expanded evaluator, selector scanner, CLI, schema, stdin, compatibility and error-path coverage; coverage now reaches 98.10% statements, 93.59% branches and 99.35% lines.
+- Fixed two issues found by the new checks: serialising a value-parser node through an unsupported path and allowing an unknown value to stringify as `[object Object]` in generated output.
+
 ## 0.6.0 — 2026-08-11
 
 ### Breakpoints have a canvas now
@@ -61,23 +76,6 @@
 - The atomic fixtures gained `space-x-4` and `divide-y-2`, which had left the suite with **no functional pseudo-classes at all** despite being everyday utilities. One utility, three unrelated real shapes: Tailwind 4 wraps the whole thing in `:where(...)`, UnoCSS wind3 writes a flat `> :not([hidden]) ~ :not([hidden])`, and UnoCSS wind4 emits *native nesting* with `&`. All three now produce an identical `clamp(1.70667px, 0.53333vw, 2.56px)` for the same 2px, the `border` hairline survives in all three, and wind4's native nesting is written back unchanged.
 - New `test/idempotence.test.ts`: **compiling compiled output changes nothing**, across nine configurations × eight stylesheets. The conformance suite already asserted this per fixture, but only under the options that fixture declares — what was uncovered is the cross product of the switches that change the *shape* of the output, and the shape is what a second pass has to survive. A second pass is not hypothetical: a package that ships pre-compiled CSS goes through the consuming application's pipeline again, and so does a monorepo that compiles a shared component library and then the app importing it.
 - The case that wanted pinning down is atomic mode with static text. Atomic mode adds `rem` to `unitToConvert`, and text is normally written as `rem + vw` — the `vw` is what tells a second pass the value is already compiled. With `fontFluidity: 0` there is no `vw`: `32px` becomes a bare `2rem`, which the next pass reads as a design length and converts again. It survives, but nothing defends it — `rootValue` is used at both ends, so writing ÷16 and reading ×16 are exact inverses and the value is its own fixed point. That is a property of the arithmetic rather than a rule anyone wrote down, and if either end of that division moves the failure is silent: no error, no warning, just text a little smaller on every save in a watch loop.
-
-### A configuration the editor can check
-
-- **The CLI accepts a `.json` config.** `-c adaptive.config.json` reads a plain object of options, which gives the published JSON Schema something to actually validate: name the schema in `$schema` and the editor completes the option names, flags a `precision` of `10`, and rejects a misspelt `defaultProfile` as you type. Until now the schema could only be read; a document nothing is checked against drifts the moment someone stops reading it.
-- `$schema` is dropped on the way through rather than passed to the compiler, and it is **described in the schema** rather than merely tolerated — `additionalProperties: false` would otherwise make every correctly annotated file invalid. It stays out of the type-checked option tables, because it is not an option.
-- The file is read with `readFile` and `JSON.parse`, not `import … with { type: 'json' }`. Import attributes are a **syntax error on Node 18**, which this package still supports, and a syntax error in the CLI entry point fails before the version check could explain itself.
-- A malformed file gets the parser's position and nothing else — no stack trace, since the frame the error was thrown from is never the frame the reader needs. A JSON file that parses to an array or a string is a distinct error naming what it should have been. `.mjs` and `.js` configs work exactly as before; the options that take a `RegExp` or a predicate still need JavaScript, which is what `x-also` in the schema is for.
-
-### Checks
-
-- **`docs/.vitepress` was never type-checked.** TypeScript drops a directory whose name starts with a dot when it expands a bare `include` entry, so listing `docs/.vitepress` type-checked nothing at all — the 0.5.0 note saying the site's source is checked with everything else was true of the intent and not of the build. Spelled as a glob (`docs/.vitepress/**/*.ts`) it works, and it immediately turned up three real errors: a `Plugin` imported from `vite` rather than from `vitepress`, which bundles its own copy and therefore its own structurally-identical-but-unassignable declaration; and two `noUncheckedIndexedAccess` holes in the URL and link-rewriting paths.
-- **ESLint and Prettier, from nothing.** The project had `tsc` and no linter, which leaves the rules type-checking has no opinion about — a floating promise, a `catch` binding nobody reads, a value interpolated into a template that stringifies to `[object Object]` — unenforced. Flat config, `typescript-eslint` type-checked rules, `eslint-config-prettier` last so the two never argue. Both are in `npm run check` and therefore in CI.
-- Prettier deliberately **does not format Markdown**. These pages are the product: they are served raw to agents, their tables are parsed by `docs:check` and by `test/schema.test.ts`, and their line breaks are chosen for a bilingual reader. The code is formatted; the prose is checked by its own tests.
-- Two real bugs fell out of the first lint run rather than style noise: `parsed.toString()` on a `valueParser` node, which is not the documented way to print one, and a `String(before ?? '')` whose argument was typed `unknown` and could have stringified to `[object Object]` in the output.
-- **A performance budget in CI.** `npm run bench:check` fails the build if the compiler costs more than 1.5× PostCSS's own parse-and-print time, or the library pass more than 1.0×. The ratio is the point: an absolute millisecond budget measures the runner, and a shared CI runner is not a stable instrument. Measured worst case today is 0.81× and 0.33×; the headroom is for a loaded runner, not for a regression. It is its own single-Node job, so "this got slower" never reads as "the tests broke on Node 20".
-- **`docs:build` runs in `check`.** The site build only ran in the deploy workflow, so a broken link in a VitePress config or a component that fails to render was found on `main`, after the merge.
-- Coverage is up from 95.35 / 90.31 / 96.86 to **98.10 / 93.59 / 99.35** (statements / branches / lines), and the thresholds moved with it — 97 / 92 / 98 / 98, a couple of points under what the suite actually reaches. A threshold set far below the real figure never fails and therefore never says anything. New `test/evaluate.test.ts` covers the arithmetic evaluator, including the sign-versus-operator cases (`calc(8px - -16px)`, `calc(--8px)`) and everything it correctly refuses; `test/selectors.test.ts` gained the string- and bracket-scanning branches (`:not("x)y", .a)`, an escaped quote inside an attribute, an unterminated bracket); `test/cli.test.ts` covers the JSON config, piped stdin, and `--targets` with a trailing comma.
 
 ### Types
 
