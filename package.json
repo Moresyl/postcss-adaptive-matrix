@@ -82,6 +82,9 @@
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
     "docs:check": "node scripts/check-docs.mjs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "check": "npm run build && npm run typecheck && npm run docs:check && npm run test:coverage",
     "pack:check": "npm pack --dry-run",
     "prepublishOnly": "npm run check"
@@ -100,6 +103,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.23.11",
     "typescript": "^5.9.3",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.10"
   }
 }

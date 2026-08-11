@@ -1,0 +1,35 @@
+/**
+ * Brand colours, and one readability fix.
+ *
+ * The palette is the indigo the favicon is drawn in. The tables matter more
+ * than they look: the configuration reference is mostly one long table of
+ * option, type, default and effect, and the default theme lets a table run past
+ * the content width rather than scroll it.
+ */
+:root {
+  --vp-c-brand-1: #4c6ef5;
+  --vp-c-brand-2: #5c7cfa;
+  --vp-c-brand-3: #748ffc;
+  --vp-c-brand-soft: rgb(76 110 245 / 14%);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #4c6ef5 30%, #22b8cf);
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #4c6ef5 50%, #22b8cf 50%);
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+.dark {
+  --vp-c-brand-1: #91a7ff;
+  --vp-c-brand-2: #748ffc;
+  --vp-c-brand-3: #5c7cfa;
+  --vp-c-brand-soft: rgb(145 167 255 / 16%);
+}
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.vp-doc :not(pre) > code {
+  font-size: 0.875em;
+}

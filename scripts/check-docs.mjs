@@ -95,6 +95,12 @@ function anchorsOf(text) {
   return anchors
 }
 
+/** The body of a file, with any leading YAML front matter removed. */
+function withoutFrontMatter(text) {
+  const closed = /^---\r?\n[\s\S]*?\r?\n---\r?\n/.exec(text)
+  return closed ? text.slice(closed[0].length) : text
+}
+
 /** Every link target in a file, inline and reference style, images included. */
 function linksOf(text) {
   const targets = []
@@ -154,7 +160,9 @@ for (const file of files) {
  * The switcher is checked rather than assumed because a page reachable only by
  * guessing its filename may as well not be there. It is looked for in the first
  * 20 lines rather than the first few: a page may open with a banner and a row
- * of badges, and the README does.
+ * of badges, and the README does. YAML front matter is skipped before counting,
+ * because the documentation site's home page is most of a page of it and the
+ * switcher can only come after.
  *
  * `.github` is exempt. Issue and pull-request templates are rendered by GitHub
  * inside its own forms, where there is nowhere for a language switcher to go
@@ -171,7 +179,10 @@ for (const file of files) {
     continue
   }
   const expected = counterpart.split(sep).pop()
-  const head = readFileSync(file, 'utf8').split(/\r?\n/).slice(0, 20).join('\n')
+  const head = withoutFrontMatter(readFileSync(file, 'utf8'))
+    .split(/\r?\n/)
+    .slice(0, 20)
+    .join('\n')
   if (!head.includes(expected)) {
     report(file, `does not link to ${expected} near the top`)
   }
