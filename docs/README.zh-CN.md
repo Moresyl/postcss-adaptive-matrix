@@ -17,6 +17,7 @@
 | 要支持某个旧 Safari / WebView | [浏览器特性支持与降级](./compatibility.zh-CN.md) |
 | 从现有的 px 换算方案换过来 | [迁移指南](./migration.zh-CN.md) |
 | 发版、产物、Node 版本 | [发布与兼容性](./release.zh-CN.md) |
+| 让编码 Agent 接手这个项目 | [面向 AI 的文档](./agents.zh-CN.md) |
 
 规范与示例：
 

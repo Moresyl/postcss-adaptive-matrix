@@ -96,6 +96,11 @@ const DOCS: Entry[] = [
     title: 'Release and compatibility',
     summary: 'Published artifacts, supported Node versions, and the versioning policy.',
   },
+  {
+    source: 'docs/agents.md',
+    title: 'Documentation for agents',
+    summary: 'Every machine-readable endpoint, and what to put in a prompt so the answer is right.',
+  },
 ]
 
 const DOCS_ZH: Entry[] = [
@@ -155,6 +160,11 @@ const DOCS_ZH: Entry[] = [
     title: '发布与兼容性',
     summary: '发布产物、支持的 Node 版本、版本号策略。',
   },
+  {
+    source: 'docs/agents.zh-CN.md',
+    title: '面向 AI 的文档',
+    summary: '所有机器可读的入口，以及提示词里该写什么才能得到对的答案。',
+  },
 ]
 
 const EXTRA: Entry[] = [
@@ -201,6 +211,18 @@ function section(base: string, heading: string, entries: Entry[]): string {
   return `## ${heading}\n\n${lines.join('\n')}\n`
 }
 
+/**
+ * The one link here is not a page, so it is built from a URL rather than from
+ * an `Entry`. Prose is the wrong shape for a question like "is `precision` an
+ * integer, and what is its ceiling"; the schema answers that without being read
+ * as English at all, and both languages travel inside the one document.
+ */
+function machineSection(base: string, chinese: boolean): string {
+  return chinese
+    ? `## 机器可读\n\n- [配置项 JSON Schema](${base}schema/options.json)：全部配置项的类型、取值范围与默认值。默认值取自编译器本身，中文描述在 \`x-description-zh\`。\n`
+    : `## Machine-readable\n\n- [Options JSON Schema](${base}schema/options.json): every option's type, range and default. Defaults are read out of the compiler itself; Chinese descriptions travel as \`x-description-zh\`.\n`
+}
+
 export function llmsTxt(base: string, chinese: boolean): string {
   const docs = chinese ? DOCS_ZH : DOCS
   const extra = chinese ? EXTRA_ZH : EXTRA
@@ -211,6 +233,7 @@ export function llmsTxt(base: string, chinese: boolean): string {
     head,
     section(base, chinese ? '文档' : 'Docs', docs),
     section(base, chinese ? '规范与示例' : 'Specification and examples', extra),
+    machineSection(base, chinese),
   ].join('\n')
 }
 

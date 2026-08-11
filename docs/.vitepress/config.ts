@@ -60,9 +60,9 @@ export default defineConfig({
           {
             text: 'More',
             items: [
+              { text: 'For AI agents', link: '/docs/agents' },
               { text: 'Changelog', link: '/CHANGELOG' },
               { text: 'Conformance suite', link: '/conformance/' },
-              { text: 'For AI agents', link: `${BASE}llms.txt`, target: '_blank' },
               { text: 'npm', link: 'https://www.npmjs.com/package/postcss-adaptive-matrix' },
             ],
           },
@@ -88,6 +88,7 @@ export default defineConfig({
               { text: 'Optional runtime', link: '/docs/runtime' },
               { text: 'Browser support', link: '/docs/compatibility' },
               { text: 'Release and compatibility', link: '/docs/release' },
+              { text: 'Documentation for agents', link: '/docs/agents' },
             ],
           },
           {
@@ -133,9 +134,9 @@ export default defineConfig({
           {
             text: '更多',
             items: [
+              { text: '面向 AI 的文档', link: '/zh/docs/agents' },
               { text: '更新日志', link: '/zh/CHANGELOG' },
               { text: '一致性套件', link: '/zh/conformance/' },
-              { text: '给 AI 用的入口', link: `${BASE}zh/llms.txt`, target: '_blank' },
               { text: 'npm', link: 'https://www.npmjs.com/package/postcss-adaptive-matrix' },
             ],
           },
@@ -161,6 +162,7 @@ export default defineConfig({
               { text: '可选运行时', link: '/zh/docs/runtime' },
               { text: '浏览器支持与降级', link: '/zh/docs/compatibility' },
               { text: '发布与兼容性', link: '/zh/docs/release' },
+              { text: '面向 AI 的文档', link: '/zh/docs/agents' },
             ],
           },
           {

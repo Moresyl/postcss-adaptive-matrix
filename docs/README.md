@@ -17,6 +17,7 @@ Pick the page that matches what you are doing right now:
 | Support an old Safari or WebView | [Browser support and degradation](./compatibility.md) |
 | Move over from an existing px conversion setup | [Migration guide](./migration.md) |
 | Releases, artifacts, Node versions | [Release and compatibility](./release.md) |
+| Point a coding agent at this project | [Documentation for agents](./agents.md) |
 
 Specification and examples:
 

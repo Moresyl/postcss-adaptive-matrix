@@ -44,9 +44,9 @@ features:
     link: /zh/conformance/
     linkText: 一致性套件
   - title: 同时写给人和写给 AI
-    details: 每一页都能用「页面地址 + .md」直接取到原始 Markdown；整套文档在 llms.txt 有索引，在 llms-full.txt 有全文。
-    link: /llms.txt
-    linkText: llms.txt
+    details: 每一页都能用「页面地址 + .md」直接取到原始 Markdown；整套文档在 llms.txt 有索引；全部配置项还以 JSON Schema 发布，其中的默认值直接读自编译器本身。
+    link: /zh/docs/agents
+    linkText: 面向 AI 的文档
   - title: 先看输出，再提交
     details: 命令行能编译一份样式表并打印结果，所以改配置这件事是「读一遍」，而不是「发上去再祈祷」。
     link: /zh/docs/cli

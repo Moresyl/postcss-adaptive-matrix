@@ -1,12 +1,13 @@
 /**
  * Files the site serves that are not pages.
  *
- * Three kinds, all produced from the same page list the site is built from:
+ * Four kinds, all produced from the same sources the site is built from:
  *
  *  - `llms.txt` and `llms-full.txt`, the entry points a coding agent fetches;
  *  - the raw Markdown of every page, at the page's own URL plus `.md`, so that
  *    "copy this page for an LLM" is a fetch rather than a scrape of rendered
  *    HTML with a sidebar and a search box in it;
+ *  - `schema/options.json`, the same options as data rather than as prose;
  *  - the favicon, which is small enough to be worth generating rather than
  *    committing a binary for.
  *
@@ -21,6 +22,7 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 import { llmsFullTxt, llmsTxt } from './llms'
 import { isPublished, rewrite, SRC_DIR } from './paths'
+import { optionsSchema } from './schema'
 
 /** Where the site is deployed. Agents need an absolute URL; readers do not. */
 export const SITE_URL = process.env.SITE_URL ?? 'https://moresyl.github.io/postcss-adaptive-matrix/'
@@ -73,6 +75,9 @@ export function generatedAssetMap(): Map<string, string> {
   files.set('llms-full.txt', llmsFullTxt(SITE_URL, false))
   files.set('zh/llms.txt', llmsTxt(SITE_URL, true))
   files.set('zh/llms-full.txt', llmsFullTxt(SITE_URL, true))
+  // One document, not one per language: a schema is a type, and the Chinese
+  // half of every description travels inside it as `x-description-zh`.
+  files.set('schema/options.json', optionsSchema(SITE_URL))
 
   for (const file of markdownFiles()) {
     const source = path.relative(SRC_DIR, file).split(path.sep).join('/')

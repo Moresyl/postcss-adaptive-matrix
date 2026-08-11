@@ -44,9 +44,9 @@ features:
     link: /conformance/
     linkText: The conformance suite
   - title: Built for agents as well as people
-    details: Every page is fetchable as raw Markdown at its own URL plus .md, and the whole documentation set is indexed at llms.txt and concatenated at llms-full.txt.
-    link: /llms.txt
-    linkText: llms.txt
+    details: Every page is fetchable as raw Markdown at its own URL plus .md, the whole set is indexed at llms.txt, and every option is published as a JSON Schema whose defaults are read out of the compiler itself.
+    link: /docs/agents
+    linkText: Documentation for agents
   - title: Preview before you commit
     details: The CLI compiles a stylesheet and prints the result, so a configuration change is something you read rather than something you deploy and hope about.
     link: /docs/cli

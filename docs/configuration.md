@@ -16,7 +16,7 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `strategy` | `clamp` | `clamp`, or the compatibility-oriented `viewport` |
 | `unit` | `vw` | `vw`, `vi`, `cqw`, `cqi` |
 | `precision` | `5` | 0–12 decimal places |
-| `unitToConvert` | `'px'` | The input unit(s) to read; an array reads several |
+| `unitToConvert` | `['px']` | The input unit(s) to read; a single string is accepted too |
 | `rootValue` | `16` | How many pixels one `rem` is worth |
 | `minPixelValue` | `0` | Absolute values below this are not converted |
 | `hairline` | `1` | Hairline threshold that is never converted |

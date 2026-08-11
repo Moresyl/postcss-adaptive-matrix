@@ -16,7 +16,7 @@
 | `strategy` | `clamp` | `clamp` 或兼容型 `viewport` |
 | `unit` | `vw` | `vw`、`vi`、`cqw`、`cqi` |
 | `precision` | `5` | 0~12 位小数 |
-| `unitToConvert` | `'px'` | 读取的输入单位，可传数组同时读多种 |
+| `unitToConvert` | `['px']` | 读取的输入单位，也可以只传一个字符串 |
 | `rootValue` | `16` | 一个 `rem` 折合多少像素 |
 | `minPixelValue` | `0` | 小于该绝对值不转换 |
 | `hairline` | `1` | 不转换的细线阈值 |
