@@ -1,0 +1,48 @@
+.hero {
+  padding: clamp(20.48px, 6.4vw, 30.72px);
+}
+
+/* Claimed: the band starts at 768. */
+@media (min-width: 768px) {
+  .hero {
+    padding: clamp(17.06667px, 1.66667vw, 32px);
+  }
+}
+
+/* Claimed by implication — 1200 is past 768, and `screen` is not a width. */
+@media screen and (min-width: 1200px) {
+  .hero {
+    gap: clamp(34.13333px, 3.33333vw, 64px);
+  }
+}
+
+/* Claimed: a media query resolves rem against the initial font size, so this
+   is 1024px however the stylesheet sets its own root. */
+@media (min-width: 64rem) {
+  .hero {
+    row-gap: clamp(34.13333px, 3.33333vw, 64px);
+  }
+}
+
+/* Not claimed: this band reaches below 768. */
+@media (min-width: 400px) {
+  .hero {
+    column-gap: clamp(10.24px, 3.2vw, 15.36px);
+  }
+}
+
+/* Not claimed: unreadable, and an unreadable query is a refusal rather than a
+   match-everything. */
+@media (min-width: 768px), print {
+  .hero {
+    margin: clamp(10.24px, 3.2vw, 15.36px);
+  }
+}
+
+/* Not claimed: a container query bounds an element, and vw is not about the
+   element. */
+@container (min-width: 768px) {
+  .hero {
+    border-radius: clamp(10.24px, 3.2vw, 15.36px);
+  }
+}

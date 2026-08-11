@@ -8,6 +8,14 @@ import type {
 /**
  * A practical two-canvas preset: author the app at 375px and desktop at 1440px.
  * The breakpoint and both fluid ranges remain configurable.
+ *
+ * `breakpoint` is stated three times over, and the third is the one that used
+ * to be missing. It sets each profile's `query`, so an `@adaptive pc` block
+ * comes out wrapped in the right media query — and it now also *reads* media
+ * queries, so a plain `@media (min-width: 768px)` block written by hand lands
+ * on the desktop canvas too. Saying "the desktop design file takes over at
+ * 768px" and then compiling everything past 768px against the phone design
+ * file was the preset disagreeing with itself.
  */
 export function appPcPreset(
   options: AppPcPresetOptions = {},
@@ -18,8 +26,18 @@ export function appPcPreset(
   const pcFluidMin = options.pcFluidMin ?? 1024
   const pcFluidMax = options.pcFluidMax ?? 1920
 
+  // The `app` route is redundant while `defaultProfile` is `app`, and stops
+  // being redundant the moment someone spreads this preset over a desktop-first
+  // configuration. Both directions are stated so the pair keeps meaning what it
+  // says under an override.
+  const breakpointRoutes: AdaptiveRoute[] = [
+    { media: { minWidth: breakpoint }, profile: 'pc' },
+    { media: { maxWidth: breakpoint - 0.02 }, profile: 'app' },
+  ]
+
   return {
     defaultProfile: 'app',
+    routes: breakpointRoutes,
     profiles: {
       app: {
         designWidth: options.appDesignWidth ?? 375,

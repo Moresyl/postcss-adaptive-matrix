@@ -1,0 +1,48 @@
+.hero {
+  padding: 24px;
+}
+
+/* Claimed: the band starts at 768. */
+@media (min-width: 768px) {
+  .hero {
+    padding: 24px;
+  }
+}
+
+/* Claimed by implication — 1200 is past 768, and `screen` is not a width. */
+@media screen and (min-width: 1200px) {
+  .hero {
+    gap: 48px;
+  }
+}
+
+/* Claimed: a media query resolves rem against the initial font size, so this
+   is 1024px however the stylesheet sets its own root. */
+@media (min-width: 64rem) {
+  .hero {
+    row-gap: 48px;
+  }
+}
+
+/* Not claimed: this band reaches below 768. */
+@media (min-width: 400px) {
+  .hero {
+    column-gap: 12px;
+  }
+}
+
+/* Not claimed: unreadable, and an unreadable query is a refusal rather than a
+   match-everything. */
+@media (min-width: 768px), print {
+  .hero {
+    margin: 12px;
+  }
+}
+
+/* Not claimed: a container query bounds an element, and vw is not about the
+   element. */
+@container (min-width: 768px) {
+  .hero {
+    border-radius: 12px;
+  }
+}

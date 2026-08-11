@@ -1,0 +1,11 @@
+{
+  "description": "One file, two design files: each breakpoint compiles against the mock it was measured on",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } },
+      "pc": { "designWidth": 1440, "fluid": { "minWidth": 1024, "maxWidth": 1920 } }
+    },
+    "routes": [{ "media": { "minWidth": 768 }, "profile": "pc" }]
+  }
+}

@@ -1,0 +1,26 @@
+/* Every length below is a constant at every width the rule applies at: the band
+   starts at 1024 and the canvas stops scaling at 480, so the clamp() is already
+   pinned to its maximum. Reported once for the whole band, not once per rule. */
+@media (min-width: 1024px) {
+  .hero {
+    padding: 24px;
+  }
+
+  .sidebar {
+    width: 320px;
+  }
+
+  /* No lengths here, so nothing to be constant about. */
+  .footer {
+    display: grid;
+    color: red;
+  }
+}
+
+/* Same canvas, same band — the second block has the same cause and the same
+   fix, so it does not get its own copy of the message. */
+@media (min-width: 1024px) {
+  .banner {
+    margin: 16px;
+  }
+}

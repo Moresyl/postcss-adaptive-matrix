@@ -1,0 +1,12 @@
+{
+  "description": "A breakpoint past where its canvas stops scaling compiles to constants, and is told so once",
+  "options": {
+    "defaultProfile": "app",
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } }
+    }
+  },
+  "warnings": [
+    "this rule is live from 1024px up, but canvas \"app\" stops scaling outside 320px–480px"
+  ]
+}
