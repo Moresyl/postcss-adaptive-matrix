@@ -26,6 +26,7 @@ import {
   matchesAnyPattern,
   matchesFile,
 } from '../core/matchers.js'
+import { EVERY_WIDTH, bandOf, narrow, type WidthBand } from '../core/media.js'
 import { resolveOptions } from '../core/options.js'
 import { createProfileResolver, type ProfileResolver } from '../core/resolve.js'
 import {
@@ -133,6 +134,28 @@ interface ProcessorContext {
    * nothing reported. Folded once here rather than per node.
    */
   atRuleName: string
+  /**
+   * Viewport widths the node being visited can apply at, from the `@media`
+   * queries enclosing it. `null` once any of them is unreadable.
+   *
+   * Carried on the context and restored on the way out rather than passed down,
+   * because the walk is depth-first and single-threaded and every function in
+   * the descent would otherwise have to forward a parameter it never reads.
+   * Only `@media` narrows it: `@container` bounds an element, and `vw` has
+   * never been about the element.
+   */
+  band: WidthBand | null
+  /** `canvas|lo|hi` pairs already reported by `warnOnDeadBand`, per file. */
+  deadBands: Set<string>
+  /**
+   * Declarations rewritten so far. Read as a before/after pair around a rule,
+   * it answers "did this rule convert anything" without a second walk.
+   *
+   * A breakpoint that only changes `display` and `color` is ordinary CSS and
+   * has no lengths to be constant, so it must not be warned about — and the
+   * only honest test for that is whether a conversion happened.
+   */
+  converted: number
 }
 
 function transformDeclaration(
@@ -149,7 +172,12 @@ function transformDeclaration(
   // switch about *authored* variables — does not get to veto it.
   let target = active
   if (declaration.prop.startsWith('--')) {
-    const routed = context.resolver.forCustomProperty(active, declaration.prop, file)
+    const routed = context.resolver.forCustomProperty(
+      active,
+      declaration.prop,
+      file,
+      context.band,
+    )
     if (!routed && !options.transformCustomProperties) return
     if (routed) target = routed
   }
@@ -178,6 +206,7 @@ function transformDeclaration(
   } else {
     declaration.value = converted
   }
+  context.converted += 1
 }
 
 /**
@@ -216,9 +245,17 @@ function transformRule(
     return
   }
 
-  const active = context.resolver.forSelector(inherited, rule.selector, context.file)
+  const active = context.resolver.forSelector(
+    inherited,
+    rule.selector,
+    context.file,
+    context.band,
+  )
   warnOnSplitSelectorList(rule, inherited, active, context)
+
+  const before = context.converted
   processContainer(rule, active, context, true)
+  if (context.converted > before) warnOnDeadBand(rule, inherited, active, context)
 
   if (context.correctsFixed) correctFixedRule(rule)
 }
@@ -258,7 +295,7 @@ function warnOnSplitSelectorList(
   if (!rule.selector.includes(',')) return
 
   const canvasOf = (part: string): string => {
-    const resolved = context.resolver.forSelector(inherited, part, context.file)
+    const resolved = context.resolver.forSelector(inherited, part, context.file, context.band)
     return resolved.convert ? resolved.name : '(not converted)'
   }
   const winner = active.convert ? active.name : '(not converted)'
@@ -299,6 +336,74 @@ function warnOnSplitSelectorList(
     // same fix, and a rule buried in warnings gets skipped wholesale.
     return
   }
+}
+
+/**
+ * Warns when a breakpoint is compiled against a canvas that stopped scaling
+ * before the breakpoint begins.
+ *
+ * `@media (min-width: 1024px) { .hero { padding: 40px } }` in a stylesheet
+ * whose default canvas is a 750 phone design bounded at 600px produces
+ * `clamp(17.07px, 5.33vw, 32px)` — and that rule is only ever live from 1024px
+ * up, where the `clamp()` is already pinned to its maximum. Every length in the
+ * block is a constant. The compiler ran, the output looks compiled, and not one
+ * value moves.
+ *
+ * Only rules that actually converted something are considered — a breakpoint
+ * that changes `display` and `color` is ordinary CSS with no lengths in it, and
+ * warning about those would bury the report in the places it does not apply.
+ *
+ * This is provable rather than guessed: the band and the fluid bounds are both
+ * numbers, and they do not overlap. It is the failure the multi-canvas model
+ * exists to prevent, arriving through the one door the model did not watch —
+ * the numbers inside a desktop breakpoint were measured on the desktop design
+ * file, and nothing had ever said so.
+ *
+ * One report per canvas per band per file. The message is the same for every
+ * rule in the block, and a block buried in warnings gets skipped wholesale.
+ */
+function warnOnDeadBand(
+  rule: Rule,
+  inherited: ActiveProfile,
+  active: ActiveProfile,
+  context: ProcessorContext,
+): void {
+  const band = context.band
+  if (!band || !active.convert) return
+  // Bare viewport lengths have no bounds to fall outside of.
+  const strategy = active.profile.strategy ?? context.options.strategy
+  if (strategy !== 'clamp') return
+
+  const { minWidth, maxWidth } = active.profile.fluid
+  const pinned = band.lo >= maxWidth ? 'maximum' : band.hi <= minWidth ? 'minimum' : null
+  if (!pinned) return
+
+  const key = `${active.name}|${band.lo}|${band.hi}`
+  if (context.deadBands.has(key)) return
+  context.deadBands.add(key)
+
+  const live =
+    band.hi === Infinity ? `from ${band.lo}px up` : `between ${band.lo}px and ${band.hi}px`
+  const bound =
+    pinned === 'maximum' ? `minWidth: ${band.lo}` : `maxWidth: ${band.hi}`
+  // A canvas that a selector route chose keeps that canvas at every viewport
+  // width — which is right for a component library and wrong for a rule that
+  // overrides one at a breakpoint. Such a route outranks a bare media route, so
+  // suggesting one on its own would be advice that changes nothing.
+  const suggestion =
+    active.name === inherited.name
+      ? `{ media: { ${bound} }, profile: '…' }`
+      : `{ selector: […], media: { ${bound} }, profile: '…' }`
+  context.result.warn(
+    `Every converted length here is a constant: this rule is live ${live}, but canvas ` +
+      `"${active.name}" stops scaling outside ${minWidth}px–${maxWidth}px, so its clamp() ` +
+      `is pinned to its ${pinned} across that whole range. ` +
+      'The numbers in a breakpoint are usually measured on a different design file — ' +
+      `give it one with a route: ${suggestion}. ` +
+      `Widening "${active.name}"'s fluid range instead makes it scale, but on the canvas ` +
+      'it was already using.',
+    { node: rule, plugin: PLUGIN_NAME },
+  )
 }
 
 /** Highest specificity among a set of branches, for the warning text. */
@@ -463,17 +568,26 @@ function processContainer(
       continue
     }
     if (node.type !== 'atrule') continue
-    if (node.name.toLowerCase() === context.atRuleName) {
+    const name = node.name.toLowerCase()
+    if (name === context.atRuleName) {
       // Nested in a rule, `@adaptive` wraps that rule's own declarations; at the
       // root it wraps rules. Passing the flag down keeps both readings correct.
       transformAdaptiveAtRule(node, active, context, declarations)
     } else if (node.nodes) {
+      const outer = context.band
+      let inner = active
+      if (name === 'media') {
+        const own = bandOf(node.params)
+        context.band = outer === null || own === null ? null : narrow(outer, own)
+        inner = context.resolver.forMedia(active, context.band, context.file)
+      }
       processContainer(
         node,
-        active,
+        inner,
         context,
-        declarations && NESTED_DECLARATION_CONTEXTS.has(node.name.toLowerCase()),
+        declarations && NESTED_DECLARATION_CONTEXTS.has(name),
       )
+      context.band = outer
     }
   }
 }
@@ -542,8 +656,11 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
         resolver.forFile(file),
         {
           atRuleName,
+          band: EVERY_WIDTH,
+          converted: 0,
           converter,
           correctsFixed,
+          deadBands: new Set(),
           file,
           options,
           propertyMatches,

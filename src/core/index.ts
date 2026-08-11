@@ -32,6 +32,7 @@ export type {
   AppPcPresetOptions,
   FileMatcher,
   LibraryAdaptation,
+  MediaMatcher,
   OutputStrategy,
   Pattern,
   ProfileContext,

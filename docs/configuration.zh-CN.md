@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | `profiles` | App/PC 预设 | 多设计画布映射 |
 | `defaultProfile` | `app` | 普通 CSS 使用的画布 |
-| `routes` | `[]` | 按选择器、属性名或文件改派画布 |
+| `routes` | `[]` | 按选择器、属性名、断点或文件改派画布 |
 | `libraries` | `'auto'` | 组件库适配，默认启用全部内置项 |
 | `atRuleName` | `adaptive` | 自定义 At-rule 名称 |
 | `strategy` | `clamp` | `clamp` 或兼容型 `viewport` |
@@ -103,10 +103,16 @@ interface AdaptiveRoute {
   file?: FileMatcher | FileMatcher[]
   selector?: (string | RegExp) | (string | RegExp)[]
   property?: string | string[]
+  media?: MediaMatcher | MediaMatcher[]
+}
+
+interface MediaMatcher {
+  minWidth?: number
+  maxWidth?: number
 }
 ```
 
-把匹配到的 CSS 改派到另一张画布，`profile: false` 则保留像素不转换。字符串按「包含」匹配，正则按 `test` 匹配；`property` 按前缀匹配自定义属性名。
+把匹配到的 CSS 改派到另一张画布，`profile: false` 则保留像素不转换。字符串按「包含」匹配，正则按 `test` 匹配；`property` 按前缀匹配自定义属性名；`media` 匹配的是外层 `@media` 把这条规则限死在哪段宽度里——见[断点](#断点)。
 
 一条路由声明了几条通道，就要几条同时命中。想让类名和文件各自独立生效，写成两条路由。
 
@@ -130,10 +136,75 @@ adaptiveMatrix({
 1. 外层 `@adaptive <profile>`——作者已经明确指定；
 2. 命中的 `property` 路由；
 3. 命中的 `selector` 路由；
-4. 命中的 `file` 路由；
-5. `defaultProfile`。
+4. 命中的 `media` 路由；
+5. 命中的 `file` 路由；
+6. `defaultProfile`。
 
 选择器高于文件路径，是因为选择器属于 CSS 本身，而路径只反映构建工具当时怎么摆放文件；打包器一旦把依赖内联进产物，路径就没了。属性名的理由相同且更强：主题 token 声明在 `:root` 上，除了名字之外不留任何来源痕迹。
+
+选择器高于宽度区间，理由则是另一回事：组件库在任何视口宽度下都画在它自己那张画布上，跨过一个断点并不会改变这个组件出自哪份设计稿。要在断点处覆盖组件库自己的组件，就把两者都写上——见下文。
+
+## 断点
+
+一份响应式样式表，是一个文件里装着两份设计稿。手机端那些数字量自 750 的稿子，`@media (min-width: 1024px)` 里那些量自 1440 的稿子。CSS 里没有任何地方写着这件事，而整个文件按一张画布编译，也不是「差一点」这么简单：
+
+```css
+/* defaultProfile 'app'：designWidth 750，fluid 320–600 */
+@media (min-width: 1024px) {
+  .hero { padding: 40px }        /* → clamp(17.07px, 5.33vw, 32px) */
+}
+```
+
+这条规则只在 1024px 以上生效，而那已经越过手机画布停止缩放的地方——所以在它生效的每一个宽度上，`clamp()` 早就顶死在上界了。这个 padding 永远是 32px。编译器跑过了，产物看着也像编译过，可没有一个值动过。
+
+`media` 路由把这段断点交还给它原本那份设计稿：
+
+```js
+adaptiveMatrix({
+  defaultProfile: 'app',
+  profiles: {
+    app: { designWidth: 750,  fluid: { minWidth: 320,  maxWidth: 600  } },
+    pc:  { designWidth: 1440, fluid: { minWidth: 1024, maxWidth: 1920 } },
+  },
+  routes: [{ media: { minWidth: 1024 }, profile: 'pc' }],
+})
+// .hero → clamp(28.44px, 2.78vw, 53.33px)
+```
+
+匹配靠的是**蕴含关系，不是文本**。`{ minWidth: 1024 }` 认领的是「不可能在 1024px 以下生效」的规则，所以下面这些都算：
+
+| 查询 | 生效区间 | 是否认领 |
+| --- | --- | --- |
+| `(min-width: 1024px)` | 1024px 及以上 | 是 |
+| `screen and (min-width: 1200px)` | 1200px 及以上 | 是 |
+| `(min-width: 64rem)` | 1024px 及以上 | 是 |
+| `(min-width: 1024px) and (max-width: 1600px)` | 1024–1600px | 是 |
+| `(min-width: 768px)` | 768px 及以上 | 否——它够得到 1024 以下 |
+
+嵌套是「且」的关系，所以 `@media (min-width: 900px) { @media (min-width: 1100px) { … } }` 的生效区间是 1100px 及以上，会被认领。
+
+`rem` 与 `em` 一律按 **16px** 折算，既不看 `rootValue`，也不看根元素的字号。媒体查询在任何声明能改动 `font-size` 之前就要求值，因此它不能依赖它自己所筛选的那一层层叠——哪怕样式表里 `html` 写着 `62.5%`，`64rem` 也还是 1024px。原子化框架的断点全都是这么写的。
+
+编译器读不懂的查询——带逗号、带 `not`、带 `only`，或者任何非宽度特性——**谁都不认领**。这是「拒绝作答」，不是「全都匹配」：按一个没人核对过的条件去改派规则，正是画布错误产生的方式，而不是被抓住的方式。`@container` 同样从不参与计数；它约束的是元素，而 `vw` 从来就与元素无关。
+
+要在断点处重画组件库自己的组件，两者都得写上——只写选择器会在所有宽度上生效，只写宽度区间又会输给组件库：
+
+```js
+routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
+```
+
+### 白送的那条告警
+
+上面这些你一条都不用先知道，也能发现问题。只要一条规则确实换算了长度、而它的生效区间又整个落在所属画布的流体区间之外，编译器就会说出来：
+
+```
+Every converted length here is a constant: this rule is live from 1024px up, but canvas
+"app" stops scaling outside 320px–600px, so its clamp() is pinned to its maximum across
+that whole range. The numbers in a breakpoint are usually measured on a different design
+file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
+```
+
+这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对真的换算了东西的规则报——一段只改 `display` 和 `color` 的断点里没有长度，也就无所谓常量不常量。
 
 ## libraries
 

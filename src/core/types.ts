@@ -69,6 +69,36 @@ export interface AdaptiveRoute {
   selector?: Pattern | readonly Pattern[]
   /** Custom-property prefixes, e.g. `--van-`. Routes tokens declared on `:root`. */
   property?: string | readonly string[]
+  /**
+   * Width band the rule must be confined to by its enclosing `@media` queries.
+   *
+   * This is what puts a responsive stylesheet's desktop breakpoint on the
+   * desktop design file. Without it every rule in the file compiles against one
+   * canvas, and the numbers inside `@media (min-width: 1024px)` were measured
+   * on a different one.
+   */
+  media?: MediaMatcher | readonly MediaMatcher[]
+}
+
+/**
+ * A width band, matched by implication rather than by text.
+ *
+ * `{ minWidth: 1024 }` matches a rule inside `@media (min-width: 1024px)` and
+ * also one inside `@media screen and (min-width: 1200px)`, because a rule that
+ * only applies from 1200px up only applies from 1024px up. Matching the params
+ * as a string would miss both the `screen and` and the second query, and a
+ * design canvas is a fact about which widths a rule reaches, not about how the
+ * query was spelled.
+ *
+ * A query this compiler cannot read — a comma, `not`, `only`, or any non-width
+ * feature — matches nothing at all. Treating it as unconstrained would route
+ * rules on a condition nobody checked.
+ */
+export interface MediaMatcher {
+  /** The rule must not apply below this width. */
+  minWidth?: number
+  /** The rule must not apply above this width. */
+  maxWidth?: number
 }
 
 /**

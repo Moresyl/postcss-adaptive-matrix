@@ -10,7 +10,7 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | --- | --- | --- |
 | `profiles` | app/desktop preset | The map of design canvases |
 | `defaultProfile` | `app` | The canvas ordinary CSS uses |
-| `routes` | `[]` | Reassign a canvas by selector, property name or file |
+| `routes` | `[]` | Reassign a canvas by selector, property name, breakpoint or file |
 | `libraries` | `'auto'` | Component-library adaptation; all built-ins on by default |
 | `atRuleName` | `adaptive` | Custom at-rule name |
 | `strategy` | `clamp` | `clamp`, or the compatibility-oriented `viewport` |
@@ -103,10 +103,16 @@ interface AdaptiveRoute {
   file?: FileMatcher | FileMatcher[]
   selector?: (string | RegExp) | (string | RegExp)[]
   property?: string | string[]
+  media?: MediaMatcher | MediaMatcher[]
+}
+
+interface MediaMatcher {
+  minWidth?: number
+  maxWidth?: number
 }
 ```
 
-Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix.
+Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix; `media` matches the widths an enclosing `@media` confines the rule to — see [Breakpoints](#breakpoints).
 
 Every channel a route declares must match. To let a class name and a file match independently, write two routes.
 
@@ -130,10 +136,75 @@ Resolution priority, highest first:
 1. an enclosing `@adaptive <profile>` — the author has already said so;
 2. a matching `property` route;
 3. a matching `selector` route;
-4. a matching `file` route;
-5. `defaultProfile`.
+4. a matching `media` route;
+5. a matching `file` route;
+6. `defaultProfile`.
 
 A selector beats a file path because the selector is part of the CSS itself, whereas a path only reflects how the build tool happened to arrange files at the time; once a bundler inlines a dependency, the path is gone. The reasoning for property names is the same and stronger: theme tokens are declared on `:root` and leave no trace of their origin beyond their name.
+
+A selector beats a width band for a different reason: a component library is drawn on its own canvas at every viewport width, and a breakpoint does not change which design file the component came from. To override a library's own component *at* a breakpoint, say both — see below.
+
+## Breakpoints
+
+A responsive stylesheet is one file holding two design files. The phone numbers were measured on a 750 mock; the numbers inside `@media (min-width: 1024px)` were measured on a 1440 one. Nothing in the CSS says so, and compiling the whole file against one canvas is not a near miss:
+
+```css
+/* defaultProfile 'app': designWidth 750, fluid 320–600 */
+@media (min-width: 1024px) {
+  .hero { padding: 40px }        /* → clamp(17.07px, 5.33vw, 32px) */
+}
+```
+
+That rule is only ever live from 1024px up, which is past where the phone canvas stops scaling — so the `clamp()` is already pinned to its maximum everywhere the rule applies. The padding is a constant 32px at every width, forever. The compiler ran, the output looks compiled, and not one value moves.
+
+A `media` route gives the breakpoint the design file it was drawn on:
+
+```js
+adaptiveMatrix({
+  defaultProfile: 'app',
+  profiles: {
+    app: { designWidth: 750,  fluid: { minWidth: 320,  maxWidth: 600  } },
+    pc:  { designWidth: 1440, fluid: { minWidth: 1024, maxWidth: 1920 } },
+  },
+  routes: [{ media: { minWidth: 1024 }, profile: 'pc' }],
+})
+// .hero → clamp(28.44px, 2.78vw, 53.33px)
+```
+
+Matching is by **implication, not by text**. `{ minWidth: 1024 }` claims any rule that cannot apply below 1024px, so it matches all of these:
+
+| Query | Band it is live in | Claimed |
+| --- | --- | --- |
+| `(min-width: 1024px)` | 1024px and up | yes |
+| `screen and (min-width: 1200px)` | 1200px and up | yes |
+| `(min-width: 64rem)` | 1024px and up | yes |
+| `(min-width: 1024px) and (max-width: 1600px)` | 1024–1600px | yes |
+| `(min-width: 768px)` | 768px and up | no — it reaches below 1024 |
+
+Nesting is conjunction, so `@media (min-width: 900px) { @media (min-width: 1100px) { … } }` is live from 1100px up and is claimed.
+
+`rem` and `em` resolve at **16px**, not at `rootValue` and not at the root element's font size. A media query is evaluated before any declaration could change `font-size`, so it cannot depend on the cascade it selects — `64rem` is 1024px even in a stylesheet whose `html` is `62.5%`. Utility frameworks write every breakpoint this way.
+
+A query the compiler cannot read — a comma, `not`, `only`, or any non-width feature — is claimed by **nothing**. That is a refusal, not a "matches everything": routing a rule on a condition nobody checked is how a canvas mistake gets made rather than caught. `@container` never counts either; it bounds an element, and `vw` has never been about the element.
+
+To redraw a component library's own component at a breakpoint, name both — a selector route on its own would apply at every width, and a width band on its own loses to the library:
+
+```js
+routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
+```
+
+### The warning you get for free
+
+You do not have to know about any of this to find the problem. When a rule converts a length and its band lies entirely outside its canvas's fluid range, the compiler says so:
+
+```
+Every converted length here is a constant: this rule is live from 1024px up, but canvas
+"app" stops scaling outside 320px–600px, so its clamp() is pinned to its maximum across
+that whole range. The numbers in a breakpoint are usually measured on a different design
+file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
+```
+
+This is arithmetic, not a heuristic: two numbers that do not overlap. It is reported once per canvas per band per file, and only for rules that actually converted something — a breakpoint that only changes `display` and `color` has no lengths to be constant about.
 
 ## libraries
 

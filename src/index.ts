@@ -40,6 +40,7 @@ export type {
   AtomicCssOptions,
   FileMatcher,
   LibraryAdaptation,
+  MediaMatcher,
   OutputStrategy,
   Pattern,
   ProfileContext,

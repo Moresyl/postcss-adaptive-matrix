@@ -7,6 +7,7 @@ import { appPcPreset } from './presets.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
+  MediaMatcher,
   ResolvedAdaptiveMatrixOptions,
 } from './types.js'
 
@@ -275,6 +276,36 @@ export function resolveOptions(
           `[postcss-adaptive-matrix] Route property takes custom-property prefixes as strings, ` +
             `such as '--van-'. Received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : typeof prefix}. ` +
             `Matching is by prefix and case-insensitive; list several prefixes to cover several token families.`,
+        )
+      }
+    }
+  }
+
+  // A band with no bounds matches every rule in the stylesheet, which is a
+  // route that silently replaces `defaultProfile` — and reversed bounds match
+  // nothing at all. Both read as working configuration, so neither may be
+  // discovered from the output.
+  for (const route of options.routes) {
+    if (route.media === undefined) continue
+    const matchers = Array.isArray(route.media) ? route.media : [route.media]
+    for (const matcher of matchers as MediaMatcher[]) {
+      const { minWidth, maxWidth } = matcher ?? {}
+      if (minWidth === undefined && maxWidth === undefined) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Route media needs minWidth, maxWidth or both. ` +
+            `An empty band matches every rule, which is a slower way of changing defaultProfile.`,
+        )
+      }
+      for (const [field, bound] of [['minWidth', minWidth], ['maxWidth', maxWidth]] as const) {
+        if (bound !== undefined && (!Number.isFinite(bound) || bound < 0)) {
+          throw new RangeError(
+            `[postcss-adaptive-matrix] Route media.${field} must be a width in pixels, not ${String(bound)}.`,
+          )
+        }
+      }
+      if (minWidth !== undefined && maxWidth !== undefined && maxWidth < minWidth) {
+        throw new RangeError(
+          `[postcss-adaptive-matrix] Route media band ${minWidth}px–${maxWidth}px is empty, so it can never match.`,
         )
       }
     }
