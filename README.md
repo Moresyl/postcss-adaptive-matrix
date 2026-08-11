@@ -13,6 +13,13 @@
   <b>English</b> · <a href="./README.zh-CN.md">简体中文</a>
 </p>
 
+<p align="center">
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/"><b>Documentation</b></a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/docs/playground">Playground</a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/docs/configuration">Configuration</a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/llms.txt">llms.txt</a>
+</p>
+
 You write `px` the way the design file says. The compiler converts it. But converting means nothing until you know **which design file that `px` was drawn on** — and that is the whole model.
 
 ## One 16px, three correct answers

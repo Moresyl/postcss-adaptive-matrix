@@ -13,6 +13,13 @@
   <a href="./README.md">English</a> · <b>简体中文</b>
 </p>
 
+<p align="center">
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/zh/"><b>文档站</b></a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/zh/docs/playground">在线试验场</a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/zh/docs/configuration">配置参考</a> ·
+  <a href="https://moresyl.github.io/postcss-adaptive-matrix/zh/llms.txt">llms.txt</a>
+</p>
+
 你按设计稿写 `px`，编译器负责换算。但换算的前提是先知道这个 `px` 画在哪张稿子上——**这就是整个项目的核心模型**。
 
 ## 同一个 16px，三个正确答案
