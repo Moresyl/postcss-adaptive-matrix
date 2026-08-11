@@ -96,13 +96,13 @@
     "postcss-value-parser": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.1.10",
     "caniuse-lite": "^1.0.30001809",
     "postcss": "^8.5.26",
     "tsup": "^8.5.1",
     "tsx": "^4.23.11",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitepress": "^1.6.4",
     "vitest": "^4.1.10"
   }
