@@ -2,7 +2,7 @@
 
 **English** · [简体中文](./CHANGELOG.zh-CN.md)
 
-## Unreleased
+## 0.6.0 — 2026-08-11
 
 ### Breakpoints have a canvas now
 
