@@ -54,6 +54,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Guide', link: '/docs/getting-started' },
+          { text: 'Playground', link: '/docs/playground' },
           { text: 'Configuration', link: '/docs/configuration' },
           { text: 'Component libraries', link: '/docs/libraries' },
           {
@@ -72,6 +73,7 @@ export default defineConfig({
             items: [
               { text: 'Documentation index', link: '/docs/' },
               { text: 'Getting started', link: '/docs/getting-started' },
+              { text: 'Playground', link: '/docs/playground' },
               { text: 'Build tool integration', link: '/docs/integration' },
               { text: 'CLI preview', link: '/docs/cli' },
               { text: 'Component libraries', link: '/docs/libraries' },
@@ -125,6 +127,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: '指南', link: '/zh/docs/getting-started' },
+          { text: '试验场', link: '/zh/docs/playground' },
           { text: '配置', link: '/zh/docs/configuration' },
           { text: '组件库', link: '/zh/docs/libraries' },
           {
@@ -143,6 +146,7 @@ export default defineConfig({
             items: [
               { text: '文档索引', link: '/zh/docs/' },
               { text: '快速上手', link: '/zh/docs/getting-started' },
+              { text: '在线试验场', link: '/zh/docs/playground' },
               { text: '构建工具集成', link: '/zh/docs/integration' },
               { text: '命令行预览', link: '/zh/docs/cli' },
               { text: '组件库适配', link: '/zh/docs/libraries' },

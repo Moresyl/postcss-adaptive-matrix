@@ -21,6 +21,8 @@ interface Entry {
   source: string
   title: string
   summary: string
+  /** Left out of `llms-full.txt` when the page is a live component, not prose. */
+  index?: 'only'
 }
 
 const SUMMARY = `Adaptive Matrix is a PostCSS 8 plugin that compiles px to responsive
@@ -42,6 +44,12 @@ const DOCS: Entry[] = [
     source: 'docs/getting-started.md',
     title: 'Getting started',
     summary: 'Install it, configure one design width, and get a first page converting.',
+  },
+  {
+    source: 'docs/playground.md',
+    title: 'Playground',
+    summary: 'Compile CSS against any configuration in the browser and read the output.',
+    index: 'only',
   },
   {
     source: 'docs/integration.md',
@@ -95,6 +103,12 @@ const DOCS_ZH: Entry[] = [
     source: 'docs/getting-started.zh-CN.md',
     title: '快速上手',
     summary: '装上去，配一张设计稿的宽度，把第一个页面跑通。',
+  },
+  {
+    source: 'docs/playground.zh-CN.md',
+    title: '在线试验场',
+    summary: '在浏览器里用任意配置编译一段 CSS，直接读输出。',
+    index: 'only',
   },
   {
     source: 'docs/integration.zh-CN.md',
@@ -201,7 +215,9 @@ export function llmsTxt(base: string, chinese: boolean): string {
 }
 
 export function llmsFullTxt(base: string, chinese: boolean): string {
-  const entries = [...(chinese ? DOCS_ZH : DOCS), ...(chinese ? EXTRA_ZH : EXTRA)]
+  const entries = [...(chinese ? DOCS_ZH : DOCS), ...(chinese ? EXTRA_ZH : EXTRA)].filter(
+    (entry) => entry.index !== 'only',
+  )
   const head = chinese
     ? `# Adaptive Matrix — 全部文档\n\n> ${SUMMARY_ZH}\n\n下面是全部文档页面，按阅读顺序拼接。每一节的开头标注了它在仓库中的路径。\n`
     : `# Adaptive Matrix — full documentation\n\n> ${SUMMARY}\n\nEvery documentation page follows, concatenated in reading order. Each section is labelled with its path in the repository.\n`

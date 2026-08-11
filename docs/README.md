@@ -7,6 +7,7 @@ Pick the page that matches what you are doing right now:
 | What you want | Read this |
 | --- | --- |
 | Install it and get a first page working | [Getting started](./getting-started.md) |
+| Try a configuration without installing anything | [Playground](./playground.md) |
 | Wire it into Vite / Nuxt / Webpack / Taro | [Build tool integration](./integration.md) |
 | Check the output after changing configuration | [CLI preview](./cli.md) |
 | The project uses Vant / Element Plus / antd… | [Component libraries](./libraries.md) |

@@ -8,11 +8,19 @@
  */
 import DefaultTheme from 'vitepress/theme'
 import type { Theme } from 'vitepress'
-import { h } from 'vue'
+import { defineAsyncComponent, h } from 'vue'
 import CopyPage from './CopyPage.vue'
 import './custom.css'
 
 export default {
   extends: DefaultTheme,
   Layout: () => h(DefaultTheme.Layout, null, { 'aside-outline-before': () => h(CopyPage) }),
+  enhanceApp({ app }) {
+    // Async so that the compiler and PostCSS are downloaded by the one page
+    // that runs them, rather than by every reader of every page.
+    app.component(
+      'Playground',
+      defineAsyncComponent(() => import('./Playground.vue')),
+    )
+  },
 } satisfies Theme
