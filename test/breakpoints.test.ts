@@ -1,6 +1,6 @@
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import { EVERY_WIDTH, bandOf, narrow } from '../src/core/media.js'
+import { EVERY_WIDTH, allMatch, bandOf, boundaryOf, narrow } from '../src/core/media.js'
 import adaptiveMatrix from '../src/index.js'
 import type { AdaptiveMatrixOptions } from '../src/index.js'
 
@@ -61,9 +61,29 @@ describe('bandOf', () => {
     expect(bandOf('(min-width: 40vw)')).toBeNull()
   })
 
+  it('treats a condition it cannot read as not holding, rather than as holding', () => {
+    // `allMatch` and `boundaryOf` are asked about one condition at a time, by
+    // callers that walk queries `bandOf` has already accepted as a whole. The
+    // safe answer for an unreadable one is still "no": a diagnostic that
+    // assumed an unknown condition were true would report cascades that never
+    // happen, which is worse than reporting none.
+    expect(allMatch(['(orientation: landscape)'], 1200)).toBe(false)
+    expect(allMatch(['(min-width: 1024px)', '(hover: hover)'], 1200)).toBe(false)
+    expect(allMatch(['(min-width: 1024px)', '(max-width: 1600px)'], 1200)).toBe(true)
+    expect(allMatch(['(min-width: 1024px)'], 900)).toBe(false)
+    expect(allMatch(['(max-width: 1024px)'], 900)).toBe(true)
+
+    expect(boundaryOf('(min-width: 64rem)')).toBe(1024)
+    expect(boundaryOf('(max-width: 767px)')).toBe(767)
+    expect(boundaryOf('(orientation: landscape)')).toBeNull()
+  })
+
   it('narrows by conjunction, because nesting is conjunction', () => {
     expect(narrow(EVERY_WIDTH, { lo: 1024, hi: Infinity })).toEqual({ lo: 1024, hi: Infinity })
-    expect(narrow({ lo: 900, hi: Infinity }, { lo: 1100, hi: 1400 })).toEqual({ lo: 1100, hi: 1400 })
+    expect(narrow({ lo: 900, hi: Infinity }, { lo: 1100, hi: 1400 })).toEqual({
+      lo: 1100,
+      hi: 1400,
+    })
   })
 })
 
@@ -166,10 +186,10 @@ describe('the dead-band warning', () => {
   it('asks for a selector when a selector route chose the canvas', async () => {
     // A bare media route would not change this rule: a selector route outranks
     // one, so advice that omitted the selector would change nothing.
-    const { warnings } = await run(
-      '@media (min-width: 1024px) { .van-cell { padding: 40px } }',
-      { ...base, libraries: ['vant'] },
-    )
+    const { warnings } = await run('@media (min-width: 1024px) { .van-cell { padding: 40px } }', {
+      ...base,
+      libraries: ['vant'],
+    })
     expect(warnings[0]).toContain('{ selector: […], media:')
   })
 
@@ -199,9 +219,7 @@ describe('the dead-band warning', () => {
 
 describe('a media route with no usable band', () => {
   const reject = (media: unknown) =>
-    postcss([
-      adaptiveMatrix({ ...base, routes: [{ media: media as never, profile: 'pc' }] }),
-    ])
+    postcss([adaptiveMatrix({ ...base, routes: [{ media: media as never, profile: 'pc' }] })])
 
   it('refuses an empty band, which would silently replace defaultProfile', () => {
     expect(() => reject({})).toThrow(/needs minWidth, maxWidth or both/)

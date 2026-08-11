@@ -15,10 +15,7 @@
  * whole block. None of that is reported anywhere. So the question for each
  * feature is not "does it work" but "how much disappears when it doesn't".
  */
-import {
-  FEATURE_SUPPORT,
-  type CaniuseFeatureId,
-} from './compat-data.js'
+import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
 
 export type CompatFeatureId =
   | 'math-functions'
@@ -112,8 +109,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     id: 'container-queries',
     title: '@container and container-type',
     source: 'css-container-queries',
-    emittedBy:
-      "root.container: true, and any profile whose query is { type: 'container' }",
+    emittedBy: "root.container: true, and any profile whose query is { type: 'container' }",
     failure:
       'A container-type declaration is dropped, which is quiet; an @container block is dropped whole, which is not. A profile that switches on a container query stops switching, so every canvas but the default one disappears.',
     fallback:
@@ -137,8 +133,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     title: 'cqw and cqi',
     source: 'css-container-query-units',
     emittedBy: "unit: 'cqw' or unit: 'cqi'",
-    failure:
-      'The length is unreadable and its declaration is dropped, exactly as with clamp().',
+    failure: 'The length is unreadable and its declaration is dropped, exactly as with clamp().',
     fallback:
       "unit: 'vw'. Container units measure the nearest container instead of the viewport, so this is a real change, not only a compatibility one — but it only matters for components that resize independently of the page.",
     detect: /(?:^|[^\w.-])[\d.]+cq[wihb]|(?:^|[^\w.-])[\d.]+cqm(?:in|ax)/i,
@@ -253,7 +248,10 @@ const BROWSER_ALIASES: Readonly<Record<string, string>> = Object.freeze({
 
 /** Resolves a target name to a data key, or null when nothing is known about it. */
 export function resolveBrowser(name: string): string | null {
-  const key = name.trim().toLowerCase().replace(/[\s-]+/g, '_')
+  const key = name
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
   return BROWSER_ALIASES[key] ?? null
 }
 
@@ -281,10 +279,7 @@ export function compareVersions(a: string, b: string): number {
 }
 
 /** The first version of `browser` supporting `feature`, or null if none does. */
-export function supportedSince(
-  feature: CompatFeature,
-  browser: string,
-): string | null {
+export function supportedSince(feature: CompatFeature, browser: string): string | null {
   const table = FEATURE_SUPPORT[feature.source] as Record<string, string>
   return table[browser] ?? null
 }
@@ -328,9 +323,7 @@ function sampleAt(css: string, index: number, length: number): string {
 }
 
 /** Which of the compiler's features appear in a stylesheet, in table order. */
-export function detectFeatures(
-  css: string,
-): { feature: CompatFeature; sample: string }[] {
+export function detectFeatures(css: string): { feature: CompatFeature; sample: string }[] {
   const found: { feature: CompatFeature; sample: string }[] = []
   for (const feature of COMPAT_FEATURES) {
     if (!feature.detect) continue

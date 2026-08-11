@@ -4,8 +4,7 @@ import { findContinuityIssues } from '../src/core/continuity.js'
 import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 
 const AT = { width: 768, height: 800, rootFontSize: 16 }
-const px = (value: string, width = AT.width) =>
-  evaluateLength(value, { ...AT, width })
+const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
 describe('evaluateLength', () => {
   it('resolves the units the compiler emits', () => {
@@ -58,10 +57,7 @@ describe('evaluateLength', () => {
 
 describe('splitComponents', () => {
   it('keeps bracketed groups whole', () => {
-    expect(splitComponents('clamp(1px, 2vw, 3px) 4px')).toEqual([
-      'clamp(1px, 2vw, 3px)',
-      '4px',
-    ])
+    expect(splitComponents('clamp(1px, 2vw, 3px) 4px')).toEqual(['clamp(1px, 2vw, 3px)', '4px'])
     expect(splitComponents('0 0 8px')).toEqual(['0', '0', '8px'])
   })
 })

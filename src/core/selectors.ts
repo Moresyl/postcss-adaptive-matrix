@@ -30,21 +30,10 @@ const EXCLUDED_ARGUMENTS = new Set(['not', 'has'])
  * subject itself, and whose specificity is the highest branch — except
  * `:where()`, which is always zero.
  */
-const MATCHING_ARGUMENTS = new Set([
-  'is',
-  'where',
-  'matches',
-  '-webkit-any',
-  '-moz-any',
-])
+const MATCHING_ARGUMENTS = new Set(['is', 'where', 'matches', '-webkit-any', '-moz-any'])
 
 /** Pseudo-elements that predate `::` and are still written with one colon. */
-const LEGACY_PSEUDO_ELEMENTS = new Set([
-  'before',
-  'after',
-  'first-line',
-  'first-letter',
-])
+const LEGACY_PSEUDO_ELEMENTS = new Set(['before', 'after', 'first-line', 'first-letter'])
 
 /** CSS specificity, as the `(id, class, type)` triple the cascade compares. */
 export type Specificity = readonly [number, number, number]
@@ -330,10 +319,7 @@ export function specificity(selector: string): Specificity {
       if (pseudo.element) types += 1
       else if (pseudo.name === 'where') {
         // Zero, by definition — the whole point of `:where()`.
-      } else if (
-        MATCHING_ARGUMENTS.has(pseudo.name) ||
-        EXCLUDED_ARGUMENTS.has(pseudo.name)
-      ) {
+      } else if (MATCHING_ARGUMENTS.has(pseudo.name) || EXCLUDED_ARGUMENTS.has(pseudo.name)) {
         const [a, b, c] = highestBranch(inner)
         ids += a
         classes += b

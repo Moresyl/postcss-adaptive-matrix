@@ -92,6 +92,11 @@ export function bandOf(params: string): WidthBand | null {
   if (!conditions) return null
   let { lo, hi } = EVERY_WIDTH
   for (const condition of conditions) {
+    // Unreachable: `widthConditions` returned `null` already if any part
+    // failed this same pattern. Kept so that the two stay independent — if one
+    // is ever loosened, this returns "unknown" rather than a band built from a
+    // condition it could not read.
+    /* v8 ignore next 2 */
     const parsed = parseCondition(condition)
     if (!parsed) return null
     if (parsed.side === 'min') lo = Math.max(lo, parsed.px)

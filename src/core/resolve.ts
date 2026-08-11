@@ -5,7 +5,6 @@ import type {
   ActiveProfile,
   AdaptiveRoute,
   MediaMatcher,
-  Pattern,
   ResolvedAdaptiveMatrixOptions,
 } from './types.js'
 
@@ -50,14 +49,12 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
   const routes = options.routes
     .filter((route) => {
       if (route.profile === false || options.profiles[route.profile]) return true
-      throw new Error(
-        `[postcss-adaptive-matrix] Route targets unknown profile "${route.profile}".`,
-      )
+      throw new Error(`[postcss-adaptive-matrix] Route targets unknown profile "${route.profile}".`)
     })
     .map((route) => ({
       profile: route.profile,
       file: toArray(route.file),
-      selector: toArray(route.selector) as Pattern[],
+      selector: toArray(route.selector),
       property: toArray(route.property).map((prefix) => prefix.toLowerCase()),
       media: toArray(route.media),
     }))

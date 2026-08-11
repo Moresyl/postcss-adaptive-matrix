@@ -1,8 +1,4 @@
-import {
-  LIBRARY_PROFILE_PREFIX,
-  expandLibraries,
-  resolveLibraries,
-} from './libraries.js'
+import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
 import type {
   AdaptiveMatrixOptions,
@@ -13,10 +9,9 @@ import type {
 
 // `libraries` is absent because its default is computed, not a constant: see
 // `resolveLibraries`, which expands an omitted option into every built-in.
-const DEFAULTS: Omit<
-  ResolvedAdaptiveMatrixOptions,
-  'profiles' | 'root' | 'libraries'
-> & { root: false } = {
+const DEFAULTS: Omit<ResolvedAdaptiveMatrixOptions, 'profiles' | 'root' | 'libraries'> & {
+  root: false
+} = {
   defaultProfile: 'app',
   routes: [],
   atRuleName: 'adaptive',
@@ -65,6 +60,7 @@ const OUTPUT_STRATEGIES = new Set(['clamp', 'viewport'])
  * rewritten. The type system cannot help here: `atRuleName` is a plain string,
  * and the configuration is usually a `.mjs` file that nothing type-checks.
  */
+// prettier-ignore
 const RESERVED_AT_RULES = new Set([
   'charset', 'import', 'namespace', 'media', 'supports', 'document', 'page',
   'font-face', 'font-feature-values', 'font-palette-values', 'keyframes',
@@ -102,9 +98,7 @@ function validateUnitAndStrategy(
 
 function validateProfile(name: string, profile: AdaptiveProfile): void {
   if (!profile || typeof profile !== 'object') {
-    throw new TypeError(
-      `[postcss-adaptive-matrix] Profile "${name}" must be an object.`,
-    )
+    throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" must be an object.`)
   }
   const { minWidth, maxWidth } = profile.fluid ?? {}
   if (
@@ -134,10 +128,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
       `[postcss-adaptive-matrix] Profile "${name}" requires a positive textAnchorWidth.`,
     )
   }
-  if (
-    profile.fontFluidity != null &&
-    (profile.fontFluidity < 0 || profile.fontFluidity > 1)
-  ) {
+  if (profile.fontFluidity != null && (profile.fontFluidity < 0 || profile.fontFluidity > 1)) {
     throw new RangeError(
       `[postcss-adaptive-matrix] Profile "${name}" fontFluidity must be between 0 and 1.`,
     )
@@ -169,9 +160,7 @@ function normaliseUnits(input: string | readonly string[]): string[] {
   return units.sort((a, b) => b.length - a.length)
 }
 
-export function resolveOptions(
-  input: AdaptiveMatrixOptions = {},
-): ResolvedAdaptiveMatrixOptions {
+export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdaptiveMatrixOptions {
   const preset = appPcPreset()
   const authored = input.profiles ?? preset.profiles!
   const libraries = resolveLibraries(input.libraries)
@@ -190,14 +179,10 @@ export function resolveOptions(
     )
   }
   if (!Number.isInteger(options.precision) || options.precision < 0 || options.precision > 12) {
-    throw new RangeError(
-      '[postcss-adaptive-matrix] precision must be an integer from 0 to 12.',
-    )
+    throw new RangeError('[postcss-adaptive-matrix] precision must be an integer from 0 to 12.')
   }
   if (options.fontFluidity < 0 || options.fontFluidity > 1) {
-    throw new RangeError(
-      '[postcss-adaptive-matrix] fontFluidity must be between 0 and 1.',
-    )
+    throw new RangeError('[postcss-adaptive-matrix] fontFluidity must be between 0 and 1.')
   }
   if (!options.propList.length) {
     throw new Error('[postcss-adaptive-matrix] propList cannot be empty.')
@@ -296,7 +281,10 @@ export function resolveOptions(
             `An empty band matches every rule, which is a slower way of changing defaultProfile.`,
         )
       }
-      for (const [field, bound] of [['minWidth', minWidth], ['maxWidth', maxWidth]] as const) {
+      for (const [field, bound] of [
+        ['minWidth', minWidth],
+        ['maxWidth', maxWidth],
+      ] as const) {
         if (bound !== undefined && (!Number.isFinite(bound) || bound < 0)) {
           throw new RangeError(
             `[postcss-adaptive-matrix] Route media.${field} must be a width in pixels, not ${String(bound)}.`,

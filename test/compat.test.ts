@@ -27,10 +27,7 @@ function caseDirs(): string[] {
   return dirs
 }
 
-async function compile(
-  css: string,
-  options: AdaptiveMatrixOptions = {},
-): Promise<string> {
+async function compile(css: string, options: AdaptiveMatrixOptions = {}): Promise<string> {
   const result = await postcss([adaptiveMatrix(options)]).process(css, {
     from: '/project/src/app.css',
   })

@@ -18,9 +18,7 @@ function resettableTest(pattern: RegExp, value: string): boolean {
 }
 
 export function matchesPattern(pattern: Pattern, value: string): boolean {
-  return typeof pattern === 'string'
-    ? value.includes(pattern)
-    : resettableTest(pattern, value)
+  return typeof pattern === 'string' ? value.includes(pattern) : resettableTest(pattern, value)
 }
 
 export function matchesAnyPattern(
@@ -57,9 +55,7 @@ function globToRegExp(glob: string): RegExp {
  */
 export function createPropertyMatcher(propList: readonly string[]) {
   const includes = propList.filter((item) => !item.startsWith('!'))
-  const excludes = propList
-    .filter((item) => item.startsWith('!'))
-    .map((item) => item.slice(1))
+  const excludes = propList.filter((item) => item.startsWith('!')).map((item) => item.slice(1))
   const includeRegex = includes.map(globToRegExp)
   const excludeRegex = excludes.map(globToRegExp)
 

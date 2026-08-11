@@ -244,6 +244,8 @@ export function llmsFullTxt(base: string, chinese: boolean): string {
   const head = chinese
     ? `# Adaptive Matrix — 全部文档\n\n> ${SUMMARY_ZH}\n\n下面是全部文档页面，按阅读顺序拼接。每一节的开头标注了它在仓库中的路径。\n`
     : `# Adaptive Matrix — full documentation\n\n> ${SUMMARY}\n\nEvery documentation page follows, concatenated in reading order. Each section is labelled with its path in the repository.\n`
-  const bodies = entries.map((entry) => `\n---\n\n<!-- source: ${entry.source} -->\n\n${read(entry.source)}\n`)
+  const bodies = entries.map(
+    (entry) => `\n---\n\n<!-- source: ${entry.source} -->\n\n${read(entry.source)}\n`,
+  )
   return [head, ...bodies].join('\n')
 }

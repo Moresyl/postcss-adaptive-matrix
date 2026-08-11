@@ -56,9 +56,7 @@ export function componentLibrary(ruleCount: number): string {
   for (let index = 0; index < ruleCount; index += 1) {
     const body = [...lengthDeclarations(index), ...inertDeclarations(index)]
     rules.push(`.ui-component-${index} {\n  ${body.join('\n  ')}\n}`)
-    rules.push(
-      `.ui-component-${index}__label {\n  ${inertDeclarations(index).join('\n  ')}\n}`,
-    )
+    rules.push(`.ui-component-${index}__label {\n  ${inertDeclarations(index).join('\n  ')}\n}`)
   }
   return rules.join('\n\n')
 }

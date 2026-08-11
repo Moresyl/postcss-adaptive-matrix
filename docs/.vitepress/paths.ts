@@ -106,11 +106,12 @@ export function siteHref(href: string, source: string): string | null {
   const resolved = path.posix.normalize(path.posix.join(from, target))
   if (resolved.startsWith('..')) return null
 
-  const page = target.endsWith('/') || !path.posix.extname(resolved)
-    ? indexIn(resolved, source.endsWith(ZH))
-    : resolved.endsWith('.md')
-      ? resolved
-      : null
+  const page =
+    target.endsWith('/') || !path.posix.extname(resolved)
+      ? indexIn(resolved, source.endsWith(ZH))
+      : resolved.endsWith('.md')
+        ? resolved
+        : null
   if (!page || !isPublished(page)) return null
   if (!existsSync(path.resolve(SRC_DIR, page))) return null
 

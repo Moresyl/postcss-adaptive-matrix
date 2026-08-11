@@ -12,11 +12,7 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
-import {
-  type CompatAudit,
-  auditCompatibility,
-  resolveBrowser,
-} from './core/compat.js'
+import { type CompatAudit, auditCompatibility, resolveBrowser } from './core/compat.js'
 import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
@@ -30,7 +26,8 @@ adaptive-matrix — preview what postcss-adaptive-matrix does to a stylesheet
   cat app.css | adaptive-matrix --from src/app.css
 
 Options
-  -c, --config <path>  module default-exporting the plugin options
+  -c, --config <path>  module default-exporting the plugin options, or a .json
+                       file of options (add "$schema" for editor completion)
       --from <path>    treat the input as if it lived here; file-based routes,
                        include/exclude and library paths all key off this
       --profile <name> override defaultProfile
@@ -177,8 +174,38 @@ function parseArgs(argv: string[]): CliArgs {
   return args
 }
 
+/**
+ * A `.json` config, read as a file rather than imported.
+ *
+ * `import … with { type: 'json' }` would be the tidier spelling, but import
+ * attributes are a syntax error on Node 18, which this package still supports —
+ * and a syntax error in the CLI entry point fails before the version check
+ * could explain itself. Reading and parsing costs one line and works
+ * everywhere.
+ *
+ * `$schema` is dropped on the way through. It is how an editor knows to offer
+ * completion and range checking on the file, so a reader is encouraged to write
+ * it; it is not an option, and passing it on would leave a stray key in the
+ * resolved configuration.
+ */
+async function loadJsonConfig(path: string, absolute: string): Promise<AdaptiveMatrixOptions> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(await readFile(absolute, 'utf8'))
+  } catch (cause) {
+    const detail = cause instanceof Error ? cause.message : String(cause)
+    throw new CliError(`Could not load config ${path}: ${detail}`)
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new CliError(`Config ${path} must contain a JSON object of options.`)
+  }
+  const { $schema: _schema, ...options } = parsed as Record<string, unknown>
+  return options
+}
+
 async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
   const absolute = resolve(path)
+  if (absolute.endsWith('.json')) return loadJsonConfig(path, absolute)
   let loaded: unknown
   try {
     loaded = await import(pathToFileURL(absolute).href)
@@ -210,7 +237,7 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
           : '.'),
     )
   }
-  return options as AdaptiveMatrixOptions
+  return options
 }
 
 async function readStdin(): Promise<string> {
@@ -319,9 +346,7 @@ function paint(color: boolean) {
 function auditLines(audit: CompatAudit, c: ReturnType<typeof paint>): string[] {
   const lines: string[] = []
   for (const name of audit.unknownBrowsers) {
-    lines.push(
-      `  ${c.yellow('warning')} no support data for target "${name}" — it was not checked`,
-    )
+    lines.push(`  ${c.yellow('warning')} no support data for target "${name}" — it was not checked`)
   }
   for (const { feature, sample, shortfalls } of audit.findings) {
     const who = shortfalls
@@ -337,9 +362,7 @@ function auditLines(audit: CompatAudit, c: ReturnType<typeof paint>): string[] {
   }
   if (!audit.findings.length && !audit.unknownBrowsers.length) {
     const covered = audit.satisfied.length
-    lines.push(
-      c.dim(`  every target reads all ${covered} CSS features in this output`),
-    )
+    lines.push(c.dim(`  every target reads all ${covered} CSS features in this output`))
   }
   return lines
 }
@@ -405,10 +428,7 @@ function report(
   if (audit) lines.push(...auditLines(audit, c))
 
   const unchanged = changes.length - converted.length
-  lines.push(
-    c.dim(`  ${converted.length} converted, ${unchanged} left as authored`),
-    '',
-  )
+  lines.push(c.dim(`  ${converted.length} converted, ${unchanged} left as authored`), '')
   return { converted: converted.length, lines }
 }
 
@@ -507,8 +527,7 @@ export async function runCli(argv: string[]): Promise<number> {
 }
 
 const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (invokedDirectly) {
   // `.then` rather than top-level `await`: this file is also imported by the

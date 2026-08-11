@@ -17,9 +17,7 @@ import type {
  * 768px" and then compiling everything past 768px against the phone design
  * file was the preset disagreeing with itself.
  */
-export function appPcPreset(
-  options: AppPcPresetOptions = {},
-): AdaptiveMatrixOptions {
+export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOptions {
   const breakpoint = options.breakpoint ?? 768
   const appFluidMin = options.appFluidMin ?? 320
   const appFluidMax = options.appFluidMax ?? 480
@@ -147,9 +145,7 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
       ? {
           textProperties: [
             ...base.textProperties,
-            ...THEME_TEXT_PROPERTIES.filter(
-              (entry) => !base.textProperties!.includes(entry),
-            ),
+            ...THEME_TEXT_PROPERTIES.filter((entry) => !base.textProperties!.includes(entry)),
           ],
         }
       : {}),

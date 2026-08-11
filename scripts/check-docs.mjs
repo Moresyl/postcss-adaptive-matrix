@@ -21,14 +21,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Directories that hold no authored documentation. */
-const SKIP = new Set([
-  'node_modules',
-  'dist',
-  'coverage',
-  '.git',
-  '.firecrawl',
-  '.libcheck',
-])
+const SKIP = new Set(['node_modules', 'dist', 'coverage', '.git', '.firecrawl', '.libcheck'])
 
 /** The suffix that marks the Chinese half of a pair. */
 const ZH = '.zh-CN.md'
@@ -179,10 +172,7 @@ for (const file of files) {
     continue
   }
   const expected = counterpart.split(sep).pop()
-  const head = withoutFrontMatter(readFileSync(file, 'utf8'))
-    .split(/\r?\n/)
-    .slice(0, 20)
-    .join('\n')
+  const head = withoutFrontMatter(readFileSync(file, 'utf8')).split(/\r?\n/).slice(0, 20).join('\n')
   if (!head.includes(expected)) {
     report(file, `does not link to ${expected} near the top`)
   }

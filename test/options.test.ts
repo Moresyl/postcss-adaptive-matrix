@@ -21,6 +21,42 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ propList: [] })).toThrow('propList')
   })
 
+  it('names the profile in every complaint about one', () => {
+    // A config with six canvases in it produces six chances to get this wrong,
+    // and "requires a positive designWidth" without a name is a search rather
+    // than a fix. Each of these is a separate check in `validateProfile`, and
+    // each one has to carry the name through.
+    const fluid = { minWidth: 320, maxWidth: 480 }
+    expect(() => resolveOptions({ profiles: { app: 375 as never } })).toThrow(
+      'Profile "app" must be an object',
+    )
+    expect(() => resolveOptions({ profiles: { app: { designWidth: -375, fluid } } })).toThrow(
+      'Profile "app" requires a positive designWidth',
+    )
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid, textAnchorWidth: 0 } } }),
+    ).toThrow('Profile "app" requires a positive textAnchorWidth')
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid, fontFluidity: 1.5 } } }),
+    ).toThrow('Profile "app" fontFluidity must be between 0 and 1')
+  })
+
+  it('accepts a design width computed per file, since that is not a number to range-check', () => {
+    // `designWidth` may be a function of the file being compiled, so the
+    // positivity check has to step aside rather than reject the callback.
+    expect(() =>
+      resolveOptions({
+        profiles: {
+          app: {
+            designWidth: () => 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            textAnchorWidth: () => 375,
+          },
+        },
+      }),
+    ).not.toThrow()
+  })
+
   it('rejects a unit that is not a scaling unit', () => {
     // The one option where a typo yields *invalid* CSS rather than wrong CSS:
     // `4.267vm` is not a length, so the browser drops the declaration and the
@@ -30,7 +66,9 @@ describe('configuration validation', () => {
     )
     expect(() =>
       resolveOptions({
-        profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 }, unit: 'px' as never } },
+        profiles: {
+          app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 }, unit: 'px' as never },
+        },
       }),
     ).toThrow(/Profile "app" unit "px"/)
     expect(() => resolveOptions({ unit: 'cqi' })).not.toThrow()
@@ -83,8 +121,12 @@ describe('configuration validation', () => {
   it('rejects an empty root.selector, which compiles to an invalid :where()', () => {
     // `:where()` with nothing inside is a parse error, so the whole foundation
     // is discarded — safe-area variables and root cap included.
-    expect(() => resolveOptions({ root: { selector: '' } })).toThrow(/root.selector cannot be empty/)
-    expect(() => resolveOptions({ root: { selector: '   ' } })).toThrow(/root.selector cannot be empty/)
+    expect(() => resolveOptions({ root: { selector: '' } })).toThrow(
+      /root.selector cannot be empty/,
+    )
+    expect(() => resolveOptions({ root: { selector: '   ' } })).toThrow(
+      /root.selector cannot be empty/,
+    )
     expect(() => resolveOptions({ root: { selector: '#app' } })).not.toThrow()
   })
 
@@ -123,9 +165,9 @@ describe('configuration validation', () => {
 
     // A function is only knowable per file, so it is checked where it is called.
     const options = withAnchor(() => 0)
-    expect(() =>
-      convertLength(10, 'font-size', 'a', options.profiles.a!, options, ''),
-    ).toThrow('invalid textAnchorWidth')
+    expect(() => convertLength(10, 'font-size', 'a', options.profiles.a!, options, '')).toThrow(
+      'invalid textAnchorWidth',
+    )
   })
 })
 
@@ -141,7 +183,9 @@ describe('matchers and math helpers', () => {
     const global = /src/g
     expect(matchesPattern(global, '/src/a.css')).toBe(true)
     expect(matchesPattern(global, '/src/b.css')).toBe(true)
-    expect(matchesFile(['vendor', (file) => file.endsWith('.module.css')], '/a.module.css')).toBe(true)
+    expect(matchesFile(['vendor', (file) => file.endsWith('.module.css')], '/a.module.css')).toBe(
+      true,
+    )
     expect(matchesFile(undefined, '/src/a.css')).toBe(false)
   })
 

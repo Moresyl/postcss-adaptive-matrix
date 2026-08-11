@@ -139,22 +139,72 @@ describe('specificity', () => {
 
 describe('splitIsSpecificityNeutral', () => {
   it('is always true for :where(), which contributes nothing', () => {
-    expect(
-      splitIsSpecificityNeutral({ pseudo: 'where', parts: ['#main', '.hero'] }),
-    ).toBe(true)
+    expect(splitIsSpecificityNeutral({ pseudo: 'where', parts: ['#main', '.hero'] })).toBe(true)
   })
 
   it('is true when every branch already weighs the same', () => {
-    expect(
-      splitIsSpecificityNeutral({ pseudo: 'is', parts: ['.van-cell', '.page-hero'] }),
-    ).toBe(true)
+    expect(splitIsSpecificityNeutral({ pseudo: 'is', parts: ['.van-cell', '.page-hero'] })).toBe(
+      true,
+    )
   })
 
   it('is false when the branches differ, because the lower one would drop', () => {
     // `:is(#main, .hero)` matches `.hero` at 1-0-0 today; split out on its own
     // it matches at 0-1-0 and can start losing to rules it used to beat.
-    expect(
-      splitIsSpecificityNeutral({ pseudo: 'is', parts: ['#main', '.hero'] }),
-    ).toBe(false)
+    expect(splitIsSpecificityNeutral({ pseudo: 'is', parts: ['#main', '.hero'] })).toBe(false)
+  })
+})
+
+/**
+ * Selectors that are malformed, or valid but awkward.
+ *
+ * Every function here scans text a stylesheet author wrote, and PostCSS hands
+ * over whatever that was — an unterminated quote and a stray bracket included.
+ * The requirement is not that these produce a good answer; it is that they
+ * produce an answer at all, quickly, instead of running off the end of the
+ * string or looping. The specificity cases below are also the ones where a
+ * naive scanner is *wrong* rather than merely slow: a `)` inside a string
+ * closes a paren it never opened.
+ */
+describe('scanning text nobody validated', () => {
+  it('does not let a bracket inside a string end the argument early', () => {
+    // Counting every `)` would close `:not(` at the one in `"x)y"`, leaving
+    // `"x` as the whole argument and losing the `.a` that decides the weight.
+    expect(specificity(':not("x)y", .a)')).toEqual([0, 1, 0])
+    expect(specificity(':is("(", #main)')).toEqual([1, 0, 0])
+    expect(splitSelectorList(':not("a,b"), .c')).toEqual([':not("a,b")', '.c'])
+    expect(nestedSelectorLists(':is("a,b", .c)')[0]).toEqual({
+      pseudo: 'is',
+      parts: ['"a,b"', '.c'],
+    })
+  })
+
+  it('reads a backslash inside a string as escaping the next character', () => {
+    // The closing quote of `[title="he\"llo"]` is the second one, not the
+    // first; stopping at the first leaves `llo"]` to be scanned as selector.
+    expect(specificity('[title="he\\"llo"] .a')).toEqual([0, 2, 0])
+    expect(splitSelectorList('[title="a\\",b"], .c')).toEqual(['[title="a\\",b"]', '.c'])
+  })
+
+  it('stops at the end of the string when a quote or bracket is never closed', () => {
+    expect(specificity('.a[title="abc')).toEqual([0, 2, 0])
+    expect(specificity('.a[title=abc')).toEqual([0, 2, 0])
+    // The unclosed `:not(` contributes nothing, and what follows is scanned as
+    // ordinary selector text — so the `.a` inside it is still counted once.
+    expect(specificity(':not(.a')).toEqual([0, 1, 0])
+    expect(splitSelectorList('.a[title="abc, .b')).toEqual(['.a[title="abc, .b'])
+  })
+
+  it('counts a colon that names nothing as nothing', () => {
+    expect(specificity('.a:')).toEqual([0, 1, 0])
+    expect(specificity('.a::')).toEqual([0, 1, 0])
+    expect(specificity('.a: .b')).toEqual([0, 2, 0])
+  })
+
+  it('leaves a string in a routed selector exactly as it was written', () => {
+    // The recursion into `:is()` re-scans its argument, so a string that holds
+    // a colon is the one place the rewrite could corrupt what it copies.
+    expect(routingSelector(':is("a:b")')).toBe(':is("a:b")')
+    expect(routingSelector('.a[data-x=":hover"]:not(.b)')).toBe('.a[data-x=":hover"]:not()')
   })
 })

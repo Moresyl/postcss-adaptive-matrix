@@ -44,16 +44,11 @@ function unitPattern(units: string[]): RegExp {
   const key = units.join('|')
   const cached = UNIT_PATTERNS.get(key)
   if (cached) return cached
-  const escaped = units
-    .map((unit) => unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|')
+  const escaped = units.map((unit) => unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
   // The unit is captured, not just matched: reading several units at once means
   // each match has to say which one it was, both to know its pixel size and to
   // put it back unchanged when a guard declines the conversion.
-  const pattern = new RegExp(
-    `(^|[^a-zA-Z0-9_.-])(${NUMBER})(${escaped})(?![a-zA-Z0-9_-])`,
-    'gi',
-  )
+  const pattern = new RegExp(`(^|[^a-zA-Z0-9_.-])(${NUMBER})(${escaped})(?![a-zA-Z0-9_-])`, 'gi')
   UNIT_PATTERNS.set(key, pattern)
   return pattern
 }
@@ -240,9 +235,7 @@ function convertResolvedLength(
     return `${format((pixels * 100) / designWidth, options.precision)}${unit}`
   }
 
-  const fluidity = accessibleText
-    ? (profile.fontFluidity ?? options.fontFluidity)
-    : 1
+  const fluidity = accessibleText ? (profile.fontFluidity ?? options.fontFluidity) : 1
 
   // Restated in the anchor canvas's units, after which the anchor *is* the
   // design width and the two formulas below are the ordinary ones. The fluid
@@ -294,9 +287,7 @@ export function convertLength(
 }
 
 function shouldSkipFunction(node: Node): boolean {
-  return (
-    node.type === 'function' && SKIPPED_FUNCTIONS.has(node.value.toLowerCase())
-  )
+  return node.type === 'function' && SKIPPED_FUNCTIONS.has(node.value.toLowerCase())
 }
 
 /**
@@ -360,7 +351,7 @@ function convertResolvedValue(
     )
     return undefined
   })
-  return parsed.toString()
+  return valueParser.stringify(parsed.nodes)
 }
 
 export function convertValue(

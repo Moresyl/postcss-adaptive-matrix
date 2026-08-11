@@ -13,6 +13,13 @@
  *     one file repeatedly would exaggerate it.
  *
  *   npm run build && npm run bench
+ *
+ * With `--check` it is also a gate. The budgets are ratios against PostCSS's
+ * own parse-and-print time rather than milliseconds, because a CI runner's
+ * absolute speed is not knowable in advance and a millisecond threshold would
+ * either fail on a slow morning or never fail at all. Dividing by the cost of
+ * the work PostCSS does regardless cancels the machine out; what is left is
+ * this project's share of it, which is the thing a regression would change.
  */
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -76,9 +83,7 @@ function intoFiles(css: string, count: number): BenchFile[] {
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
   const middle = sorted.length >> 1
-  return sorted.length % 2
-    ? sorted[middle]!
-    : (sorted[middle - 1]! + sorted[middle]!) / 2
+  return sorted.length % 2 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2
 }
 
 async function measure(run: () => Promise<unknown>): Promise<number> {
@@ -105,9 +110,7 @@ function pass(plugins: AcceptedPlugin[], files: BenchFile[]): () => Promise<numb
   }
 }
 
-console.log(
-  `node ${process.version} · ${ITERATIONS} iterations (median), ${WARMUP} warmup`,
-)
+console.log(`node ${process.version} · ${ITERATIONS} iterations (median), ${WARMUP} warmup`)
 console.log(`${FILES_PER_CORPUS} files per corpus, one plugin instance per pass\n`)
 
 /**
@@ -117,6 +120,22 @@ console.log(`${FILES_PER_CORPUS} files per corpus, one plugin instance per pass\
  */
 const ALL_LIBRARIES = [...dist.BUILT_IN_LIBRARIES]
 
+/**
+ * Ceilings on this project's cost, as multiples of parse+print.
+ *
+ * Measured worst case at the time of writing is 0.73 and 0.34; the headroom is
+ * for a loaded runner, not for a regression. A change that doubles either
+ * number lands above the budget and fails the build.
+ */
+const BUDGET = { compiler: 1.5, libraries: 1.0 }
+
+interface Ratio {
+  corpus: string
+  compiler: number
+  libraries: number
+}
+
+const ratios: Ratio[] = []
 const rows: Record<string, string | number>[] = []
 for (const corpus of CORPORA) {
   const files = intoFiles(corpus.css, FILES_PER_CORPUS)
@@ -126,11 +145,14 @@ for (const corpus of CORPORA) {
   // `libraries: false` isolates unit conversion; the next pass adds them back,
   // so the difference is the library cost rather than a guess at it.
   const total = await measure(pass([adaptiveMatrix({ libraries: false })], files))
-  const withLibraries = await measure(
-    pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files),
-  )
+  const withLibraries = await measure(pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files))
   const compiler = total - parseOnly
 
+  ratios.push({
+    corpus: corpus.name,
+    compiler: compiler / parseOnly,
+    libraries: (withLibraries - total) / parseOnly,
+  })
   rows.push({
     corpus: corpus.name,
     files: files.length,
@@ -145,6 +167,30 @@ for (const corpus of CORPORA) {
 }
 
 console.table(rows)
-console.log(
-  '\n"compiler" is total minus parse+print — the only part this project controls.',
-)
+console.log('\n"compiler" is total minus parse+print — the only part this project controls.')
+
+if (process.argv.includes('--check')) {
+  const over: string[] = []
+  for (const ratio of ratios) {
+    for (const [name, budget] of Object.entries(BUDGET)) {
+      const measured = ratio[name as keyof typeof BUDGET]
+      if (measured > budget) {
+        over.push(`${ratio.corpus}: ${name} ${measured.toFixed(2)}× parse+print, budget ${budget}×`)
+      }
+    }
+  }
+  console.log(
+    `\nbudget: compiler ≤ ${BUDGET.compiler}× parse+print, libraries ≤ ${BUDGET.libraries}×`,
+  )
+  for (const ratio of ratios) {
+    console.log(
+      `  ${ratio.corpus}: compiler ${ratio.compiler.toFixed(2)}×, ` +
+        `libraries ${ratio.libraries.toFixed(2)}×`,
+    )
+  }
+  if (over.length) {
+    console.error(`\nover budget:\n${over.map((line) => `  ${line}`).join('\n')}`)
+    process.exit(1)
+  }
+  console.log('\nwithin budget.')
+}

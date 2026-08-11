@@ -65,10 +65,7 @@ describeBuilt('the built package', () => {
     // rejected with "has no call signatures" against code that runs. Code and
     // declarations disagreeing is worse than either being wrong on its own,
     // because the editor is the half people believe.
-    const declarations = readFileSync(
-      new URL('../dist/index.d.cts', import.meta.url),
-      'utf8',
-    )
+    const declarations = readFileSync(new URL('../dist/index.d.cts', import.meta.url), 'utf8')
 
     expect(declarations).toContain('export = _cjs')
     expect(declarations).toContain('declare const _cjs: typeof adaptiveMatrix &')

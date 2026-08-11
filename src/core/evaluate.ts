@@ -41,7 +41,7 @@ function tokenize(input: string): Token[] | null {
       continue
     }
     if (rest[0] === '(' || rest[0] === ')') {
-      tokens.push({ kind: 'paren', value: rest[0] as '(' | ')' })
+      tokens.push({ kind: 'paren', value: rest[0] })
       rest = rest.slice(1)
       continue
     }
@@ -67,7 +67,7 @@ function tokenize(input: string): Token[] | null {
       continue
     }
     if (rest[0] === '+' || rest[0] === '-' || rest[0] === '*' || rest[0] === '/') {
-      tokens.push({ kind: 'op', value: rest[0] as '+' | '-' | '*' | '/' })
+      tokens.push({ kind: 'op', value: rest[0] })
       rest = rest.slice(1)
       continue
     }
@@ -223,9 +223,7 @@ class Parser {
         // `clamp(a, b, c)` is `max(a, min(b, c))` — which, when the author has
         // written a minimum above the maximum, resolves to the minimum. Mirror
         // the spec rather than the intent.
-        return args.length === 3
-          ? Math.max(args[0]!, Math.min(args[1]!, args[2]!))
-          : null
+        return args.length === 3 ? Math.max(args[0]!, Math.min(args[1]!, args[2]!)) : null
       default:
         return null
     }
@@ -236,10 +234,7 @@ class Parser {
  * Resolves a single CSS length component to pixels, or `null` when any part of
  * it is outside the supported subset.
  */
-export function evaluateLength(
-  value: string,
-  context: EvaluationContext,
-): number | null {
+export function evaluateLength(value: string, context: EvaluationContext): number | null {
   const tokens = tokenize(value)
   if (!tokens?.length) return null
   const result = new Parser(tokens, context).parse()

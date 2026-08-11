@@ -22,14 +22,14 @@ function capture(): void {
   err = ''
   const stdout = process.stdout.write.bind(process.stdout)
   const stderr = process.stderr.write.bind(process.stderr)
-  process.stdout.write = ((chunk: string) => {
+  process.stdout.write = (chunk: string) => {
     out += chunk
     return true
-  }) as typeof process.stdout.write
-  process.stderr.write = ((chunk: string) => {
+  }
+  process.stderr.write = (chunk: string) => {
     err += chunk
     return true
-  }) as typeof process.stderr.write
+  }
   restore.push(() => {
     process.stdout.write = stdout
     process.stderr.write = stderr
@@ -170,6 +170,48 @@ describe('runCli', () => {
     expect(out).toContain('10vw')
   })
 
+  it('reads options from a --config JSON file', async () => {
+    // A JSON config is what the published schema is for: an editor that knows
+    // the schema completes the option names and flags the out-of-range ones.
+    // `$schema` is how it knows, so it has to be accepted and then ignored.
+    const config = join(directory, 'adaptive.config.json')
+    await writeFile(
+      config,
+      JSON.stringify({
+        $schema: 'https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json',
+        defaultProfile: 'tv',
+        profiles: { tv: { designWidth: 1920, fluid: { minWidth: 1024, maxWidth: 1920 } } },
+      }),
+      'utf8',
+    )
+    const path = await file('app.css', '.page { padding: 192px }')
+
+    expect(await runCli([path, '--no-color', '-c', config])).toBe(0)
+    expect(out).toContain('tv (default)')
+    expect(out).toContain('10vw')
+  })
+
+  it('fails on malformed JSON without a stack trace', async () => {
+    const config = join(directory, 'broken.config.json')
+    await writeFile(config, '{ "defaultProfile": "app", }', 'utf8')
+
+    expect(await runCli(['-c', config, '--css'])).toBe(1)
+    expect(err).toContain('Could not load config')
+    // The position the parser stopped at, which is the only useful part of a
+    // JSON syntax error. `at ` on its own would match that message, so the
+    // check is for a stack frame: indented, on a line of its own.
+    expect(err).toContain('position 27')
+    expect(/^\s+at /m.test(err)).toBe(false)
+  })
+
+  it('fails on a JSON config that is not an object of options', async () => {
+    const config = join(directory, 'array.config.json')
+    await writeFile(config, '[{ "defaultProfile": "app" }]', 'utf8')
+
+    expect(await runCli(['-c', config, '--css'])).toBe(1)
+    expect(err).toContain('must contain a JSON object of options')
+  })
+
   it('routes by path, taking the path from --from when given', async () => {
     // Without `--from` there is nothing to preview file routing against: piped
     // CSS has no path, and a scratch file is never on the route it is meant to
@@ -190,6 +232,42 @@ describe('runCli', () => {
     expect(out).not.toBe(app)
     // 144 / 1440 on the pc canvas; the app canvas would give 38.4vw.
     expect(out).toContain('10vw')
+  })
+
+  it('reads piped CSS, taking its path from --from', async () => {
+    // The documented pipe: `cat app.css | adaptive-matrix --from src/app.css`.
+    // Without a stdin stand-in nothing exercises it, and a preview command that
+    // only works on named files is half a command.
+    const stdin = process.stdin
+    Object.defineProperty(process, 'stdin', {
+      configurable: true,
+      // A plain generator: `for await` accepts a synchronous iterable, and the
+      // point of the stand-in is that the input arrives in more than one chunk.
+      value: (function* pipe() {
+        yield Buffer.from('.page { padding: ')
+        yield Buffer.from('16px }')
+      })(),
+    })
+    restore.push(() =>
+      Object.defineProperty(process, 'stdin', { configurable: true, value: stdin }),
+    )
+
+    expect(await runCli(['--no-color', '--from', '/project/src/app.css'])).toBe(0)
+    expect(out).toContain('.page')
+    expect(out).toContain('clamp(')
+    expect(out).toContain('1 converted')
+  })
+
+  it('marks a declaration the compiler added rather than changed', async () => {
+    const config = join(directory, 'preserve.config.mjs')
+    await writeFile(config, 'export default { preserveOriginal: true }', 'utf8')
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--no-color', '--all', '-c', config])).toBe(0)
+    // The fallback keeps the authored `16px` and the compiled value is the
+    // addition, so the diff has to show one of the two as new rather than
+    // pairing them up as a change.
+    expect(out).toContain('+ ')
   })
 
   it('totals across multiple files', async () => {
@@ -221,6 +299,12 @@ describe('runCli', () => {
     expect(await runCli([join(directory, 'missing.css'), '--no-color'])).toBe(1)
     expect(err).toContain('missing.css')
     expect(err).not.toContain('at ')
+  })
+
+  it('fails on a config that cannot be loaded at all', async () => {
+    expect(await runCli(['-c', join(directory, 'absent.config.mjs'), '--css'])).toBe(1)
+    expect(err).toContain('Could not load config')
+    expect(err).toContain('absent.config.mjs')
   })
 
   it('fails on a config that does not export an object', async () => {
@@ -316,6 +400,20 @@ describe('runCli --targets', () => {
 
     expect(await runCli([path, '--targets', 'netscape 4'])).toBe(1)
     expect(err).toContain('No support data for "netscape"')
+  })
+
+  it('ignores the empty entry a trailing comma leaves behind', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--no-color', '--targets', 'ios_saf 17, chrome 120,'])).toBe(0)
+    expect(out).toContain('every target reads all')
+  })
+
+  it('refuses a target list that names nothing at all', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--targets', ' , '])).toBe(1)
+    expect(err).toContain('needs at least one browser and version')
   })
 
   it('refuses a target with no version', async () => {

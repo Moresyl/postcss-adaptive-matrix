@@ -118,21 +118,16 @@ function download(npmName: string): string {
   const directory = join(SCRATCH, npmName.replace(/[@/]/g, '_'))
   if (existsSync(join(directory, 'package'))) return join(directory, 'package')
   mkdirSync(directory, { recursive: true })
-  const output = execFileSync(
-    NPM,
-    ['pack', npmName, '--silent', '--pack-destination', directory],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], shell: true },
-  )
+  const output = execFileSync(NPM, ['pack', npmName, '--silent', '--pack-destination', directory], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: true,
+  })
   const tarball = output.trim().split('\n').at(-1)!
   // bsdtar — which is what `tar` is on Windows — reads `\` as an escape, so a
   // path straight from `join` fails with "Cannot open" on this platform only.
   const slashed = (path: string): string => path.replaceAll('\\', '/')
-  execFileSync('tar', [
-    '-xzf',
-    slashed(join(directory, tarball)),
-    '-C',
-    slashed(directory),
-  ])
+  execFileSync('tar', ['-xzf', slashed(join(directory, tarball)), '-C', slashed(directory)])
   return join(directory, 'package')
 }
 
@@ -171,7 +166,14 @@ for (const target of TARGETS) {
   try {
     packaged = download(target.npm)
   } catch (error) {
-    rows.push([target.library, `DOWNLOAD FAILED: ${(error as Error).message.split('\n')[0]}`, '—', '—', '—', '—'])
+    rows.push([
+      target.library,
+      `DOWNLOAD FAILED: ${(error as Error).message.split('\n')[0]}`,
+      '—',
+      '—',
+      '—',
+      '—',
+    ])
     problems += 1
     continue
   }
@@ -219,11 +221,7 @@ for (const target of TARGETS) {
   // Automatic mode, not `libraries: [name]`: it is what a user gets by default,
   // and it is where one library shadowing another would show up.
   const resolver = createProfileResolver(resolveOptions({}))
-  const routed = resolver.forSelector(
-    resolver.forFile(from),
-    `.${target.prefix}button`,
-    from,
-  )
+  const routed = resolver.forSelector(resolver.forFile(from), `.${target.prefix}button`, from)
   const canvas = routed.convert ? routed.name : 'unconverted'
   const expected = target.canvas ?? `library:${target.library}`
   const canvasOk = canvas === expected || (!routed.convert && expected === 'unconverted')

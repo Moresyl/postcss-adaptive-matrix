@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { optionsSchema } from '../docs/.vitepress/schema.js'
 
@@ -24,7 +23,11 @@ interface Subschema {
 }
 
 const schema = JSON.parse(optionsSchema('https://example.test/')) as Subschema
-const options = schema.properties!
+// `$schema` is a key a JSON config file carries so an editor can complete it;
+// it is not an option, and the configuration reference is right not to list it.
+const options = Object.fromEntries(
+  Object.entries(schema.properties!).filter(([name]) => !name.startsWith('$')),
+)
 
 /** Every described subschema, however deeply nested, with a path to name it. */
 function described(node: unknown, path: string): [string, Subschema][] {
@@ -127,7 +130,9 @@ describe('the published options schema', () => {
       // cannot hide in the part that does not.
       expect(documented.size, `${file} yielded too few literal defaults`).toBeGreaterThanOrEqual(18)
       for (const [name, value] of documented) {
-        expect(options[name]?.default, `${file} documents ${name} as ${JSON.stringify(value)}`,
+        expect(
+          options[name]?.default,
+          `${file} documents ${name} as ${JSON.stringify(value)}`,
         ).toEqual(value)
       }
     }

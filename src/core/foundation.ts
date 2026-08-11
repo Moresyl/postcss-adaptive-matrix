@@ -88,9 +88,7 @@ function rootDeclarations(rootOptions: RootFoundationOptions): string[] {
  * Renders the opt-in root base stylesheet, or null when no root is configured.
  * Returns text rather than nodes so the core stays independent of any CSS AST.
  */
-export function buildFoundationCss(
-  options: ResolvedAdaptiveMatrixOptions,
-): string | null {
+export function buildFoundationCss(options: ResolvedAdaptiveMatrixOptions): string | null {
   if (!options.root) return null
   const rootOptions = options.root
   const selector = `:where(${rootOptions.selector})`
@@ -123,9 +121,7 @@ export function buildFoundationCss(
   for (const profile of Object.values(options.profiles)) {
     if (profile.rootMaxWidth == null) continue
     const detail = queryDetails(profile)
-    const declarations = [
-      `${maxWidthProperty(rootOptions)}: ${profile.rootMaxWidth}px;`,
-    ]
+    const declarations = [`${maxWidthProperty(rootOptions)}: ${profile.rootMaxWidth}px;`]
     const scoped = correctsFixed
       ? [
           block(selector, declarations, detail ? 1 : 0),

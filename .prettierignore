@@ -1,0 +1,15 @@
+# Generated, vendored, or deliberately hand-aligned.
+#
+# Markdown is left alone on purpose. These pages are the product — they are
+# served raw to agents, their tables are parsed by `docs:check` and by
+# `test/schema.test.ts`, and their line breaks are chosen for a bilingual
+# reader. Prettier formats the code; the prose is checked by its own tests.
+*.md
+dist
+coverage
+node_modules
+docs/.vitepress/cache
+.firecrawl
+.libcheck
+conformance/cases
+examples/*/dist

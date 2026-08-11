@@ -26,8 +26,20 @@ const absolute = computed(() => {
 
 const text = computed(() =>
   chinese.value
-    ? { copy: '复制为 Markdown', copied: '已复制', failed: '复制失败', raw: '查看原始 Markdown', ask: '用 Claude 提问' }
-    : { copy: 'Copy as Markdown', copied: 'Copied', failed: 'Copy failed', raw: 'View raw Markdown', ask: 'Ask Claude' },
+    ? {
+        copy: '复制为 Markdown',
+        copied: '已复制',
+        failed: '复制失败',
+        raw: '查看原始 Markdown',
+        ask: '用 Claude 提问',
+      }
+    : {
+        copy: 'Copy as Markdown',
+        copied: 'Copied',
+        failed: 'Copy failed',
+        raw: 'View raw Markdown',
+        ask: 'Ask Claude',
+      },
 )
 
 const state = ref<'idle' | 'copied' | 'failed'>('idle')

@@ -86,8 +86,7 @@ function fakeVuePlugin(root: string) {
   return {
     name: 'fake-sfc-styles',
     resolveId: (id: string) => (id.includes('index.vue?vue') ? resolved : null),
-    load: (id: string) =>
-      id === resolved ? '.sfc-card { padding: 24px; font-size: 24px }' : null,
+    load: (id: string) => (id === resolved ? '.sfc-card { padding: 24px; font-size: 24px }' : null),
   }
 }
 

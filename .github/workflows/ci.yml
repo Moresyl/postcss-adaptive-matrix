@@ -25,3 +25,19 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run pack:check
+
+  # Its own job, on one Node version. A performance budget is not a correctness
+  # check: running it across the matrix would triple the exposure to a noisy
+  # runner without measuring anything the first run did not, and a failure here
+  # should read as "this got slower", not as "the tests broke on Node 20".
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run bench:check

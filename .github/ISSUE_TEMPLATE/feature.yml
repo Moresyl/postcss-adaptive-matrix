@@ -1,6 +1,6 @@
 name: 功能建议
 description: 提议新的 profile、语法或集成能力
-title: "[Feature]: "
+title: '[Feature]: '
 labels: [enhancement]
 body:
   - type: textarea

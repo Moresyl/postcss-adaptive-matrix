@@ -62,6 +62,23 @@
 - 新增 `test/idempotence.test.ts`：**把编译产物再编译一遍，什么都不该变**，九种配置 × 八份样式表。一致性套件本来就对每个用例断言了这一点，但只在那个用例自己声明的选项下断言——没被覆盖的是那些会改变产物**形状**的开关之间的组合，而第二趟要扛住的正是形状。第二趟不是假想：一个发布预编译 CSS 的包，会再经过使用方应用的构建流水线；monorepo 里先编译共享组件库、再编译引用它的应用，也是同一回事。
 - 真正需要钉死的是原子化模式配上静态字号。原子化会把 `rem` 加进 `unitToConvert`，而文字通常写成 `rem + vw`——那个 `vw` 就是告诉第二趟「这个值已经编译过了」的记号。`fontFluidity: 0` 之下没有 `vw`：`32px` 变成光秃秃的 `2rem`，下一趟会把它当成设计稿长度再换算一次。它扛住了，但没有任何东西在守着它——`rootValue` 两端用的是同一个，写的时候 ÷16、读的时候 ×16，互为精确的逆运算，这个值是它自己的不动点。这是算术的性质，不是谁写下来的规则；这道除法的任意一端一挪，失败都是静默的：不报错、不告警，只是每存一次盘文字就小一点。
 
+### 编辑器能校验的配置
+
+- **命令行支持 `.json` 配置。** `-c adaptive.config.json` 读的就是一个普通的选项对象——这让已发布的那份 JSON Schema 终于有了真正的校验对象：在 `$schema` 里指向它，编辑器就会在你敲的时候补全选项名、标出写成 `10` 的 `precision`、驳回拼错的 `defaultProfile`。此前那份 Schema 只能被读；一份没有任何东西照着它校验的文档，从没人再读它的那一刻起就开始走偏。
+- `$schema` 在读入时就被摘掉、不会传给编译器，而且它是**被 Schema 描述出来的**，不是被容忍的——否则 `additionalProperties: false` 会让每一份正确标注了 `$schema` 的文件都变成非法。它不进类型校验过的选项表，因为它不是一个选项。
+- 这个文件是用 `readFile` + `JSON.parse` 读的，不是 `import … with { type: 'json' }`。导入属性在 Node 18 上是**语法错误**，而本包仍然支持 Node 18；命令行入口里的语法错误会在「版本检查有机会解释自己」之前就失败。
+- 文件写坏了，只给出解析器停下的位置，别的什么都不给——不给调用栈，因为抛出错误的那一帧从来不是读的人需要的那一帧。解析出来是数组或字符串的 JSON 是另一条错误，会说清它本该是什么。`.mjs` 与 `.js` 配置和以前完全一样；那些收 `RegExp` 或判断函数的选项仍然需要 JavaScript，Schema 里的 `x-also` 就是为它们准备的。
+
+### 检查
+
+- **`docs/.vitepress` 从来没有被类型检查过。** `include` 里写一个裸目录时，TypeScript 会把名字以点开头的目录直接丢掉——所以写着 `docs/.vitepress` 其实一个文件都没检查。0.5.0 里那句「站点自己的源码和其余代码一起做类型检查」，说的是意图，不是构建的实际行为。改写成 glob（`docs/.vitepress/**/*.ts`）就正常了，而它当场抖出三个真错误：一个从 `vite` 而不是从 `vitepress` 引入的 `Plugin`——后者打包了自己那份 Vite，于是那是两个结构相同却互不可赋值的声明；以及 URL 与链接改写路径上的两处 `noUncheckedIndexedAccess` 漏洞。
+- **从零加上 ESLint 与 Prettier。** 此前项目只有 `tsc`，没有 linter，于是类型检查不发表意见的那些规则——一个没被 await 的 Promise、一个没人读的 `catch` 绑定、一个插进模板后会变成 `[object Object]` 的值——全都无人把关。扁平配置、`typescript-eslint` 的类型感知规则、`eslint-config-prettier` 放最后以确保两者不打架。两者都进了 `npm run check`，因而也进了 CI。
+- Prettier **有意不格式化 Markdown**。这些页面本身就是产物：它们以原始形态提供给 Agent，它们的表格被 `docs:check` 和 `test/schema.test.ts` 解析，它们的换行是按双语读者的节奏定的。代码交给格式化，散文交给它自己的测试。
+- 第一次 lint 跑出来的不是风格噪音，是两个真 bug：对一个 `valueParser` 节点调用 `parsed.toString()`——那不是打印它的正规方式；以及一个参数类型是 `unknown` 的 `String(before ?? '')`，它有可能把 `[object Object]` 写进产物。
+- **CI 里的性能预算。** 如果编译器的开销超过 PostCSS 自身「解析 + 打印」耗时的 1.5 倍，或者组件库那一趟超过 1.0 倍，`npm run bench:check` 就让构建失败。用比值是关键：绝对毫秒预算量的是跑测的机器，而共享的 CI runner 不是一台稳定的仪器。今天实测的最坏值是 0.81× 与 0.33×，留出的余量是给繁忙的 runner 的，不是给性能倒退的。它是独立的单 Node 任务，这样「这东西变慢了」永远不会被读成「测试在 Node 20 上挂了」。
+- **`docs:build` 进了 `check`。** 站点构建此前只在部署工作流里跑，于是 VitePress 配置里的一条坏链接、或者一个渲染不出来的组件，要等合并之后在 `main` 上才被发现。
+- 覆盖率从 95.35 / 90.31 / 96.86 提到 **98.10 / 93.59 / 99.35**（语句 / 分支 / 行），阈值也跟着挪到 97 / 92 / 98 / 98——比套件实际到达的数字低两个点。远低于实际值的阈值永远不会失败，因而也永远不说明任何事情。新增 `test/evaluate.test.ts` 覆盖算术求值器，含「符号还是运算符」那几种情形（`calc(8px - -16px)`、`calc(--8px)`）以及它正确拒绝的一切；`test/selectors.test.ts` 补上字符串与括号扫描的分支（`:not("x)y", .a)`、属性选择器里被转义的引号、没有闭合的方括号）；`test/cli.test.ts` 覆盖 JSON 配置、管道输入的 stdin，以及带尾逗号的 `--targets`。
+
 ### 类型
 
 - 所有取数组的选项现在都接受 `readonly` 数组：`routes`、`libraries`、`textProperties`、`propList`、`selectorExclude`、`valueExclude`、`include`、`exclude`、`root.injectTo`，以及路由与库定义里的 `file` / `selector` / `property` / `prefix` / `tokenPrefix`。`unitToConvert` 本来就接受，这让 API 自相矛盾：用 `as const` 写的配置——在 TypeScript 里这是最自然的写法——除了那一个字段之外每个都报类型错误。

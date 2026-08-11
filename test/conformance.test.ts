@@ -101,9 +101,7 @@ describe('conformance suite', () => {
       const again = await postcss([adaptiveMatrix(options)]).process(result.css, {
         from: testCase.meta.from ?? '/project/src/app.css',
       })
-      expect(normalise(again.css), `${testCase.id} is not idempotent`).toBe(
-        normalise(result.css),
-      )
+      expect(normalise(again.css), `${testCase.id} is not idempotent`).toBe(normalise(result.css))
     })
   }
 })

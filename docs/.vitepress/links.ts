@@ -23,7 +23,10 @@ const HREF: Record<string, string> = { link_open: 'href' }
 export function localeLinks(md: MarkdownRenderer): void {
   md.core.ruler.push('adaptive-matrix:links', (state) => {
     // `realPath` is the file on disk; `path` is where the rewrite put it.
-    const file: string | undefined = state.env?.realPath ?? state.env?.path
+    // markdown-it types `env` as `any`; name the two fields VitePress puts
+    // there so the rest of the rule is checked rather than assumed.
+    const env = state.env as { realPath?: string; path?: string } | undefined
+    const file = env?.realPath ?? env?.path
     if (!file) return true
     const source = path.relative(SRC_DIR, file).split(path.sep).join('/')
     if (source.startsWith('..')) return true
@@ -33,10 +36,10 @@ export function localeLinks(md: MarkdownRenderer): void {
       for (const child of token.children) {
         const attribute = HREF[child.type]
         if (!attribute) continue
-        const index = child.attrIndex(attribute)
-        if (index < 0) continue
-        const rewritten = siteHref(child.attrs![index][1], source)
-        if (rewritten) child.attrs![index][1] = rewritten
+        const attr = child.attrs?.[child.attrIndex(attribute)]
+        if (!attr) continue
+        const rewritten = siteHref(attr[1], source)
+        if (rewritten) attr[1] = rewritten
       }
     }
     return true

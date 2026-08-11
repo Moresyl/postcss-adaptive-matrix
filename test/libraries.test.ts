@@ -37,9 +37,7 @@ describe('resolveLibrary', () => {
 describe('automatic mode', () => {
   it('is the default, so a project needs no configuration', () => {
     const options = resolveOptions({ profiles: PROFILES, defaultProfile: 'app' })
-    expect(options.libraries.map((library) => library.name)).toEqual([
-      ...BUILT_IN_LIBRARIES,
-    ])
+    expect(options.libraries.map((library) => library.name)).toEqual([...BUILT_IN_LIBRARIES])
   })
 
   it('can be turned off entirely', () => {
@@ -116,8 +114,8 @@ describe('registry invariants', () => {
     for (const library of all) {
       if (library.designWidth === false) continue
       expect(typeof library.designWidth, library.name).toBe('number')
-      expect(library.designWidth as number, library.name).toBeGreaterThan(0)
-      expect(Number.isFinite(library.designWidth as number), library.name).toBe(true)
+      expect(library.designWidth, library.name).toBeGreaterThan(0)
+      expect(Number.isFinite(library.designWidth), library.name).toBe(true)
     }
   })
 
@@ -272,19 +270,15 @@ describe('expandLibraries', () => {
   })
 
   it('creates no profile for a library that should stay in pixels', () => {
-    const { profiles, routes } = expandLibraries(
-      [resolveLibrary('element-plus')],
-      PROFILES,
-      'app',
-    )
+    const { profiles, routes } = expandLibraries([resolveLibrary('element-plus')], PROFILES, 'app')
     expect(Object.keys(profiles)).toHaveLength(0)
     expect(routes.every((route) => route.profile === false)).toBe(true)
   })
 
   it('rejects a library that matches nothing', () => {
-    expect(() =>
-      expandLibraries([{ name: 'ghost', designWidth: 375 }], PROFILES, 'app'),
-    ).toThrow(/matches nothing/)
+    expect(() => expandLibraries([{ name: 'ghost', designWidth: 375 }], PROFILES, 'app')).toThrow(
+      /matches nothing/,
+    )
   })
 
   it('rejects a library based on a profile that does not exist', () => {
@@ -314,15 +308,13 @@ describe('library routing', () => {
   const base = resolver.forFile('/src/app.css')
 
   it('sends library classes to the library canvas', () => {
-    expect(resolver.forSelector(base, '.van-button', '/src/app.css').name).toBe(
-      'library:vant',
-    )
+    expect(resolver.forSelector(base, '.van-button', '/src/app.css').name).toBe('library:vant')
   })
 
   it('matches a library class nested inside a longer selector', () => {
-    expect(
-      resolver.forSelector(base, '.page .van-cell__title', '/src/app.css').name,
-    ).toBe('library:vant')
+    expect(resolver.forSelector(base, '.page .van-cell__title', '/src/app.css').name).toBe(
+      'library:vant',
+    )
   })
 
   it('requires a real class boundary', () => {
@@ -353,9 +345,7 @@ describe('library routing', () => {
     const custom = createProfileResolver(overridden)
     const start = custom.forFile('/src/app.css')
     expect(custom.forSelector(start, '.van-icon', '/src/app.css').convert).toBe(false)
-    expect(custom.forSelector(start, '.van-button', '/src/app.css').name).toBe(
-      'library:vant',
-    )
+    expect(custom.forSelector(start, '.van-button', '/src/app.css').name).toBe('library:vant')
   })
 
   it('still defers to an explicit @adaptive block', () => {
@@ -400,9 +390,9 @@ describe('one prefix, two canvases', () => {
     // A bundler that inlines vendor CSS leaves no path to read. The 1x build is
     // the default one, so it is the better guess of the two.
     const inlined = '/src/app.css'
-    expect(
-      resolver.forSelector(resolver.forFile(inlined), '.adm-button', inlined).name,
-    ).toBe('library:antd-mobile')
+    expect(resolver.forSelector(resolver.forFile(inlined), '.adm-button', inlined).name).toBe(
+      'library:antd-mobile',
+    )
   })
 
   it('refuses a scoped library with no path to scope it to', () => {

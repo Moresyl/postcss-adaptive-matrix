@@ -53,6 +53,19 @@ JSON 写不出 `RegExp`，也写不出判断函数，而有几个配置项恰好
 }
 ```
 
+Schema 不只是拿来读的，也是拿来照着写的。命令行支持 `.json` 配置，只要在 `$schema` 里指向这份文档，编辑器在你敲的时候就会校验：
+
+```json
+{
+  "$schema": "https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json",
+  "defaultProfile": "app"
+}
+```
+
+```bash
+npx adaptive-matrix src/app.css -c adaptive.config.json
+```
+
 ## 怎么让 Agent 给出有用的答案
 
 这个插件最核心的前提，恰恰是模型最容易一带而过的那一句，所以值得写进提示词里：**在知道一个 `px` 画在哪份设计稿上之前，它没法被换算。** 一个默认「全局只有一个设计稿宽度」的 Agent，会给出一份能编译、但是错的配置——页面缩放了组件库没有，或者反过来。

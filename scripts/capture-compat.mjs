@@ -22,13 +22,7 @@ import { fileURLToPath } from 'node:url'
 const require = createRequire(import.meta.url)
 const caniuse = require('caniuse-lite')
 
-const OUT = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'src',
-  'core',
-  'compat-data.ts',
-)
+const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'core', 'compat-data.ts')
 
 /**
  * Browsers with a version history worth comparing against.
@@ -92,16 +86,11 @@ function firstStableVersion(feature, browser) {
 const rows = []
 for (const id of FEATURES) {
   const feature = caniuse.feature(require(`caniuse-lite/data/features/${id}`))
-  const entries = BROWSERS.map((browser) => [
-    browser,
-    firstStableVersion(feature, browser),
-  ]).filter(([, version]) => version !== null)
-  const support = entries
-    .map(([browser, version]) => `    ${browser}: '${version}',`)
-    .join('\n')
-  rows.push(
-    `  /** ${feature.title} */\n  '${id}': {\n${support}\n  },`,
+  const entries = BROWSERS.map((browser) => [browser, firstStableVersion(feature, browser)]).filter(
+    ([, version]) => version !== null,
   )
+  const support = entries.map(([browser, version]) => `    ${browser}: '${version}',`).join('\n')
+  rows.push(`  /** ${feature.title} */\n  '${id}': {\n${support}\n  },`)
 }
 
 const version = require('caniuse-lite/package.json').version

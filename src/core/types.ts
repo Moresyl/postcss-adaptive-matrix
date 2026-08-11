@@ -159,9 +159,7 @@ export interface LibraryAdaptation {
  * correction layered onto a built-in.
  */
 export type LibraryEntry =
-  | string
-  | LibraryAdaptation
-  | (Partial<LibraryAdaptation> & { extends: string })
+  string | LibraryAdaptation | (Partial<LibraryAdaptation> & { extends: string })
 
 export interface RootFoundationOptions {
   selector: string
@@ -265,11 +263,10 @@ export interface AdaptiveMatrixOptions {
   unknownProfile?: 'warn' | 'error' | 'ignore'
 }
 
-export interface ResolvedAdaptiveMatrixOptions
-  extends Omit<
-    Required<AdaptiveMatrixOptions>,
-    'root' | 'include' | 'exclude' | 'libraries' | 'unitToConvert'
-  > {
+export interface ResolvedAdaptiveMatrixOptions extends Omit<
+  Required<AdaptiveMatrixOptions>,
+  'root' | 'include' | 'exclude' | 'libraries' | 'unitToConvert'
+> {
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
   root: RootFoundationOptions | false

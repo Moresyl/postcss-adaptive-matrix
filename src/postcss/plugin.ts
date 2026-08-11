@@ -15,17 +15,9 @@ import {
   isFixedPositionValue,
   wantsFixedCorrection,
 } from '../core/fixed.js'
-import {
-  FOUNDATION_MARKER,
-  adaptiveQueryParams,
-  buildFoundationCss,
-} from '../core/foundation.js'
+import { FOUNDATION_MARKER, adaptiveQueryParams, buildFoundationCss } from '../core/foundation.js'
 import { LIBRARY_PROFILE_PREFIX } from '../core/libraries.js'
-import {
-  createPropertyMatcher,
-  matchesAnyPattern,
-  matchesFile,
-} from '../core/matchers.js'
+import { createPropertyMatcher, matchesAnyPattern, matchesFile } from '../core/matchers.js'
 import { EVERY_WIDTH, bandOf, narrow, type WidthBand } from '../core/media.js'
 import { resolveOptions } from '../core/options.js'
 import { createProfileResolver, type ProfileResolver } from '../core/resolve.js'
@@ -91,9 +83,7 @@ function isComment(node: ChildNode | undefined, text: string): node is Comment {
 function shouldIgnoreDeclaration(declaration: Declaration): boolean {
   if (isComment(declaration.prev(), IGNORE_NEXT)) return true
   const next = declaration.next()
-  return (
-    isComment(next, IGNORE_LINE) && !String(next.raws.before ?? '').includes('\n')
-  )
+  return isComment(next, IGNORE_LINE) && !String(next.raws.before ?? '').includes('\n')
 }
 
 function shouldIgnoreRule(rule: Rule): boolean {
@@ -172,12 +162,7 @@ function transformDeclaration(
   // switch about *authored* variables — does not get to veto it.
   let target = active
   if (declaration.prop.startsWith('--')) {
-    const routed = context.resolver.forCustomProperty(
-      active,
-      declaration.prop,
-      file,
-      context.band,
-    )
+    const routed = context.resolver.forCustomProperty(active, declaration.prop, file, context.band)
     if (!routed && !options.transformCustomProperties) return
     if (routed) target = routed
   }
@@ -233,24 +218,12 @@ function correctFixedRule(rule: Rule): void {
   }
 }
 
-function transformRule(
-  rule: Rule,
-  inherited: ActiveProfile,
-  context: ProcessorContext,
-): void {
-  if (
-    shouldIgnoreRule(rule) ||
-    matchesAnyPattern(context.options.selectorExclude, rule.selector)
-  ) {
+function transformRule(rule: Rule, inherited: ActiveProfile, context: ProcessorContext): void {
+  if (shouldIgnoreRule(rule) || matchesAnyPattern(context.options.selectorExclude, rule.selector)) {
     return
   }
 
-  const active = context.resolver.forSelector(
-    inherited,
-    rule.selector,
-    context.file,
-    context.band,
-  )
+  const active = context.resolver.forSelector(inherited, rule.selector, context.file, context.band)
   warnOnSplitSelectorList(rule, inherited, active, context)
 
   const before = context.converted
@@ -299,8 +272,7 @@ function warnOnSplitSelectorList(
     return resolved.convert ? resolved.name : '(not converted)'
   }
   const winner = active.convert ? active.name : '(not converted)'
-  const disagree = (parts: string[]): string[] =>
-    parts.filter((part) => canvasOf(part) !== winner)
+  const disagree = (parts: string[]): string[] => parts.filter((part) => canvasOf(part) !== winner)
 
   const top = splitSelectorList(rule.selector)
   const strayTop = top.length > 1 ? disagree(top) : []
@@ -384,8 +356,7 @@ function warnOnDeadBand(
 
   const live =
     band.hi === Infinity ? `from ${band.lo}px up` : `between ${band.lo}px and ${band.hi}px`
-  const bound =
-    pinned === 'maximum' ? `minWidth: ${band.lo}` : `maxWidth: ${band.hi}`
+  const bound = pinned === 'maximum' ? `minWidth: ${band.lo}` : `maxWidth: ${band.hi}`
   // A canvas that a selector route chose keeps that canvas at every viewport
   // width — which is right for a component library and wrong for a rule that
   // overrides one at a breakpoint. Such a route outranks a bare media route, so
@@ -413,11 +384,7 @@ function highestOf(parts: readonly string[]): Specificity {
     .reduce((best, entry) => (compareSpecificity(entry, best) > 0 ? entry : best))
 }
 
-function unknownProfile(
-  atRule: AtRule,
-  name: string,
-  context: ProcessorContext,
-): void {
+function unknownProfile(atRule: AtRule, name: string, context: ProcessorContext): void {
   // Says what happens next, not just what is wrong. An unrecognised profile
   // leaves the at-rule in place, and a browser discards an at-rule it does not
   // know along with everything inside it — so the block does not merely go
@@ -448,8 +415,8 @@ function unknownProfile(
   }
 }
 
-function indentOf(before: unknown): string {
-  const text = String(before ?? '')
+function indentOf(before: string | undefined): string {
+  const text = before ?? ''
   const lineStart = text.lastIndexOf('\n')
   return lineStart === -1 ? '' : text.slice(lineStart + 1)
 }
@@ -462,9 +429,7 @@ function unwrapAtRule(atRule: AtRule): void {
     return
   }
 
-  const extra = indentOf(children[0]!.raws.before).slice(
-    indentOf(atRule.raws.before).length,
-  )
+  const extra = indentOf(children[0]!.raws.before).slice(indentOf(atRule.raws.before).length)
   if (extra) {
     for (const child of children) {
       const before = String(child.raws.before ?? '')
@@ -581,31 +546,19 @@ function processContainer(
         context.band = outer === null || own === null ? null : narrow(outer, own)
         inner = context.resolver.forMedia(active, context.band, context.file)
       }
-      processContainer(
-        node,
-        inner,
-        context,
-        declarations && NESTED_DECLARATION_CONTEXTS.has(name),
-      )
+      processContainer(node, inner, context, declarations && NESTED_DECLARATION_CONTEXTS.has(name))
       context.band = outer
     }
   }
 }
 
-function shouldProcessFile(
-  file: string,
-  options: ResolvedAdaptiveMatrixOptions,
-): boolean {
+function shouldProcessFile(file: string, options: ResolvedAdaptiveMatrixOptions): boolean {
   if (matchesFile(options.exclude, file)) return false
   if (options.include && !matchesFile(options.include, file)) return false
   return true
 }
 
-function appendFoundation(
-  root: Root,
-  file: string,
-  options: ResolvedAdaptiveMatrixOptions,
-): void {
+function appendFoundation(root: Root, file: string, options: ResolvedAdaptiveMatrixOptions): void {
   if (options.root && options.root.injectTo && !matchesFile(options.root.injectTo, file)) {
     return
   }
@@ -635,9 +588,7 @@ function appendFoundation(
   })
 }
 
-export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (
-  inputOptions = {},
-) => {
+export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOptions = {}) => {
   const options = resolveOptions(inputOptions)
   const propertyMatches = createPropertyMatcher(options.propList)
   const resolver = createProfileResolver(options)

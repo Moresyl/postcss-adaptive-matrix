@@ -24,10 +24,7 @@ const CONFIG = {
   root: { selector: '#app', fixedContainingBlock: true, safeAreaVariables: false },
 }
 
-async function run(
-  css: string,
-  options: AdaptiveMatrixOptions = CONFIG,
-): Promise<string> {
+async function run(css: string, options: AdaptiveMatrixOptions = CONFIG): Promise<string> {
   const result = await postcss([adaptiveMatrix(options)]).process(css, {
     from: '/src/app.css',
   })
@@ -41,9 +38,7 @@ describe('correctFixedDeclaration', () => {
   })
 
   it('adds the gutter to a non-zero inset', () => {
-    expect(correctFixedDeclaration('left', '12px')).toBe(
-      'calc(12px + var(--adaptive-root-gutter))',
-    )
+    expect(correctFixedDeclaration('left', '12px')).toBe('calc(12px + var(--adaptive-root-gutter))')
   })
 
   it('leaves auto alone, having no length to offset', () => {
@@ -56,9 +51,7 @@ describe('correctFixedDeclaration', () => {
   })
 
   it('caps a viewport-wide width at the column', () => {
-    expect(correctFixedDeclaration('width', '100%')).toBe(
-      'min(100%, var(--adaptive-root-width))',
-    )
+    expect(correctFixedDeclaration('width', '100%')).toBe('min(100%, var(--adaptive-root-width))')
   })
 
   it('leaves an explicit width alone', () => {
@@ -131,9 +124,7 @@ describe('fixed containing block', () => {
   })
 
   it('honours the rule-level ignore comment', async () => {
-    const css = await run(
-      '/* adaptive-ignore-rule */\n.bar { position: fixed; left: 0 }',
-    )
+    const css = await run('/* adaptive-ignore-rule */\n.bar { position: fixed; left: 0 }')
     expect(css).toContain('left: 0')
   })
 })

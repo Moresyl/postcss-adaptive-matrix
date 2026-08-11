@@ -207,9 +207,7 @@ export function autoLibraries(): LibraryAdaptation[] {
 }
 
 /** Normalises the `libraries` option, including its `'auto'` and `false` forms. */
-export function resolveLibraries(
-  input: AdaptiveMatrixOptions['libraries'],
-): LibraryAdaptation[] {
+export function resolveLibraries(input: AdaptiveMatrixOptions['libraries']): LibraryAdaptation[] {
   if (input === false) return []
   if (input === undefined || input === 'auto') return autoLibraries()
   return input.map(resolveLibrary)

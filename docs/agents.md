@@ -53,6 +53,19 @@ JSON cannot express a `RegExp` or a predicate function, and several options acce
 }
 ```
 
+The schema is also something to write against, not only to read. The CLI accepts a `.json` config, so a file that names this document in `$schema` is checked by the editor as it is typed:
+
+```json
+{
+  "$schema": "https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json",
+  "defaultProfile": "app"
+}
+```
+
+```bash
+npx adaptive-matrix src/app.css -c adaptive.config.json
+```
+
 ## Getting a useful answer out of an agent
 
 The plugin's whole premise is the thing a model is most likely to skip past, so it is worth stating in the prompt: **a `px` cannot be converted until you know which design file it was drawn on.** An agent that assumes one global design width will produce a configuration that compiles and is wrong — the pages will scale and the component library will not, or the other way round.

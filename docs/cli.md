@@ -30,7 +30,7 @@ cat app.css | adaptive-matrix --from src/app.css
 
 | Option | Effect |
 | --- | --- |
-| `-c, --config <path>` | A module whose default export is the plugin options |
+| `-c, --config <path>` | A module whose default export is the plugin options, or a `.json` file of options |
 | `--from <path>` | Treat the input as living at this path |
 | `--profile <name>` | Override `defaultProfile` |
 | `--targets <list>` | Audit the output against the oldest browsers you support, e.g. `"safari 14, ios_saf 13"` |
@@ -64,6 +64,25 @@ npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js src/app.css -c adaptive
 ```
 
 (Node 22.6+ strips types natively, so `npx adaptive-matrix -c adaptive.config.ts` also runs, but it prints an experimental warning and only supports erasable syntax.)
+
+### A JSON configuration
+
+A path ending in `.json` is read as a file of options rather than imported. Name the [published schema](https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json) in `$schema` and your editor will complete the option names, show each one's description, and flag a value that is out of range — before you run anything:
+
+```json
+{
+  "$schema": "https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json",
+  "defaultProfile": "app",
+  "profiles": {
+    "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 600 } },
+    "pc": { "designWidth": 1440, "fluid": { "minWidth": 1024, "maxWidth": 1920 } }
+  }
+}
+```
+
+`$schema` is not an option; it is dropped when the file is read.
+
+What JSON cannot hold is a `RegExp` or a function, so a config that routes by a regular expression, or computes `designWidth` per file, has to stay JavaScript. The schema marks those places with `x-also`.
 
 The configuration is validated before the first stylesheet is read, so a misspelled `defaultProfile` or a reversed `fluid` range produces the compiler's own message rather than a screenful of comparisons followed by an error.
 

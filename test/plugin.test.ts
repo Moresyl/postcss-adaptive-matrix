@@ -1,11 +1,6 @@
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import adaptiveMatrix, {
-  appPcPreset,
-  defineConfig,
-  presets,
-  withAtomicCss,
-} from '../src/index.js'
+import adaptiveMatrix, { appPcPreset, defineConfig, presets, withAtomicCss } from '../src/index.js'
 import type { AdaptiveMatrixOptions } from '../src/index.js'
 import { resolveOptions } from '../src/core/options.js'
 
@@ -44,24 +39,21 @@ describe('adaptiveMatrix', () => {
   })
 
   it('supports named container-query profiles', async () => {
-    const result = await process(
-      '@adaptive panel { .tile { padding: 20px } }',
-      {
-        defaultProfile: 'panel',
-        profiles: {
-          panel: {
-            designWidth: 800,
-            fluid: { minWidth: 400, maxWidth: 1200 },
-            unit: 'cqi',
-            query: {
-              type: 'container',
-              name: 'workspace',
-              condition: '(min-width: 400px)',
-            },
+    const result = await process('@adaptive panel { .tile { padding: 20px } }', {
+      defaultProfile: 'panel',
+      profiles: {
+        panel: {
+          designWidth: 800,
+          fluid: { minWidth: 400, maxWidth: 1200 },
+          unit: 'cqi',
+          query: {
+            type: 'container',
+            name: 'workspace',
+            condition: '(min-width: 400px)',
           },
         },
       },
-    )
+    })
 
     expect(result.css).toContain('@container workspace (min-width: 400px)')
     expect(result.css).toContain('padding: clamp(10px, 2.5cqi, 30px)')
@@ -166,8 +158,7 @@ describe('adaptiveMatrix', () => {
       defaultProfile: 'app',
       profiles: {
         app: {
-          designWidth: ({ file }: { file: string }) =>
-            file.includes('narrow') ? 320 : 400,
+          designWidth: ({ file }: { file: string }) => (file.includes('narrow') ? 320 : 400),
           fluid: { minWidth: 320, maxWidth: 640 },
         },
       },
@@ -429,10 +420,7 @@ describe('reading more than one source unit', () => {
   it('measures the hairline and minPixelValue guards in pixels, not in authored numbers', async () => {
     // A framework writing a hairline as `0.0625rem` means the same device pixel
     // as one writing `1px`, and neither is a measurement off the design canvas.
-    const result = await process(
-      '.a { border-width: 0.0625rem; outline-width: 1px }',
-      atomic,
-    )
+    const result = await process('.a { border-width: 0.0625rem; outline-width: 1px }', atomic)
     expect(result.css).toBe('.a { border-width: 0.0625rem; outline-width: 1px }')
 
     const guarded = await process('.a { top: 0.5rem }', {
@@ -502,8 +490,8 @@ describe('withAtomicCss', () => {
     expect(wrapped.preserveOriginal).toBe(true)
     expect(wrapped.profiles).toBe(base.profiles)
     // The caller's own route stays first, so a hand-written decision still wins.
-    expect(wrapped.routes![0]).toBe(base.routes![0])
-    expect(wrapped.routes![1]).toEqual({
+    expect(wrapped.routes[0]).toBe(base.routes[0])
+    expect(wrapped.routes[1]).toEqual({
       profile: 'mobile',
       property: ['--spacing', '--text-', '--leading-', '--radius-', '--container-'],
     })
@@ -512,7 +500,7 @@ describe('withAtomicCss', () => {
   it('leaves the breakpoint scale alone', () => {
     // Scaling `--breakpoint-md` would move the width a canvas switches at, and
     // every downstream media query with it. Nothing would report that.
-    const claimed = withAtomicCss(appPcPreset()).routes!.at(-1)!.property as string[]
+    const claimed = withAtomicCss(appPcPreset()).routes.at(-1)!.property as string[]
     expect(claimed).not.toContain('--breakpoint-')
     expect(claimed.some((prefix) => '--breakpoint-md'.startsWith(prefix))).toBe(false)
     // `--tracking-*` is published in em, which already rides a fluid font size.
@@ -526,8 +514,12 @@ describe('withAtomicCss', () => {
   })
 
   it('restores the token text patterns when the caller took textProperties over', () => {
+    // Annotated rather than inline: `withAtomicCss` returns the shape it was
+    // given, so a bare `{}` narrows the result to an object with no properties
+    // and `textProperties` stops being a name the compiler will discuss.
+    const empty: AdaptiveMatrixOptions = {}
     // Untouched by default — the defaults already carry them.
-    expect(withAtomicCss({} as AdaptiveMatrixOptions).textProperties).toBeUndefined()
+    expect(withAtomicCss(empty).textProperties).toBeUndefined()
 
     const narrowed = withAtomicCss({ textProperties: ['font-size'] })
     expect(narrowed.textProperties).toEqual(['font-size', '--text-*', '--leading-*'])
@@ -540,8 +532,8 @@ describe('withAtomicCss', () => {
       profile: 'pc',
       tokenPrefixes: ['--gutter-'],
     })
-    expect(wrapped.routes!.at(-1)).toMatchObject({ profile: 'pc' })
-    expect(wrapped.routes!.at(-1)!.property).toContain('--gutter-')
+    expect(wrapped.routes.at(-1)).toMatchObject({ profile: 'pc' })
+    expect(wrapped.routes.at(-1)!.property).toContain('--gutter-')
   })
 
   it('scales a theme token and the utility that multiplies it to the same size', async () => {

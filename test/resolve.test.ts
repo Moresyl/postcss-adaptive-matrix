@@ -35,23 +35,15 @@ describe('profile resolution', () => {
     const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'] }])
     const inherited = resolver.forFile('/src/bundle.css')
     expect(inherited.name).toBe('app')
-    expect(resolver.forSelector(inherited, '.vd-button', '/src/bundle.css').name).toBe(
-      'vendor',
-    )
-    expect(resolver.forSelector(inherited, '.app-button', '/src/bundle.css').name).toBe(
-      'app',
-    )
+    expect(resolver.forSelector(inherited, '.vd-button', '/src/bundle.css').name).toBe('vendor')
+    expect(resolver.forSelector(inherited, '.app-button', '/src/bundle.css').name).toBe('app')
   })
 
   it('requires both to match when a route names a file and a selector', () => {
-    const resolver = resolverFor([
-      { profile: 'vendor', selector: ['.vd-'], file: /bundle/ },
-    ])
+    const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'], file: /bundle/ }])
     const inherited = resolver.forFile('/src/page.css')
     expect(resolver.forSelector(inherited, '.vd-button', '/src/page.css').name).toBe('app')
-    expect(resolver.forSelector(inherited, '.vd-button', '/src/bundle.css').name).toBe(
-      'vendor',
-    )
+    expect(resolver.forSelector(inherited, '.vd-button', '/src/bundle.css').name).toBe('vendor')
   })
 
   it('never overrides a profile the author named explicitly', () => {
@@ -76,8 +68,6 @@ describe('profile resolution', () => {
   })
 
   it('rejects a route pointing at a profile that does not exist', () => {
-    expect(() => resolverFor([{ profile: 'ghost', file: /x/ }])).toThrow(
-      'unknown profile "ghost"',
-    )
+    expect(() => resolverFor([{ profile: 'ghost', file: /x/ }])).toThrow('unknown profile "ghost"')
   })
 })

@@ -21,7 +21,7 @@ const TOLERANCE = 0.02
 
 function generator(seed: number): <T>(choices: readonly T[]) => T {
   let state = seed
-  return <T,>(choices: readonly T[]): T => {
+  return <T>(choices: readonly T[]): T => {
     state = (state * 1103515245 + 12345) % 2147483648
     return choices[Math.floor((state / 2147483648) * choices.length)]!
   }
@@ -46,9 +46,7 @@ async function compile(
 function converted(css: string): string | null {
   const value = /\.a \{ [\w-]+: (.*) \}/.exec(css)?.[1]
   if (!value) return null
-  return value.includes('clamp') || value.includes('vw') || value.includes('vi')
-    ? value
-    : null
+  return value.includes('clamp') || value.includes('vw') || value.includes('vi') ? value : null
 }
 
 const DESIGN_WIDTHS = [320, 375, 414, 750, 828, 1024, 1440, 1920, 2560]
@@ -153,9 +151,7 @@ describe('properties that hold for every canvas', () => {
         const width = row.minWidth + (row.maxWidth - row.minWidth) * fraction
         const actual = evaluateLength(row.compiled, { ...CONTEXT, width })
         const expected = (row.value * width) / row.designWidth
-        expect(Math.abs(actual! - expected), `${row.label} at ${width}px`).toBeLessThan(
-          TOLERANCE,
-        )
+        expect(Math.abs(actual! - expected), `${row.label} at ${width}px`).toBeLessThan(TOLERANCE)
       }
     }
   })
@@ -187,9 +183,7 @@ describe('properties that hold for every canvas', () => {
       const profile = { designWidth, fluid: { minWidth, maxWidth } }
 
       for (const extra of [{ strategy: 'viewport' }, { unit: 'vi' }]) {
-        const compiled = converted(
-          await compile(`.a { ${property}: ${value}px }`, profile, extra),
-        )
+        const compiled = converted(await compile(`.a { ${property}: ${value}px }`, profile, extra))
         if (!compiled) continue
         // `vi` is `vw` in a horizontal writing mode, which is what the evaluator
         // assumes; swapping lets one oracle serve both.

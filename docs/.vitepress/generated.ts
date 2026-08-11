@@ -19,7 +19,10 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import type { Plugin } from 'vite'
+// From `vitepress`, not from `vite`: VitePress bundles its own copy of Vite, so
+// the two declarations of `Plugin` are structurally the same interface from
+// different files and do not assign to one another.
+import type { Plugin } from 'vitepress'
 import { llmsFullTxt, llmsTxt } from './llms'
 import { isPublished, rewrite, SRC_DIR } from './paths'
 import { optionsSchema } from './schema'
@@ -100,7 +103,7 @@ export function generatedAssets(): Plugin {
     name: 'adaptive-matrix:generated',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        const url = decodeURIComponent((request.url ?? '').split('?')[0])
+        const url = decodeURIComponent((request.url ?? '').split('?')[0] ?? '')
         const base = server.config.base
         const wanted = url.startsWith(base) ? url.slice(base.length) : url.replace(/^\//, '')
         // Regenerated per request: these are cheap, and a stale llms.txt in a

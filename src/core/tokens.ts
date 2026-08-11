@@ -59,9 +59,7 @@ const INHERITED_FROM = new Set([':root', ':host', 'html', 'html:root', ':root:ro
 const MAX_DEPTH = 8
 
 function isUniversal(selector: string): boolean {
-  return selector
-    .split(',')
-    .every((part) => INHERITED_FROM.has(part.trim().toLowerCase()))
+  return selector.split(',').every((part) => INHERITED_FROM.has(part.trim().toLowerCase()))
 }
 
 export interface TokenTable {
@@ -185,7 +183,7 @@ export function collectTokens(root: Root): TokenTable {
  * so `--my-var(x)` and a hypothetical `xvar(` are left alone.
  */
 function findVar(value: string, from: number): number {
-  for (let index = value.indexOf('var(', from); index >= 0; ) {
+  for (let index = value.indexOf('var(', from); index >= 0;) {
     const before = index === 0 ? '' : value[index - 1]!
     if (!/[\w-]/.test(before)) return index
     index = value.indexOf('var(', index + 1)

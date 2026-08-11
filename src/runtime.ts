@@ -29,11 +29,9 @@ function finite(value: number | undefined, fallback: number): number {
 export function observeAdaptiveViewport(
   options: AdaptiveViewportObserverOptions = {},
 ): AdaptiveViewportObserver {
-  const browserWindow =
-    options.window ?? (typeof window === 'undefined' ? undefined : window)
+  const browserWindow = options.window ?? (typeof window === 'undefined' ? undefined : window)
   const browserDocument =
-    options.document ??
-    (typeof document === 'undefined' ? undefined : document)
+    options.document ?? (typeof document === 'undefined' ? undefined : document)
   const target = options.target ?? browserDocument?.documentElement
   const prefix = (options.prefix ?? 'adaptive').replace(/^--/, '')
   let frame = 0

@@ -30,7 +30,7 @@ cat app.css | adaptive-matrix --from src/app.css
 
 | 选项 | 作用 |
 | --- | --- |
-| `-c, --config <path>` | 默认导出插件选项的模块 |
+| `-c, --config <path>` | 默认导出插件选项的模块，或一个写着选项的 `.json` 文件 |
 | `--from <path>` | 把输入当作位于这个路径 |
 | `--profile <name>` | 覆盖 `defaultProfile` |
 | `--targets <list>` | 按你要支持的最低浏览器版本审计产物，如 `"safari 14, ios_saf 13"` |
@@ -64,6 +64,25 @@ npx tsx node_modules/postcss-adaptive-matrix/dist/cli.js src/app.css -c adaptive
 ```
 
 （Node 22.6+ 自带类型擦除，直接 `npx adaptive-matrix -c adaptive.config.ts` 也能跑，但会打一条 experimental 警告，且只支持可擦除的写法。）
+
+### 用 JSON 写配置
+
+路径以 `.json` 结尾时，按文件读取，不走 `import`。在 `$schema` 里写上[已发布的 JSON Schema](https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json)，编辑器就能补全选项名、显示每一项的说明，并在取值越界时当场标出来——不用等到跑起来：
+
+```json
+{
+  "$schema": "https://moresyl.github.io/postcss-adaptive-matrix/schema/options.json",
+  "defaultProfile": "app",
+  "profiles": {
+    "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 600 } },
+    "pc": { "designWidth": 1440, "fluid": { "minWidth": 1024, "maxWidth": 1920 } }
+  }
+}
+```
+
+`$schema` 不是配置项，读取时会被丢掉。
+
+JSON 装不下正则和函数，所以按正则路由、或按文件动态算 `designWidth` 的配置只能继续用 JavaScript 写。Schema 里这些位置都用 `x-also` 标了出来。
 
 配置在读第一个样式文件之前就会被校验，所以 `defaultProfile` 写错、`fluid` 区间反了，报的是编译器自己的那句话，不会先刷一屏对照表再报错。
 

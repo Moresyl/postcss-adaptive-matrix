@@ -29,20 +29,10 @@ const ROOT_WIDTH = `var(${ROOT_WIDTH_VARIABLE})`
  * `top` and `bottom` are absent on purpose: the column constrains the inline
  * axis only, so vertical insets are already correct.
  */
-const INSET_PROPERTIES = new Set([
-  'left',
-  'right',
-  'inset-inline-start',
-  'inset-inline-end',
-])
+const INSET_PROPERTIES = new Set(['left', 'right', 'inset-inline-start', 'inset-inline-end'])
 
 /** Properties whose `100%` means "the whole viewport" for a fixed element. */
-const WIDTH_PROPERTIES = new Set([
-  'width',
-  'max-width',
-  'inline-size',
-  'max-inline-size',
-])
+const WIDTH_PROPERTIES = new Set(['width', 'max-width', 'inline-size', 'max-inline-size'])
 
 const ZERO = /^-?0(?:\.0+)?(?:px|rem|em|%|vw|vi|cqw|cqi)?$/i
 const FULL_WIDTH = /^100%$/
@@ -58,10 +48,7 @@ export function isFixedPositionValue(value: string): boolean {
  * `value` has already been through unit conversion, so this composes with the
  * fluid output rather than replacing it.
  */
-export function correctFixedDeclaration(
-  property: string,
-  value: string,
-): string | null {
+export function correctFixedDeclaration(property: string, value: string): string | null {
   const name = property.toLowerCase()
 
   // Already corrected — re-running the plugin must not stack gutters.
@@ -86,8 +73,6 @@ export function correctFixedDeclaration(
 }
 
 /** True when the configuration asks for the correction and can support it. */
-export function wantsFixedCorrection(
-  options: ResolvedAdaptiveMatrixOptions,
-): boolean {
+export function wantsFixedCorrection(options: ResolvedAdaptiveMatrixOptions): boolean {
   return Boolean(options.root && options.root.fixedContainingBlock)
 }

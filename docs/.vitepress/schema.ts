@@ -52,8 +52,7 @@ const PATTERN = {
 }
 
 const FILE_MATCHER = {
-  description:
-    'A path substring, a regular expression, or a predicate over the file path.',
+  description: 'A path substring, a regular expression, or a predicate over the file path.',
   'x-description-zh': '路径子串、正则，或一个接收文件路径的判断函数。',
   type: 'string',
   'x-also': 'RegExp | ((file: string) => boolean)',
@@ -116,8 +115,7 @@ const PROFILE: Fields<AdaptiveProfile> = {
     },
   },
   query: {
-    description:
-      'Wrapper generated for `@adaptive <profile>`; `false` unwraps the block.',
+    description: 'Wrapper generated for `@adaptive <profile>`; `false` unwraps the block.',
     'x-description-zh': '`@adaptive <画布>` 生成的包裹层；`false` 表示不包裹。',
     oneOf: [
       { type: 'string' },
@@ -134,8 +132,7 @@ const PROFILE: Fields<AdaptiveProfile> = {
   strategy: {
     description:
       'How a length is written: a bounded `clamp()`, or a bare viewport unit for engines without it.',
-    'x-description-zh':
-      '长度的写法：带上下界的 `clamp()`，或面向不支持它的引擎输出裸视口单位。',
+    'x-description-zh': '长度的写法：带上下界的 `clamp()`，或面向不支持它的引擎输出裸视口单位。',
     type: 'string',
     enum: ['clamp', 'viewport'],
   },
@@ -186,8 +183,7 @@ const MEDIA_MATCHER = {
 
 const ROUTE: Fields<AdaptiveRoute> = {
   profile: {
-    description:
-      'Target canvas, or `false` to leave matching lengths in fixed pixels.',
+    description: 'Target canvas, or `false` to leave matching lengths in fixed pixels.',
     'x-description-zh': '目标画布；`false` 表示匹配到的长度保持固定像素。',
     oneOf: [{ type: 'string' }, { const: false }],
   },
@@ -196,8 +192,7 @@ const ROUTE: Fields<AdaptiveRoute> = {
     'x-description-zh': '该路由认领的样式文件路径。',
   }),
   selector: oneOrMany(PATTERN, {
-    description:
-      'Selectors this route claims, so inlined CSS still routes after the path is gone.',
+    description: 'Selectors this route claims, so inlined CSS still routes after the path is gone.',
     'x-description-zh': '该路由认领的选择器；即使被打包内联、路径丢失也仍能命中。',
   }),
   property: oneOrMany(
@@ -210,8 +205,7 @@ const ROUTE: Fields<AdaptiveRoute> = {
   media: oneOrMany(MEDIA_MATCHER, {
     description:
       'Width band the rule must be confined to by its enclosing queries. Matched by implication, not by text.',
-    'x-description-zh':
-      '规则必须被其外层查询限制在该宽度区间内。按逻辑蕴含匹配，而不是比对文本。',
+    'x-description-zh': '规则必须被其外层查询限制在该宽度区间内。按逻辑蕴含匹配，而不是比对文本。',
   }),
 }
 
@@ -222,7 +216,8 @@ const LIBRARY: Fields<LibraryAdaptation> = {
     type: 'string',
   },
   extends: {
-    description: 'Built-in to start from, so one field can be corrected without restating the rest.',
+    description:
+      'Built-in to start from, so one field can be corrected without restating the rest.',
     'x-description-zh': '要继承的内置条目，只改一个字段而不必重写其余部分。',
     type: 'string',
   },
@@ -259,7 +254,7 @@ const LIBRARY: Fields<LibraryAdaptation> = {
     default: false,
   },
   basedOn: {
-    description: "Profile whose fluid range, unit and strategy the derived canvas borrows.",
+    description: 'Profile whose fluid range, unit and strategy the derived canvas borrows.',
     'x-description-zh': '派生画布借用其流体区间、单位与输出策略的画布。',
     type: 'string',
   },
@@ -410,7 +405,8 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     default: DEFAULTS.unitToConvert,
   },
   rootValue: {
-    description: 'Pixels per `rem`, used both when reading `rem` input and when writing text lengths.',
+    description:
+      'Pixels per `rem`, used both when reading `rem` input and when writing text lengths.',
     'x-description-zh': '每 `rem` 对应的像素数；读取 `rem` 输入和写出文字长度时都会用到。',
     type: 'number',
     exclusiveMinimum: 0,
@@ -451,8 +447,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
   propList: {
     description:
       'Properties to convert. `*` matches everything, a leading `!` excludes, and a list of nothing but exclusions is rejected.',
-    'x-description-zh':
-      '要转换的属性。`*` 匹配全部，前置 `!` 表示排除；全是排除项的列表会被拒绝。',
+    'x-description-zh': '要转换的属性。`*` 匹配全部，前置 `!` 表示排除；全是排除项的列表会被拒绝。',
     type: 'array',
     items: { type: 'string' },
     minItems: 1,
@@ -528,7 +523,20 @@ export function optionsSchema(base: string): string {
     'x-description-zh':
       'adaptiveMatrix() 接受的配置项。`description` 为英文，中文在 `x-description-zh`。`x-also` 标注仅 JavaScript 可写的形式（正则、判断函数），JSON 无法表达但配置文件接受。',
     type: 'object',
-    properties: OPTIONS,
+    // `$schema` is described rather than tolerated. A JSON config file names
+    // this document in a `$schema` key — that is how an editor knows to offer
+    // completion on it — and with `additionalProperties: false` an undeclared
+    // `$schema` would make every correctly-annotated file invalid. It is not an
+    // option, so it stays out of `OPTIONS` and out of the type-checked tables;
+    // the CLI drops it when it reads the file.
+    properties: {
+      ...OPTIONS,
+      $schema: {
+        description: 'The URL of this document, so an editor can offer completion.',
+        'x-description-zh': '本文档的地址，供编辑器提供补全与校验。',
+        type: 'string',
+      },
+    },
     additionalProperties: false,
   }
   return `${JSON.stringify(schema, null, 2)}\n`
