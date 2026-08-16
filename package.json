@@ -101,17 +101,17 @@
     "postcss-value-parser": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.1.10",
     "caniuse-lite": "^1.0.30001809",
-    "eslint": "^9.39.5",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.9.0",
     "postcss": "^8.5.26",
     "prettier": "^3.9.6",
     "tsup": "^8.5.1",
     "tsx": "^4.23.11",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4",
     "vitest": "^4.1.10"
