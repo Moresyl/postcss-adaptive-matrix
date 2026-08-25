@@ -10,6 +10,7 @@
 - 标准属性名与 `propList` 模式按 CSS 规则不区分 ASCII 大小写，`FONT-SIZE` 仍会保留可缩放的 `rem + vw` 文字公式；自定义属性过滤与路由则按 CSS 规则继续区分大小写。
 - `atRuleName` 在校验与匹配前统一规范化，首尾空格不再出现「校验通过、实际匹配不到，最后被浏览器整块丢弃」的情况。
 - `unitToConvert`、`root`、`root.selector` 的运行时形状错误现在会给出明确配置提示，不再泄漏底层 `trim` 异常。
+- 运行时配置校验现已覆盖全部集合及嵌套 query/library 结构。非有限阈值不会再输出 `NaNrem` 或 `Infinitypx`，缺少查询条件不会再输出 `@media undefined`；非法策略、路由边界、CSS 标识符和基础样式字符串都会在读取任何样式表前按精确配置路径报错。
 - 构建清理现在只在 tsup 启动前执行一次，ESM、CommonJS 与 CLI 并发 worker 不再互相删除刚生成的声明文件。
 - 新增正负号、标准属性大小写、自定义属性大小写及 JSON 风格非法选项的回归测试与一致性夹具。
 

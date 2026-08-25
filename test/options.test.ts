@@ -21,6 +21,92 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ propList: [] })).toThrow('propList')
   })
 
+  it('rejects non-finite thresholds before they can leak into generated CSS', () => {
+    expect(() => resolveOptions({ fontFluidity: Number.NaN })).toThrow(/fontFluidity/)
+    expect(() => resolveOptions({ minPixelValue: Number.NaN })).toThrow(/minPixelValue/)
+    expect(() => resolveOptions({ hairline: Number.POSITIVE_INFINITY })).toThrow(/hairline/)
+    expect(() =>
+      resolveOptions({
+        profiles: {
+          app: {
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            fontFluidity: Number.NaN,
+          },
+        },
+      }),
+    ).toThrow(/Profile "app" fontFluidity/)
+    expect(() =>
+      resolveOptions({
+        profiles: {
+          app: {
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            rootMaxWidth: Number.POSITIVE_INFINITY,
+          },
+        },
+      }),
+    ).toThrow(/positive rootMaxWidth/)
+  })
+
+  it('reports malformed JavaScript and JSON shapes at the option that owns them', () => {
+    expect(() => resolveOptions(null as never)).toThrow(/Options must be an object, not null/)
+    expect(() => resolveOptions({ profiles: [] as never })).toThrow(/profiles must be an object/)
+    expect(() => resolveOptions({ routes: {} as never })).toThrow(
+      /routes must be an array, not object/,
+    )
+    expect(() => resolveOptions({ propList: 'width' as never })).toThrow(
+      /propList must be an array, not string/,
+    )
+    expect(() => resolveOptions({ textProperties: 'font-size' as never })).toThrow(
+      /textProperties must be an array, not string/,
+    )
+    expect(() => resolveOptions({ selectorExclude: '.fixed' as never })).toThrow(
+      /selectorExclude must be an array, not string/,
+    )
+    expect(() => resolveOptions({ routes: [{}] as never })).toThrow(/routes\[0\]\.profile/)
+    expect(() =>
+      resolveOptions({ routes: [{ profile: 'app', media: { width: 320 } }] as never }),
+    ).toThrow(/routes\[0\]\.media\[0\]\.width/)
+  })
+
+  it.each([
+    [{ textProperties: [16] }, /textProperties\[0\].*must be a string/],
+    [{ propList: [' '] }, /propList\[0\] cannot be empty/],
+    [{ selectorExclude: [16] }, /selectorExclude\[0\].*string or regular expression/],
+    [{ valueExclude: [' '] }, /valueExclude\[0\] cannot be empty/],
+    [{ include: [] }, /include cannot be an empty array/],
+    [{ exclude: 16 }, /exclude must be a string, regular expression or predicate/],
+    [{ include: ' ' }, /include cannot be empty/],
+    [{ preserveOriginal: 'yes' }, /preserveOriginal must be a boolean/],
+    [{ routes: [/bad/] }, /routes\[0\] must be an object.*regular expression/],
+    [{ routes: [{ profile: ' ' }] }, /routes\[0\]\.profile cannot be empty/],
+    [{ routes: [{ profile: 'app', selector: [] }] }, /selector cannot be an empty array/],
+    [{ routes: [{ profile: 'app', property: [] }] }, /property cannot be an empty array/],
+    [{ routes: [{ profile: 'app', property: [' '] }] }, /property\[0\] cannot be empty/],
+    [{ routes: [{ profile: 'app', media: [] }] }, /media cannot be an empty array/],
+    [{ routes: [{ profile: 'app', media: [16] }] }, /media\[0\] must be an object/],
+    [{ routes: [{ profile: 'app' }] }, /routes\[0\] matches nothing/],
+    [{ root: { selector: '#app', containerName: 1 } }, /containerName must be a string/],
+    [{ root: { selector: '#app', layer: 1 } }, /root\.layer must be a string or false/],
+    [{ defaultProfile: 1 }, /defaultProfile must be a non-empty string/],
+    [{ atRuleName: 1 }, /atRuleName must be a string/],
+  ] as const)('rejects the runtime shape %#', (input, message) => {
+    expect(() => resolveOptions(input as never)).toThrow(message)
+  })
+
+  it('validates policies, at-rule identifiers and root foundation strings', () => {
+    expect(() => resolveOptions({ unknownProfile: 'wat' as never })).toThrow(/unknownProfile/)
+    expect(() => resolveOptions({ atRuleName: 'foo bar' })).toThrow(/CSS identifier/)
+    expect(() => resolveOptions({ atRuleName: '9adaptive' })).toThrow(/CSS identifier/)
+    expect(() => resolveOptions({ root: { selector: '#app', containerName: ' ' } })).toThrow(
+      /containerName cannot be empty/,
+    )
+    expect(() => resolveOptions({ root: { selector: '#app', layer: ' ' } })).toThrow(
+      /root\.layer cannot be empty/,
+    )
+  })
+
   it('names the profile in every complaint about one', () => {
     // A config with six canvases in it produces six chances to get this wrong,
     // and "requires a positive designWidth" without a name is a search rather
@@ -39,6 +125,46 @@ describe('configuration validation', () => {
     expect(() =>
       resolveOptions({ profiles: { app: { designWidth: 375, fluid, fontFluidity: 1.5 } } }),
     ).toThrow('Profile "app" fontFluidity must be between 0 and 1')
+  })
+
+  it('rejects query shapes that would emit undefined or invalid at-rules', () => {
+    const profile = (query: unknown) => ({
+      profiles: {
+        app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 }, query } as never,
+      },
+    })
+
+    expect(() => resolveOptions(profile({ type: 'media' }))).toThrow(/query\.condition/)
+    expect(() => resolveOptions(profile({ type: 'viewport', condition: '(width > 1px)' }))).toThrow(
+      /query\.type/,
+    )
+    expect(() => resolveOptions(profile({ condition: '(width > 1px)', name: 'page' }))).toThrow(
+      /query\.name only applies to container/,
+    )
+    expect(() => resolveOptions(profile(' '))).toThrow(/query cannot be an empty string/)
+    expect(() => resolveOptions(profile(null))).toThrow(/query must be a string/)
+    expect(() =>
+      resolveOptions(profile({ type: 'container', name: 'card', condition: '(width > 1px)' })),
+    ).not.toThrow()
+    expect(() =>
+      resolveOptions(profile({ type: 'container', name: ' ', condition: '(width > 1px)' })),
+    ).toThrow(/query\.name must be a non-empty string/)
+  })
+
+  it('rejects malformed profile containers and blank profile names', () => {
+    const valid = { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } }
+    expect(() => resolveOptions({ profiles: { app: { ...valid, fluid: null as never } } })).toThrow(
+      /Profile "app" fluid must be an object/,
+    )
+    expect(() => resolveOptions({ profiles: { app: valid, '': valid } })).toThrow(
+      /Profile names cannot be empty/,
+    )
+  })
+
+  it('rejects an unknown route target during option resolution', () => {
+    expect(() => resolveOptions({ routes: [{ profile: 'ghost', selector: '.ghost' }] })).toThrow(
+      /routes\[0\]\.profile targets unknown profile "ghost"/,
+    )
   })
 
   it('accepts a design width computed per file, since that is not a number to range-check', () => {

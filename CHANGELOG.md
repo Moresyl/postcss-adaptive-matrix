@@ -10,6 +10,7 @@
 - Standard property names and `propList` patterns now follow CSS's ASCII case-insensitive semantics, so `FONT-SIZE` keeps the accessible `rem + vw` text formula. Custom-property filters and routes remain case-sensitive, as CSS requires.
 - `atRuleName` is normalised before both validation and matching; surrounding whitespace can no longer pass validation and leave an unknown block that browsers discard.
 - Invalid runtime shapes for `unitToConvert`, `root`, and `root.selector` now report targeted configuration errors instead of leaking internal `trim` failures.
+- Runtime configuration validation now covers every collection and nested query/library shape. Non-finite thresholds can no longer emit `NaNrem` or `Infinitypx`; a missing query condition can no longer emit `@media undefined`; and invalid policies, route bounds, CSS identifiers, and foundation strings fail with the exact option path before any stylesheet is read.
 - Build cleanup now runs once before tsup starts. Concurrent ESM, CommonJS, and CLI workers can no longer delete declaration files another worker has just generated.
 - Added conformance fixtures and regression tests for signed numbers, property-name casing, custom-property casing, and JSON-style invalid option values.
 

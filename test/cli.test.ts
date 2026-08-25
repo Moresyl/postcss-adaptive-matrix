@@ -353,6 +353,43 @@ describe('runCli', () => {
     expect(out).toBe('')
   })
 
+  it('rejects an unknown route target before trying to open the input file', async () => {
+    const config = join(directory, 'unknown-route.config.json')
+    await writeFile(
+      config,
+      JSON.stringify({ routes: [{ profile: 'ghost', selector: '.ghost' }] }),
+      'utf8',
+    )
+
+    expect(await runCli([join(directory, 'absent.css'), '-c', config, '--no-color'])).toBe(1)
+    expect(err).toContain('routes[0].profile targets unknown profile "ghost"')
+    expect(err).not.toContain('absent.css')
+    expect(out).toBe('')
+  })
+
+  it('reports the exact path of a malformed JSON option without a stack trace', async () => {
+    const config = join(directory, 'invalid.config.json')
+    await writeFile(
+      config,
+      JSON.stringify({
+        profiles: {
+          app: {
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            query: { type: 'media' },
+          },
+        },
+      }),
+      'utf8',
+    )
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '-c', config, '--no-color'])).toBe(1)
+    expect(err).toContain('Profile "app" query.condition must be a non-empty string')
+    expect(err).not.toContain('at resolveOptions')
+    expect(out).toBe('')
+  })
+
   it('emits colour only when asked, so a piped diff stays plain', async () => {
     const ESC = String.fromCharCode(27)
     const path = await file('app.css', '.page { padding: 16px }')

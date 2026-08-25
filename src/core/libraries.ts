@@ -157,6 +157,75 @@ function unknownLibrary(name: string): Error {
   )
 }
 
+function libraryValueKind(value: unknown): string {
+  if (value instanceof RegExp) return 'a regular expression'
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'an array'
+  return typeof value
+}
+
+function validateStringList(name: string, value: unknown): void {
+  if (value === undefined) return
+  const wasArray = Array.isArray(value)
+  const entries = Array.isArray(value) ? value : [value]
+  for (const [index, entry] of entries.entries()) {
+    const path = wasArray ? `${name}[${index}]` : name
+    if (typeof entry !== 'string' || !entry.trim()) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be a non-empty string, not ${libraryValueKind(entry)}.`,
+      )
+    }
+  }
+}
+
+function validateLibraryFile(name: string, value: unknown): void {
+  if (value === undefined) return
+  const wasArray = Array.isArray(value)
+  const entries = Array.isArray(value) ? value : [value]
+  for (const [index, entry] of entries.entries()) {
+    const path = wasArray ? `${name}[${index}]` : name
+    if (typeof entry !== 'string' && !(entry instanceof RegExp) && typeof entry !== 'function') {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be a path string, regular expression or predicate function, not ${libraryValueKind(entry)}.`,
+      )
+    }
+    if (typeof entry === 'string' && !entry.trim()) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
+    }
+  }
+}
+
+function validateLibrary(library: LibraryAdaptation): LibraryAdaptation {
+  if (typeof library.name !== 'string' || !library.name.trim()) {
+    throw new TypeError('[postcss-adaptive-matrix] A library needs a name; it cannot be empty.')
+  }
+  if (
+    library.designWidth !== false &&
+    (!Number.isFinite(library.designWidth) || library.designWidth <= 0)
+  ) {
+    throw new RangeError(
+      `[postcss-adaptive-matrix] Library "${library.name}" requires a positive designWidth, or false to leave it unconverted.`,
+    )
+  }
+  validateStringList(`Library "${library.name}" prefix`, library.prefix)
+  validateStringList(`Library "${library.name}" tokenPrefix`, library.tokenPrefix)
+  validateLibraryFile(`Library "${library.name}" file`, library.file)
+  if (library.scoped !== undefined && typeof library.scoped !== 'boolean') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Library "${library.name}" scoped must be a boolean.`,
+    )
+  }
+  if (
+    library.basedOn !== undefined &&
+    (typeof library.basedOn !== 'string' || !library.basedOn.trim())
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Library "${library.name}" basedOn must be a non-empty profile name.`,
+    )
+  }
+  return library
+}
+
 /** Drops `autoPrefix`, which is a registry concern and not part of the model. */
 function withoutRegistryFields(entry: RegistryEntry): LibraryAdaptation {
   const { autoPrefix: _autoPrefix, ...library } = entry
@@ -174,21 +243,25 @@ export function resolveLibrary(entry: LibraryEntry): LibraryAdaptation {
     return withoutRegistryFields(found)
   }
 
-  if (entry.extends) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] A library entry must be a built-in name or options object, not ${libraryValueKind(entry)}.`,
+    )
+  }
+
+  if (entry.extends !== undefined) {
+    if (typeof entry.extends !== 'string' || !entry.extends.trim()) {
+      throw new TypeError('[postcss-adaptive-matrix] Library extends must be a non-empty name.')
+    }
     const base = REGISTRY[entry.extends]
     if (!base) throw unknownLibrary(entry.extends)
     const { extends: _extends, ...overrides } = entry
     // `name` defaults to the base so diagnostics and the derived profile keep
     // referring to the library the reader recognises.
-    return { ...withoutRegistryFields(base), name: base.name, ...overrides }
+    return validateLibrary({ ...withoutRegistryFields(base), name: base.name, ...overrides })
   }
 
-  if (!entry.name) {
-    throw new Error(
-      '[postcss-adaptive-matrix] A library needs a name, or an "extends" naming a built-in to inherit one.',
-    )
-  }
-  return entry as LibraryAdaptation
+  return validateLibrary(entry as LibraryAdaptation)
 }
 
 /**
@@ -210,6 +283,11 @@ export function autoLibraries(): LibraryAdaptation[] {
 export function resolveLibraries(input: AdaptiveMatrixOptions['libraries']): LibraryAdaptation[] {
   if (input === false) return []
   if (input === undefined || input === 'auto') return autoLibraries()
+  if (!Array.isArray(input)) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] libraries must be "auto", false or an array of library entries.',
+    )
+  }
   return input.map(resolveLibrary)
 }
 

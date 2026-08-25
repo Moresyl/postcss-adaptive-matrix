@@ -51,10 +51,13 @@ propList: ['*', '!border*', '!box-shadow']
 | `rootValue: 0` | 每个 `rem` 读成 0，输出侧再除零 |
 | `atRuleName: 'media'` | 样式表里每个 `@media` 都被当成画布名读取并改写。At-keyword 大小写不敏感，`MEDIA` 是同一个冲突 |
 | `atRuleName: ' canvas '` | 规范化为 `canvas`；否则校验虽然通过，却永远匹配不到任何 `@canvas` 块 |
+| `fontFluidity: NaN` / `rootMaxWidth: Infinity` | 输出 `NaNrem` 或 `Infinitypx`；声明无效并被浏览器丢弃 |
+| `query: { type: 'media' }` | 输出 `@media undefined`，把原本有效的规则包进无效查询 |
+| `propList: 'width'` | JavaScript/JSON 结构错误；不前置校验就会在深处泄漏 `.every is not a function` |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
 | `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
 
-`unit` 与 `strategy` 在 profile 级别同样校验。
+`unit` 与 `strategy` 在 profile 级别同样校验。集合成员及嵌套的 route、query、root、library 字段都会带完整路径校验（例如 `routes[0].media[1].minWidth`），因此 JavaScript 配置也会得到与公开 JSON Schema 一样的前置保护。
 
 ### unknownProfile
 

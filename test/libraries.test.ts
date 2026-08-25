@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   autoLibraries,
   BUILT_IN_LIBRARIES,
+  defineLibraries,
   expandLibraries,
   libraryProfileName,
+  resolveLibraries,
   resolveLibrary,
 } from '../src/core/libraries.js'
 import { resolveOptions } from '../src/core/options.js'
@@ -31,6 +33,33 @@ describe('resolveLibrary', () => {
   it('exposes the registry so tooling can list it', () => {
     expect(BUILT_IN_LIBRARIES).toContain('vant')
     expect(BUILT_IN_LIBRARIES).toContain('element-plus')
+  })
+
+  it('reports invalid runtime entries as configuration errors', () => {
+    expect(() => resolveLibraries('vant' as never)).toThrow(/libraries must be "auto", false/)
+    expect(() => resolveLibrary(null as never)).toThrow(/library entry.*not null/)
+    expect(() => resolveLibrary([] as never)).toThrow(/library entry.*not an array/)
+    expect(() => resolveLibrary({ name: 'kit' } as never)).toThrow(/positive designWidth/)
+    expect(() => resolveLibrary({ name: 'kit', designWidth: 375, prefix: [16] } as never)).toThrow(
+      /prefix\[0\].*non-empty string/,
+    )
+    expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: {} } as never)).toThrow(
+      /file.*path string/,
+    )
+    expect(() => resolveLibrary({ name: 'kit', designWidth: 375, scoped: 'yes' } as never)).toThrow(
+      /scoped must be a boolean/,
+    )
+    expect(() => resolveLibrary({ name: 'kit', designWidth: 375, basedOn: ' ' })).toThrow(
+      /basedOn must be a non-empty profile name/,
+    )
+    expect(() => resolveLibrary({ extends: ' ' })).toThrow(/extends must be a non-empty name/)
+    expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: ' ' })).toThrow(
+      /file cannot be empty/,
+    )
+  })
+
+  it('exposes the typed library-list convenience API', () => {
+    expect(defineLibraries(['vant']).map((library) => library.name)).toEqual(['vant'])
   })
 })
 
@@ -279,6 +308,16 @@ describe('expandLibraries', () => {
     expect(() => expandLibraries([{ name: 'ghost', designWidth: 375 }], PROFILES, 'app')).toThrow(
       /matches nothing/,
     )
+  })
+
+  it('rejects a non-finite canvas passed directly to expansion', () => {
+    expect(() =>
+      expandLibraries(
+        [{ name: 'broken', designWidth: Number.NaN, prefix: 'broken-' }],
+        PROFILES,
+        'app',
+      ),
+    ).toThrow(/requires a positive designWidth/)
   })
 
   it('rejects a library based on a profile that does not exist', () => {

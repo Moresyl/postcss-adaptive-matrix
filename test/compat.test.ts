@@ -430,6 +430,9 @@ describe('the table covers everything the compiler emits', () => {
     return tokens
   }
 
+  // This is the only test that synchronously reads and parses the entire
+  // conformance corpus. Keep the global 5 s guard strict for unit tests while
+  // allowing a busy shared runner enough time to finish this bounded scan.
   it('classifies every kind of syntax the conformance corpus gains in compilation', () => {
     // Input against output, per case: what the compiler *added* is exactly
     // what it is answerable for. Anything the author already wrote is theirs,
@@ -467,5 +470,5 @@ describe('the table covers everything the compiler emits', () => {
       ]),
     )
     expect(Object.fromEntries([...unclassified].sort())).toEqual({})
-  })
+  }, 15_000)
 })

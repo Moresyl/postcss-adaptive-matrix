@@ -68,6 +68,230 @@ const RESERVED_AT_RULES = new Set([
   'position-try', 'view-transition',
 ])
 
+const UNKNOWN_PROFILE_POLICIES = new Set(['warn', 'error', 'ignore'])
+
+function valueKind(value: unknown): string {
+  if (value instanceof RegExp) return 'a regular expression'
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'an array'
+  return typeof value
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    !(value instanceof RegExp)
+  )
+}
+
+function requireArray(name: string, value: unknown): asserts value is readonly unknown[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${name} must be an array, not ${valueKind(value)}.`,
+    )
+  }
+}
+
+function requireStringArray(name: string, value: unknown): void {
+  requireArray(name, value)
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== 'string') {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${name}[${index}] must be a string, not ${valueKind(entry)}.`,
+      )
+    }
+    if (!entry.trim()) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${name}[${index}] cannot be empty.`)
+    }
+  }
+}
+
+function requirePatterns(name: string, value: unknown): void {
+  requireArray(name, value)
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== 'string' && !(entry instanceof RegExp)) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${name}[${index}] must be a string or regular expression, not ${valueKind(entry)}.`,
+      )
+    }
+    if (typeof entry === 'string' && !entry.trim()) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${name}[${index}] cannot be empty.`)
+    }
+  }
+}
+
+function requireFileMatchers(name: string, value: unknown): void {
+  const entries = Array.isArray(value) ? value : [value]
+  if (!entries.length) {
+    throw new TypeError(`[postcss-adaptive-matrix] ${name} cannot be an empty array.`)
+  }
+  for (const [index, entry] of entries.entries()) {
+    if (typeof entry !== 'string' && !(entry instanceof RegExp) && typeof entry !== 'function') {
+      const path = entries.length === 1 ? name : `${name}[${index}]`
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be a string, regular expression or predicate function, not ${valueKind(entry)}.`,
+      )
+    }
+    if (typeof entry === 'string' && !entry.trim()) {
+      const path = entries.length === 1 ? name : `${name}[${index}]`
+      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
+    }
+  }
+}
+
+function requireBoolean(name: string, value: unknown): void {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${name} must be a boolean, not ${valueKind(value)}.`,
+    )
+  }
+}
+
+function validateRouteShape(route: unknown, index: number): void {
+  const path = `routes[${index}]`
+  if (!isObject(route)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${path} must be an object, not ${valueKind(route)}.`,
+    )
+  }
+  if (route.profile !== false && typeof route.profile !== 'string') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${path}.profile must be a profile name or false, not ${valueKind(route.profile)}.`,
+    )
+  }
+  if (typeof route.profile === 'string' && !route.profile.trim()) {
+    throw new TypeError(`[postcss-adaptive-matrix] ${path}.profile cannot be empty.`)
+  }
+  if (route.file !== undefined) requireFileMatchers(`${path}.file`, route.file)
+  if (route.selector !== undefined) {
+    const selectors = Array.isArray(route.selector) ? route.selector : [route.selector]
+    requirePatterns(`${path}.selector`, selectors)
+    if (!selectors.length) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${path}.selector cannot be an empty array.`)
+    }
+  }
+  if (route.property !== undefined) {
+    const properties = Array.isArray(route.property) ? route.property : [route.property]
+    if (!properties.length) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${path}.property cannot be an empty array.`)
+    }
+    for (const [propertyIndex, prefix] of properties.entries()) {
+      if (typeof prefix !== 'string') {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Route property takes custom-property prefixes as strings, ` +
+            `such as '--van-'. ${path}.property[${propertyIndex}] received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : valueKind(prefix)}. ` +
+            `Matching is by prefix and case-sensitive, like custom-property names in CSS; list several prefixes to cover several token families.`,
+        )
+      }
+      if (!prefix.trim()) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] ${path}.property[${propertyIndex}] cannot be empty.`,
+        )
+      }
+    }
+  }
+  if (route.media !== undefined) {
+    const matchers = Array.isArray(route.media) ? route.media : [route.media]
+    if (!matchers.length) {
+      throw new TypeError(`[postcss-adaptive-matrix] ${path}.media cannot be an empty array.`)
+    }
+    for (const [matcherIndex, matcher] of matchers.entries()) {
+      if (!isObject(matcher)) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] ${path}.media[${matcherIndex}] must be an object, not ${valueKind(matcher)}.`,
+        )
+      }
+      for (const field of Object.keys(matcher)) {
+        if (field !== 'minWidth' && field !== 'maxWidth') {
+          throw new TypeError(
+            `[postcss-adaptive-matrix] ${path}.media[${matcherIndex}].${field} is not a supported media bound.`,
+          )
+        }
+      }
+    }
+  }
+  if (
+    route.file === undefined &&
+    route.selector === undefined &&
+    route.property === undefined &&
+    route.media === undefined
+  ) {
+    throw new Error(
+      `[postcss-adaptive-matrix] ${path} matches nothing. Give it a file, selector, property or media condition.`,
+    )
+  }
+}
+
+function validateRootShape(root: unknown): void {
+  if (root === undefined || root === false) return
+  if (!isObject(root)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] root must be false or an options object, not ${valueKind(root)}.`,
+    )
+  }
+  if (typeof root.selector !== 'string') {
+    throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
+  }
+  for (const field of [
+    'center',
+    'container',
+    'safeAreaVariables',
+    'fixedContainingBlock',
+    'logical',
+  ] as const) {
+    requireBoolean(`root.${field}`, root[field])
+  }
+  if (root.containerName !== undefined && typeof root.containerName !== 'string') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] root.containerName must be a string, not ${valueKind(root.containerName)}.`,
+    )
+  }
+  if (typeof root.containerName === 'string' && !root.containerName.trim()) {
+    throw new Error('[postcss-adaptive-matrix] root.containerName cannot be empty.')
+  }
+  if (root.layer !== undefined && root.layer !== false && typeof root.layer !== 'string') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] root.layer must be a string or false, not ${valueKind(root.layer)}.`,
+    )
+  }
+  if (typeof root.layer === 'string' && !root.layer.trim()) {
+    throw new Error('[postcss-adaptive-matrix] root.layer cannot be empty.')
+  }
+  if (root.injectTo !== undefined) requireFileMatchers('root.injectTo', root.injectTo)
+}
+
+function validateInputShape(input: unknown): void {
+  if (!isObject(input)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Options must be an object, not ${valueKind(input)}.`,
+    )
+  }
+  if (input.profiles !== undefined && !isObject(input.profiles)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] profiles must be an object keyed by profile name, not ${valueKind(input.profiles)}.`,
+    )
+  }
+  if (input.routes !== undefined) {
+    requireArray('routes', input.routes)
+    input.routes.forEach(validateRouteShape)
+  }
+  for (const field of ['textProperties', 'propList'] as const) {
+    if (input[field] !== undefined) requireStringArray(field, input[field])
+  }
+  for (const field of ['selectorExclude', 'valueExclude'] as const) {
+    if (input[field] !== undefined) requirePatterns(field, input[field])
+  }
+  for (const field of ['include', 'exclude'] as const) {
+    if (input[field] !== undefined) requireFileMatchers(field, input[field])
+  }
+  for (const field of ['transformCustomProperties', 'preserveOriginal'] as const) {
+    requireBoolean(field, input[field])
+  }
+  validateRootShape(input.root)
+}
+
 /**
  * Rejects a unit or strategy the compiler cannot emit.
  *
@@ -97,10 +321,13 @@ function validateUnitAndStrategy(
 }
 
 function validateProfile(name: string, profile: AdaptiveProfile): void {
-  if (!profile || typeof profile !== 'object') {
+  if (!isObject(profile)) {
     throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" must be an object.`)
   }
-  const { minWidth, maxWidth } = profile.fluid ?? {}
+  if (!isObject(profile.fluid)) {
+    throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" fluid must be an object.`)
+  }
+  const { minWidth, maxWidth } = profile.fluid
   if (
     !Number.isFinite(minWidth) ||
     !Number.isFinite(maxWidth) ||
@@ -128,10 +355,63 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
       `[postcss-adaptive-matrix] Profile "${name}" requires a positive textAnchorWidth.`,
     )
   }
-  if (profile.fontFluidity != null && (profile.fontFluidity < 0 || profile.fontFluidity > 1)) {
+  if (
+    profile.fontFluidity != null &&
+    (!Number.isFinite(profile.fontFluidity) || profile.fontFluidity < 0 || profile.fontFluidity > 1)
+  ) {
     throw new RangeError(
       `[postcss-adaptive-matrix] Profile "${name}" fontFluidity must be between 0 and 1.`,
     )
+  }
+  if (
+    profile.rootMaxWidth != null &&
+    (!Number.isFinite(profile.rootMaxWidth) || profile.rootMaxWidth <= 0)
+  ) {
+    throw new RangeError(
+      `[postcss-adaptive-matrix] Profile "${name}" requires a positive rootMaxWidth.`,
+    )
+  }
+  if (profile.query !== undefined && profile.query !== false) {
+    if (typeof profile.query === 'string') {
+      if (!profile.query.trim()) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query cannot be an empty string.`,
+        )
+      }
+    } else {
+      if (!isObject(profile.query)) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query must be a string, query object or false.`,
+        )
+      }
+      if (typeof profile.query.condition !== 'string' || !profile.query.condition.trim()) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query.condition must be a non-empty string.`,
+        )
+      }
+      if (
+        profile.query.type !== undefined &&
+        profile.query.type !== 'media' &&
+        profile.query.type !== 'container'
+      ) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query.type must be "media" or "container".`,
+        )
+      }
+      if (
+        profile.query.name !== undefined &&
+        (typeof profile.query.name !== 'string' || !profile.query.name.trim())
+      ) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query.name must be a non-empty string.`,
+        )
+      }
+      if (profile.query.name !== undefined && (profile.query.type ?? 'media') !== 'container') {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query.name only applies to container queries.`,
+        )
+      }
+    }
   }
   validateUnitAndStrategy(`Profile "${name}"`, profile.unit, profile.strategy)
 }
@@ -171,6 +451,7 @@ function normaliseUnits(input: string | readonly string[]): string[] {
 }
 
 export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdaptiveMatrixOptions {
+  validateInputShape(input)
   const preset = appPcPreset()
   const authored = input.profiles ?? preset.profiles!
   const libraries = resolveLibraries(input.libraries)
@@ -183,6 +464,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     root: input.root ?? false,
   }
 
+  if (typeof options.defaultProfile !== 'string' || !options.defaultProfile.trim()) {
+    throw new TypeError('[postcss-adaptive-matrix] defaultProfile must be a non-empty string.')
+  }
   if (!authored[options.defaultProfile]) {
     throw new Error(
       `[postcss-adaptive-matrix] defaultProfile "${options.defaultProfile}" does not exist.`,
@@ -191,8 +475,25 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   if (!Number.isInteger(options.precision) || options.precision < 0 || options.precision > 12) {
     throw new RangeError('[postcss-adaptive-matrix] precision must be an integer from 0 to 12.')
   }
-  if (options.fontFluidity < 0 || options.fontFluidity > 1) {
+  if (
+    !Number.isFinite(options.fontFluidity) ||
+    options.fontFluidity < 0 ||
+    options.fontFluidity > 1
+  ) {
     throw new RangeError('[postcss-adaptive-matrix] fontFluidity must be between 0 and 1.')
+  }
+  for (const [name, value] of [
+    ['minPixelValue', options.minPixelValue],
+    ['hairline', options.hairline],
+  ] as const) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new RangeError(`[postcss-adaptive-matrix] ${name} must be a non-negative number.`)
+    }
+  }
+  if (!UNKNOWN_PROFILE_POLICIES.has(options.unknownProfile)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] unknownProfile must be "warn", "error" or "ignore", not ${JSON.stringify(options.unknownProfile)}.`,
+    )
   }
   if (!options.propList.length) {
     throw new Error('[postcss-adaptive-matrix] propList cannot be empty.')
@@ -222,6 +523,15 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       '[postcss-adaptive-matrix] atRuleName cannot be empty; it names the directive that selects a canvas, such as "adaptive".',
     )
   }
+  if (
+    !/^(?:--|-[A-Za-z_\u0080-\uFFFF]|[A-Za-z_\u0080-\uFFFF])[-A-Za-z0-9_\u0080-\uFFFF]*$/.test(
+      atRuleName,
+    )
+  ) {
+    throw new Error(
+      `[postcss-adaptive-matrix] atRuleName "${options.atRuleName}" is not a valid unescaped CSS identifier.`,
+    )
+  }
   if (RESERVED_AT_RULES.has(atRuleName)) {
     throw new Error(
       `[postcss-adaptive-matrix] atRuleName "${options.atRuleName}" is a CSS at-rule. ` +
@@ -235,12 +545,6 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   // `:where()` with nothing inside it is a parse error, so an empty selector
   // does not produce a weak foundation — it produces one the browser discards
   // whole, taking the safe-area variables and the root cap with it.
-  if (options.root && (typeof options.root !== 'object' || Array.isArray(options.root))) {
-    throw new TypeError('[postcss-adaptive-matrix] root must be false or an options object.')
-  }
-  if (options.root && typeof options.root.selector !== 'string') {
-    throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
-  }
   if (options.root && !options.root.selector.trim()) {
     throw new Error(
       '[postcss-adaptive-matrix] root.selector cannot be empty; it names the element that carries the layout, such as "#app".',
@@ -257,6 +561,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     )
   }
   for (const [name, profile] of Object.entries(authored)) {
+    if (!name.trim()) {
+      throw new TypeError('[postcss-adaptive-matrix] Profile names cannot be empty.')
+    }
     // `library:` belongs to the registry, and the expansion below overwrites
     // whatever shares a name with it. Someone writing `'library:vant'` is
     // trying to retune that canvas, and would get a profile that silently does
@@ -268,25 +575,6 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       )
     }
     validateProfile(name, profile)
-  }
-
-  // The other two route channels take patterns, so reaching for a regex here is
-  // the natural mistake. Left alone it surfaces as `prefix.toLowerCase is not a
-  // function` from inside the resolver, with nothing pointing at the route that
-  // caused it — and a regex is exactly what someone writes when a plain prefix
-  // is not selective enough, so the message has to say what to write instead.
-  for (const route of options.routes) {
-    if (route.property === undefined) continue
-    const prefixes = Array.isArray(route.property) ? route.property : [route.property]
-    for (const prefix of prefixes as unknown[]) {
-      if (typeof prefix !== 'string') {
-        throw new TypeError(
-          `[postcss-adaptive-matrix] Route property takes custom-property prefixes as strings, ` +
-            `such as '--van-'. Received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : typeof prefix}. ` +
-            `Matching is by prefix and case-sensitive, like custom-property names in CSS; list several prefixes to cover several token families.`,
-        )
-      }
-    }
   }
 
   // A band with no bounds matches every rule in the stylesheet, which is a
@@ -329,6 +617,13 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     const expansion = expandLibraries(libraries, authored, options.defaultProfile)
     options.profiles = { ...authored, ...expansion.profiles }
     options.routes = [...options.routes, ...expansion.routes]
+  }
+  for (const [index, route] of options.routes.entries()) {
+    if (route.profile !== false && !options.profiles[route.profile]) {
+      throw new Error(
+        `[postcss-adaptive-matrix] routes[${index}].profile targets unknown profile "${route.profile}".`,
+      )
+    }
   }
   return options
 }
