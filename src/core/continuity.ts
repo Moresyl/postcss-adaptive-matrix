@@ -232,7 +232,7 @@ export function findContinuityIssues(
     // that the stylesheet redefines at a breakpoint, which is the same
     // disagreement one level down and shows up as two different resolved
     // values below.
-    if (group.length < 2 && !group[0]!.value.includes('var(')) continue
+    if (group.length < 2 && !/var\(/i.test(group[0]!.value)) continue
     for (const breakpoint of [...boundaries].sort((a, b) => a - b)) {
       const low = effective(group, breakpoint - PROBE)
       const high = effective(group, breakpoint + PROBE)

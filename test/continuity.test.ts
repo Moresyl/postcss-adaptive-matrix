@@ -269,6 +269,17 @@ describe('findContinuityIssues', () => {
     expect(issues[0]!.above.value).toBe(fluid(20))
   })
 
+  it('follows a case-insensitive VAR() under one declaration', () => {
+    const issues = check(`
+      :root { --card-width: ${fluid(40)} }
+      @media (min-width: 768px) { :root { --card-width: ${fluid(20)} } }
+      .a { width: VAR(--card-width) }
+    `)
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.breakpoint).toBe(768)
+  })
+
   it('declines a token a theme class can override', () => {
     // `.dark { --card-width: ... }` puts the value under an ancestor's class,
     // and no width tells you which one an element sits beneath.
