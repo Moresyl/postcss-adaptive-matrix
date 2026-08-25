@@ -16,6 +16,7 @@
 - Token 替换与连续性诊断现会先按 `!important`、再按源码顺序决定胜者。带层 token 或分散在不同全局选择器写法中的 token 会被保守拒绝而非猜测，同时正确解析大小写不敏感的 `var()` 与字符串内括号。
 - 选择器路由与 specificity 分析现会统一跳过 CSS 注释。注释中的组件库类名、逗号、伪类或 ID 不再能够误选画布，或虚构 selector list / specificity 诊断。
 - 标准属性名与 `propList` 模式按 CSS 规则不区分 ASCII 大小写，`FONT-SIZE` 仍会保留可缩放的 `rem + vw` 文字公式；自定义属性过滤与路由则按 CSS 规则继续区分大小写。
+- 长度匹配现会遵守非 ASCII 及转义 CSS identifier 的边界。identifier 内形似 dimension 的文本（包括 value-parser 拆出的十六进制转义续段）会保持原样，不再被局部替换成函数。
 - `atRuleName` 在校验与匹配前统一规范化，首尾空格不再出现「校验通过、实际匹配不到，最后被浏览器整块丢弃」的情况。
 - `unitToConvert`、`root`、`root.selector` 的运行时形状错误现在会给出明确配置提示，不再泄漏底层 `trim` 异常。
 - 运行时配置校验现已覆盖全部集合及嵌套 query/library 结构。非有限阈值不会再输出 `NaNrem` 或 `Infinitypx`，缺少查询条件不会再输出 `@media undefined`；非法策略、路由边界、CSS 标识符和基础样式字符串都会在读取任何样式表前按精确配置路径报错。

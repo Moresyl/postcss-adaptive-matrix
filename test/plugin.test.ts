@@ -97,6 +97,17 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('outline: .5px solid')
   })
 
+  it('does not convert a dimension-looking substring inside a CSS identifier', async () => {
+    const result = await process(
+      String.raw`.a { width: 宽16px; height: 16px宽; margin: \31 6px; padding: 16px }`,
+    )
+
+    expect(result.css).toContain('width: 宽16px')
+    expect(result.css).toContain('height: 16px宽')
+    expect(result.css).toContain(String.raw`margin: \31 6px`)
+    expect(result.css).toContain('padding: clamp(13.65333px, 4.26667vw, 20.48px)')
+  })
+
   it('honors property, selector, value, and comment exclusions', async () => {
     const result = await process(
       `

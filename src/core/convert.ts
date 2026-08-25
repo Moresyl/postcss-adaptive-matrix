@@ -38,6 +38,7 @@ const VIEWPORT_RELATIVE = new RegExp(
  * Safe to share: `String#replace` with a global regex resets `lastIndex`.
  */
 const UNIT_PATTERNS = new Map<string, RegExp>()
+const IDENT_CONTINUATION_SOURCE = String.raw`A-Za-z0-9_\\\u0080-\uFFFF-`
 
 function unitPattern(units: string[]): RegExp {
   const key = JSON.stringify(units.map((unit) => unit.toLowerCase()))
@@ -48,7 +49,7 @@ function unitPattern(units: string[]): RegExp {
   // each match has to say which one it was, both to know its pixel size and to
   // put it back unchanged when a guard declines the conversion.
   const pattern = new RegExp(
-    `(^|[^a-zA-Z0-9_.-])(${CSS_NUMBER_SOURCE})(${escaped})(?![a-zA-Z0-9_-])`,
+    `(^|[^.${IDENT_CONTINUATION_SOURCE}])(${CSS_NUMBER_SOURCE})(${escaped})(?![${IDENT_CONTINUATION_SOURCE}])`,
     'gi',
   )
   UNIT_PATTERNS.set(key, pattern)
@@ -317,6 +318,27 @@ function isAlreadyBounded(node: Node): boolean {
   return VIEWPORT_RELATIVE.test(valueParser.stringify(node.nodes))
 }
 
+/**
+ * Whether a value-parser word continues a CSS hex escape from the prior word.
+ *
+ * In `x\31 6px` the space terminates the escape but is not a token separator:
+ * the browser reads one identifier, while value-parser exposes `6px` as a new
+ * word. Converting that apparent dimension would mutate an identifier.
+ */
+function continuesHexEscape(value: string, index: number): boolean {
+  if (index === 0 || !/\s/.test(value[index - 1]!)) return false
+  let cursor = index - 2
+  // CRLF is one CSS newline and may be the single whitespace consumed after
+  // an escape, even though it occupies two JavaScript code units.
+  if (value[index - 1] === '\n' && value[cursor] === '\r') cursor -= 1
+  let digits = 0
+  while (cursor >= 0 && digits < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
+    digits += 1
+    cursor -= 1
+  }
+  return digits > 0 && value[cursor] === '\\'
+}
+
 function convertResolvedValue(
   value: string,
   designWidth: number,
@@ -330,6 +352,7 @@ function convertResolvedValue(
   parsed.walk((node) => {
     if (shouldSkipFunction(node) || isAlreadyBounded(node)) return false
     if (node.type !== 'word') return undefined
+    if (continuesHexEscape(value, node.sourceIndex)) return undefined
     node.value = node.value.replace(
       pattern,
       (match, prefix: string, number: string, unit: string) => {
