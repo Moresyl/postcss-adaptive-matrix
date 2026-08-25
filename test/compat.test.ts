@@ -186,6 +186,11 @@ describe('detection', () => {
     expect(found).not.toContain('viewport-units')
   })
 
+  it('detects non-ASCII and escaped custom-property declarations', () => {
+    expect(ids(':root { --间距: 16px }')).toContain('custom-properties')
+    expect(ids(String.raw`:root { --\95f4\8ddd: 16px }`)).toContain('custom-properties')
+  })
+
   it('reports :has() that came in through the source', async () => {
     // The compiler emits no `:has()`. It survives the pass, and surviving is
     // exactly why it belongs in an audit that reads the output: the rule ships

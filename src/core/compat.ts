@@ -59,6 +59,11 @@ export interface CompatFeature {
   detect?: RegExp
 }
 
+// A custom property may contain non-ASCII code points and CSS escapes. `\w`
+// recognises neither in JavaScript, so using it here would let declarations
+// such as `--间距` or `--\95f4\8ddd` disappear from the browser-support audit.
+const CUSTOM_PROPERTY_DECLARATION = String.raw`(?:^|[;{\s])--(?:\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f])|[-_a-z0-9\u0080-\uFFFF])+\s*:`
+
 /**
  * Every feature in the compiler's output vocabulary.
  *
@@ -190,7 +195,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     // A declaration counts as much as a reference: `--adaptive-safe-top: …`
     // is already the feature, and a browser that cannot parse it never gets
     // as far as the `var()` that would have read it.
-    detect: /var\(\s*--|(?:^|[;{\s])--[\w-]+\s*:/i,
+    detect: new RegExp(String.raw`var\(\s*--|${CUSTOM_PROPERTY_DECLARATION}`, 'i'),
   },
   {
     id: 'env-function',
