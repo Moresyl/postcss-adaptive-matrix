@@ -125,9 +125,13 @@ function toPixels(value: number, unit: string, context: EvaluationContext): Quan
       pixels = value
       break
     case 'rem':
-    case 'em':
       pixels = value * context.rootFontSize
       break
+    case 'em':
+      // `em` belongs to the element's inherited font size, not the root. The
+      // selector/cascade context needed to know it is deliberately outside
+      // this arithmetic evaluator, so treating it as `rem` would invent pixels.
+      return null
     case 'vw':
     case 'vi':
       pixels = (value * context.width) / 100

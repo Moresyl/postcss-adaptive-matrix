@@ -17,13 +17,17 @@ describe('evaluateLength', () => {
     expect(evaluateLength('16px', context)).toBe(16)
     expect(evaluateLength('0', context)).toBe(0)
     expect(evaluateLength('2rem', context)).toBe(32)
-    expect(evaluateLength('2em', context)).toBe(32)
     expect(evaluateLength('10vw', context)).toBe(100)
     expect(evaluateLength('10vi', context)).toBe(100)
     expect(evaluateLength('10vh', context)).toBe(80)
     expect(evaluateLength('10vb', context)).toBe(80)
     expect(evaluateLength('10vmin', context)).toBe(80)
     expect(evaluateLength('10vmax', context)).toBe(100)
+  })
+
+  it('does not invent an inherited font size for em', () => {
+    expect(evaluateLength('2em', context)).toBeNull()
+    expect(evaluateLength('calc(2em + 1px)', context)).toBeNull()
   })
 
   it('evaluates the functions a compiled length is made of', () => {
