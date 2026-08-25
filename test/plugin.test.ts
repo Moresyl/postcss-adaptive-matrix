@@ -13,6 +13,31 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  it('processes every source root in a PostCSS Document independently', async () => {
+    const document = postcss.document()
+    document.append(postcss.parse('.mobile { width: 16px }', { from: '/src/mobile.css' }))
+    document.append(postcss.parse('.desktop { width: 16px }', { from: '/src/entry-desktop.css' }))
+
+    const result = await postcss([
+      adaptiveMatrix({
+        defaultProfile: 'app',
+        libraries: false,
+        strategy: 'viewport',
+        hairline: 0,
+        profiles: {
+          app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } },
+          pc: { designWidth: 1440, fluid: { minWidth: 768, maxWidth: 1920 } },
+        },
+        routes: [{ file: 'desktop', profile: 'pc' }],
+        root: { selector: '#app', injectTo: 'entry-desktop' },
+      }),
+    ]).process(document, { from: undefined })
+
+    expect(result.css).toContain('.mobile { width: 4.26667vw }')
+    expect(result.css).toContain('.desktop { width: 1.11111vw }')
+    expect(result.css.match(/postcss-adaptive-matrix foundation/g)).toHaveLength(1)
+  })
+
   it('converts ordinary rules with bounded fluid lengths and zoomable text', async () => {
     const result = await process(
       '.card { width: 187.5px; margin: -10px; font-size: 16px; border: 1px solid; }',
