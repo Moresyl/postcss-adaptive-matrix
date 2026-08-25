@@ -23,6 +23,7 @@ export type CompatFeatureId =
   | 'logical-viewport-units'
   | 'container-query-units'
   | 'container-queries'
+  | 'media-range-syntax'
   | 'cascade-layers'
   | 'env-function'
   | 'where-pseudo'
@@ -115,6 +116,19 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     fallback:
       'root.container: false and media-type profile queries. Media queries measure the viewport rather than an ancestor, which is what you want anyway unless the component genuinely reflows inside a resizable panel.',
     detect: /@container\b|(?:^|[;{\s])container(?:-type|-name)?\s*:/i,
+  },
+  {
+    id: 'media-range-syntax',
+    title: 'media-query range syntax',
+    source: 'css-media-range-syntax',
+    emittedBy:
+      'a profile query written with a Level 4 comparison such as (width >= 768px), or authored CSS that already uses one',
+    failure:
+      'A browser that does not understand range context treats the media query as false, so the whole block stops applying. When that query switches design canvases, the non-default canvas disappears completely.',
+    fallback:
+      'Spell each bound with the equivalent min-width/max-width syntax. For example, (768px <= width < 1280px) becomes (min-width: 768px) and (max-width: 1279.98px); the small subtraction avoids an overlap at the upper boundary.',
+    detect:
+      /@media[^{]*\(\s*(?:width\s*(?:[<>]=?|=)|[+-]?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?(?:px|r?em)?\s*(?:[<>]=?|=)\s*width\b)/i,
   },
   {
     id: 'math-functions',

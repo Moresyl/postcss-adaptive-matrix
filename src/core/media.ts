@@ -13,6 +13,19 @@ const WIDTH_FEATURE = new RegExp(
   `^\\(\\s*(min|max)-width\\s*:\\s*(${CSS_NUMBER_SOURCE})(px|r?em)?\\s*\\)$`,
   'i',
 )
+const LENGTH_SOURCE = `(${CSS_NUMBER_SOURCE})(px|r?em)?`
+const WIDTH_FIRST_RANGE = new RegExp(
+  `^\\(\\s*width\\s*(<=|>=|<|>|=)\\s*${LENGTH_SOURCE}\\s*\\)$`,
+  'i',
+)
+const VALUE_FIRST_RANGE = new RegExp(
+  `^\\(\\s*${LENGTH_SOURCE}\\s*(<=|>=|<|>|=)\\s*width\\s*\\)$`,
+  'i',
+)
+const CHAINED_RANGE = new RegExp(
+  `^\\(\\s*${LENGTH_SOURCE}\\s*(<=|>=|<|>)\\s*width\\s*(<=|>=|<|>)\\s*${LENGTH_SOURCE}\\s*\\)$`,
+  'i',
+)
 /** Media types that describe a screen; anything else is not our business. */
 const SCREEN_TYPES = new Set(['screen', 'all'])
 
@@ -30,15 +43,95 @@ const SCREEN_TYPES = new Set(['screen', 'all'])
  */
 const INITIAL_FONT_SIZE = 16
 
+interface WidthConstraint {
+  side: 'min' | 'max'
+  px: number
+}
+
+function lengthInPixels(numberText: string, unitText: string | undefined): number | null {
+  const number = Number(numberText)
+  if (!Number.isFinite(number) || (unitText === undefined && number !== 0)) return null
+  const unit = unitText?.toLowerCase()
+  return number * (unit === undefined || unit === 'px' ? 1 : INITIAL_FONT_SIZE)
+}
+
+function constraint(side: 'min' | 'max', px: number | null): WidthConstraint[] | null {
+  return px === null ? null : [{ side, px }]
+}
+
+function sidesFor(operator: string, featureFirst: boolean): 'min' | 'max' | 'equal' {
+  if (operator === '=') return 'equal'
+  const greater = operator.startsWith('>')
+  return greater === featureFirst ? 'min' : 'max'
+}
+
+/** One traditional or Level 4 range-context width feature. */
+function parseFeature(feature: string): WidthConstraint[] | null {
+  const legacy = WIDTH_FEATURE.exec(feature)
+  if (legacy) {
+    return constraint(
+      legacy[1]!.toLowerCase() as 'min' | 'max',
+      lengthInPixels(legacy[2]!, legacy[3]),
+    )
+  }
+
+  const widthFirst = WIDTH_FIRST_RANGE.exec(feature)
+  if (widthFirst) {
+    const px = lengthInPixels(widthFirst[2]!, widthFirst[3])
+    const side = sidesFor(widthFirst[1]!, true)
+    if (side === 'equal' && px !== null)
+      return [
+        { side: 'min', px },
+        { side: 'max', px },
+      ]
+    return side === 'equal' ? null : constraint(side, px)
+  }
+
+  const valueFirst = VALUE_FIRST_RANGE.exec(feature)
+  if (valueFirst) {
+    const px = lengthInPixels(valueFirst[1]!, valueFirst[2])
+    const side = sidesFor(valueFirst[3]!, false)
+    if (side === 'equal' && px !== null)
+      return [
+        { side: 'min', px },
+        { side: 'max', px },
+      ]
+    return side === 'equal' ? null : constraint(side, px)
+  }
+
+  const chained = CHAINED_RANGE.exec(feature)
+  if (!chained) return null
+  const left = lengthInPixels(chained[1]!, chained[2])
+  const right = lengthInPixels(chained[5]!, chained[6])
+  if (left === null || right === null) return null
+  const leftSide = sidesFor(chained[3]!, false)
+  const rightSide = sidesFor(chained[4]!, true)
+  // `(400px < width < 1000px)` and its reversed spelling are valid chains;
+  // arrows pointing away from/toward width are not one mathematical interval.
+  if (leftSide === 'equal' || rightSide === 'equal' || leftSide === rightSide) return null
+  return [
+    { side: leftSide, px: left },
+    { side: rightSide, px: right },
+  ]
+}
+
 /** The bound in pixels, and which side of it the rule is live on. */
 function parseCondition(condition: string): { side: 'min' | 'max'; px: number } | null {
-  const parsed = WIDTH_FEATURE.exec(condition)
-  if (!parsed) return null
-  const number = Number(parsed[2])
-  if (!Number.isFinite(number) || (parsed[3] === undefined && number !== 0)) return null
-  const unit = parsed[3]?.toLowerCase()
-  const scale = unit === undefined || unit === 'px' ? 1 : INITIAL_FONT_SIZE
-  return { side: parsed[1]!.toLowerCase() as 'min' | 'max', px: number * scale }
+  const parsed = parseFeature(condition)
+  return parsed?.length === 1 ? parsed[0]! : null
+}
+
+function withoutComments(params: string): string | null {
+  let output = ''
+  let cursor = 0
+  for (;;) {
+    const start = params.indexOf('/*', cursor)
+    if (start < 0) return output + params.slice(cursor)
+    const end = params.indexOf('*/', start + 2)
+    if (end < 0) return null
+    output += params.slice(cursor, start) + ' '
+    cursor = end + 2
+  }
 }
 
 /**
@@ -46,13 +139,15 @@ function parseCondition(condition: string): { side: 'min' | 'max'; px: number } 
  * rules above exclude.
  */
 export function widthConditions(params: string): string[] | null {
-  if (/[,]|\bnot\b|\bonly\b/i.test(params)) return null
-  const parts = params.split(/\s+and\s+/i).map((part) => part.trim())
+  const clean = withoutComments(params)
+  if (clean === null || /[,]|\bnot\b|\bonly\b/i.test(clean)) return null
+  const parts = clean.split(/\s+and\s+/i).map((part) => part.trim())
   const conditions: string[] = []
   for (const part of parts) {
     if (SCREEN_TYPES.has(part.toLowerCase())) continue
-    if (!WIDTH_FEATURE.test(part)) return null
-    conditions.push(part)
+    const parsed = parseFeature(part)
+    if (!parsed) return null
+    for (const entry of parsed) conditions.push(`(${entry.side}-width: ${entry.px}px)`)
   }
   return conditions
 }

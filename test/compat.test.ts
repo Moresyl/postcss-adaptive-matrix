@@ -66,6 +66,27 @@ const EMITTERS: Record<
     on: { root: { selector: '#app', layer: false, container: true } },
     off: { root: { selector: '#app', layer: false, container: false } },
   },
+  'media-range-syntax': {
+    css: '@adaptive app { .card { width: 100px } }',
+    on: {
+      profiles: {
+        app: {
+          designWidth: 375,
+          fluid: { minWidth: 320, maxWidth: 480 },
+          query: '(width >= 320px)',
+        },
+      },
+    },
+    off: {
+      profiles: {
+        app: {
+          designWidth: 375,
+          fluid: { minWidth: 320, maxWidth: 480 },
+          query: '(min-width: 320px)',
+        },
+      },
+    },
+  },
   'math-functions': {
     css: '.card { width: 100px }',
     on: { strategy: 'clamp' },

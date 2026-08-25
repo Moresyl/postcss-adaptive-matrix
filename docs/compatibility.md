@@ -26,6 +26,7 @@ So the order to work through is not "which feature is newest" but **how much is 
 | `:where()` ¹ | 88 | 88 | 14 | 14.0 | 78 | 15.0 |
 | `:has()` ³ | 105 | 105 | 15.4 | 15.4 | **121** | 20 |
 | `@container` / `container-type` | 106 | 106 | 16.0 | 16.0 | 110 | 20 |
+| Media-query range syntax | 104 | 104 | 16.4 | 16.4 | 63 | 20 |
 | `clamp()` `min()` `max()` | 79 | 79 | 13.1 | 13.4 | 75 | 12.0 |
 | `cqw` / `cqi` | 105 | 105 | 16.0 | 16.0 | 110 | 20 |
 | `vi` ² | 108 | 108 | 15.4 | 15.4 | 101 | 21 |
@@ -78,6 +79,14 @@ Routing is not affected either way. A `:has()` argument names what an element *c
 **What is lost**: the `container-type` declaration is voided, which is quiet; an `@container` block is voided entirely, which is not — a profile that switches on a container query stops switching, and every canvas other than the default disappears. Container units behave like `clamp()`: they take their declaration with them.
 
 **How to switch it off**: `root: { container: false }`, a profile query using `type: 'media'`, and `unit` back to `'vw'`. A media query measures the viewport rather than an ancestor — and unless the component really does reflow independently inside a draggable panel, the viewport was what you wanted anyway.
+
+### Media-query range syntax
+
+**What emits it**: a profile `query` written as `(width >= 768px)` or `(768px <= width < 1280px)`, or authored CSS that already uses this Level 4 syntax.
+
+**What is lost**: an older browser treats the query as false, so its whole block stops applying. If that block switches canvas, the non-default canvas disappears.
+
+**How to switch it off**: use the equivalent `min-width` / `max-width` spelling. For an exclusive upper bound, subtract a small fraction (`max-width: 1279.98px`) to avoid overlapping the next interval.
 
 ### `clamp()` / `min()` / `max()`
 

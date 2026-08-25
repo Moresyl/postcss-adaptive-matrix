@@ -54,6 +54,15 @@ export const FEATURE_SUPPORT = {
     ios_saf: '16.0',
     samsung: '20',
   },
+  /** Media Queries: Range Syntax */
+  'css-media-range-syntax': {
+    chrome: '104',
+    edge: '104',
+    safari: '16.4',
+    firefox: '63',
+    ios_saf: '16.4',
+    samsung: '20',
+  },
   /** CSS Cascade Layers */
   'css-cascade-layers': {
     chrome: '99',

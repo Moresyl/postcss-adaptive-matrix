@@ -59,12 +59,35 @@ describe('bandOf', () => {
     expect(boundaryOf('(MAX-WIDTH: 1E2EM)')).toBe(1600)
   })
 
+  it('reads Media Queries Level 4 range context in either direction', () => {
+    expect(bandOf('(width >= 64rem)')).toEqual({ lo: 1024, hi: Infinity })
+    expect(bandOf('(1024px <= width)')).toEqual({ lo: 1024, hi: Infinity })
+    expect(bandOf('(width < 1200px)')).toEqual({ lo: 0, hi: 1200 })
+    expect(bandOf('(1200px > width)')).toEqual({ lo: 0, hi: 1200 })
+    expect(bandOf('(768px <= width < 80rem)')).toEqual({ lo: 768, hi: 1280 })
+    expect(bandOf('(80rem >= width > 768px)')).toEqual({ lo: 768, hi: 1280 })
+    expect(bandOf('(width = 1024px)')).toEqual({ lo: 1024, hi: 1024 })
+  })
+
+  it('accepts comments between media-query tokens without reading their contents', () => {
+    expect(bandOf('screen/**/ and /* min-width: 1px */ (width >= 1024px)')).toEqual({
+      lo: 1024,
+      hi: Infinity,
+    })
+  })
+
   it('rejects malformed, non-finite and non-zero unitless media lengths', () => {
     for (const condition of [
       '(min-width: 1..2px)',
       '(min-width: 10.)',
       '(min-width: 10)',
       '(min-width: 1e999px)',
+      '(400px < width > 1000px)',
+      '(400px <= width >= 1000px)',
+      '(width >= 1..2px)',
+      '(width >= 10)',
+      '(width >= 1e999px)',
+      '(width >= 10px) /* open',
     ]) {
       expect(bandOf(condition), condition).toBeNull()
     }
@@ -126,6 +149,8 @@ describe('a media route', () => {
       '(min-width: 64rem)',
       '(min-width: 1024px) and (max-width: 1600px)',
       '(MIN-WIDTH: 1.024e3PX)',
+      '(width >= 1024px)',
+      '(1024px <= width < 1600px)',
     ]) {
       const { css } = await run(`@media ${params} { .a { padding: 40px } }`, routed)
       expect(css, params).toContain('2.77778vw')

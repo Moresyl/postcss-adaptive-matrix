@@ -47,6 +47,7 @@ const FEATURES = [
   'viewport-unit-variants',
   'css-container-query-units',
   'css-container-queries',
+  'css-media-range-syntax',
   'css-cascade-layers',
   'css-env-function',
   'css-matches-pseudo',
