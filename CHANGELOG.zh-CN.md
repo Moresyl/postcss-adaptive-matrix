@@ -13,6 +13,7 @@
 - 媒体路由与 token 诊断现支持 Media Queries Level 4 range context：可识别 feature-first、value-first、链式及等值 width 比较，也允许 token 之间的注释；方向矛盾的链及不支持的特性仍会被明确视为不可读，兼容报告则会为旧目标浏览器标出这项新语法。
 - 互相矛盾的媒体边界现会形成明确的不可达区间：没有媒体路由认领，已转换规则只给出一次可操作告警，不再错误宣称 clamp 被钉在一个首尾倒置的宽度范围内。
 - Profile 查询条件在写入生成的 at-rule 前会执行与具体语法版本无关的结构校验。未闭合的字符串、注释或 component-value 块，以及顶层边界字符，不再能够逃逸包裹层或吞掉后续样式；新的嵌套查询语法仍可正常使用。
+- Root selector 在包进 `:where()` 前也会通过同一套与语法版本无关的结构守卫。未平衡的字符串、注释、圆括号、属性方括号或未转义规则花括号，不再能够破坏生成的 foundation。
 - Token 替换与连续性诊断现会先按 `!important`、再按源码顺序决定胜者。带层 token 或分散在不同全局选择器写法中的 token 会被保守拒绝而非猜测，同时正确解析大小写不敏感的 `var()` 与字符串内括号。
 - 选择器路由与 specificity 分析现会统一跳过 CSS 注释。注释中的组件库类名、逗号、伪类或 ID 不再能够误选画布，或虚构 selector list / specificity 诊断。
 - 标准属性名与 `propList` 模式按 CSS 规则不区分 ASCII 大小写，`FONT-SIZE` 仍会保留可缩放的 `rem + vw` 文字公式；自定义属性过滤与路由则按 CSS 规则继续区分大小写。

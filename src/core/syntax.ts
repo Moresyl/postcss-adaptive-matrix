@@ -43,15 +43,15 @@ export function isCssLayerName(value: string): boolean {
 }
 
 /**
- * Reports structural syntax that can escape or swallow a generated at-rule.
+ * Reports structural syntax that can escape or swallow a generated wrapper.
  *
  * This deliberately does not try to parse the evolving media/container-query
- * grammar. It only owns the boundary that the compiler creates around a user
- * condition: quotes, comments and CSS simple blocks must close; a top-level
- * semicolon or brace must not end that boundary early. Escapes and nested
- * component values remain available to newer query syntax.
+ * grammar. It only owns the boundary that the compiler creates around user
+ * text: quotes, comments, parentheses and brackets must close; an unescaped
+ * rule brace or top-level semicolon must not end that boundary early. Escaped
+ * characters and nested component values remain available to newer syntax.
  */
-export function queryConditionStructureIssue(value: string): string | null {
+export function cssComponentValueStructureIssue(value: string): string | null {
   const blocks: string[] = []
   let quote: "'" | '"' | null = null
   let comment = false
@@ -91,10 +91,8 @@ export function queryConditionStructureIssue(value: string): string | null {
       continue
     }
 
-    if (character === '(' || character === '[' || character === '{') {
-      if (character === '{' && blocks.length === 0) {
-        return 'contains a top-level "{"'
-      }
+    if (character === '{') return 'contains a "{"'
+    if (character === '(' || character === '[') {
       blocks.push(character)
       continue
     }

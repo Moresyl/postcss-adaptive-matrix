@@ -237,7 +237,7 @@ describe('configuration validation', () => {
     })
 
     expect(() => resolveOptions(profile('(width > 1px) { .escaped'))).toThrow(
-      /query contains a top-level "\{".*safely wrapped/,
+      /query contains a "\{".*safely wrapped/,
     )
     expect(() => resolveOptions(profile('(width > 1px); .escaped'))).toThrow(
       /query contains a top-level ";".*safely wrapped/,
@@ -255,6 +255,23 @@ describe('configuration validation', () => {
     // because this guard is intentionally narrower than a full query parser.
     expect(() =>
       resolveOptions(profile({ type: 'container', condition: 'style(--theme: "a;b")' })),
+    ).not.toThrow()
+  })
+
+  it('keeps the configured root selector inside :where()', () => {
+    for (const selector of [
+      '#app) { .escaped',
+      ':is(#app { .escaped)',
+      '#app[open',
+      '#app /* open',
+      '#app; .escaped',
+    ]) {
+      expect(() => resolveOptions({ root: { selector } }), selector).toThrow(
+        /root\.selector.*safely wrapped in :where/,
+      )
+    }
+    expect(() =>
+      resolveOptions({ root: { selector: ':is(#app, [data-shell="wide;main"])' } }),
     ).not.toThrow()
   })
 

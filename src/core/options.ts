@@ -1,10 +1,10 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
 import {
+  cssComponentValueStructureIssue,
   isCssCustomIdentifier,
   isCssIdentifier,
   isCssLayerName,
-  queryConditionStructureIssue,
 } from './syntax.js'
 import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 import type {
@@ -254,6 +254,12 @@ function validateRootShape(root: unknown): void {
   if (typeof root.selector !== 'string') {
     throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
   }
+  const selectorIssue = cssComponentValueStructureIssue(root.selector)
+  if (selectorIssue) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] root.selector ${selectorIssue}; it cannot be safely wrapped in :where().`,
+    )
+  }
   for (const field of [
     'center',
     'container',
@@ -458,7 +464,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
       queryCondition = profile.query.condition
       queryPath = 'query.condition'
     }
-    const queryIssue = queryConditionStructureIssue(queryCondition)
+    const queryIssue = cssComponentValueStructureIssue(queryCondition)
     if (queryIssue) {
       throw new TypeError(
         `[postcss-adaptive-matrix] Profile "${name}" ${queryPath} ${queryIssue}; it cannot be safely wrapped in a CSS at-rule.`,

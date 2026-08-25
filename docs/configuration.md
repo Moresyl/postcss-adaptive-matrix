@@ -259,7 +259,7 @@ interface AdaptiveProfile {
 
 `query: false` removes the `@adaptive` wrapper but keeps the rules inside it, which suits building separate artifacts with the profile chosen by environment.
 
-Query conditions may use current or future CSS media/container-query syntax, but their structural boundary must be complete: strings, comments and `()`, `[]`, `{}` component-value blocks must close, while a top-level `;`, `{` or `}` is rejected. This prevents a JavaScript configuration typo from ending the generated at-rule early or swallowing the rules that follow it without artificially freezing the query grammar.
+Query conditions may use current or future CSS media/container-query syntax, but their structural boundary must be complete: strings, comments and `()` / `[]` component-value blocks must close, while an unescaped brace or top-level `;` is rejected. This prevents a JavaScript configuration typo from ending the generated at-rule early or swallowing the rules that follow it without artificially freezing the query grammar.
 
 `textAnchorWidth` defaults to `designWidth` and affects text only: text keeps a fixed `rem` component (so browser zoom keeps working), and a fixed length only means something relative to some width. A hand-written canvas anchoring to its own design width is correct; but when two canvases describe **the same design in two sets of units** (a library drawn on 375, pages drawn on 750, where Vant's 16px is the page's 32px), anchoring each to itself leaves the two misaligned at every viewport. Library canvases therefore always inherit the anchor of the profile they belong to, with nothing to configure. For the reasoning and the measurements see [Which canvas the static part anchors to](./architecture.md#which-canvas-the-static-part-anchors-to).
 
@@ -282,6 +282,8 @@ interface RootFoundationOptions {
 No global styles are injected by default. This is enabled only by configuring `root` explicitly or passing `rootSelector` to `appPcPreset`.
 
 `containerName` must be a non-reserved CSS custom identifier. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
+
+`selector` is inserted inside `:where(...)`, so the same structural guard applies: strings, comments, parentheses and attribute brackets must close, and unescaped braces or a top-level semicolon are rejected before the foundation is generated.
 
 ### injectTo
 
