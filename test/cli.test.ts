@@ -314,6 +314,30 @@ describe('runCli', () => {
     expect(out).toContain('pc (default)')
   })
 
+  it('does not mutate a cached or frozen config when --profile overrides it', async () => {
+    const config = join(directory, 'frozen.config.mjs')
+    await writeFile(
+      config,
+      `const config = {
+        defaultProfile: 'app',
+        profiles: {
+          app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } },
+          pc: { designWidth: 1440, fluid: { minWidth: 768, maxWidth: 1920 } }
+        }
+      }; export default Object.freeze(config)`,
+      'utf8',
+    )
+    const path = await file('app.css', '.page { padding: 144px }')
+
+    expect(await runCli([path, '--no-color', '-c', config, '--profile', 'pc'])).toBe(0)
+    expect(out).toContain('10vw')
+
+    out = ''
+    expect(await runCli([path, '--no-color', '-c', config])).toBe(0)
+    expect(out).toContain('38.4vw')
+    expect(out).not.toContain('pc (default)')
+  })
+
   it('reads options from a --config module', async () => {
     const config = join(directory, 'adaptive.config.mjs')
     await writeFile(

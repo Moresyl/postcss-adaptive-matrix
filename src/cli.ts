@@ -564,8 +564,13 @@ export async function runCli(argv: string[]): Promise<number> {
     if (args.failOn.includes('compatibility') && !args.targets) {
       throw new CliError('--fail-on compatibility requires --targets to define browser support.')
     }
-    const options = args.config ? await loadConfig(args.config) : {}
-    if (args.profile) options.defaultProfile = args.profile
+    const loadedOptions = args.config ? await loadConfig(args.config) : {}
+    // Config modules are cached by ESM and may deliberately freeze their
+    // exported object. A command-line override belongs to this invocation;
+    // mutating the export either throws or leaks into the next runCli() call.
+    const options = args.profile
+      ? { ...loadedOptions, defaultProfile: args.profile }
+      : loadedOptions
 
     // Resolved before anything is read: a bad defaultProfile or an inverted
     // fluid window fails here, with the compiler's own message, rather than
@@ -585,13 +590,14 @@ export async function runCli(argv: string[]): Promise<number> {
 
     const inputs =
       args.files.length && !stdinInputs
-        ? await Promise.all(
-            args.files.map(async (file) => ({
-              from: resolve(file),
-              label: relative(process.cwd(), resolve(file)) || file,
-              source: await readFile(resolve(file), 'utf8'),
-            })),
-          )
+        ? args.files.map((file) => {
+            const absolute = resolve(file)
+            return {
+              from: absolute,
+              label: relative(process.cwd(), absolute) || file,
+              source: undefined,
+            }
+          })
         : [
             {
               from: resolve(args.from ?? 'stdin.css'),
@@ -607,8 +613,11 @@ export async function runCli(argv: string[]): Promise<number> {
     const jsonFiles: CliFileReport[] = []
     for (const input of inputs) {
       const from = args.from ? resolve(args.from) : input.from
+      // Read only the file being compiled. Large batches retain reports, not a
+      // second in-memory copy of every source file at once.
+      const source = input.source ?? (await readFile(input.from, 'utf8'))
       const { root, changes, warnings, issues, audit } = await compile(
-        input.source,
+        source,
         from,
         options,
         args.targets,
