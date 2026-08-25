@@ -27,6 +27,10 @@ describe('splitSelectorList', () => {
   it('drops empty branches from a trailing or doubled comma', () => {
     expect(splitSelectorList('.a, , .b,')).toEqual(['.a', '.b'])
   })
+
+  it('does not split on a comma inside a comment', () => {
+    expect(splitSelectorList('.a/* , #fake */, .b')).toEqual(['.a/* , #fake */', '.b'])
+  })
 })
 
 describe('routingSelector', () => {
@@ -55,6 +59,11 @@ describe('routingSelector', () => {
   it('survives an unbalanced or truncated selector without hanging', () => {
     expect(routingSelector(':not(.a')).toBe(':not(.a')
     expect(routingSelector('[title="unterminated')).toBe('[title="unterminated')
+  })
+
+  it('removes comment contents from the text used for routing', () => {
+    expect(routingSelector('.page/* .van-cell */.hero')).toBe('.page/**/.hero')
+    expect(routingSelector('.page/* :not(.van-cell) */:hover')).toBe('.page/**/:hover')
   })
 })
 
@@ -86,6 +95,12 @@ describe('nestedSelectorLists', () => {
   it('understands the prefixed spellings', () => {
     expect(nestedSelectorLists(':-webkit-any(.a, .b)')).toEqual([
       { pseudo: '-webkit-any', parts: ['.a', '.b'] },
+    ])
+  })
+
+  it('ignores pseudo-classes, commas and parentheses inside comments', () => {
+    expect(nestedSelectorLists(':is(.a/*), :where(.x,.y) */, .b)')).toEqual([
+      { pseudo: 'is', parts: ['.a/*), :where(.x,.y) */', '.b'] },
     ])
   })
 })
@@ -124,6 +139,10 @@ describe('specificity', () => {
   it('counts nothing for a lone punctuation mark', () => {
     expect(specificity('.')).toEqual([0, 0, 0])
     expect(specificity('#')).toEqual([0, 0, 0])
+  })
+
+  it('does not count selector-looking text inside comments', () => {
+    expect(specificity('.a/* #fake .x div */ > span')).toEqual([0, 1, 1])
   })
 
   it('orders the way the cascade does', () => {

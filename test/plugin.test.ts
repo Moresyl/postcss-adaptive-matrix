@@ -708,6 +708,14 @@ describe('selectors that mention a library without being one', () => {
     expect(result.warnings()).toHaveLength(0)
   })
 
+  it('does not route a rule by selector-looking text inside a comment', async () => {
+    const result = await process('.page-hero/* .van-cell */:hover { padding: 16px }', options)
+
+    expect(result.css).toContain(onPage)
+    expect(result.css).not.toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
   it('still routes on the part that does match', async () => {
     const result = await process('.van-cell:not(.page-hero) { padding: 16px }', options)
 

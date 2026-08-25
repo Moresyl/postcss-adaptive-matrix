@@ -75,11 +75,21 @@ function skipString(selector: string, start: number): number {
   return selector.length
 }
 
+/** Index just past a CSS comment, or the end for an unterminated one. */
+function skipComment(selector: string, start: number): number {
+  const close = selector.indexOf('*/', start + 2)
+  return close < 0 ? selector.length : close + 2
+}
+
 /** Index just past the attribute selector starting at `start`. */
 function skipAttribute(selector: string, start: number): number {
   let index = start + 1
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
       continue
@@ -96,6 +106,10 @@ function matchingParen(selector: string, open: number): number {
   let index = open
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
       continue
@@ -155,6 +169,10 @@ export function splitSelectorList(selector: string): string[] {
   let index = 0
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
       continue
@@ -188,11 +206,18 @@ export function routingSelector(selector: string): string {
   // Nothing to exclude without a pseudo-class, and most selectors in a
   // stylesheet have none. This runs on every rule of every file, so the check
   // that skips the rewrite entirely is worth more than anything inside it.
-  if (!selector.includes(':')) return selector
+  if (!selector.includes(':') && !selector.includes('/*')) return selector
   let output = ''
   let index = 0
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      // Keep an empty comment as a token boundary while discarding everything
+      // inside it. A library prefix in prose is not part of the selector.
+      output += '/**/'
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       const end = skipString(selector, index)
       output += selector.slice(index, end)
@@ -241,6 +266,10 @@ export function nestedSelectorLists(selector: string): NestedSelectorList[] {
   let index = 0
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
       continue
@@ -288,6 +317,10 @@ export function specificity(selector: string): Specificity {
   let index = 0
   while (index < selector.length) {
     const character = selector[index]!
+    if (character === '/' && selector[index + 1] === '*') {
+      index = skipComment(selector, index)
+      continue
+    }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
       continue
