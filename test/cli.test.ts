@@ -660,4 +660,35 @@ describe('runCli --targets', () => {
     expect(await runCli([path, '--targets', 'safari'])).toBe(1)
     expect(err).toContain('Could not read target "safari"')
   })
+
+  it('validates version grammar and comparison direction', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    for (const target of ['safari 1..2', 'safari 17.', 'safari < 17', 'safari > 17']) {
+      err = ''
+      expect(await runCli([path, '--targets', target]), target).toBe(1)
+      expect(err, target).toContain('Could not read target')
+    }
+    expect(await runCli([path, '--targets', 'safari >= 17', '--no-color'])).toBe(0)
+    expect(await runCli([path, '--targets', 'safari@17', '--no-color'])).toBe(0)
+  })
+
+  it('keeps the oldest duplicate alias regardless of argument order', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(
+      await runCli([path, '--json', '--targets', 'chrome 120, android 79', '--no-color']),
+    ).toBe(0)
+    expect((JSON.parse(out) as { targets: Record<string, string> }).targets).toEqual({
+      chrome: '79',
+    })
+
+    out = ''
+    expect(
+      await runCli([path, '--json', '--targets', 'android 79, chrome 120', '--no-color']),
+    ).toBe(0)
+    expect((JSON.parse(out) as { targets: Record<string, string> }).targets).toEqual({
+      chrome: '79',
+    })
+  })
 })

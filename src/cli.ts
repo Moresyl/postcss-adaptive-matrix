@@ -12,7 +12,13 @@ import postcss, {
   type Root,
   type Rule,
 } from 'postcss'
-import { type CompatAudit, auditCompatibility, resolveBrowser } from './core/compat.js'
+import {
+  type CompatAudit,
+  auditCompatibility,
+  compareVersions,
+  isBrowserVersion,
+  resolveBrowser,
+} from './core/compat.js'
 import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
@@ -133,7 +139,7 @@ function parseTargets(input: string): Record<string, string> {
   for (const entry of input.split(',')) {
     const text = entry.trim()
     if (!text) continue
-    const match = /^([a-z_\s-]+?)\s*(?:[@>=<\s]+)\s*([\d.]+)$/i.exec(text)
+    const match = /^([a-z_\s-]+?)(?:\s*>=\s*|\s*@\s*|\s+)(\S+)$/i.exec(text)
     if (!match) {
       throw new CliError(
         `Could not read target "${text}". Write a browser and a version, ` +
@@ -141,6 +147,11 @@ function parseTargets(input: string): Record<string, string> {
       )
     }
     const [, name, version] = match as unknown as [string, string, string]
+    if (!isBrowserVersion(version)) {
+      throw new CliError(
+        `Could not read target version "${version}" in "${text}". Use dotted numbers such as "14" or "13.4".`,
+      )
+    }
     const browser = resolveBrowser(name)
     if (!browser) {
       throw new CliError(
@@ -148,7 +159,13 @@ function parseTargets(input: string): Record<string, string> {
           `safari, firefox, ios_saf, samsung (android and webview mean chrome).`,
       )
     }
-    targets[browser] = version
+    const existing = targets[browser]
+    // Aliases such as `android` and `chrome` intentionally share support data.
+    // Keeping the oldest duplicate makes the audit conservative and invariant
+    // to argument order instead of silently letting the last spelling win.
+    if (existing === undefined || compareVersions(version, existing) < 0) {
+      targets[browser] = version
+    }
   }
   if (!Object.keys(targets).length) {
     throw new CliError('--targets needs at least one browser and version.')

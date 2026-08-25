@@ -212,6 +212,13 @@ describe('version comparison', () => {
     expect(compareVersions('9', '10')).toBeLessThan(0)
   })
 
+  it('rejects malformed versions instead of comparing them as zero segments', () => {
+    for (const version of ['1..2', '1.', '.5', 'latest', '13-14-15']) {
+      expect(() => compareVersions(version, '14'), version).toThrow(/Browser version/)
+    }
+    expect(() => compareVersions('14', '13.4-13.7')).not.toThrow()
+  })
+
   it('resolves the names people actually write', () => {
     expect(resolveBrowser('iOS Safari')).toBe('ios_saf')
     expect(resolveBrowser('ios')).toBe('ios_saf')
@@ -274,6 +281,12 @@ describe('auditCompatibility', () => {
     const css = await compile('.card { width: 100px }', preset)
     const audit = auditCompatibility(css, { netscape: '4' })
     expect(audit.unknownBrowsers).toEqual(['netscape'])
+  })
+
+  it('rejects a malformed programmatic target instead of reporting a false pass', () => {
+    expect(() =>
+      auditCompatibility('.a { width: clamp(1px, 2vw, 3px) }', { safari: '17..1' }),
+    ).toThrow(/Browser version "17\.\.1"/)
   })
 
   it('audits authored CSS the compiler never touched', async () => {

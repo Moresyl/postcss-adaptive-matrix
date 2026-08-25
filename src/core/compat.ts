@@ -255,6 +255,13 @@ export function resolveBrowser(name: string): string | null {
   return BROWSER_ALIASES[key] ?? null
 }
 
+const BROWSER_VERSION = /^\d+(?:\.\d+)*(?:-\d+(?:\.\d+)*)?$/
+
+/** A dotted release, optionally one caniuse-style tracked release range. */
+export function isBrowserVersion(value: string): boolean {
+  return BROWSER_VERSION.test(value)
+}
+
 /**
  * Compares dotted numeric versions.
  *
@@ -263,11 +270,18 @@ export function resolveBrowser(name: string): string | null {
  * work", so that is the end this reads.
  */
 export function compareVersions(a: string, b: string): number {
-  const parse = (value: string): number[] =>
-    String(value)
+  const parse = (value: string): number[] => {
+    const text = String(value)
+    if (!isBrowserVersion(text)) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] Browser version "${text}" must be dotted numbers such as "14" or "13.4".`,
+      )
+    }
+    return text
       .split('-')[0]!
       .split('.')
-      .map((part) => Number.parseInt(part, 10) || 0)
+      .map((part) => Number.parseInt(part, 10))
+  }
   const left = parse(a)
   const right = parse(b)
   const length = Math.max(left.length, right.length)

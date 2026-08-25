@@ -215,6 +215,8 @@ if (audit.findings.length) process.exit(1)
 
 **`--targets` takes explicit "name + version" pairs, not a browserslist query.** A query would pull in the browserslist package, answers a question about your users rather than about this stylesheet, and — crucially — **the same query changes meaning as the database updates**: a build that passes today goes red next month on a data refresh, with not one character of code changed. Explicit version numbers do not do that.
 
+Versions are dotted numeric releases (`14`, `13.4`) and may be separated from the browser by a space, `@` or `>=`. `<` and bare `>` are rejected because they contradict the “oldest supported version” meaning. If aliases that share support data are repeated (for example `chrome` and `android`), the oldest stated version wins regardless of argument order.
+
 **It scans for the version from which support was never lost again**, not the first version showing a `y`. A few features shipped and were then withdrawn, and the former is the answer to "safe from this version on". A caniuse range such as `13.4-13.7` is a span it does not track separately, and the audit takes the low end.
 
 ## This is not a substitute for real devices

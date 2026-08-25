@@ -24,6 +24,7 @@
 - The optional VisualViewport runtime no longer mistakes pinch zoom for an on-screen keyboard: keyboard occlusion is measured against the layout height at the current `scale`. Invalid variable prefixes fail before listeners are registered, and unchanged metrics no longer repeat DOM writes on noisy resize events.
 - Fixed-column correction now follows the declaration block's effective `position`, including order and `!important`; an earlier `position: fixed` fallback can no longer rewrite an element later overridden to `static` or `absolute`.
 - The CLI rejects ambiguous input combinations before reading anything: explicit stdin (`-`) can no longer hide or be mistaken for a file among other inputs, and one `--from` override can no longer erase the distinct routing identity of several files.
+- Browser targets now require well-formed dotted versions and a separator consistent with “oldest supported version”. Duplicate aliases retain the oldest version regardless of order, and the programmatic compatibility audit rejects malformed releases instead of comparing invalid segments as zero.
 - Build cleanup now runs once before tsup starts. Concurrent ESM, CommonJS, and CLI workers can no longer delete declaration files another worker has just generated.
 - Added conformance fixtures and regression tests for signed numbers, property-name casing, custom-property casing, and JSON-style invalid option values.
 
