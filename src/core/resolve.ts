@@ -81,7 +81,18 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
   /** `null` is an unreadable query — no band matches it, so no route claims it. */
   function inBand(route: { media: MediaMatcher[] }, band: WidthBand | null): boolean {
     if (!route.media.length) return true
-    return band !== null && route.media.some((matcher) => bandSatisfies(band, matcher))
+    if (band === null) return false
+    for (const matcher of route.media) {
+      if (bandSatisfies(band, matcher)) return true
+    }
+    return false
+  }
+
+  function startsWithAny(value: string, prefixes: readonly string[]): boolean {
+    for (const prefix of prefixes) {
+      if (value.startsWith(prefix)) return true
+    }
+    return false
   }
 
   return {
@@ -165,7 +176,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     ): ActiveProfile | undefined {
       if (inherited.explicit || !propertyRoutes.length) return undefined
       for (const route of propertyRoutes) {
-        if (!route.property.some((prefix) => property.startsWith(prefix))) continue
+        if (!startsWithAny(property, route.property)) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         if (!inBand(route, band)) continue
         return route.active
