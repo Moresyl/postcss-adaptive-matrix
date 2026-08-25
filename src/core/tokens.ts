@@ -30,7 +30,9 @@ import { allMatch, boundaryOf, widthConditions } from './media.js'
 interface Definition {
   value: string
   conditions: string[]
+  important: boolean
   order: number
+  selector: string
 }
 
 type Resolution =
@@ -60,6 +62,14 @@ const MAX_DEPTH = 8
 
 function isUniversal(selector: string): boolean {
   return selector.split(',').every((part) => INHERITED_FROM.has(part.trim().toLowerCase()))
+}
+
+function canonicalSelector(selector: string): string {
+  return selector
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .sort()
+    .join(',')
 }
 
 export interface TokenTable {
@@ -109,9 +119,10 @@ export function collectTokens(root: Root): TokenTable {
           const parsed = widthConditions(at.params)
           if (!parsed) readable = false
           else conditions.push(...parsed)
-        } else if (name !== 'layer') {
+        } else {
           // `@supports`, `@container`, `@scope`: real conditions this cannot
-          // evaluate, so the token stops being a function of width.
+          // evaluate. `@layer` changes cascade precedence independently of
+          // source order. Either way, the token is not a function of width.
           readable = false
         }
       }
@@ -134,8 +145,23 @@ export function collectTokens(root: Root): TokenTable {
     // the diagnostics print back at the author.
     const value = declaration.value.trim()
     const existing = definitions.get(name)
-    if (existing) existing.push({ value, conditions, order: order++ })
-    else definitions.set(name, [{ value, conditions, order: order++ }])
+    const selectorKey = canonicalSelector(selector)
+    if (existing && existing.some((definition) => definition.selector !== selectorKey)) {
+      // Even selectors that all inherit globally do not share specificity, and
+      // `html` and `:host` do not address the same tree. Refusing the mixed
+      // group is safer than picking one universal spelling by source order.
+      rejected.add(name)
+      return
+    }
+    const definition = {
+      value,
+      conditions,
+      important: declaration.important,
+      order: order++,
+      selector: selectorKey,
+    }
+    if (existing) existing.push(definition)
+    else definitions.set(name, [definition])
   })
 
   for (const name of rejected) definitions.delete(name)
@@ -154,7 +180,13 @@ export function collectTokens(root: Root): TokenTable {
     let winner: Definition | undefined
     for (const definition of group) {
       if (!allMatch(definition.conditions, width)) continue
-      if (!winner || definition.order > winner.order) winner = definition
+      if (
+        !winner ||
+        (definition.important && !winner.important) ||
+        (definition.important === winner.important && definition.order > winner.order)
+      ) {
+        winner = definition
+      }
     }
     return winner ? { status: 'value', value: winner.value } : { status: 'unset' }
   }
@@ -183,10 +215,11 @@ export function collectTokens(root: Root): TokenTable {
  * so `--my-var(x)` and a hypothetical `xvar(` are left alone.
  */
 function findVar(value: string, from: number): number {
-  for (let index = value.indexOf('var(', from); index >= 0;) {
+  const folded = value.toLowerCase()
+  for (let index = folded.indexOf('var(', from); index >= 0;) {
     const before = index === 0 ? '' : value[index - 1]!
-    if (!/[\w-]/.test(before)) return index
-    index = value.indexOf('var(', index + 1)
+    if (!/[-_A-Za-z0-9\\\u0080-\uFFFF]/.test(before)) return index
+    index = folded.indexOf('var(', index + 1)
   }
   return -1
 }
@@ -194,9 +227,30 @@ function findVar(value: string, from: number): number {
 /** The index just past the `)` closing the group opened at `open`. */
 function closingParen(value: string, open: number): number {
   let depth = 0
+  let quote: "'" | '"' | null = null
+  let comment = false
   for (let index = open; index < value.length; index += 1) {
-    if (value[index] === '(') depth += 1
-    else if (value[index] === ')') {
+    const character = value[index]!
+    const next = value[index + 1]
+    if (comment) {
+      if (character === '*' && next === '/') {
+        comment = false
+        index += 1
+      }
+      continue
+    }
+    if (quote) {
+      if (character === '\\') index += 1
+      else if (character === quote) quote = null
+      continue
+    }
+    if (character === '/' && next === '*') {
+      comment = true
+      index += 1
+    } else if (character === "'" || character === '"') quote = character
+    else if (character === '\\') index += 1
+    else if (character === '(') depth += 1
+    else if (character === ')') {
       depth -= 1
       if (depth === 0) return index
     }
@@ -225,7 +279,7 @@ function substitute(
   active: Set<string>,
   depth: number,
 ): string | null {
-  if (!value.includes('var(')) return value
+  if (!/var\(/i.test(value)) return value
   if (depth > MAX_DEPTH) return null
 
   let result = ''

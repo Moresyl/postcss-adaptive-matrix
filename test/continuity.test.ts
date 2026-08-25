@@ -211,6 +211,22 @@ describe('findContinuityIssues', () => {
     ).toHaveLength(1)
   })
 
+  it('applies declaration importance before source order', () => {
+    expect(
+      check(`
+        .a { width: ${fluid(40)} !important }
+        @media (min-width: 768px) { .a { width: ${fluid(20)} } }
+      `),
+    ).toEqual([])
+
+    expect(
+      check(`
+        .a { width: ${fluid(40)} }
+        @media (min-width: 768px) { .a { width: ${fluid(20)} !important } }
+      `),
+    ).toHaveLength(1)
+  })
+
   it('ignores values it cannot put a number to', () => {
     // A token this stylesheet never defines. It used to be spelled
     // `--adaptive-root-gutter` here, which stopped being an example of an

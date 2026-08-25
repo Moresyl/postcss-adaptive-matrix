@@ -33,6 +33,7 @@ interface Entry {
   value: string
   conditions: string[]
   layer: string
+  important: boolean
   order: number
 }
 
@@ -153,6 +154,7 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
       value: declaration.value,
       conditions,
       layer: layers.reverse().join('.'),
+      important: declaration.important,
       order: order++,
     })
   })
@@ -165,7 +167,13 @@ function effective(group: Entry[], width: number): Entry | undefined {
   let winner: Entry | undefined
   for (const entry of group) {
     if (!allMatch(entry.conditions, width)) continue
-    if (!winner || entry.order > winner.order) winner = entry
+    if (
+      !winner ||
+      (entry.important && !winner.important) ||
+      (entry.important === winner.important && entry.order > winner.order)
+    ) {
+      winner = entry
+    }
   }
   return winner
 }

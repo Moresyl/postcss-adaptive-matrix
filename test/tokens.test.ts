@@ -34,6 +34,21 @@ describe('theme token resolution', () => {
     expect(tokens.boundaries).toEqual([768])
   })
 
+  it('applies custom-property importance before source order', () => {
+    const early = table(':root { --gap: 16px !important; --gap: 24px }')
+    expect(early.resolve('var(--gap)', 400)).toBe('16px')
+
+    const middle = table(':root { --gap: 8px; --gap: 16px !important; --gap: 24px }')
+    expect(middle.resolve('var(--gap)', 400)).toBe('16px')
+  })
+
+  it('refuses selector specificity and layer precedence it does not model', () => {
+    expect(
+      table(':root:root { --gap: 16px } :root { --gap: 24px }').resolve('var(--gap)', 400),
+    ).toBeNull()
+    expect(table('@layer theme { :root { --gap: 16px } }').resolve('var(--gap)', 400)).toBeNull()
+  })
+
   it('refuses a token that any other selector also declares', () => {
     // `.van-theme-dark { --gap: 20px }` means an element's value depends on an
     // ancestor's class, which is not a function of viewport width. Answering
@@ -77,6 +92,12 @@ describe('theme token resolution', () => {
     expect(tokens.resolve('calc(var(--x) + var(--y))', 400)).toBe('calc(16px + 8px)')
   })
 
+  it('recognises case-insensitive var() and ignores parentheses inside strings', () => {
+    const tokens = table(':root { --x: 16px }')
+    expect(tokens.resolve('VAR(--x)', 400)).toBe('16px')
+    expect(tokens.resolve('var(--missing, func(")")) var(--x)', 400)).toBe('func(")") 16px')
+  })
+
   it('returns a value with no var() unchanged', () => {
     expect(table(':root { --x: 1px }').resolve('clamp(1px, 2vw, 3px)', 400)).toBe(
       'clamp(1px, 2vw, 3px)',
@@ -85,6 +106,7 @@ describe('theme token resolution', () => {
 
   it('does not mistake an identifier ending in var for a reference', () => {
     expect(table(':root { --x: 1px }').resolve('my-var(--x)', 400)).toBe('my-var(--x)')
+    expect(table(':root { --x: 1px }').resolve('宽var(--x)', 400)).toBe('宽var(--x)')
   })
 
   it('stops on a cycle rather than recursing forever', () => {
