@@ -38,6 +38,7 @@ const HELP = `
 adaptive-matrix — preview what postcss-adaptive-matrix does to a stylesheet
 
   adaptive-matrix <file...> [options]
+  adaptive-matrix [options] -- <file...>
   adaptive-matrix - [options]
   cat app.css | adaptive-matrix --from src/app.css
 
@@ -57,6 +58,7 @@ Options
                        are JSON too and still use a non-zero exit code
       --color          force colour; --no-color forces plain. Without either,
                        colour follows the terminal and honours NO_COLOR
+      --               treat every remaining argument as a file path
   -h, --help
 
 Without --config the built-in defaults are used, and the header says which
@@ -196,6 +198,10 @@ function parseArgs(argv: string[]): CliArgs {
     }
 
     switch (arg) {
+      case '--':
+        args.files.push(...argv.slice(index + 1))
+        index = argv.length
+        break
       case '-h':
       case '--help':
         args.help = true
@@ -434,10 +440,7 @@ function auditLines(audit: CompatAudit, c: ReturnType<typeof paint>): string[] {
   return lines
 }
 
-function continuityLines(
-  issues: ContinuityIssue[],
-  c: ReturnType<typeof paint>,
-): string[] {
+function continuityLines(issues: ContinuityIssue[], c: ReturnType<typeof paint>): string[] {
   const lines: string[] = []
   const round = (value: number) => `${Math.round(value * 100) / 100}px`
   for (const issue of issues) {

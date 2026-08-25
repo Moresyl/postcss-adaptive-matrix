@@ -533,6 +533,17 @@ describe('runCli', () => {
     expect(err).toContain('Options')
   })
 
+  it('treats arguments after -- as file paths', async () => {
+    const cwd = process.cwd()
+    restore.push(() => process.chdir(cwd))
+    process.chdir(directory)
+    await file('-draft.css', '.draft { width: 100px }')
+
+    expect(await runCli(['--no-color', '--', '-draft.css'])).toBe(0)
+    expect(out).toContain('.draft')
+    expect(err).toBe('')
+  })
+
   it('fails when an option is missing its value', async () => {
     expect(await runCli(['--profile'])).toBe(1)
     expect(err).toContain('--profile needs a value')

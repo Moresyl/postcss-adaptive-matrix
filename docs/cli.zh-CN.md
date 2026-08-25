@@ -25,6 +25,7 @@ src/styles/app.css
 
 ```
 adaptive-matrix <file...> [options]
+adaptive-matrix [options] -- <file...>
 cat app.css | adaptive-matrix --from src/app.css
 ```
 
@@ -41,6 +42,7 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--css` | 打印编译后的完整 CSS，而不是对照表 |
 | `--json` | 输出一份带版本号的 JSON 报告，供 CI、编辑器与看板集成 |
 | `--color` / `--no-color` | 强制开/关颜色；都不写则跟随终端，并遵守 `NO_COLOR` |
+| `--` | 停止解析选项；其后所有参数均视为文件路径，包括以 `-` 开头的文件名 |
 | `-h, --help` | 帮助 |
 
 退出码：编译及所有已请求门禁均通过为 `0`；门禁失败、参数错误、文件读不到、配置非法为 `1`。所以可以直接串进 shell 判断。

@@ -25,6 +25,7 @@ What it prints is a **before/after list per declaration**, not the whole stylesh
 
 ```
 adaptive-matrix <file...> [options]
+adaptive-matrix [options] -- <file...>
 cat app.css | adaptive-matrix --from src/app.css
 ```
 
@@ -41,6 +42,7 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--css` | Print the compiled stylesheet instead of the comparison |
 | `--json` | Print one versioned JSON report for CI, editor and dashboard integrations |
 | `--color` / `--no-color` | Force colour on/off; with neither it follows the terminal and honours `NO_COLOR` |
+| `--` | Stop option parsing; every remaining argument is a file path, including names beginning with `-` |
 | `-h, --help` | Help |
 
 Exit codes: `0` when compilation and every requested quality gate pass; `1` for a failed gate, bad argument, unreadable file, or invalid configuration. So it drops straight into a shell condition.
