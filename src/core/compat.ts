@@ -16,6 +16,7 @@
  * feature is not "does it work" but "how much disappears when it doesn't".
  */
 import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
+import { CSS_NUMBER_SOURCE } from './syntax.js'
 
 export type CompatFeatureId =
   | 'math-functions'
@@ -63,6 +64,8 @@ export interface CompatFeature {
 // recognises neither in JavaScript, so using it here would let declarations
 // such as `--间距` or `--\95f4\8ddd` disappear from the browser-support audit.
 const CUSTOM_PROPERTY_DECLARATION = String.raw`(?:^|[;{\s])--(?:\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f])|[-_a-z0-9\u0080-\uFFFF])+\s*:`
+const DIMENSION_START = String.raw`(?:^|[^\w.\\\-\u0080-\uFFFF])${CSS_NUMBER_SOURCE}`
+const DIMENSION_END = String.raw`(?![-_a-z0-9\\\u0080-\uFFFF])`
 
 /**
  * Every feature in the compiler's output vocabulary.
@@ -155,7 +158,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     failure: 'The length is unreadable and its declaration is dropped, exactly as with clamp().',
     fallback:
       "unit: 'vw'. Container units measure the nearest container instead of the viewport, so this is a real change, not only a compatibility one — but it only matters for components that resize independently of the page.",
-    detect: /(?:^|[^\w.-])[\d.]+cq[wihb]|(?:^|[^\w.-])[\d.]+cqm(?:in|ax)/i,
+    detect: new RegExp(`${DIMENSION_START}(?:cq[wihb]|cqm(?:in|ax))${DIMENSION_END}`, 'i'),
   },
   {
     id: 'logical-viewport-units',
@@ -169,7 +172,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     failure: 'The declaration is dropped.',
     fallback:
       "unit: 'vw', the default. vi follows the writing mode, so the two differ only in vertical writing or in a rotated root — for a horizontal page they are the same measurement, and vw has been supported since Safari 6.1.",
-    detect: /(?:^|[^\w.-])[\d.]+vi(?![a-z0-9-])/i,
+    detect: new RegExp(`${DIMENSION_START}vi${DIMENSION_END}`, 'i'),
   },
   {
     id: 'logical-properties',
@@ -216,7 +219,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     failure: 'The declaration is dropped.',
     fallback:
       'None, and none needed: this is the oldest feature in the list by several years (Safari 6.1, 2013) and predates every other entry. Turning it off would mean not scaling at all.',
-    detect: /(?:^|[^\w.-])[\d.]+vw(?![a-z0-9-])/i,
+    detect: new RegExp(`${DIMENSION_START}vw${DIMENSION_END}`, 'i'),
   },
   {
     id: 'nesting',

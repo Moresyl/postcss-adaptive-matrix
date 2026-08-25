@@ -179,11 +179,20 @@ describe('detection', () => {
   })
 
   it('does not mistake other identifiers for viewport units', () => {
-    const css = '.a { transition: 1s; font-family: Avi; width: 12vmin; color: #0cq1 }'
+    const css =
+      '.a { transition: 1s; font-family: Avi; width: 12vmin; color: #0cq1; ' +
+      'a: 1..2vw; b: 2e+vi; c: name\\31cqi }'
     const found = ids(css)
     expect(found).not.toContain('logical-viewport-units')
     expect(found).not.toContain('container-query-units')
     expect(found).not.toContain('viewport-units')
+  })
+
+  it('uses the complete CSS number grammar for viewport and container units', () => {
+    const found = ids('.a { a: -2vw; b: +.5vi; c: -1e2cqi }')
+    expect(found).toContain('viewport-units')
+    expect(found).toContain('logical-viewport-units')
+    expect(found).toContain('container-query-units')
   })
 
   it('detects non-ASCII and escaped custom-property declarations', () => {
