@@ -41,9 +41,11 @@ interface Quantity {
 function tokenize(input: string): Token[] | null {
   const tokens: Token[] = []
   let rest = input.trim()
+  let whitespaceBefore = false
 
   while (rest.length) {
     if (/\s/.test(rest[0]!)) {
+      whitespaceBefore = true
       rest = rest.slice(1)
       continue
     }
@@ -56,11 +58,13 @@ function tokenize(input: string): Token[] | null {
     if (rest[0] === '(' || rest[0] === ')') {
       tokens.push({ kind: 'paren', value: rest[0] })
       rest = rest.slice(1)
+      whitespaceBefore = false
       continue
     }
     if (rest[0] === ',') {
       tokens.push({ kind: 'comma' })
       rest = rest.slice(1)
+      whitespaceBefore = false
       continue
     }
     // `*` and `/` are unambiguous, but `+` and `-` are only operators when they
@@ -77,11 +81,24 @@ function tokenize(input: string): Token[] | null {
         value: Number(number[0]),
         unit: (unit?.[0] ?? '').toLowerCase(),
       })
+      whitespaceBefore = false
       continue
     }
     if (rest[0] === '+' || rest[0] === '-' || rest[0] === '*' || rest[0] === '/') {
+      const previous = tokens.at(-1)
+      const binary =
+        previous?.kind === 'number' ||
+        (previous?.kind === 'paren' && previous.value === ')')
+      if (
+        binary &&
+        (rest[0] === '+' || rest[0] === '-') &&
+        (!whitespaceBefore || !/\s/.test(rest[1] ?? ''))
+      ) {
+        return null
+      }
       tokens.push({ kind: 'op', value: rest[0] })
       rest = rest.slice(1)
+      whitespaceBefore = false
       continue
     }
     const ident = IDENT.exec(rest)
@@ -89,6 +106,7 @@ function tokenize(input: string): Token[] | null {
       tokens.push({ kind: 'function', name: ident[0].toLowerCase() })
       rest = rest.slice(ident[0].length + 1)
       tokens.push({ kind: 'paren', value: '(' })
+      whitespaceBefore = false
       continue
     }
     // A bare keyword (`solid`), a colour, a `var()` reference, a percentage —

@@ -62,6 +62,19 @@ describe('evaluateLength', () => {
     expect(evaluateLength('calc(+ 8px)', context)).toBe(8)
   })
 
+  it('requires whitespace around binary plus and minus as CSS calc() does', () => {
+    for (const value of [
+      'calc(8px+16px)',
+      'calc(8px +16px)',
+      'calc(8px+ 16px)',
+      'calc((8px)- 2px)',
+    ]) {
+      expect(evaluateLength(value, context), value).toBeNull()
+    }
+    expect(evaluateLength('calc((8px) - 2px)', context)).toBe(6)
+    expect(evaluateLength('calc(8px /* note */ + 2px)', context)).toBe(10)
+  })
+
   it('returns null for anything outside the supported subset', () => {
     // Not zero, and not a guess. A diagnostic built on an invented number
     // reports a cascade that never happens, which is worse than reporting none.
