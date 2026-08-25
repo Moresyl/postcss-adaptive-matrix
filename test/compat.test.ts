@@ -207,6 +207,17 @@ describe('detection', () => {
     expect(ids(String.raw`:root { --\95f4\8ddd: 16px }`)).toContain('custom-properties')
   })
 
+  it('does not treat Unicode spaces as CSS declaration or query whitespace', () => {
+    const found = ids(
+      '.a { x\u00a0--gap: 1px; x\u00a0container-type: size; x\u00a0inline-size: 1px; a: var(\u00a0--gap) } ' +
+        '@media (width\u00a0>=\u00a0768px) { .a { color: red } }',
+    )
+    expect(found).not.toContain('custom-properties')
+    expect(found).not.toContain('container-queries')
+    expect(found).not.toContain('logical-properties')
+    expect(found).not.toContain('media-range-syntax')
+  })
+
   it('reports :has() that came in through the source', async () => {
     // The compiler emits no `:has()`. It survives the pass, and surviving is
     // exactly why it belongs in an audit that reads the output: the rule ships

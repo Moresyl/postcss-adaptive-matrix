@@ -63,7 +63,7 @@ export interface CompatFeature {
 // A custom property may contain non-ASCII code points and CSS escapes. `\w`
 // recognises neither in JavaScript, so using it here would let declarations
 // such as `--间距` or `--\95f4\8ddd` disappear from the browser-support audit.
-const CUSTOM_PROPERTY_DECLARATION = String.raw`(?:^|[;{\s])--(?:\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f])|[-_a-z0-9\u0080-\uFFFF])+\s*:`
+const CUSTOM_PROPERTY_DECLARATION = String.raw`(?:^|[;{ \t\r\n\f])--(?:\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f])|[-_a-z0-9\u0080-\uFFFF])+[ \t\r\n\f]*:`
 const FUNCTION_START = String.raw`(?:^|[^-_a-z0-9\\\u0080-\uFFFF])`
 const DIMENSION_START = String.raw`(?:^|[^\w.\\\-\u0080-\uFFFF])${CSS_NUMBER_SOURCE}`
 const DIMENSION_END = String.raw`(?![-_a-z0-9\\\u0080-\uFFFF])`
@@ -124,7 +124,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
       'A container-type declaration is dropped, which is quiet; an @container block is dropped whole, which is not. A profile that switches on a container query stops switching, so every canvas but the default one disappears.',
     fallback:
       'root.container: false and media-type profile queries. Media queries measure the viewport rather than an ancestor, which is what you want anyway unless the component genuinely reflows inside a resizable panel.',
-    detect: /@container\b|(?:^|[;{\s])container(?:-type|-name)?\s*:/i,
+    detect: /@container\b|(?:^|[;{ \t\r\n\f])container(?:-type|-name)?[ \t\r\n\f]*:/i,
   },
   {
     id: 'media-range-syntax',
@@ -137,7 +137,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     fallback:
       'Spell each bound with the equivalent min-width/max-width syntax. For example, (768px <= width < 1280px) becomes (min-width: 768px) and (max-width: 1279.98px); the small subtraction avoids an overlap at the upper boundary.',
     detect:
-      /@media[^{]*\(\s*(?:width\s*(?:[<>]=?|=)|[+-]?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?(?:px|r?em)?\s*(?:[<>]=?|=)\s*width\b)/i,
+      /@media[^{]*\([ \t\r\n\f]*(?:width[ \t\r\n\f]*(?:[<>]=?|=)|[+-]?(?:\d*\.\d+|\d+)(?:e[-+]?\d+)?(?:px|r?em)?[ \t\r\n\f]*(?:[<>]=?|=)[ \t\r\n\f]*width\b)/i,
   },
   {
     id: 'math-functions',
@@ -185,7 +185,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     fallback:
       'root.logical: false writes width, margin-left/right and max-width instead. Nothing is lost on a horizontal page — the two spellings mean the same thing until the writing mode changes.',
     detect:
-      /(?:^|[;{\s])(?:min-|max-)?(?:inline|block)-size\s*:|(?:^|[;{\s])(?:margin|padding|border|inset)-(?:inline|block)(?:-(?:start|end))?\s*:/i,
+      /(?:^|[;{ \t\r\n\f])(?:min-|max-)?(?:inline|block)-size[ \t\r\n\f]*:|(?:^|[;{ \t\r\n\f])(?:margin|padding|border|inset)-(?:inline|block)(?:-(?:start|end))?[ \t\r\n\f]*:/i,
   },
   {
     id: 'custom-properties',
@@ -200,7 +200,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     // is already the feature, and a browser that cannot parse it never gets
     // as far as the `var()` that would have read it.
     detect: new RegExp(
-      `${FUNCTION_START}var\\(\\s*--|${CUSTOM_PROPERTY_DECLARATION}`,
+      `${FUNCTION_START}var\\([ \\t\\r\\n\\f]*--|${CUSTOM_PROPERTY_DECLARATION}`,
       'i',
     ),
   },
