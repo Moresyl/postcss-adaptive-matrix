@@ -113,6 +113,10 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
     // consumer *is* checked, with the token substituted in (see `tokens.ts`),
     // which is where its direction finally has a meaning to be wrong about.
     if (declaration.prop.startsWith('--')) return
+    // Standard property names are ASCII case-insensitive in CSS. Grouping the
+    // authored spelling would split `FONT-SIZE` and `font-size` into unrelated
+    // declarations even though the cascade treats them as the same property.
+    const prop = declaration.prop.toLowerCase()
 
     const conditions: string[] = []
     const layers: string[] = []
@@ -143,14 +147,14 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
     }
 
     if (selector === null) return
-    const key = `${selector}|${declaration.prop}`
+    const key = `${selector}|${prop}`
     if (!readable) {
       poisoned.add(key)
       return
     }
     entries.push({
       selector,
-      prop: declaration.prop,
+      prop,
       value: declaration.value,
       conditions,
       layer: layers.reverse().join('.'),

@@ -280,6 +280,17 @@ describe('findContinuityIssues', () => {
     expect(issues[0]!.breakpoint).toBe(768)
   })
 
+  it('groups standard property names using CSS ASCII case-insensitivity', () => {
+    const issues = check(`
+      .a { FONT-SIZE: ${fluid(40)} }
+      @media (min-width: 768px) { .a { font-size: ${fluid(20)} } }
+    `)
+
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.prop).toBe('font-size')
+    expect(issues[0]!.breakpoint).toBe(768)
+  })
+
   it('declines a token a theme class can override', () => {
     // `.dark { --card-width: ... }` puts the value under an ancestor's class,
     // and no width tells you which one an element sits beneath.
