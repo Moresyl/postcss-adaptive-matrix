@@ -135,7 +135,7 @@ interface ProcessorContext {
    * never been about the element.
    */
   band: WidthBand | null
-  /** `canvas|lo|hi` pairs already reported by `warnOnDeadBand`, per file. */
+  /** Band/canvas findings already reported by `warnOnDeadBand`, per file. */
   deadBands: Set<string>
   /**
    * Declarations rewritten so far. Read as a before/after pair around a rule,
@@ -345,6 +345,18 @@ function warnOnDeadBand(
 ): void {
   const band = context.band
   if (!band || !active.convert) return
+  if (band.lo > band.hi) {
+    const key = `unreachable|${band.lo}|${band.hi}`
+    if (context.deadBands.has(key)) return
+    context.deadBands.add(key)
+    context.result.warn(
+      `This rule is unreachable: its enclosing media queries require the viewport ` +
+        `to be at least ${band.lo}px and at most ${band.hi}px at the same time. ` +
+        'No viewport can satisfy that interval; fix or remove one of the bounds.',
+      { node: rule, plugin: PLUGIN_NAME },
+    )
+    return
+  }
   // Bare viewport lengths have no bounds to fall outside of.
   const strategy = active.profile.strategy ?? context.options.strategy
   if (strategy !== 'clamp') return

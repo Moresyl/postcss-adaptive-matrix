@@ -152,6 +152,15 @@ describe('a media route', () => {
     }
   })
 
+  it('does not route a media interval that no viewport can satisfy', async () => {
+    const { css } = await run(
+      '@media (min-width: 1100px) and (max-width: 900px) { .a { padding: 40px } }',
+      routed,
+    )
+    expect(css).toContain('5.33333vw')
+    expect(css).not.toContain('2.77778vw')
+  })
+
   it('ignores a container query, which bounds an element rather than the viewport', async () => {
     // `vw` has never been about the element, so a container's width says nothing
     // about which design file a length came from.
@@ -179,6 +188,27 @@ describe('a media route', () => {
 })
 
 describe('the dead-band warning', () => {
+  it('reports an impossible media intersection as unreachable, not pinned', async () => {
+    const { warnings } = await run(
+      '@media (min-width: 1100px) and (max-width: 900px) {' +
+        ' .a { padding: 40px } .b { margin: 8px } }',
+      base,
+    )
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('rule is unreachable')
+    expect(warnings[0]).toContain('at least 1100px and at most 900px')
+    expect(warnings[0]).not.toContain('pinned')
+  })
+
+  it('detects an unreachable intersection formed by nested media queries', async () => {
+    const { warnings } = await run(
+      '@media (min-width: 1100px) {' + ' @media (max-width: 900px) { .a { padding: 40px } } }',
+      { ...base, strategy: 'viewport' },
+    )
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('rule is unreachable')
+  })
+
   it('reports a breakpoint whose lengths cannot move', async () => {
     const { warnings } = await run('@media (min-width: 1024px) { .a { padding: 40px } }', base)
     expect(warnings).toHaveLength(1)

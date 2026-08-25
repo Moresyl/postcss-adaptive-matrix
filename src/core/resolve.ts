@@ -17,6 +17,7 @@ import type {
  * covered.
  */
 function bandSatisfies(band: WidthBand, matcher: MediaMatcher): boolean {
+  if (band.lo > band.hi) return false
   if (matcher.minWidth !== undefined && band.lo < matcher.minWidth) return false
   if (matcher.maxWidth !== undefined && band.hi > matcher.maxWidth) return false
   return true

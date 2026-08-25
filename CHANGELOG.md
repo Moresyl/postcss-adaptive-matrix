@@ -10,6 +10,7 @@
 - Added opt-in CLI quality gates with `--fail-on warnings,continuity,compatibility` (or `any`). Valid compiled output now exits non-zero when selected policy findings exist, including in `--css` and `--json` workflows; JSON distinguishes compilation success from gate success.
 - Explicitly positive CSS lengths such as `+16px` now compile to a valid `clamp()` expression instead of the invalid `+clamp(...)`.
 - Media routing and token diagnostics now share the converter's complete CSS number grammar: scientific notation, explicit signs, unitless zero and ASCII-insensitive feature/unit spelling are understood, while malformed decimals and non-finite exponents remain unknown rather than contaminating width bands with `NaN`.
+- Contradictory media bounds now form an explicitly unreachable interval: no media route claims it, and converted rules receive one actionable warning instead of the false statement that their clamp is pinned across a backwards width range.
 - Standard property names and `propList` patterns now follow CSS's ASCII case-insensitive semantics, so `FONT-SIZE` keeps the accessible `rem + vw` text formula. Custom-property filters and routes remain case-sensitive, as CSS requires.
 - `atRuleName` is normalised before both validation and matching; surrounding whitespace can no longer pass validation and leave an unknown block that browsers discard.
 - Invalid runtime shapes for `unitToConvert`, `root`, and `root.selector` now report targeted configuration errors instead of leaking internal `trim` failures.

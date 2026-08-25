@@ -44,7 +44,6 @@ interface Field {
 type Fields<T> = { [K in keyof Required<T>]: Field }
 
 const DEFAULTS = resolveOptions()
-const CSS_IDENTIFIER_PATTERN = `^${CSS_IDENTIFIER_SOURCE}$`
 const CSS_CUSTOM_IDENTIFIER_PATTERN = `^${CSS_CUSTOM_IDENTIFIER_SOURCE}$`
 const CSS_TRIMMED_IDENTIFIER_PATTERN = `^\\s*${CSS_IDENTIFIER_SOURCE}\\s*$`
 const CSS_OPTIONAL_IDENTIFIER_PATTERN = `^(?:\\s*${CSS_IDENTIFIER_SOURCE}\\s*|\\s*)$`

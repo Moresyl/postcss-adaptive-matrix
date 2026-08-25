@@ -200,6 +200,8 @@ Width numbers use the same complete CSS grammar as declarations: signs, fraction
 
 A query the compiler cannot read — a comma, `not`, `only`, or any non-width feature — is claimed by **nothing**. That is a refusal, not a "matches everything": routing a rule on a condition nobody checked is how a canvas mistake gets made rather than caught. `@container` never counts either; it bounds an element, and `vw` has never been about the element.
 
+Contradictory readable bounds are different from an unreadable query. They form an empty interval, so no media route claims it and a converted rule gets one explicit `unreachable` warning (`min-width: 1100px` together with `max-width: 900px`). This is not reported as a pinned clamp: there is no viewport at which the rule exists. `--fail-on warnings` can enforce it in CI.
+
 To redraw a component library's own component at a breakpoint, name both — a selector route on its own would apply at every width, and a width band on its own loses to the library:
 
 ```js
