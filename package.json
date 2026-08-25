@@ -90,9 +90,10 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
+    "audit:check": "npm audit --audit-level=moderate --registry=https://registry.npmjs.org/",
     "check": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm run test:coverage && npm run docs:build",
     "pack:check": "npm pack --dry-run",
-    "prepublishOnly": "npm run check"
+    "prepublishOnly": "npm run check && npm run audit:check"
   },
   "peerDependencies": {
     "postcss": "^8.4.0"
@@ -115,5 +116,10 @@
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "vitepress": {
+      "vite": "6.4.3"
+    }
   }
 }
