@@ -15,7 +15,7 @@ const context = { width: 1000, height: 800, rootFontSize: 16 }
 describe('evaluateLength', () => {
   it('resolves the units the compiler emits', () => {
     expect(evaluateLength('16px', context)).toBe(16)
-    expect(evaluateLength('16', context)).toBe(16)
+    expect(evaluateLength('0', context)).toBe(0)
     expect(evaluateLength('2rem', context)).toBe(32)
     expect(evaluateLength('2em', context)).toBe(32)
     expect(evaluateLength('10vw', context)).toBe(100)
@@ -85,6 +85,19 @@ describe('evaluateLength', () => {
     expect(evaluateLength('16px 32px', context)).toBeNull()
     expect(evaluateLength('calc()', context)).toBeNull()
     expect(evaluateLength('calc(16px, 32px)', context)).toBeNull()
+    expect(evaluateLength('10.', context)).toBeNull()
+  })
+
+  it('tracks number and length dimensions instead of inventing pixels', () => {
+    expect(evaluateLength('16', context)).toBeNull()
+    expect(evaluateLength('calc(16px + 2)', context)).toBeNull()
+    expect(evaluateLength('calc(2px * 8px)', context)).toBeNull()
+    expect(evaluateLength('calc(16px / 2px)', context)).toBeNull()
+    expect(evaluateLength('min(16px, 2)', context)).toBeNull()
+    expect(evaluateLength('clamp(0, 10vw, 100px)', context)).toBeNull()
+    expect(evaluateLength('calc(2 * 8px)', context)).toBe(16)
+    expect(evaluateLength('calc(8px * 2)', context)).toBe(16)
+    expect(evaluateLength('calc(16px / 2)', context)).toBe(8)
   })
 
   it('returns null for a function it does not implement', () => {

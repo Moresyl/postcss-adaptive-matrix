@@ -12,6 +12,8 @@
  * as zero. A diagnostic that guesses is worse than one that stays quiet.
  */
 
+import { CSS_NUMBER_SOURCE } from './syntax.js'
+
 export interface EvaluationContext {
   /** Viewport width in pixels. */
   width: number
@@ -28,8 +30,13 @@ type Token =
   | { kind: 'comma' }
   | { kind: 'function'; name: string }
 
-const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i
+const NUMBER = new RegExp(`^${CSS_NUMBER_SOURCE}`)
 const IDENT = /^[a-z][\w-]*/i
+
+interface Quantity {
+  value: number
+  dimension: 'number' | 'length'
+}
 
 function tokenize(input: string): Token[] | null {
   const tokens: Token[] = []
@@ -85,31 +92,39 @@ function tokenize(input: string): Token[] | null {
   return tokens
 }
 
-function toPixels(value: number, unit: string, context: EvaluationContext): number | null {
+function toPixels(value: number, unit: string, context: EvaluationContext): Quantity | null {
+  let pixels: number
   switch (unit) {
     case '':
-      return value
+      return { value, dimension: 'number' }
     case 'px':
-      return value
+      pixels = value
+      break
     case 'rem':
     case 'em':
-      return value * context.rootFontSize
+      pixels = value * context.rootFontSize
+      break
     case 'vw':
     case 'vi':
-      return (value * context.width) / 100
+      pixels = (value * context.width) / 100
+      break
     case 'vh':
     case 'vb':
-      return (value * context.height) / 100
+      pixels = (value * context.height) / 100
+      break
     case 'vmin':
-      return (value * Math.min(context.width, context.height)) / 100
+      pixels = (value * Math.min(context.width, context.height)) / 100
+      break
     case 'vmax':
-      return (value * Math.max(context.width, context.height)) / 100
+      pixels = (value * Math.max(context.width, context.height)) / 100
+      break
     default:
       // Container units are the notable absentee: `cqi` depends on an ancestor
       // this evaluator cannot see, and assuming the viewport would silently
       // turn every container-query configuration into a wrong number.
       return null
   }
+  return { value: pixels, dimension: 'length' }
 }
 
 class Parser {
@@ -120,7 +135,7 @@ class Parser {
     private readonly context: EvaluationContext,
   ) {}
 
-  parse(): number | null {
+  parse(): Quantity | null {
     const value = this.sum()
     if (value === null || this.index !== this.tokens.length) return null
     return value
@@ -130,7 +145,7 @@ class Parser {
     return this.tokens[this.index]
   }
 
-  private sum(): number | null {
+  private sum(): Quantity | null {
     let left = this.product()
     for (;;) {
       const token = this.peek()
@@ -138,12 +153,15 @@ class Parser {
       if (token.value !== '+' && token.value !== '-') return left
       this.index += 1
       const right = this.product()
-      if (right === null) return null
-      left = token.value === '+' ? left + right : left - right
+      if (right === null || left.dimension !== right.dimension) return null
+      left = {
+        value: token.value === '+' ? left.value + right.value : left.value - right.value,
+        dimension: left.dimension,
+      }
     }
   }
 
-  private product(): number | null {
+  private product(): Quantity | null {
     let left = this.unary()
     for (;;) {
       const token = this.peek()
@@ -152,23 +170,32 @@ class Parser {
       this.index += 1
       const right = this.unary()
       if (right === null) return null
-      if (token.value === '/' && right === 0) return null
-      left = token.value === '*' ? left * right : left / right
+      if (token.value === '/') {
+        if (right.value === 0 || right.dimension !== 'number') return null
+        left = { value: left.value / right.value, dimension: left.dimension }
+      } else {
+        if (left.dimension === 'length' && right.dimension === 'length') return null
+        left = {
+          value: left.value * right.value,
+          dimension:
+            left.dimension === 'length' || right.dimension === 'length' ? 'length' : 'number',
+        }
+      }
     }
   }
 
-  private unary(): number | null {
+  private unary(): Quantity | null {
     const token = this.peek()
     if (token?.kind === 'op' && (token.value === '+' || token.value === '-')) {
       this.index += 1
       const operand = this.unary()
       if (operand === null) return null
-      return token.value === '-' ? -operand : operand
+      return token.value === '-' ? { ...operand, value: -operand.value } : operand
     }
     return this.primary()
   }
 
-  private primary(): number | null {
+  private primary(): Quantity | null {
     const token = this.peek()
     if (!token) return null
 
@@ -190,12 +217,12 @@ class Parser {
     return null
   }
 
-  private call(name: string): number | null {
+  private call(name: string): Quantity | null {
     // The opening paren was pushed by the tokenizer right after the name.
     if (this.peek()?.kind !== 'paren') return null
     this.index += 1
 
-    const args: number[] = []
+    const args: Quantity[] = []
     for (;;) {
       const value = this.sum()
       if (value === null) return null
@@ -216,18 +243,37 @@ class Parser {
       case 'calc':
         return args.length === 1 ? args[0]! : null
       case 'min':
-        return args.length ? Math.min(...args) : null
+        return sameDimension(args)
+          ? {
+              value: Math.min(...args.map((argument) => argument.value)),
+              dimension: args[0]!.dimension,
+            }
+          : null
       case 'max':
-        return args.length ? Math.max(...args) : null
+        return sameDimension(args)
+          ? {
+              value: Math.max(...args.map((argument) => argument.value)),
+              dimension: args[0]!.dimension,
+            }
+          : null
       case 'clamp':
         // `clamp(a, b, c)` is `max(a, min(b, c))` — which, when the author has
         // written a minimum above the maximum, resolves to the minimum. Mirror
         // the spec rather than the intent.
-        return args.length === 3 ? Math.max(args[0]!, Math.min(args[1]!, args[2]!)) : null
+        return args.length === 3 && sameDimension(args)
+          ? {
+              value: Math.max(args[0]!.value, Math.min(args[1]!.value, args[2]!.value)),
+              dimension: args[0]!.dimension,
+            }
+          : null
       default:
         return null
     }
   }
+}
+
+function sameDimension(args: Quantity[]): boolean {
+  return args.length > 0 && args.every((argument) => argument.dimension === args[0]!.dimension)
 }
 
 /**
@@ -238,7 +284,10 @@ export function evaluateLength(value: string, context: EvaluationContext): numbe
   const tokens = tokenize(value)
   if (!tokens?.length) return null
   const result = new Parser(tokens, context).parse()
-  return result === null || !Number.isFinite(result) ? null : result
+  if (result === null || !Number.isFinite(result.value)) return null
+  // A declaration expecting a length accepts a unitless zero, but no other
+  // bare number. Numbers remain useful inside calc() multiplication/division.
+  return result.dimension === 'length' || result.value === 0 ? result.value : null
 }
 
 /**
