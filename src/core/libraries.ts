@@ -1,4 +1,5 @@
 import { toArray } from './matchers.js'
+import { isCssIdentifier } from './syntax.js'
 import { rejectUnknownKeys } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
@@ -176,15 +177,46 @@ function libraryValueKind(value: unknown): string {
   return typeof value
 }
 
-function validateStringList(name: string, value: unknown): void {
-  if (value === undefined) return
+function validateStringList(name: string, value: unknown): readonly string[] {
+  if (value === undefined) return []
   const wasArray = Array.isArray(value)
-  const entries = Array.isArray(value) ? value : [value]
+  const entries: readonly unknown[] = Array.isArray(value) ? value : [value]
   for (const [index, entry] of entries.entries()) {
     const path = wasArray ? `${name}[${index}]` : name
     if (typeof entry !== 'string' || !entry.trim()) {
       throw new TypeError(
         `[postcss-adaptive-matrix] ${path} must be a non-empty string, not ${libraryValueKind(entry)}.`,
+      )
+    }
+  }
+  return entries as readonly string[]
+}
+
+function validateLibraryPrefixes(library: LibraryAdaptation): void {
+  const prefixes = validateStringList(`Library "${library.name}" prefix`, library.prefix)
+  for (const [index, prefix] of prefixes.entries()) {
+    const path = Array.isArray(library.prefix)
+      ? `Library "${library.name}" prefix[${index}]`
+      : `Library "${library.name}" prefix`
+    const identifier = prefix.startsWith('.') ? prefix.slice(1) : prefix
+    if (!identifier || !isCssIdentifier(identifier)) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be an unescaped CSS class identifier, optionally preceded by ".".`,
+      )
+    }
+  }
+
+  const tokenPrefixes = validateStringList(
+    `Library "${library.name}" tokenPrefix`,
+    library.tokenPrefix,
+  )
+  for (const [index, prefix] of tokenPrefixes.entries()) {
+    const path = Array.isArray(library.tokenPrefix)
+      ? `Library "${library.name}" tokenPrefix[${index}]`
+      : `Library "${library.name}" tokenPrefix`
+    if (prefix.length <= 2 || !prefix.startsWith('--') || !isCssIdentifier(prefix)) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be an unescaped custom-property prefix starting with "--" and containing at least one more character.`,
       )
     }
   }
@@ -211,6 +243,11 @@ function validateLibrary(library: LibraryAdaptation): LibraryAdaptation {
   if (typeof library.name !== 'string' || !library.name.trim()) {
     throw new TypeError('[postcss-adaptive-matrix] A library needs a name; it cannot be empty.')
   }
+  if (library.name !== library.name.trim()) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Library name "${library.name}" cannot have surrounding whitespace.`,
+    )
+  }
   if (
     library.designWidth !== false &&
     (!Number.isFinite(library.designWidth) || library.designWidth <= 0)
@@ -219,8 +256,7 @@ function validateLibrary(library: LibraryAdaptation): LibraryAdaptation {
       `[postcss-adaptive-matrix] Library "${library.name}" requires a positive designWidth, or false to leave it unconverted.`,
     )
   }
-  validateStringList(`Library "${library.name}" prefix`, library.prefix)
-  validateStringList(`Library "${library.name}" tokenPrefix`, library.tokenPrefix)
+  validateLibraryPrefixes(library)
   validateLibraryFile(`Library "${library.name}" file`, library.file)
   if (library.scoped !== undefined && typeof library.scoped !== 'boolean') {
     throw new TypeError(
@@ -236,6 +272,19 @@ function validateLibrary(library: LibraryAdaptation): LibraryAdaptation {
     )
   }
   return library
+}
+
+function assertUniqueLibraryNames(libraries: LibraryAdaptation[]): LibraryAdaptation[] {
+  const names = new Set<string>()
+  for (const library of libraries) {
+    if (names.has(library.name)) {
+      throw new Error(
+        `[postcss-adaptive-matrix] Duplicate library name "${library.name}". Each library name must be unique because it owns one derived profile.`,
+      )
+    }
+    names.add(library.name)
+  }
+  return libraries
 }
 
 /** Drops `autoPrefix`, which is a registry concern and not part of the model. */
@@ -301,7 +350,7 @@ export function resolveLibraries(input: AdaptiveMatrixOptions['libraries']): Lib
       '[postcss-adaptive-matrix] libraries must be "auto", false or an array of library entries.',
     )
   }
-  return input.map(resolveLibrary)
+  return assertUniqueLibraryNames(input.map(resolveLibrary))
 }
 
 /**
@@ -336,6 +385,7 @@ export function expandLibraries(
   profiles: Record<string, AdaptiveProfile>,
   defaultProfile: string,
 ): LibraryExpansion {
+  const validatedLibraries = assertUniqueLibraryNames(libraries.map(validateLibrary))
   const derived: Record<string, AdaptiveProfile> = {}
   // Scoped routes are collected apart so they can be tested first: demanding a
   // path as well as a class is the more specific claim, and two libraries can
@@ -343,7 +393,7 @@ export function expandLibraries(
   const scoped: AdaptiveRoute[] = []
   const routes: AdaptiveRoute[] = []
 
-  for (const library of libraries) {
+  for (const library of validatedLibraries) {
     const selector = toArray(library.prefix).map(prefixPattern)
     const property = toArray(library.tokenPrefix)
     const file = toArray(library.file)

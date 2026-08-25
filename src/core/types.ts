@@ -123,7 +123,7 @@ export interface LibraryAdaptation {
    * fixed pixels — the right answer for desktop libraries sized in real pixels.
    */
   designWidth: number | false
-  /** Class prefixes, without the dot. Matched on selectors, so inlined CSS still routes. */
+  /** Class prefixes, with an optional dot. Matched on selectors, so inlined CSS still routes. */
   prefix?: string | readonly string[]
   /**
    * Custom-property prefixes, e.g. `--van-`.

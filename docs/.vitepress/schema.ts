@@ -47,6 +47,8 @@ const DEFAULTS = resolveOptions()
 const CSS_CUSTOM_IDENTIFIER_PATTERN = `^${CSS_CUSTOM_IDENTIFIER_SOURCE}$`
 const CSS_TRIMMED_IDENTIFIER_PATTERN = `^\\s*${CSS_IDENTIFIER_SOURCE}\\s*$`
 const CSS_OPTIONAL_IDENTIFIER_PATTERN = `^(?:\\s*${CSS_IDENTIFIER_SOURCE}\\s*|\\s*)$`
+const CSS_CLASS_PREFIX_PATTERN = `^\\.?${CSS_IDENTIFIER_SOURCE}$`
+const CSS_TOKEN_PREFIX_PATTERN = String.raw`^--[-A-Za-z0-9_\u0080-\uFFFF]+$`
 
 const PATTERN = {
   description: 'A substring, or a regular expression in a JavaScript config.',
@@ -233,14 +235,14 @@ const LIBRARY: Fields<LibraryAdaptation> = {
     oneOf: [{ type: 'number', exclusiveMinimum: 0 }, { const: false }],
   },
   prefix: oneOrMany(
-    { type: 'string' },
+    { type: 'string', pattern: CSS_CLASS_PREFIX_PATTERN },
     {
-      description: 'Class prefixes, without the dot.',
-      'x-description-zh': '类名前缀，不带点。',
+      description: 'Unescaped class prefixes, with an optional leading dot.',
+      'x-description-zh': '未转义的类名前缀，可选一个开头的点。',
     },
   ),
   tokenPrefix: oneOrMany(
-    { type: 'string' },
+    { type: 'string', pattern: CSS_TOKEN_PREFIX_PATTERN },
     {
       description: 'Custom-property prefixes, for a library themed through `:root` tokens.',
       'x-description-zh': '自定义属性前缀，用于通过 `:root` 变量做主题的组件库。',

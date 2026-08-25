@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- Component-library definitions now reject duplicate names before two route sets can silently share one overwritten derived profile. Library names cannot hide surrounding whitespace, and class/token prefixes are grammar-checked so malformed prefixes cannot silently match nothing or claim every custom property.
 - Added `adaptive-matrix --json`: one versioned report across one or many files, with structured changes, warnings, breakpoint continuity issues, browser compatibility findings and aggregate counts. Failures are JSON with exit code 1, `--all` controls unchanged declarations, and the report types/version constant are public TypeScript exports.
 - Added opt-in CLI quality gates with `--fail-on warnings,continuity,compatibility` (or `any`). Valid compiled output now exits non-zero when selected policy findings exist, including in `--css` and `--json` workflows; JSON distinguishes compilation success from gate success.
 - Explicitly positive CSS lengths such as `+16px` now compile to a valid `clamp()` expression instead of the invalid `+clamp(...)`.

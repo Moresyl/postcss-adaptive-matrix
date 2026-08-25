@@ -242,6 +242,8 @@ adaptiveMatrix({
 
 Providing an array means only the listed entries are enabled — in the configuration above, every built-in other than Vant and acme-ui is off.
 
+Library names must be unique: each name owns exactly one synthesised profile, so repeating it with another canvas is rejected instead of leaving earlier routes pointing at the later profile. `prefix` is an unescaped CSS class identifier (an optional leading `.` is accepted), and `tokenPrefix` is an unescaped custom-property prefix beginning with `--` and containing at least one character after it. Invalid prefixes fail at configuration time rather than silently matching nothing or claiming every token.
+
 ## Turning it off
 
 ```js

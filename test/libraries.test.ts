@@ -56,6 +56,19 @@ describe('resolveLibrary', () => {
     expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: ' ' })).toThrow(
       /file cannot be empty/,
     )
+    expect(() => resolveLibrary({ name: ' kit', designWidth: 375, prefix: 'kit-' })).toThrow(
+      /name .*surrounding whitespace/,
+    )
+    for (const prefix of ['.', 'two words', '9kit-', 'kit:']) {
+      expect(() => resolveLibrary({ name: 'kit', designWidth: 375, prefix })).toThrow(
+        /prefix.*CSS class identifier/,
+      )
+    }
+    for (const tokenPrefix of ['--', 'kit-', '--two words', '--kit:']) {
+      expect(() => resolveLibrary({ name: 'kit', designWidth: 375, tokenPrefix })).toThrow(
+        /tokenPrefix.*custom-property prefix/,
+      )
+    }
     expect(() =>
       resolveLibrary({
         name: 'kit',
@@ -68,6 +81,26 @@ describe('resolveLibrary', () => {
 
   it('exposes the typed library-list convenience API', () => {
     expect(defineLibraries(['vant']).map((library) => library.name)).toEqual(['vant'])
+  })
+
+  it('accepts identifier-safe class and custom-property prefixes', () => {
+    expect(
+      resolveLibrary({
+        name: 'kit',
+        designWidth: 375,
+        prefix: ['.kit-', 'Mui'],
+        tokenPrefix: ['--kit-', '--9patch'],
+      }),
+    ).toMatchObject({ prefix: ['.kit-', 'Mui'], tokenPrefix: ['--kit-', '--9patch'] })
+  })
+
+  it('rejects duplicate names before their routes can disagree with one derived profile', () => {
+    expect(() =>
+      resolveLibraries([
+        { name: 'kit', designWidth: 375, prefix: 'kit-' },
+        { name: 'kit', designWidth: 750, prefix: 'kit2-' },
+      ]),
+    ).toThrow(/Duplicate library name "kit"/)
   })
 })
 
@@ -326,6 +359,19 @@ describe('expandLibraries', () => {
         'app',
       ),
     ).toThrow(/requires a positive designWidth/)
+  })
+
+  it('rejects duplicate names when expansion is called directly', () => {
+    expect(() =>
+      expandLibraries(
+        [
+          { name: 'kit', designWidth: 375, prefix: 'kit-' },
+          { name: 'kit', designWidth: 750, prefix: 'kit2-' },
+        ],
+        PROFILES,
+        'app',
+      ),
+    ).toThrow(/Duplicate library name "kit"/)
   })
 
   it('rejects a library based on a profile that does not exist', () => {
