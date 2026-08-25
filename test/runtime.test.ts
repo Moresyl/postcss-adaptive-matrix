@@ -77,12 +77,12 @@ describe('observeAdaptiveViewport', () => {
     expect(() => observer.destroy()).not.toThrow()
   })
 
-  it('publishes visual viewport and keyboard metrics, then cleans up', () => {
+  it('publishes pinch-aware visual viewport and keyboard metrics, then cleans up', () => {
     const target = stubTarget()
     const host = stubWindow({
       width: 390,
       height: 500,
-      scale: 1.25,
+      scale: 1,
       offsetTop: 20,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -100,7 +100,7 @@ describe('observeAdaptiveViewport', () => {
       height: 500,
       layoutHeight: 800,
       keyboardHeight: 280,
-      scale: 1.25,
+      scale: 1,
     })
     expect(target.values.get('--matrix-keyboard-height')).toBe('280')
     expect(target.values.get('--matrix-vh')).toBe('5px')
@@ -154,6 +154,29 @@ describe('observeAdaptiveViewport', () => {
     observer.destroy()
   })
 
+  it('does not mistake a pinch-zoomed viewport for an on-screen keyboard', () => {
+    const target = stubTarget()
+    const visual = {
+      width: 195,
+      height: 400,
+      scale: 2,
+      offsetTop: 100,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const host = stubWindow(visual)
+    const observer = observeAdaptiveViewport({ window: host.window, target: target.element })
+
+    expect(observer.update()!.keyboardHeight).toBe(0)
+    // Shrinking below the full height at the current scale still reports a
+    // keyboard, even when the zoomed viewport has been panned.
+    visual.height = 250
+    const beforeKeyboard = target.setProperty.mock.calls.length
+    expect(observer.update()!.keyboardHeight).toBe(150)
+    expect(target.setProperty.mock.calls.length - beforeKeyboard).toBe(3)
+    observer.destroy()
+  })
+
   it('substitutes the layout viewport for individually unusable readings', () => {
     // Some WebViews expose the object with fields that are not numbers yet.
     const target = stubTarget()
@@ -190,7 +213,9 @@ describe('observeAdaptiveViewport', () => {
     expect(target.setProperty.mock.calls.length).toBe(afterMount)
 
     host.flush()
-    expect(target.setProperty.mock.calls.length).toBe(afterMount * 2)
+    // The viewport did not change. Scheduling is coalesced and publishing is
+    // deduplicated, so a noisy resize burst causes no second set of DOM writes.
+    expect(target.setProperty.mock.calls.length).toBe(afterMount)
 
     // The handle is released by the frame, so the next burst schedules again.
     host.fire('resize')
@@ -268,5 +293,16 @@ describe('observeAdaptiveViewport', () => {
     expect(observer.update()).not.toBeNull()
     expect(target.values.get('--adaptive-width')).toBe('390')
     observer.destroy()
+  })
+
+  it('rejects a prefix that cannot form valid custom-property names', () => {
+    const target = stubTarget()
+    const host = stubWindow(undefined)
+    for (const prefix of ['', '--', 'two words', '9app']) {
+      expect(() =>
+        observeAdaptiveViewport({ window: host.window, target: target.element, prefix }),
+      ).toThrow(/viewport prefix must be a non-empty CSS identifier/)
+    }
+    expect(host.listeners.add).not.toHaveBeenCalled()
   })
 })

@@ -34,7 +34,7 @@ CSS 的 `vw` / `vh` 指的是**布局视口**，浏览器有意让它在软键�
 | `--adaptive-width` | 可视区域宽度（px 数值，无单位） |
 | `--adaptive-height` | 可视区域高度 |
 | `--adaptive-layout-height` | 布局视口高度，即 `window.innerHeight` |
-| `--adaptive-keyboard-height` | 软键盘遮挡高度，无键盘时为 `0` |
+| `--adaptive-keyboard-height` | 当前缩放倍数下的软键盘遮挡高度，无键盘时为 `0` |
 | `--adaptive-scale` | 当前捏合缩放倍数 |
 | `--adaptive-vh` | 可视高度的 1%，**带 px 单位** |
 | `--adaptive-vw` | 可视宽度的 1%，**带 px 单位** |
@@ -50,6 +50,8 @@ CSS 的 `vw` / `vh` 指的是**布局视口**，浏览器有意让它在软键�
   min-block-size: calc(var(--adaptive-vh, 1vh) * 100);
 }
 ```
+
+双指缩放同样会让 `VisualViewport.height` 变小，但它不是键盘。观察器会先用 `VisualViewport.scale` 折算当前缩放下本来应有的可视高度：800px 布局在 2× 缩放时出现 400px 可视视口是正常的，键盘高度为 `0`；若键盘再把它压到 250px，才报告 `150`。这样普通缩放手势不会把底部操作栏无故顶到页面中间。
 
 回退值 `1vh` 很重要——运行时没加载、或者在 SSR 首屏时，样式依然成立。
 
@@ -73,6 +75,8 @@ observeAdaptiveViewport({
 })
 ```
 
+`prefix` 必须是非空 CSS 标识符。开头的 `--` 可写可不写，传入后会被移除；空串、空白或数字开头会在注册任何监听前被拒绝，不会生成无法使用的自定义属性名。
+
 返回：
 
 ```ts
@@ -90,4 +94,4 @@ interface AdaptiveViewportObserver {
 
 ## 开销
 
-更新走 `requestAnimationFrame` 合并，一帧最多写一次；监听全部是 `passive`。不使用时不引入——它是独立入口，不会被主包带进去。
+更新走 `requestAnimationFrame` 合并，一帧最多读一次；监听全部是 `passive`。每个值还会单独缓存：视口实际未变化时，即使收到噪声 resize 事件也不会写 DOM；只有高度变化时，只改高度、键盘高度与 `--adaptive-vh`。不使用时不引入——它是独立入口，不会被主包带进去。

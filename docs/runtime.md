@@ -34,7 +34,7 @@ Written to `document.documentElement` after the call (changeable with `target`):
 | `--adaptive-width` | Visible width (a bare px number, no unit) |
 | `--adaptive-height` | Visible height |
 | `--adaptive-layout-height` | Layout viewport height, i.e. `window.innerHeight` |
-| `--adaptive-keyboard-height` | Height obscured by the keyboard, `0` when there is none |
+| `--adaptive-keyboard-height` | Height obscured by the keyboard at the current zoom, `0` when there is none |
 | `--adaptive-scale` | The current pinch-zoom factor |
 | `--adaptive-vh` | 1% of the visible height, **with a px unit** |
 | `--adaptive-vw` | 1% of the visible width, **with a px unit** |
@@ -62,6 +62,8 @@ A bottom action bar that avoids the keyboard:
 }
 ```
 
+Pinch zoom also makes `VisualViewport.height` smaller, but it is not a keyboard. The observer divides the layout height by `VisualViewport.scale` before measuring the missing height, so a 2× zoom on an 800px layout (a legitimate 400px visual viewport) reports `0`; a keyboard that then shrinks it to 250px reports `150`. This prevents an ordinary zoom gesture from pushing the action bar halfway up the page.
+
 ## Options
 
 ```ts
@@ -72,6 +74,8 @@ observeAdaptiveViewport({
   document: globalThis.document,
 })
 ```
+
+`prefix` must be a non-empty CSS identifier. A leading `--` is optional and removed; whitespace, an empty string, or a leading digit is rejected before any listener is registered, rather than producing unusable custom-property names.
 
 Returns:
 
@@ -90,4 +94,4 @@ But the server-rendered first paint will not have these variables, so **write a 
 
 ## Cost
 
-Updates are coalesced through `requestAnimationFrame`, so it writes at most once per frame, and every listener is `passive`. Not using it costs nothing — it is a separate entry point and is never pulled into the main bundle.
+Updates are coalesced through `requestAnimationFrame`, so it reads at most once per frame, and every listener is `passive`. Values are cached individually: a noisy resize event whose viewport did not actually change performs no DOM writes, while a height-only change updates only height, keyboard height and `--adaptive-vh`. Not using it costs nothing — it is a separate entry point and is never pulled into the main bundle.
