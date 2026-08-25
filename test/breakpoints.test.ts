@@ -51,6 +51,25 @@ describe('bandOf', () => {
     expect(bandOf('(max-width: 47.9375rem)')).toEqual({ lo: 0, hi: 767 })
   })
 
+  it('reads the complete CSS number grammar and ASCII-insensitive media spelling', () => {
+    expect(bandOf('(MIN-WIDTH: 1e3PX)')).toEqual({ lo: 1000, hi: Infinity })
+    expect(bandOf('(min-width: +6.4e1REM)')).toEqual({ lo: 1024, hi: Infinity })
+    expect(bandOf('(max-width: .5e3px)')).toEqual({ lo: 0, hi: 500 })
+    expect(bandOf('(min-width: 0)')).toEqual({ lo: 0, hi: Infinity })
+    expect(boundaryOf('(MAX-WIDTH: 1E2EM)')).toBe(1600)
+  })
+
+  it('rejects malformed, non-finite and non-zero unitless media lengths', () => {
+    for (const condition of [
+      '(min-width: 1..2px)',
+      '(min-width: 10.)',
+      '(min-width: 10)',
+      '(min-width: 1e999px)',
+    ]) {
+      expect(bandOf(condition), condition).toBeNull()
+    }
+  })
+
   it('refuses to answer for a query it cannot read', () => {
     // Not "no constraint" — unknown. Treating these as unconstrained would route
     // rules on a condition nobody checked.
@@ -106,6 +125,7 @@ describe('a media route', () => {
       'screen and (min-width: 1200px)',
       '(min-width: 64rem)',
       '(min-width: 1024px) and (max-width: 1600px)',
+      '(MIN-WIDTH: 1.024e3PX)',
     ]) {
       const { css } = await run(`@media ${params} { .a { padding: 40px } }`, routed)
       expect(css, params).toContain('2.77778vw')

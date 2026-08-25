@@ -194,6 +194,8 @@ Nesting is conjunction, so `@media (min-width: 900px) { @media (min-width: 1100p
 
 `rem` and `em` resolve at **16px**, not at `rootValue` and not at the root element's font size. A media query is evaluated before any declaration could change `font-size`, so it cannot depend on the cascade it selects — `64rem` is 1024px even in a stylesheet whose `html` is `62.5%`. Utility frameworks write every breakpoint this way.
 
+Width numbers use the same complete CSS grammar as declarations: signs, fractions and exponents are accepted, so `(MIN-WIDTH: 1.024e3PX)` is the same 1024px boundary. Feature names and units are ASCII case-insensitive. Unitless `0` is valid; any other unitless width, a malformed decimal, or a non-finite exponent makes the query unreadable rather than leaking `NaN` into routing and diagnostics.
+
 A query the compiler cannot read — a comma, `not`, `only`, or any non-width feature — is claimed by **nothing**. That is a refusal, not a "matches everything": routing a rule on a condition nobody checked is how a canvas mistake gets made rather than caught. `@container` never counts either; it bounds an element, and `vw` has never been about the element.
 
 To redraw a component library's own component at a breakpoint, name both — a selector route on its own would apply at every width, and a width band on its own loses to the library:

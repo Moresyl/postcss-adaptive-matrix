@@ -7,7 +7,12 @@
  * it cannot parse as "always true" invents cascades that never happen.
  */
 
-const WIDTH_FEATURE = /^\(\s*(min|max)-width\s*:\s*([\d.]+)(px|r?em)\s*\)$/
+import { CSS_NUMBER_SOURCE } from './syntax.js'
+
+const WIDTH_FEATURE = new RegExp(
+  `^\\(\\s*(min|max)-width\\s*:\\s*(${CSS_NUMBER_SOURCE})(px|r?em)?\\s*\\)$`,
+  'i',
+)
 /** Media types that describe a screen; anything else is not our business. */
 const SCREEN_TYPES = new Set(['screen', 'all'])
 
@@ -29,8 +34,11 @@ const INITIAL_FONT_SIZE = 16
 function parseCondition(condition: string): { side: 'min' | 'max'; px: number } | null {
   const parsed = WIDTH_FEATURE.exec(condition)
   if (!parsed) return null
-  const scale = parsed[3] === 'px' ? 1 : INITIAL_FONT_SIZE
-  return { side: parsed[1] as 'min' | 'max', px: Number(parsed[2]) * scale }
+  const number = Number(parsed[2])
+  if (!Number.isFinite(number) || (parsed[3] === undefined && number !== 0)) return null
+  const unit = parsed[3]?.toLowerCase()
+  const scale = unit === undefined || unit === 'px' ? 1 : INITIAL_FONT_SIZE
+  return { side: parsed[1]!.toLowerCase() as 'min' | 'max', px: number * scale }
 }
 
 /**

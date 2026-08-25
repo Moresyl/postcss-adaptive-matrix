@@ -1,0 +1,12 @@
+{
+  "description": "Media routes read CSS scientific notation and ASCII-insensitive feature and unit names",
+  "options": {
+    "defaultProfile": "app",
+    "libraries": false,
+    "routes": [{ "media": { "minWidth": 1000 }, "profile": "pc" }],
+    "profiles": {
+      "app": { "designWidth": 375, "fluid": { "minWidth": 320, "maxWidth": 480 } },
+      "pc": { "designWidth": 1440, "fluid": { "minWidth": 1000, "maxWidth": 1920 } }
+    }
+  }
+}

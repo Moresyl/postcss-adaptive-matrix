@@ -1,0 +1,4 @@
+.base { width: 100px }
+@media (MIN-WIDTH: 1e3PX) {
+  .desktop { width: 144px }
+}

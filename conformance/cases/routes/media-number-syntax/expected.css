@@ -1,0 +1,4 @@
+.base { width: clamp(85.33333px, 26.66667vw, 128px) }
+@media (MIN-WIDTH: 1e3PX) {
+  .desktop { width: clamp(100px, 10vw, 192px) }
+}

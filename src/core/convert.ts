@@ -6,6 +6,7 @@ import type {
   ResolvedAdaptiveMatrixOptions,
   ScaleUnit,
 } from './types.js'
+import { CSS_NUMBER_SOURCE } from './syntax.js'
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
@@ -24,11 +25,9 @@ const BOUNDING_FUNCTIONS = new Set(['clamp', 'min', 'max'])
  * makes `min(1e2vw, 50px)` look free of viewport units, which defeats the
  * idempotence guard and rescales a value the author had already bounded.
  */
-const NUMBER = String.raw`[+-]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?`
-
 /** A number carrying any viewport- or container-relative unit. */
 const VIEWPORT_RELATIVE = new RegExp(
-  `(?:^|[^\\w.-])${NUMBER}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\\w-])`,
+  `(?:^|[^\\w.-])${CSS_NUMBER_SOURCE}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\\w-])`,
   'i',
 )
 
@@ -48,7 +47,10 @@ function unitPattern(units: string[]): RegExp {
   // The unit is captured, not just matched: reading several units at once means
   // each match has to say which one it was, both to know its pixel size and to
   // put it back unchanged when a guard declines the conversion.
-  const pattern = new RegExp(`(^|[^a-zA-Z0-9_.-])(${NUMBER})(${escaped})(?![a-zA-Z0-9_-])`, 'gi')
+  const pattern = new RegExp(
+    `(^|[^a-zA-Z0-9_.-])(${CSS_NUMBER_SOURCE})(${escaped})(?![a-zA-Z0-9_-])`,
+    'gi',
+  )
   UNIT_PATTERNS.set(key, pattern)
   return pattern
 }
