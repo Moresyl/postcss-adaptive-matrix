@@ -26,7 +26,10 @@ export function matchesAnyPattern(
   value: string,
 ): boolean {
   if (!patterns) return false
-  return patterns.some((pattern) => matchesPattern(pattern, value))
+  for (const pattern of patterns) {
+    if (matchesPattern(pattern, value)) return true
+  }
+  return false
 }
 
 export function matchesFile(
@@ -34,11 +37,19 @@ export function matchesFile(
   file: string,
 ): boolean {
   if (!matchers) return false
-  const list = toArray(matchers)
-  return list.some((matcher) => {
-    if (typeof matcher === 'function') return matcher(file)
-    return matchesPattern(matcher, file)
-  })
+  // Resolved routes already store arrays. Do not clone one for every selector
+  // in a stylesheet merely to iterate over a read-only value.
+  const list: readonly FileMatcher[] = Array.isArray(matchers)
+    ? (matchers as readonly FileMatcher[])
+    : [matchers as FileMatcher]
+  for (const matcher of list) {
+    if (typeof matcher === 'function') {
+      if (matcher(file)) return true
+      continue
+    }
+    if (matchesPattern(matcher, file)) return true
+  }
+  return false
 }
 
 function globToRegExp(glob: string): RegExp {
@@ -71,8 +82,17 @@ export function createPropertyMatcher(propList: readonly string[]) {
 
   return (property: string): boolean => {
     const subject = property.startsWith('--') ? property : property.toLowerCase()
-    const included = includeRegex.some((pattern) => pattern.test(subject))
-    const excluded = excludeRegex.some((pattern) => pattern.test(subject))
-    return included && !excluded
+    let included = false
+    for (const pattern of includeRegex) {
+      if (pattern.test(subject)) {
+        included = true
+        break
+      }
+    }
+    if (!included) return false
+    for (const pattern of excludeRegex) {
+      if (pattern.test(subject)) return false
+    }
+    return true
   }
 }

@@ -30,6 +30,7 @@
 
 ### Security and maintenance
 
+- Hot-path matchers now iterate read-only route arrays without cloning them or allocating `some()` callbacks per rule, and resolved routes reuse immutable activation objects. The throughput benchmark continues to measure both bare conversion and all built-in library routes against PostCSS parse/print cost.
 - VitePress 1.6.4 now resolves its compatible Vite dependency to patched Vite 6.4.3, removing the high-severity Windows path traversal and the older optimized-source-map traversal from the documentation toolchain without adopting the VitePress 2 alpha.
 - CI and the publish workflow now run the official npm audit gate at moderate severity. The one remaining low-severity esbuild advisory affects its development server; this project uses that dependency only through build/test APIs and does not expose that server.
 

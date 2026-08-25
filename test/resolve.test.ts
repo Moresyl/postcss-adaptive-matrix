@@ -67,6 +67,15 @@ describe('profile resolution', () => {
     expect(resolver.forSelector(inherited, '.vd-other', '/src/a.css').name).toBe('vendor')
   })
 
+  it('reuses the immutable result of a matching route', () => {
+    const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'] }])
+    const inherited = resolver.forFile('/src/a.css')
+    const first = resolver.forSelector(inherited, '.vd-button', '/src/a.css')
+    const second = resolver.forSelector(inherited, '.vd-card', '/src/a.css')
+
+    expect(first).toBe(second)
+  })
+
   it('rejects a route pointing at a profile that does not exist', () => {
     expect(() => resolverFor([{ profile: 'ghost', file: /x/ }])).toThrow('unknown profile "ghost"')
   })

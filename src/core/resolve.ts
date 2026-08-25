@@ -47,6 +47,12 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     convert: true,
   }
 
+  /** Route results are immutable, so one object can serve every matching node. */
+  function activation(profile: string | false): ActiveProfile {
+    if (profile === false) return { ...fallback, convert: false }
+    return { name: profile, profile: options.profiles[profile]!, explicit: false, convert: true }
+  }
+
   const routes = options.routes
     .filter((route) => {
       if (route.profile === false || options.profiles[route.profile]) return true
@@ -60,6 +66,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       // to preserve that distinction or `--Theme-*` can claim `--theme-*`.
       property: toArray(route.property),
       media: toArray(route.media),
+      active: activation(route.profile),
     }))
 
   const hasSelectorRoutes = routes.some((route) => route.selector.length > 0)
@@ -77,15 +84,6 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     return band !== null && route.media.some((matcher) => bandSatisfies(band, matcher))
   }
 
-  /**
-   * A route that declares a file must still match it. `preserve` routes reuse
-   * the default profile object because nothing will read it.
-   */
-  function activate(profile: string | false): ActiveProfile {
-    if (profile === false) return { ...fallback, convert: false }
-    return { name: profile, profile: options.profiles[profile]!, explicit: false, convert: true }
-  }
-
   return {
     /** True when selectors need to be tested at all — lets callers skip the work. */
     hasSelectorRoutes,
@@ -98,7 +96,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     forFile(file: string): ActiveProfile {
       for (const route of routes) {
         if (route.selector.length || route.property.length || route.media.length) continue
-        if (matchesFile(route.file, file)) return activate(route.profile)
+        if (matchesFile(route.file, file)) return route.active
       }
       return fallback
     },
@@ -117,7 +115,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       for (const route of mediaRoutes) {
         if (!inBand(route, band)) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
-        return activate(route.profile)
+        return route.active
       }
       return inherited
     },
@@ -147,7 +145,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
         if (!matchesAnyPattern(route.selector, subject)) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         if (!inBand(route, band)) continue
-        return activate(route.profile)
+        return route.active
       }
       return inherited
     },
@@ -170,7 +168,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
         if (!route.property.some((prefix) => property.startsWith(prefix))) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         if (!inBand(route, band)) continue
-        return activate(route.profile)
+        return route.active
       }
       return undefined
     },

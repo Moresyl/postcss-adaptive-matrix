@@ -465,6 +465,7 @@ describe('matchers and math helpers', () => {
     expect(matchesFile(['vendor', (file) => file.endsWith('.module.css')], '/a.module.css')).toBe(
       true,
     )
+    expect(matchesFile([() => false, 'module.css'], '/a.module.css')).toBe(true)
     expect(matchesFile(undefined, '/src/a.css')).toBe(false)
   })
 
