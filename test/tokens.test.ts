@@ -129,6 +129,15 @@ describe('theme token resolution', () => {
     const tokens = table(':root { --x: 1px }')
     expect(tokens.resolve('var(--x', 400)).toBeNull()
     expect(tokens.resolve('var(notaname)', 400)).toBeNull()
+    expect(tokens.resolve('var(--missing garbage, 16px)', 400)).toBeNull()
+    expect(tokens.resolve('var(--, 16px)', 400)).toBeNull()
+    expect(tokens.resolve('var(--bad:, 16px)', 400)).toBeNull()
+  })
+
+  it('accepts escaped custom-property names without inventing their value', () => {
+    const tokens = table(':root { --x: 1px }')
+    expect(tokens.resolve(String.raw`var(--\31 gap, 16px)`, 400)).toBe('16px')
+    expect(tokens.resolve(String.raw`var(--\g, 16px)`, 400)).toBe('16px')
   })
 
   it('leaves env() unresolved, so a safe-area value stays unknown', () => {

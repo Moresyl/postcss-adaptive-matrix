@@ -302,6 +302,38 @@ function splitArguments(inner: string): { name: string; fallback: string | null 
   return { name: inner.trim(), fallback: null }
 }
 
+function isCustomPropertyName(name: string): boolean {
+  if (!name.startsWith('--') || name.length <= 2) return false
+  let index = 2
+  while (index < name.length) {
+    const character = name[index]!
+    if (/[-_A-Za-z0-9\u0080-\uFFFF]/.test(character)) {
+      index += 1
+      continue
+    }
+    if (character !== '\\') return false
+
+    let cursor = index + 1
+    let digits = 0
+    while (cursor < name.length && digits < 6 && /[0-9a-f]/i.test(name[cursor]!)) {
+      digits += 1
+      cursor += 1
+    }
+    if (digits) {
+      if (/\s/.test(name[cursor] ?? '')) {
+        if (name[cursor] === '\r' && name[cursor + 1] === '\n') cursor += 1
+        cursor += 1
+      }
+    } else {
+      const escaped = name[cursor]
+      if (escaped === undefined || /[\r\n\f]/.test(escaped)) return false
+      cursor += 1
+    }
+    index = cursor
+  }
+  return true
+}
+
 function substitute(
   value: string,
   width: number,
@@ -324,7 +356,7 @@ function substitute(
     if (end < 0) return null
 
     const { name, fallback } = splitArguments(value.slice(start + 4, end))
-    if (!name.startsWith('--')) return null
+    if (!isCustomPropertyName(name)) return null
 
     // `--a: var(--b); --b: var(--a)` is invalid CSS, not a length. Guard
     // anyway: a stylesheet is an input, and inputs are not always valid.
