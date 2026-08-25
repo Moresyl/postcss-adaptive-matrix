@@ -1,6 +1,11 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
-import { isCssCustomIdentifier, isCssIdentifier, isCssLayerName } from './syntax.js'
+import {
+  isCssCustomIdentifier,
+  isCssIdentifier,
+  isCssLayerName,
+  queryConditionStructureIssue,
+} from './syntax.js'
 import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
@@ -401,12 +406,16 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
     )
   }
   if (profile.query !== undefined && profile.query !== false) {
+    let queryCondition: string
+    let queryPath: string
     if (typeof profile.query === 'string') {
       if (!profile.query.trim()) {
         throw new TypeError(
           `[postcss-adaptive-matrix] Profile "${name}" query cannot be an empty string.`,
         )
       }
+      queryCondition = profile.query
+      queryPath = 'query'
     } else {
       if (!isObject(profile.query)) {
         throw new TypeError(
@@ -446,6 +455,14 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
           `[postcss-adaptive-matrix] Profile "${name}" query.name only applies to container queries.`,
         )
       }
+      queryCondition = profile.query.condition
+      queryPath = 'query.condition'
+    }
+    const queryIssue = queryConditionStructureIssue(queryCondition)
+    if (queryIssue) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] Profile "${name}" ${queryPath} ${queryIssue}; it cannot be safely wrapped in a CSS at-rule.`,
+      )
     }
   }
   validateUnitAndStrategy(`Profile "${name}"`, profile.unit, profile.strategy)

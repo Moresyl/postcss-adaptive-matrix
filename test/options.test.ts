@@ -229,6 +229,35 @@ describe('configuration validation', () => {
     ).toThrow(/query\.name.*valid non-reserved unescaped CSS custom identifier/)
   })
 
+  it('keeps query conditions inside their generated at-rule boundary', () => {
+    const profile = (query: unknown) => ({
+      profiles: {
+        app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 }, query } as never,
+      },
+    })
+
+    expect(() => resolveOptions(profile('(width > 1px) { .escaped'))).toThrow(
+      /query contains a top-level "\{".*safely wrapped/,
+    )
+    expect(() => resolveOptions(profile('(width > 1px); .escaped'))).toThrow(
+      /query contains a top-level ";".*safely wrapped/,
+    )
+    expect(() => resolveOptions(profile('(width > 1px'))).toThrow(/query has an unclosed "\("/)
+    expect(() => resolveOptions(profile('(width > 1px) /* open'))).toThrow(
+      /query has an unterminated comment/,
+    )
+    expect(() =>
+      resolveOptions(profile({ type: 'container', condition: 'style(--theme: "open)' })),
+    ).toThrow(/query\.condition has an unterminated " string/)
+
+    // A semicolon inside a quoted custom-property value is data, not an
+    // at-rule terminator. New style-query syntax must not be rejected merely
+    // because this guard is intentionally narrower than a full query parser.
+    expect(() =>
+      resolveOptions(profile({ type: 'container', condition: 'style(--theme: "a;b")' })),
+    ).not.toThrow()
+  })
+
   it('rejects malformed profile containers and blank profile names', () => {
     const valid = { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } }
     expect(() => resolveOptions({ profiles: { app: { ...valid, fluid: null as never } } })).toThrow(
