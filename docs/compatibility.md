@@ -193,6 +193,8 @@ Known names: `chrome`, `edge`, `safari`, `firefox`, `ios_saf`, `samsung`; `andro
 
 That is the only way to guarantee the audit and the output never drift apart. A feature that reaches the stylesheet through a preset, through a component-library route, or through your own hand-written CSS is a feature you shipped, and reading the output sees all of them. There is far too much that cannot be read out of a configuration.
 
+Comments and quoted strings are excluded before feature matching. A selector shown in a comment or emitted through `content`, for example, is data rather than browser syntax and cannot make a compatibility quality gate fail; samples still point into the original stylesheet because the scan preserves source positions.
+
 ## Failing the build
 
 The same checks are exported from the package, without going through the CLI:

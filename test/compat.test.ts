@@ -201,11 +201,33 @@ describe('detection', () => {
   })
 
   it('does not read :not() or a --has- token as :has()', () => {
-    // The two things in a real stylesheet that look like it. A `:has(` written
-    // inside a string is not covered, here or by any other entry in the table:
-    // detection reads text, and no feature is worth a CSS parser to rule out a
-    // stylesheet whose content property quotes a selector.
     const css = '.a:not(.b) { --has-badge: 1px; padding: 8px }'
+    expect(ids(css)).not.toContain('has-pseudo')
+  })
+
+  it('ignores feature-shaped text inside comments and quoted strings', () => {
+    const decoys = [
+      '@layer demo',
+      ':where(.a)',
+      ':has(.a)',
+      '@container card',
+      '@media (width >= 30rem)',
+      'clamp(1px, 2vw, 3px)',
+      '12cqi 12vi 12vw',
+      'inline-size: 2px',
+      '--theme-size: 2px; var(--theme-size)',
+      'env(safe-area-inset-top)',
+    ].join('; ')
+    const css = `/* ${decoys} */ .a::before { content: "${decoys.replaceAll('"', '\\"')}" }`
+
+    expect(ids(css)).toEqual([])
+  })
+
+  it('resumes detection after escaped strings and comments close', () => {
+    const css = String.raw`.a { content: "escaped \" clamp(1px,2vw,3px)" } /* :has(.x) */
+      .b { width: clamp(1px, 2vw, 3px) }`
+    expect(ids(css)).toContain('math-functions')
+    expect(ids(css)).toContain('viewport-units')
     expect(ids(css)).not.toContain('has-pseudo')
   })
 

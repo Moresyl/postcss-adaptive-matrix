@@ -350,15 +350,70 @@ function sampleAt(css: string, index: number, length: number): string {
   return css.slice(start, end).replace(/\s+/g, ' ').trim()
 }
 
+/**
+ * Keeps syntax positions stable while hiding text that the CSS parser treats
+ * as data rather than syntax.
+ *
+ * Compatibility patterns intentionally scan a string instead of constructing
+ * another PostCSS tree, but comments and quoted strings may contain examples,
+ * selectors, URLs or prose that look exactly like live features. Replacing
+ * their code units with spaces preserves every match index for `sampleAt()`
+ * while preventing those decoys from failing a compatibility quality gate.
+ */
+function compatibilitySyntax(css: string): string {
+  const syntax = css.split('')
+  let quote: "'" | '"' | null = null
+  let comment = false
+
+  for (let index = 0; index < syntax.length; index += 1) {
+    const character = css[index]!
+    const next = css[index + 1]
+
+    if (comment) {
+      syntax[index] = ' '
+      if (character === '*' && next === '/') {
+        syntax[index + 1] = ' '
+        index += 1
+        comment = false
+      }
+      continue
+    }
+
+    if (quote) {
+      syntax[index] = ' '
+      if (character === '\\' && next !== undefined) {
+        syntax[index + 1] = ' '
+        index += 1
+      } else if (character === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (character === '/' && next === '*') {
+      syntax[index] = ' '
+      syntax[index + 1] = ' '
+      index += 1
+      comment = true
+    } else if (character === "'" || character === '"') {
+      syntax[index] = ' '
+      quote = character
+    }
+  }
+
+  return syntax.join('')
+}
+
 /** Which of the compiler's features appear in a stylesheet, in table order. */
 export function detectFeatures(css: string): { feature: CompatFeature; sample: string }[] {
   const found: { feature: CompatFeature; sample: string }[] = []
+  const syntax = compatibilitySyntax(css)
   for (const feature of COMPAT_FEATURES) {
     if (!feature.detect) continue
     // Rebuilt per call rather than shared: a `g`-flagged literal would carry
     // `lastIndex` between audits and start skipping matches.
     const pattern = new RegExp(feature.detect.source, feature.detect.flags)
-    const match = pattern.exec(css)
+    const match = pattern.exec(syntax)
     if (!match) continue
     found.push({ feature, sample: sampleAt(css, match.index, match[0].length) })
   }
