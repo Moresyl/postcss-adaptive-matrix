@@ -28,6 +28,8 @@ adaptive-matrix <file...> [options]
 cat app.css | adaptive-matrix --from src/app.css
 ```
 
+可以用 `-` 显式表示 stdin，但不能把它与文件路径混用，否则输入位置不同就会有一份源文件被静默忽略。同理，`--from` 只能用于一个输入；多个文件不可能共用一个逻辑路径后仍保持各自的文件路由含义。
+
 | 选项 | 作用 |
 | --- | --- |
 | `-c, --config <path>` | 默认导出插件选项的模块，或一个写着选项的 `.json` 文件 |

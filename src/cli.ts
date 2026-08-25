@@ -31,6 +31,7 @@ const HELP = `
 adaptive-matrix — preview what postcss-adaptive-matrix does to a stylesheet
 
   adaptive-matrix <file...> [options]
+  adaptive-matrix - [options]
   cat app.css | adaptive-matrix --from src/app.css
 
 Options
@@ -51,6 +52,9 @@ Options
 
 Without --config the built-in defaults are used, and the header says which
 profiles those are.
+
+Use exactly one '-' to name stdin explicitly. Stdin cannot be mixed with file
+paths, and --from applies to only one input because it names that input's path.
 
 The diff is followed by any "shrinks" findings: a length that gets smaller when
 the viewport gets wider. Every formula this compiler emits grows with the
@@ -495,6 +499,15 @@ export async function runCli(argv: string[]): Promise<number> {
     if (args.json && args.css) {
       throw new CliError('--json and --css are different output formats; choose one.')
     }
+    const stdinInputs = args.files.filter((file) => file === '-').length
+    if (stdinInputs && args.files.length > 1) {
+      throw new CliError('Stdin (-) cannot be mixed with file paths; run them separately.')
+    }
+    if (args.from && args.files.length > 1) {
+      throw new CliError(
+        '--from names one logical source path and cannot be shared by multiple input files.',
+      )
+    }
     const options = args.config ? await loadConfig(args.config) : {}
     if (args.profile) options.defaultProfile = args.profile
 
@@ -515,7 +528,7 @@ export async function runCli(argv: string[]): Promise<number> {
     const profiles = libraries ? [...authored, `+${libraries} library canvases`] : authored
 
     const inputs =
-      args.files.length && args.files[0] !== '-'
+      args.files.length && !stdinInputs
         ? await Promise.all(
             args.files.map(async (file) => ({
               from: resolve(file),

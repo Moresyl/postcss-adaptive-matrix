@@ -349,6 +349,32 @@ describe('runCli', () => {
     expect(out).toContain('1 converted')
   })
 
+  it('rejects mixing explicit stdin with file inputs instead of ignoring either source', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli(['-', path, '--no-color'])).toBe(1)
+    expect(err).toContain('Stdin (-) cannot be mixed with file paths')
+    expect(out).toBe('')
+
+    err = ''
+    expect(await runCli([path, '-', '--json'])).toBe(1)
+    expect(err).toBe('')
+    expect(JSON.parse(out)).toMatchObject({
+      ok: false,
+      error: { message: expect.stringContaining('Stdin (-) cannot be mixed') },
+    })
+  })
+
+  it('rejects one --from override for several files before reading them', async () => {
+    const first = join(directory, 'missing-a.css')
+    const second = join(directory, 'missing-b.css')
+
+    expect(await runCli([first, second, '--from', 'src/app.css', '--no-color'])).toBe(1)
+    expect(err).toContain('--from names one logical source path')
+    expect(err).not.toContain('missing-a.css')
+    expect(out).toBe('')
+  })
+
   it('marks a declaration the compiler added rather than changed', async () => {
     const config = join(directory, 'preserve.config.mjs')
     await writeFile(config, 'export default { preserveOriginal: true }', 'utf8')

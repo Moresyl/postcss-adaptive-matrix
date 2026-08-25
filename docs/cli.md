@@ -28,6 +28,8 @@ adaptive-matrix <file...> [options]
 cat app.css | adaptive-matrix --from src/app.css
 ```
 
+`-` can name stdin explicitly, but it cannot be mixed with file paths: doing so would otherwise make one source disappear depending on its position. Likewise, `--from` applies to one input only; with several files there is no honest way for one logical path to preserve their distinct file routes.
+
 | Option | Effect |
 | --- | --- |
 | `-c, --config <path>` | A module whose default export is the plugin options, or a `.json` file of options |

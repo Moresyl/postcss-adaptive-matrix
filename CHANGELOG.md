@@ -15,6 +15,7 @@
 - Unknown JavaScript configuration fields are now rejected at every nesting level, matching the published schema's closed objects. Near misspellings include a targeted suggestion instead of being silently spread into resolved options and ignored.
 - The optional VisualViewport runtime no longer mistakes pinch zoom for an on-screen keyboard: keyboard occlusion is measured against the layout height at the current `scale`. Invalid variable prefixes fail before listeners are registered, and unchanged metrics no longer repeat DOM writes on noisy resize events.
 - Fixed-column correction now follows the declaration block's effective `position`, including order and `!important`; an earlier `position: fixed` fallback can no longer rewrite an element later overridden to `static` or `absolute`.
+- The CLI rejects ambiguous input combinations before reading anything: explicit stdin (`-`) can no longer hide or be mistaken for a file among other inputs, and one `--from` override can no longer erase the distinct routing identity of several files.
 - Build cleanup now runs once before tsup starts. Concurrent ESM, CommonJS, and CLI workers can no longer delete declaration files another worker has just generated.
 - Added conformance fixtures and regression tests for signed numbers, property-name casing, custom-property casing, and JSON-style invalid option values.
 
