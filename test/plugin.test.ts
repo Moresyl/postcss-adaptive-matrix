@@ -35,7 +35,7 @@ describe('adaptiveMatrix', () => {
 
     expect(result.css).toContain('.mobile { width: 4.26667vw }')
     expect(result.css).toContain('.desktop { width: 1.11111vw }')
-    expect(result.css.match(/postcss-adaptive-matrix foundation/g)).toHaveLength(1)
+    expect(result.css.match(/postcss-adaptive-matrix foundation \*\//g)).toHaveLength(1)
   })
 
   it('converts ordinary rules with bounded fluid lengths and zoomable text', async () => {

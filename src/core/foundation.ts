@@ -22,6 +22,7 @@ const INDENT = '  '
  * foundation is bare rules that nothing distinguishes structurally.
  */
 export const FOUNDATION_MARKER = 'postcss-adaptive-matrix foundation'
+export const FOUNDATION_END_MARKER = 'postcss-adaptive-matrix foundation end'
 
 function queryDetails(profile: AdaptiveProfile): {
   type: 'media' | 'container'
@@ -140,7 +141,7 @@ export function buildFoundationCss(options: ResolvedAdaptiveMatrixOptions): stri
   const layer = rootOptions.layer === undefined ? 'adaptive-matrix' : rootOptions.layer
   const body = rules.join('\n\n')
   const wrapped = layer ? `@layer ${layer} {\n${indent(body, 1)}\n}` : body
-  return `/* ${FOUNDATION_MARKER} */\n${wrapped}`
+  return `/* ${FOUNDATION_MARKER} */\n${wrapped}\n/* ${FOUNDATION_END_MARKER} */`
 }
 
 export function adaptiveQueryParams(profile: AdaptiveProfile): {

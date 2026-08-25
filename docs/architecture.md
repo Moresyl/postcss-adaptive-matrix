@@ -120,7 +120,7 @@ The scope is deliberately limited to those three functions. `calc(100vw - 32px)`
 Idempotence covers two more things beyond length conversion:
 
 - **Ignore comments survive into the output.** An ignored `40px` and a `40px` nobody ever looked at are indistinguishable, so if the comment were dropped, the second pass would convert it. Any minifier removes the comments, and an author's "don't touch this" has to survive more than one pass.
-- **The root foundation is injected only once.** The output carries a `/* postcss-adaptive-matrix foundation */` marker, and a second pass that sees it skips the whole section — so a fixed ceiling like `max-inline-size: 480px` is never mistaken for a design-file size and scaled again, and no second copy is stacked on.
+- **The root foundation is injected only once.** The output brackets it with `/* postcss-adaptive-matrix foundation */` and `/* postcss-adaptive-matrix foundation end */`; a second pass skips that section only, so a fixed ceiling like `max-inline-size: 480px` is never mistaken for a design-file size and scaled again, while application CSS concatenated after a precompiled dependency still converts. No second copy is stacked on.
 
 The conformance suite asserts this for **every** case: recompiling the output must return it unchanged.
 

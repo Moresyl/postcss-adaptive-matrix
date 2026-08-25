@@ -86,4 +86,26 @@ describe('a second pass over compiled output', () => {
     expect(once).not.toContain('vw')
     expect(await compile(once, options)).toBe(once)
   })
+
+  it('continues after a precompiled foundation concatenated before app CSS', async () => {
+    const options = { ...base, root: { selector: '#app' } }
+    const dependency = await compile('.dependency { width: 16px }', options)
+    const bundled = `${dependency}\n.app { width: 100px }`
+    const result = await compile(bundled, options)
+
+    expect(result).toContain('postcss-adaptive-matrix foundation end')
+    expect(result).not.toContain('.app { width: 100px }')
+    expect(result).toContain('.app { width: clamp(')
+    expect(result.match(/postcss-adaptive-matrix foundation \*\//g)).toHaveLength(1)
+  })
+
+  it('conservatively skips old foundation output that has no end marker', async () => {
+    const legacy =
+      '.before { width: clamp(1px, 2vw, 3px) }\n' +
+      '/* postcss-adaptive-matrix foundation */\n' +
+      ':where(#app) { width: 100%; max-width: 480px }\n' +
+      '.after { width: 100px }'
+
+    expect(await compile(legacy, base)).toBe(legacy)
+  })
 })

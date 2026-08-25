@@ -15,7 +15,12 @@ import {
   isFixedPositionValue,
   wantsFixedCorrection,
 } from '../core/fixed.js'
-import { FOUNDATION_MARKER, adaptiveQueryParams, buildFoundationCss } from '../core/foundation.js'
+import {
+  FOUNDATION_END_MARKER,
+  FOUNDATION_MARKER,
+  adaptiveQueryParams,
+  buildFoundationCss,
+} from '../core/foundation.js'
 import { LIBRARY_PROFILE_PREFIX } from '../core/libraries.js'
 import { createPropertyMatcher, matchesAnyPattern, matchesFile } from '../core/matchers.js'
 import { EVERY_WIDTH, bandOf, narrow, type WidthBand } from '../core/media.js'
@@ -541,12 +546,20 @@ function processContainer(
   context: ProcessorContext,
   declarations: boolean,
 ): void {
+  let foundation = false
   for (const node of [...(container.nodes ?? [])]) {
-    // Everything from here on is a foundation this plugin wrote on an earlier
-    // pass. It is always appended last, so stopping is enough — and it must
-    // stop, because the foundation's own `max-inline-size: 480px` is a literal
-    // cap, not a design-canvas length waiting to be scaled.
-    if (node.type === 'comment' && node.text === FOUNDATION_MARKER) return
+    if (node.type === 'comment' && node.text === FOUNDATION_MARKER) {
+      foundation = true
+      continue
+    }
+    if (foundation) {
+      // New output has an explicit end marker so a precompiled stylesheet can
+      // be concatenated before authored CSS without shielding everything after
+      // it. Old output has only the start marker and remains conservatively
+      // skipped to the end, preserving its fixed root caps on another pass.
+      if (node.type === 'comment' && node.text === FOUNDATION_END_MARKER) foundation = false
+      continue
+    }
     if (node.type === 'decl') {
       if (declarations) transformDeclaration(node, active, context)
       continue

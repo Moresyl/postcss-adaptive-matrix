@@ -120,7 +120,7 @@ Profile 的 `query.type` 为 `container` 时，`@adaptive` 输出 `@container`�
 幂等不止于长度换算，还包括另外两件事：
 
 - **忽略注释保留在产物里。** 被忽略的 `40px` 和没人管过的 `40px` 长得一模一样，注释一旦被吃掉，第二趟就会把它换算了。注释会被任何压缩器去掉，而作者的「别动这里」必须活过一趟以上。
-- **根容器基础样式只注入一次。** 产物开头有 `/* postcss-adaptive-matrix foundation */` 标记，第二趟见到它就整段跳过——既不会把 `max-inline-size: 480px` 这类固定上限当成设计稿尺寸再缩放，也不会叠出第二份。
+- **根容器基础样式只注入一次。** 产物用 `/* postcss-adaptive-matrix foundation */` 与 `/* postcss-adaptive-matrix foundation end */` 把基础块括起来，第二趟只跳过这个区间——既不会把 `max-inline-size: 480px` 这类固定上限当成设计稿尺寸再缩放，预编译依赖后面拼接的应用 CSS 也仍会转换，同时不会叠出第二份。
 
 一致性套件对**每一个**样例都断言了这一点：把产物再编译一遍必须原样返回。
 
