@@ -59,6 +59,12 @@ describe('bandOf', () => {
     expect(boundaryOf('(MAX-WIDTH: 1E2EM)')).toBe(1600)
   })
 
+  it('does not treat Unicode spaces as media-query whitespace', () => {
+    expect(bandOf('(min-width:\u00a01024px)')).toBeNull()
+    expect(bandOf('screen\u00a0and\u00a0(min-width: 1024px)')).toBeNull()
+    expect(bandOf('\u00a0(min-width: 1024px)\u00a0')).toBeNull()
+  })
+
   it('reads Media Queries Level 4 range context in either direction', () => {
     expect(bandOf('(width >= 64rem)')).toEqual({ lo: 1024, hi: Infinity })
     expect(bandOf('(1024px <= width)')).toEqual({ lo: 1024, hi: Infinity })

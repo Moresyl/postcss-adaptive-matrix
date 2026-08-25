@@ -10,20 +10,20 @@
 import { CSS_NUMBER_SOURCE } from './syntax.js'
 
 const WIDTH_FEATURE = new RegExp(
-  `^\\(\\s*(min|max)-width\\s*:\\s*(${CSS_NUMBER_SOURCE})(px|r?em)?\\s*\\)$`,
+  `^\\([ \\t\\r\\n\\f]*(min|max)-width[ \\t\\r\\n\\f]*:[ \\t\\r\\n\\f]*(${CSS_NUMBER_SOURCE})(px|r?em)?[ \\t\\r\\n\\f]*\\)$`,
   'i',
 )
 const LENGTH_SOURCE = `(${CSS_NUMBER_SOURCE})(px|r?em)?`
 const WIDTH_FIRST_RANGE = new RegExp(
-  `^\\(\\s*width\\s*(<=|>=|<|>|=)\\s*${LENGTH_SOURCE}\\s*\\)$`,
+  `^\\([ \\t\\r\\n\\f]*width[ \\t\\r\\n\\f]*(<=|>=|<|>|=)[ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*\\)$`,
   'i',
 )
 const VALUE_FIRST_RANGE = new RegExp(
-  `^\\(\\s*${LENGTH_SOURCE}\\s*(<=|>=|<|>|=)\\s*width\\s*\\)$`,
+  `^\\([ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*(<=|>=|<|>|=)[ \\t\\r\\n\\f]*width[ \\t\\r\\n\\f]*\\)$`,
   'i',
 )
 const CHAINED_RANGE = new RegExp(
-  `^\\(\\s*${LENGTH_SOURCE}\\s*(<=|>=|<|>)\\s*width\\s*(<=|>=|<|>)\\s*${LENGTH_SOURCE}\\s*\\)$`,
+  `^\\([ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*(<=|>=|<|>)[ \\t\\r\\n\\f]*width[ \\t\\r\\n\\f]*(<=|>=|<|>)[ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*\\)$`,
   'i',
 )
 /** Media types that describe a screen; anything else is not our business. */
@@ -134,6 +134,10 @@ function withoutComments(params: string): string | null {
   }
 }
 
+function trimCssWhitespace(value: string): string {
+  return value.replace(/^[ \t\r\n\f]+|[ \t\r\n\f]+$/g, '')
+}
+
 /**
  * Splits a media query's params on `and`, returning `null` for anything the
  * rules above exclude.
@@ -141,7 +145,7 @@ function withoutComments(params: string): string | null {
 export function widthConditions(params: string): string[] | null {
   const clean = withoutComments(params)
   if (clean === null || /[,]|\bnot\b|\bonly\b/i.test(clean)) return null
-  const parts = clean.split(/\s+and\s+/i).map((part) => part.trim())
+  const parts = clean.split(/[ \t\r\n\f]+and[ \t\r\n\f]+/i).map((part) => trimCssWhitespace(part))
   const conditions: string[] = []
   for (const part of parts) {
     if (SCREEN_TYPES.has(part.toLowerCase())) continue
