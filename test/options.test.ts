@@ -98,6 +98,15 @@ describe('configuration validation', () => {
     expect(resolveOptions({ unitToConvert: ['px', 'PX', ''] }).unitToConvert).toEqual(['px'])
   })
 
+  it('reports invalid runtime unit types as configuration errors', () => {
+    expect(() => resolveOptions({ unitToConvert: 16 as never })).toThrow(
+      /unitToConvert must be a unit string or an array of unit strings/,
+    )
+    expect(() => resolveOptions({ unitToConvert: ['px', 16] as never })).toThrow(
+      /unitToConvert\[1\] must be a unit string, not number/,
+    )
+  })
+
   it('rejects a rootValue that cannot be a font size', () => {
     expect(() => resolveOptions({ rootValue: 0 })).toThrow(/rootValue must be a positive number/)
     expect(() => resolveOptions({ rootValue: -16 })).toThrow(/rootValue must be a positive number/)
@@ -116,6 +125,7 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ atRuleName: 'container' })).toThrow(/is a CSS at-rule/)
     expect(() => resolveOptions({ atRuleName: '' })).toThrow(/atRuleName cannot be empty/)
     expect(() => resolveOptions({ atRuleName: 'canvas' })).not.toThrow()
+    expect(resolveOptions({ atRuleName: ' Canvas ' }).atRuleName).toBe('canvas')
   })
 
   it('rejects an empty root.selector, which compiles to an invalid :where()', () => {
@@ -128,6 +138,10 @@ describe('configuration validation', () => {
       /root.selector cannot be empty/,
     )
     expect(() => resolveOptions({ root: { selector: '#app' } })).not.toThrow()
+    expect(() => resolveOptions({ root: true as never })).toThrow(
+      /root must be false or an options object/,
+    )
+    expect(() => resolveOptions({ root: {} as never })).toThrow(/root\.selector must be a string/)
   })
 
   it('rejects an invalid dynamic design width at conversion time', () => {
@@ -177,6 +191,11 @@ describe('matchers and math helpers', () => {
     expect(match('width')).toBe(true)
     expect(match('margin-left')).toBe(false)
     expect(match('font')).toBe(false)
+    expect(match('MARGIN-LEFT')).toBe(false)
+
+    const custom = createPropertyMatcher(['--Theme-*'])
+    expect(custom('--Theme-gap')).toBe(true)
+    expect(custom('--theme-gap')).toBe(false)
   })
 
   it('supports reusable regexes, strings, arrays, and functions', () => {

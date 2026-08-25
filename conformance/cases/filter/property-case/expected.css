@@ -1,0 +1,5 @@
+.a {
+  FONT-SIZE: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem);
+  --Theme-gap: clamp(13.65333px, 4.26667vw, 20.48px);
+  --theme-gap: 16px;
+}

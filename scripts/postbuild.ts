@@ -10,7 +10,9 @@
  *
  * Both steps are idempotent: `npm run build` is run repeatedly and often
  * interrupted, and a post-processing step that corrupts the output on its
- * second run is worse than none.
+ * second run is worse than none. The build cleans `dist` once before tsup
+ * starts; no concurrent tsup configuration is allowed to remove another
+ * worker's declaration output.
  */
 import { readFile, writeFile } from 'node:fs/promises'
 

@@ -70,4 +70,12 @@ describe('profile resolution', () => {
   it('rejects a route pointing at a profile that does not exist', () => {
     expect(() => resolverFor([{ profile: 'ghost', file: /x/ }])).toThrow('unknown profile "ghost"')
   })
+
+  it('matches custom-property prefixes case-sensitively, as CSS does', () => {
+    const resolver = resolverFor([{ profile: 'vendor', property: '--Theme-' }])
+    const active = resolver.forFile('/src/app.css')
+
+    expect(resolver.forCustomProperty(active, '--Theme-gap', '/src/app.css')?.name).toBe('vendor')
+    expect(resolver.forCustomProperty(active, '--theme-gap', '/src/app.css')).toBeUndefined()
+  })
 })

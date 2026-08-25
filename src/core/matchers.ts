@@ -54,14 +54,25 @@ function globToRegExp(glob: string): RegExp {
  * reads as "everything except font properties".
  */
 export function createPropertyMatcher(propList: readonly string[]) {
-  const includes = propList.filter((item) => !item.startsWith('!'))
-  const excludes = propList.filter((item) => item.startsWith('!')).map((item) => item.slice(1))
+  // CSS standard properties are ASCII case-insensitive. Custom properties are
+  // deliberately not folded: `--Theme-gap` and `--theme-gap` are two different
+  // variables, and a filter that names one must not capture the other.
+  const canonical = (item: string): string => {
+    const negated = item.startsWith('!')
+    const pattern = negated ? item.slice(1) : item
+    const normalised = pattern.startsWith('--') ? pattern : pattern.toLowerCase()
+    return negated ? `!${normalised}` : normalised
+  }
+  const patterns = propList.map(canonical)
+  const includes = patterns.filter((item) => !item.startsWith('!'))
+  const excludes = patterns.filter((item) => item.startsWith('!')).map((item) => item.slice(1))
   const includeRegex = includes.map(globToRegExp)
   const excludeRegex = excludes.map(globToRegExp)
 
   return (property: string): boolean => {
-    const included = includeRegex.some((pattern) => pattern.test(property))
-    const excluded = excludeRegex.some((pattern) => pattern.test(property))
+    const subject = property.startsWith('--') ? property : property.toLowerCase()
+    const included = includeRegex.some((pattern) => pattern.test(subject))
+    const excluded = excludeRegex.some((pattern) => pattern.test(subject))
     return included && !excluded
   }
 }

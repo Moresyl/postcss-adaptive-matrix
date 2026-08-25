@@ -50,6 +50,7 @@ A configuration usually lives in a `.mjs` file with no type checking behind it, 
 | `unitToConvert: ''` / `[]` | Matches no length, indistinguishable from not installing the plugin |
 | `rootValue: 0` | Every `rem` reads as 0, and the writing end divides by zero |
 | `atRuleName: 'media'` | Every `@media` in the stylesheet is read as a canvas name and rewritten. At-keywords are case-insensitive, so `MEDIA` is the same collision |
+| `atRuleName: ' canvas '` | Normalised to `canvas`; otherwise validation would pass while no `@canvas` block ever matched |
 | `root.selector: ''` | Compiles to `:where()`, which is a parse error — the whole foundation, safe-area variables included, is discarded |
 | `textAnchorWidth: 0` | Division by zero, turning every text length into `Infinity` |
 
@@ -112,7 +113,9 @@ interface MediaMatcher {
 }
 ```
 
-Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix; `media` matches the widths an enclosing `@media` confines the rule to — see [Breakpoints](#breakpoints).
+Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix and is case-sensitive, exactly like the names themselves; `media` matches the widths an enclosing `@media` confines the rule to — see [Breakpoints](#breakpoints).
+
+Standard declaration names and `propList` patterns are ASCII case-insensitive, as CSS requires: `FONT-SIZE` is still text and keeps the zoomable `rem + vw` formula. Custom properties are the opposite: `--Theme-gap` and `--theme-gap` are different variables, so filters and routes preserve their spelling.
 
 Every channel a route declares must match. To let a class name and a file match independently, write two routes.
 

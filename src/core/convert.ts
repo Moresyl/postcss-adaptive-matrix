@@ -24,7 +24,7 @@ const BOUNDING_FUNCTIONS = new Set(['clamp', 'min', 'max'])
  * makes `min(1e2vw, 50px)` look free of viewport units, which defeats the
  * idempotence guard and rescales a value the author had already bounded.
  */
-const NUMBER = String.raw`-?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?`
+const NUMBER = String.raw`[+-]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?`
 
 /** A number carrying any viewport- or container-relative unit. */
 const VIEWPORT_RELATIVE = new RegExp(
@@ -172,12 +172,17 @@ export function isAccessibleTextProperty(
   // `--van-font-size-md`; treating those as plain lengths would emit pure `vw`
   // text that no longer answers to browser zoom.
   const isToken = property.startsWith('--')
+  // Standard property names are ASCII case-insensitive in CSS, while custom
+  // property names are case-sensitive. Preserve the latter and canonicalise
+  // the former so `FONT-SIZE` cannot silently lose the zoomable text formula.
+  const subject = isToken ? property : property.toLowerCase()
   return options.textProperties.some((candidate) => {
-    if (candidate.endsWith('*')) {
-      const prefix = candidate.slice(0, -1)
-      return property.startsWith(prefix) || (isToken && hasSegment(property, prefix))
+    const pattern = candidate.startsWith('--') ? candidate : candidate.toLowerCase()
+    if (pattern.endsWith('*')) {
+      const prefix = pattern.slice(0, -1)
+      return subject.startsWith(prefix) || (isToken && hasSegment(subject, prefix))
     }
-    return candidate === property || (isToken && hasSegment(property, candidate))
+    return pattern === subject || (isToken && hasSegment(subject, pattern))
   })
 }
 

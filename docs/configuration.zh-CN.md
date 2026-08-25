@@ -50,6 +50,7 @@ propList: ['*', '!border*', '!box-shadow']
 | `unitToConvert: ''` / `[]` | 匹配不到任何长度，与没装插件无法区分 |
 | `rootValue: 0` | 每个 `rem` 读成 0，输出侧再除零 |
 | `atRuleName: 'media'` | 样式表里每个 `@media` 都被当成画布名读取并改写。At-keyword 大小写不敏感，`MEDIA` 是同一个冲突 |
+| `atRuleName: ' canvas '` | 规范化为 `canvas`；否则校验虽然通过，却永远匹配不到任何 `@canvas` 块 |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
 | `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
 
@@ -112,7 +113,9 @@ interface MediaMatcher {
 }
 ```
 
-把匹配到的 CSS 改派到另一张画布，`profile: false` 则保留像素不转换。字符串按「包含」匹配，正则按 `test` 匹配；`property` 按前缀匹配自定义属性名；`media` 匹配的是外层 `@media` 把这条规则限死在哪段宽度里——见[断点](#断点)。
+把匹配到的 CSS 改派到另一张画布，`profile: false` 则保留像素不转换。字符串按「包含」匹配，正则按 `test` 匹配；`property` 按前缀匹配自定义属性名，并与属性名本身一样区分大小写；`media` 匹配的是外层 `@media` 把这条规则限死在哪段宽度里——见[断点](#断点)。
+
+标准声明名及其 `propList` 模式按 CSS 规则不区分 ASCII 大小写：`FONT-SIZE` 仍是文字，会保留可缩放的 `rem + vw` 公式。自定义属性恰好相反：`--Theme-gap` 与 `--theme-gap` 是两个变量，因此过滤器与路由会保留其原始大小写。
 
 一条路由声明了几条通道，就要几条同时命中。想让类名和文件各自独立生效，写成两条路由。
 

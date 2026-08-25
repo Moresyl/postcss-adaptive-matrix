@@ -13,7 +13,7 @@ export default defineConfig([
     entry: ['src/index.ts', 'src/runtime.ts'],
     format: ['esm'],
     dts: true,
-    clean: true,
+    clean: false,
   },
   {
     // Split from the ESM build only so `scripts/postbuild.ts` has a CJS-only

@@ -2,6 +2,17 @@
 
 **English** · [简体中文](./CHANGELOG.zh-CN.md)
 
+## Unreleased
+
+### Correctness and diagnostics
+
+- Explicitly positive CSS lengths such as `+16px` now compile to a valid `clamp()` expression instead of the invalid `+clamp(...)`.
+- Standard property names and `propList` patterns now follow CSS's ASCII case-insensitive semantics, so `FONT-SIZE` keeps the accessible `rem + vw` text formula. Custom-property filters and routes remain case-sensitive, as CSS requires.
+- `atRuleName` is normalised before both validation and matching; surrounding whitespace can no longer pass validation and leave an unknown block that browsers discard.
+- Invalid runtime shapes for `unitToConvert`, `root`, and `root.selector` now report targeted configuration errors instead of leaking internal `trim` failures.
+- Build cleanup now runs once before tsup starts. Concurrent ESM, CommonJS, and CLI workers can no longer delete declaration files another worker has just generated.
+- Added conformance fixtures and regression tests for signed numbers, property-name casing, custom-property casing, and JSON-style invalid option values.
+
 ## 0.7.0 — 2026-08-11
 
 ### JSON configuration

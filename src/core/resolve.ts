@@ -55,7 +55,9 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       profile: route.profile,
       file: toArray(route.file),
       selector: toArray(route.selector),
-      property: toArray(route.property).map((prefix) => prefix.toLowerCase()),
+      // Custom property names are case-sensitive in CSS. Route prefixes have
+      // to preserve that distinction or `--Theme-*` can claim `--theme-*`.
+      property: toArray(route.property),
       media: toArray(route.media),
     }))
 
@@ -163,9 +165,8 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       band: WidthBand | null = null,
     ): ActiveProfile | undefined {
       if (inherited.explicit || !propertyRoutes.length) return undefined
-      const lowered = property.toLowerCase()
       for (const route of propertyRoutes) {
-        if (!route.property.some((prefix) => lowered.startsWith(prefix))) continue
+        if (!route.property.some((prefix) => property.startsWith(prefix))) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         if (!inBand(route, band)) continue
         return activate(route.profile)

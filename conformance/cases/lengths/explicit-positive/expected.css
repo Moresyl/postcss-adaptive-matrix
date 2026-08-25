@@ -1,0 +1,4 @@
+.a {
+  width: clamp(13.65333px, 4.26667vw, 20.48px);
+  inset: calc(clamp(13.65333px, 4.26667vw, 20.48px) + clamp(1.70667px, 0.53333vw, 2.56px));
+}

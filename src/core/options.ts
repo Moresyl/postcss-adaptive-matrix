@@ -147,10 +147,20 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
  * Longest first, so no unit can be shadowed by one that is its own suffix.
  */
 function normaliseUnits(input: string | readonly string[]): string[] {
-  const listed = typeof input === 'string' ? [input] : input
+  if (typeof input !== 'string' && !Array.isArray(input)) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] unitToConvert must be a unit string or an array of unit strings.',
+    )
+  }
+  const listed = typeof input === 'string' ? [input] : (input as readonly unknown[])
   const seen = new Set<string>()
   const units: string[] = []
-  for (const entry of listed) {
+  for (const [index, entry] of listed.entries()) {
+    if (typeof entry !== 'string') {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] unitToConvert[${index}] must be a unit string, not ${typeof entry}.`,
+      )
+    }
     const unit = entry.trim()
     const key = unit.toLowerCase()
     if (!unit || seen.has(key)) continue
@@ -203,6 +213,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       '[postcss-adaptive-matrix] rootValue must be a positive number of pixels, such as 16.',
     )
   }
+  if (typeof options.atRuleName !== 'string') {
+    throw new TypeError('[postcss-adaptive-matrix] atRuleName must be a string.')
+  }
   const atRuleName = options.atRuleName.trim().toLowerCase()
   if (!atRuleName) {
     throw new Error(
@@ -215,9 +228,19 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
         `Every @${atRuleName} in the stylesheet would be read as naming a canvas and rewritten.`,
     )
   }
+  // Validation and matching must use the same spelling. Keeping the authored
+  // whitespace here lets `atRuleName: ' canvas '` pass validation but never
+  // match `@canvas`, after which the browser discards the unknown block.
+  options.atRuleName = atRuleName
   // `:where()` with nothing inside it is a parse error, so an empty selector
   // does not produce a weak foundation — it produces one the browser discards
   // whole, taking the safe-area variables and the root cap with it.
+  if (options.root && (typeof options.root !== 'object' || Array.isArray(options.root))) {
+    throw new TypeError('[postcss-adaptive-matrix] root must be false or an options object.')
+  }
+  if (options.root && typeof options.root.selector !== 'string') {
+    throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
+  }
   if (options.root && !options.root.selector.trim()) {
     throw new Error(
       '[postcss-adaptive-matrix] root.selector cannot be empty; it names the element that carries the layout, such as "#app".',
@@ -260,7 +283,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
         throw new TypeError(
           `[postcss-adaptive-matrix] Route property takes custom-property prefixes as strings, ` +
             `such as '--van-'. Received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : typeof prefix}. ` +
-            `Matching is by prefix and case-insensitive; list several prefixes to cover several token families.`,
+            `Matching is by prefix and case-sensitive, like custom-property names in CSS; list several prefixes to cover several token families.`,
         )
       }
     }

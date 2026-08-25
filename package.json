@@ -75,7 +75,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsup && tsx scripts/postbuild.ts",
+    "build": "node scripts/clean-dist.mjs && tsup && tsx scripts/postbuild.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

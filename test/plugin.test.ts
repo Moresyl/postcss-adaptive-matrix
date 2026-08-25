@@ -26,6 +26,26 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('border: 1px solid')
   })
 
+  it('converts explicitly positive lengths without emitting unary plus before a function', async () => {
+    const result = await process('.a { width: +16px; inset: calc(+16px + 2px) }', {
+      hairline: 0,
+    })
+
+    expect(result.css).not.toContain('+clamp(')
+    expect(result.css).toContain('width: clamp(13.65333px, 4.26667vw, 20.48px)')
+    expect(result.css).toContain(
+      'inset: calc(clamp(13.65333px, 4.26667vw, 20.48px) + clamp(1.70667px, 0.53333vw, 2.56px))',
+    )
+  })
+
+  it('treats standard property names case-insensitively without folding custom properties', async () => {
+    const lower = await process('.a { font-size: 16px }', { propList: ['font-size'] })
+    const upper = await process('.a { FONT-SIZE: 16px }', { propList: ['FONT-SIZE'] })
+
+    expect(upper.css.replace('FONT-SIZE', 'font-size')).toBe(lower.css)
+    expect(upper.css).toContain('rem')
+  })
+
   it('uses independent app and pc design canvases', async () => {
     const result = await process(`
       @adaptive app { .hero { width: 187.5px } }
@@ -248,6 +268,15 @@ describe('adaptiveMatrix', () => {
     expect(result.css).not.toContain('ADAPTIVE')
     expect(result.css).toContain('@media (min-width: 768px)')
     expect(result.warnings()).toHaveLength(0)
+  })
+
+  it('normalises surrounding whitespace in a configured at-rule name', async () => {
+    const result = await process('@canvas pc { .a { width: 100px } }', {
+      atRuleName: ' Canvas ',
+    })
+
+    expect(result.css).not.toContain('@canvas')
+    expect(result.css).toContain('@media (min-width: 768px)')
   })
 
   it('rejects a propList that is nothing but exclusions', async () => {

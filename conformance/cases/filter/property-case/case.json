@@ -1,0 +1,7 @@
+{
+  "description": "Standard property names and propList entries are ASCII case-insensitive, while custom property names remain case-sensitive",
+  "options": {
+    "propList": ["FONT-SIZE", "--Theme-*"],
+    "transformCustomProperties": true
+  }
+}

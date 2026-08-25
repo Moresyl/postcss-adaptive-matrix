@@ -1,0 +1,4 @@
+.a {
+  width: +16px;
+  inset: calc(+16px + 2px);
+}
