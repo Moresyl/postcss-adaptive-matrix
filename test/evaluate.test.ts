@@ -79,6 +79,11 @@ describe('evaluateLength', () => {
     expect(evaluateLength('calc(8px /* note */ + 2px)', context)).toBe(10)
   })
 
+  it('does not treat Unicode spaces as CSS whitespace', () => {
+    expect(evaluateLength('calc(8px\u00a0+\u00a02px)', context)).toBeNull()
+    expect(evaluateLength('\u00a016px', context)).toBeNull()
+  })
+
   it('returns null for anything outside the supported subset', () => {
     // Not zero, and not a guess. A diagnostic built on an invented number
     // reports a cascade that never happens, which is worse than reporting none.
@@ -145,6 +150,7 @@ describe('splitComponents', () => {
       '8px/* keep this together */',
       '16px',
     ])
+    expect(splitComponents('8px\u00a016px')).toEqual(['8px\u00a016px'])
   })
 
   it('does not split malformed component structure into plausible fragments', () => {

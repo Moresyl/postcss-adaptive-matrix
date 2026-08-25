@@ -12,7 +12,7 @@
  * as zero. A diagnostic that guesses is worse than one that stays quiet.
  */
 
-import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { CSS_NUMBER_SOURCE, isCssWhitespace } from './syntax.js'
 
 export interface EvaluationContext {
   /** Viewport width in pixels. */
@@ -40,11 +40,11 @@ interface Quantity {
 
 function tokenize(input: string): Token[] | null {
   const tokens: Token[] = []
-  let rest = input.trim()
+  let rest = input
   let whitespaceBefore = false
 
   while (rest.length) {
-    if (/\s/.test(rest[0]!)) {
+    if (isCssWhitespace(rest[0]!)) {
       whitespaceBefore = true
       rest = rest.slice(1)
       continue
@@ -87,12 +87,11 @@ function tokenize(input: string): Token[] | null {
     if (rest[0] === '+' || rest[0] === '-' || rest[0] === '*' || rest[0] === '/') {
       const previous = tokens.at(-1)
       const binary =
-        previous?.kind === 'number' ||
-        (previous?.kind === 'paren' && previous.value === ')')
+        previous?.kind === 'number' || (previous?.kind === 'paren' && previous.value === ')')
       if (
         binary &&
         (rest[0] === '+' || rest[0] === '-') &&
-        (!whitespaceBefore || !/\s/.test(rest[1] ?? ''))
+        (!whitespaceBefore || !isCssWhitespace(rest[1] ?? ''))
       ) {
         return null
       }
@@ -367,7 +366,7 @@ export function splitComponents(value: string): string[] {
       if (blocks.at(-1) !== expected) return [value]
       blocks.pop()
     }
-    if (blocks.length === 0 && /\s/.test(character)) {
+    if (blocks.length === 0 && isCssWhitespace(character)) {
       if (current) parts.push(current)
       current = ''
       continue
