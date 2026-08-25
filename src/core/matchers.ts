@@ -13,8 +13,13 @@ export function toArray<T>(value: T | readonly T[] | undefined): T[] {
 }
 
 function resettableTest(pattern: RegExp, value: string): boolean {
+  const previous = pattern.lastIndex
   pattern.lastIndex = 0
-  return pattern.test(value)
+  try {
+    return pattern.test(value)
+  } finally {
+    pattern.lastIndex = previous
+  }
 }
 
 export function matchesPattern(pattern: Pattern, value: string): boolean {

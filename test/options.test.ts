@@ -477,8 +477,11 @@ describe('matchers and math helpers', () => {
 
   it('supports reusable regexes, strings, arrays, and functions', () => {
     const global = /src/g
+    global.lastIndex = 2
     expect(matchesPattern(global, '/src/a.css')).toBe(true)
+    expect(global.lastIndex).toBe(2)
     expect(matchesPattern(global, '/src/b.css')).toBe(true)
+    expect(global.lastIndex).toBe(2)
     expect(matchesFile(['vendor', (file) => file.endsWith('.module.css')], '/a.module.css')).toBe(
       true,
     )
