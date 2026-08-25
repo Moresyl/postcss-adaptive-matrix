@@ -295,7 +295,7 @@ npx adaptive-matrix src/app.css src/admin.css \
 npx adaptive-matrix src/app.css --css > out.css
 ```
 
-`--css` 模式的 stdout 只有 CSS，警告走 stderr。所以重定向出来的文件是干净的、可直接解析的 CSS，而警告依然会出现在终端里——不会被悄悄吞掉。
+`--css` 模式的 stdout 只有 CSS；编译器警告、连续性发现和浏览器兼容证据全部走 stderr。所以重定向出来的文件是干净的、可直接解析的 CSS，而所有可操作诊断——包括门禁失败背后的详情——依然会出现在终端里，不会被悄悄吞掉。
 
 ## 读懂输出
 

@@ -295,7 +295,7 @@ To hand the result to another tool, use `--css`:
 npx adaptive-matrix src/app.css --css > out.css
 ```
 
-In `--css` mode stdout is CSS only; warnings go to stderr. So the redirected file is clean, directly parseable CSS, while the warnings still appear in your terminal rather than being swallowed.
+In `--css` mode stdout is CSS only; compiler warnings, continuity findings and browser-compatibility evidence go to stderr. So the redirected file is clean, directly parseable CSS, while every actionable diagnostic—including the details behind a failed quality gate—still appears in your terminal rather than being swallowed.
 
 ## Reading the output
 

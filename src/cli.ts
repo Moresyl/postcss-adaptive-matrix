@@ -434,6 +434,32 @@ function auditLines(audit: CompatAudit, c: ReturnType<typeof paint>): string[] {
   return lines
 }
 
+function continuityLines(
+  issues: ContinuityIssue[],
+  c: ReturnType<typeof paint>,
+): string[] {
+  const lines: string[] = []
+  const round = (value: number) => `${Math.round(value * 100) / 100}px`
+  for (const issue of issues) {
+    // A negative length is drawn bigger by moving away from zero, so "smaller"
+    // would describe the wrong direction for an overhang or a pulled-in gutter.
+    const negative = issue.below.px < 0
+    lines.push(
+      `  ${c.yellow('shrinks')} ${c.cyan(issue.selector)} ${issue.prop} ` +
+        `${negative ? 'falls back toward zero' : 'gets smaller'} at ${issue.breakpoint}px: ` +
+        `${round(issue.below.px)} ${c.dim('→')} ${round(issue.above.px)}`,
+    )
+    lines.push(
+      c.dim(
+        `          ${issue.below.value} → ${issue.above.value}. ` +
+          `Widening the window makes this ${negative ? 'shallower' : 'smaller'}` +
+          ' — the two canvases disagree here.',
+      ),
+    )
+  }
+  return lines
+}
+
 function report(
   label: string,
   changes: Change[],
@@ -472,25 +498,7 @@ function report(
   // Printed after the diff rather than beside the declaration, because the
   // finding belongs to neither of the two declarations that produced it — it
   // is about the step between them.
-  const round = (value: number) => `${Math.round(value * 100) / 100}px`
-  for (const issue of issues) {
-    // A negative length is drawn bigger by moving away from zero, so "smaller"
-    // would describe the wrong direction for an overhang or a pulled-in gutter
-    // — and the number on the right is the larger one.
-    const negative = issue.below.px < 0
-    lines.push(
-      `  ${c.yellow('shrinks')} ${c.cyan(issue.selector)} ${issue.prop} ` +
-        `${negative ? 'falls back toward zero' : 'gets smaller'} at ${issue.breakpoint}px: ` +
-        `${round(issue.below.px)} ${c.dim('→')} ${round(issue.above.px)}`,
-    )
-    lines.push(
-      c.dim(
-        `          ${issue.below.value} → ${issue.above.value}. ` +
-          `Widening the window makes this ${negative ? 'shallower' : 'smaller'}` +
-          ' — the two canvases disagree here.',
-      ),
-    )
-  }
+  lines.push(...continuityLines(issues, c))
 
   if (audit) lines.push(...auditLines(audit, c))
 
@@ -627,10 +635,15 @@ export async function runCli(argv: string[]): Promise<number> {
       totalCompatibility += audit?.findings.length ?? 0
 
       if (args.css) {
-        // Warnings go to stderr so that `--css > out.css` still shows them and
-        // the redirected file stays valid CSS.
-        for (const warning of warnings) {
-          process.stderr.write(`${input.label}: ${warning}\n`)
+        // Human diagnostics go to stderr so that `--css > out.css` stays valid
+        // CSS without suppressing the evidence that explains a quality-gate
+        // failure. This includes every category, not only compiler warnings.
+        const c = paint(args.color)
+        const diagnostics = warnings.map((warning) => `  ${c.yellow('warning')} ${warning}`)
+        diagnostics.push(...continuityLines(issues, c))
+        if (audit) diagnostics.push(...auditLines(audit, c))
+        if (diagnostics.length) {
+          process.stderr.write(`${c.bold(input.label)}\n${diagnostics.join('\n')}\n`)
         }
         process.stdout.write(`${root.toString()}\n`)
         continue

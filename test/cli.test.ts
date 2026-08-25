@@ -237,6 +237,40 @@ describe('runCli', () => {
     expect(err).toContain('Quality gate failed: warnings=1')
   })
 
+  it('keeps full continuity evidence on stderr in --css mode', async () => {
+    const path = await file(
+      'app.css',
+      '.card { font-size: 16px }\n@adaptive pc { .card { font-size: 18px } }',
+    )
+
+    expect(await runCli([path, '--css', '--fail-on', 'continuity', '--no-color'])).toBe(1)
+    expect(out).toContain('.card')
+    expect(out).not.toContain('shrinks')
+    expect(err).toContain('shrinks .card font-size')
+    expect(err).toContain('Quality gate failed: continuity=1')
+  })
+
+  it('keeps full compatibility evidence on stderr in --css mode', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(
+      await runCli([
+        path,
+        '--css',
+        '--targets',
+        'ios_saf 13',
+        '--fail-on',
+        'compatibility',
+        '--no-color',
+      ]),
+    ).toBe(1)
+    expect(out).toContain('.page')
+    expect(out).not.toContain('needs clamp()')
+    expect(err).toContain('needs clamp(), min(), max()')
+    expect(err).toContain('if unsupported:')
+    expect(err).toMatch(/Quality gate failed: compatibility=\d+/)
+  })
+
   it('separates successful JSON compilation from a failed continuity gate', async () => {
     const path = await file(
       'app.css',
