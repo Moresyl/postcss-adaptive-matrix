@@ -35,6 +35,12 @@ describe('correctFixedDeclaration', () => {
   it('replaces a zero inset outright rather than wrapping it', () => {
     expect(correctFixedDeclaration('left', '0')).toBe('var(--adaptive-root-gutter)')
     expect(correctFixedDeclaration('right', '0px')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '.0px')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '+0')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '0e3rem')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '0svw')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '0cqmax')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('left', '0cm')).toBe('var(--adaptive-root-gutter)')
   })
 
   it('adds the gutter to a non-zero inset', () => {
@@ -52,10 +58,17 @@ describe('correctFixedDeclaration', () => {
 
   it('caps a viewport-wide width at the column', () => {
     expect(correctFixedDeclaration('width', '100%')).toBe('min(100%, var(--adaptive-root-width))')
+    expect(correctFixedDeclaration('width', '100.0%')).toBe(
+      'min(100%, var(--adaptive-root-width))',
+    )
+    expect(correctFixedDeclaration('width', '1e2%')).toBe(
+      'min(100%, var(--adaptive-root-width))',
+    )
   })
 
   it('leaves an explicit width alone', () => {
     expect(correctFixedDeclaration('width', '200px')).toBeNull()
+    expect(correctFixedDeclaration('width', '100.01%')).toBeNull()
   })
 
   it('is idempotent, so a second pass cannot stack gutters', () => {

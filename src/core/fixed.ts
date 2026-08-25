@@ -14,6 +14,7 @@
  * is inert on phones and cannot regress the common case.
  */
 import type { ResolvedAdaptiveMatrixOptions } from './types.js'
+import { CSS_NUMBER_SOURCE } from './syntax.js'
 
 /** Width of the root column, or `100vw` while it is unconstrained. */
 export const ROOT_WIDTH_VARIABLE = '--adaptive-root-width'
@@ -34,8 +35,16 @@ const INSET_PROPERTIES = new Set(['left', 'right', 'inset-inline-start', 'inset-
 /** Properties whose `100%` means "the whole viewport" for a fixed element. */
 const WIDTH_PROPERTIES = new Set(['width', 'max-width', 'inline-size', 'max-inline-size'])
 
-const ZERO = /^-?0(?:\.0+)?(?:px|rem|em|%|vw|vi|cqw|cqi)?$/i
-const FULL_WIDTH = /^100%$/
+const CSS_LENGTH_UNIT =
+  String.raw`(?:px|cm|mm|q|in|pc|pt|em|ex|cap|ch|ic|rem|lh|rlh|` +
+  String.raw`v(?:w|h|i|b|min|max)|[sld]v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))`
+const ZERO = new RegExp(`^(${CSS_NUMBER_SOURCE})(?:${CSS_LENGTH_UNIT}|%)?$`, 'i')
+const FULL_WIDTH = new RegExp(`^(${CSS_NUMBER_SOURCE})%$`, 'i')
+
+function equalsNumber(value: string, pattern: RegExp, expected: number): boolean {
+  const match = pattern.exec(value)
+  return match !== null && Number(match[1]) === expected
+}
 
 export function isFixedPositionValue(value: string): boolean {
   return value.trim().toLowerCase() === 'fixed'
@@ -59,13 +68,13 @@ export function correctFixedDeclaration(property: string, value: string): string
   if (INSET_PROPERTIES.has(name)) {
     const trimmed = value.trim()
     // A bare `0` is the overwhelmingly common case and deserves the short form.
-    if (ZERO.test(trimmed)) return GUTTER
+    if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
     // `auto` has no length to offset, and offsetting it would break the layout.
     if (trimmed.toLowerCase() === 'auto') return null
     return `calc(${trimmed} + ${GUTTER})`
   }
 
-  if (WIDTH_PROPERTIES.has(name) && FULL_WIDTH.test(value.trim())) {
+  if (WIDTH_PROPERTIES.has(name) && equalsNumber(value.trim(), FULL_WIDTH, 100)) {
     return `min(100%, ${ROOT_WIDTH})`
   }
 
