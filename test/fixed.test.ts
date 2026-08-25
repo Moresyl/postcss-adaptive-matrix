@@ -58,12 +58,8 @@ describe('correctFixedDeclaration', () => {
 
   it('caps a viewport-wide width at the column', () => {
     expect(correctFixedDeclaration('width', '100%')).toBe('min(100%, var(--adaptive-root-width))')
-    expect(correctFixedDeclaration('width', '100.0%')).toBe(
-      'min(100%, var(--adaptive-root-width))',
-    )
-    expect(correctFixedDeclaration('width', '1e2%')).toBe(
-      'min(100%, var(--adaptive-root-width))',
-    )
+    expect(correctFixedDeclaration('width', '100.0%')).toBe('min(100%, var(--adaptive-root-width))')
+    expect(correctFixedDeclaration('width', '1e2%')).toBe('min(100%, var(--adaptive-root-width))')
   })
 
   it('leaves an explicit width alone', () => {

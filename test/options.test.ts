@@ -495,8 +495,9 @@ describe('matchers and math helpers', () => {
     const profile = options.profiles.app!
     expect(convertLength(0, 'width', 'app', profile, options, '')).toBe('0px')
     expect(convertLength(1, 'width', 'app', profile, options, '')).toBe('1px')
-    expect(() => convertLength(Number.POSITIVE_INFINITY, 'width', 'app', profile, options, ''))
-      .toThrow(/Length value must be a finite number/)
+    expect(() =>
+      convertLength(Number.POSITIVE_INFINITY, 'width', 'app', profile, options, ''),
+    ).toThrow(/Length value must be a finite number/)
     expect(() => convertLength(Number.NaN, 'width', 'app', profile, options, '')).toThrow(
       /Length value must be a finite number/,
     )
