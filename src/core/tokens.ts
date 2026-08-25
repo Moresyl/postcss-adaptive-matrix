@@ -215,11 +215,41 @@ export function collectTokens(root: Root): TokenTable {
  * so `--my-var(x)` and a hypothetical `xvar(` are left alone.
  */
 function findVar(value: string, from: number): number {
-  const folded = value.toLowerCase()
-  for (let index = folded.indexOf('var(', from); index >= 0;) {
+  let quote: "'" | '"' | null = null
+  let comment = false
+  for (let index = from; index < value.length; index += 1) {
+    const character = value[index]!
+    const next = value[index + 1]
+
+    if (comment) {
+      if (character === '*' && next === '/') {
+        index += 1
+        comment = false
+      }
+      continue
+    }
+    if (quote) {
+      if (character === '\\') index += 1
+      else if (character === quote) quote = null
+      continue
+    }
+    if (character === '/' && next === '*') {
+      index += 1
+      comment = true
+      continue
+    }
+    if (character === "'" || character === '"') {
+      quote = character
+      continue
+    }
+    if (character === '\\') {
+      index += 1
+      continue
+    }
+    if (value.slice(index, index + 4).toLowerCase() !== 'var(') continue
+
     const before = index === 0 ? '' : value[index - 1]!
     if (!/[-_A-Za-z0-9\\\u0080-\uFFFF]/.test(before)) return index
-    index = folded.indexOf('var(', index + 1)
   }
   return -1
 }

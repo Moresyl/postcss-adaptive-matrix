@@ -98,6 +98,17 @@ describe('theme token resolution', () => {
     expect(tokens.resolve('var(--missing, func(")")) var(--x)', 400)).toBe('func(")") 16px')
   })
 
+  it('does not substitute var-shaped text inside strings or comments', () => {
+    const tokens = table(':root { --x: 16px }')
+    expect(tokens.resolve('"var(--missing)" VAR(--x)', 400)).toBe('"var(--missing)" 16px')
+    expect(tokens.resolve('/* var(--missing) */ var(--x)', 400)).toBe(
+      '/* var(--missing) */ 16px',
+    )
+    expect(tokens.resolve(String.raw`"escaped \" var(--missing)" var(--x)`, 400)).toBe(
+      String.raw`"escaped \" var(--missing)" 16px`,
+    )
+  })
+
   it('returns a value with no var() unchanged', () => {
     expect(table(':root { --x: 1px }').resolve('clamp(1px, 2vw, 3px)', 400)).toBe(
       'clamp(1px, 2vw, 3px)',
