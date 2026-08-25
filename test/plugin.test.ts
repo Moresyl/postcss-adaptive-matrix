@@ -427,6 +427,37 @@ describe('presets and foundation', () => {
       container: true,
     })
   })
+
+  it('rejects misspelled or malformed preset options at the helper boundary', () => {
+    expect(() => appPcPreset({ appDesignWidht: 750 } as never)).toThrow(
+      /appDesignWidht.*Did you mean "appDesignWidth"/,
+    )
+    expect(() => appPcPreset(null as never)).toThrow(/must be an options object, not null/)
+    expect(() => appPcPreset(/app/ as never)).toThrow(
+      /must be an options object, not a regular expression/,
+    )
+    expect(() => appPcPreset({ breakpoint: Number.NaN })).toThrow(
+      /breakpoint must be a positive finite number/,
+    )
+    expect(() => appPcPreset({ appFluidMin: 480, appFluidMax: 320 })).toThrow(
+      /appFluidMax > appFluidMin/,
+    )
+    expect(() => appPcPreset({ pcFluidMin: 1920, pcFluidMax: 1920 })).toThrow(
+      /pcFluidMax > pcFluidMin/,
+    )
+  })
+
+  it('rejects root-only preset settings that would otherwise be ignored', () => {
+    expect(() => appPcPreset({ container: true })).toThrow(/container requires rootSelector/)
+    expect(() => appPcPreset({ rootLayer: false })).toThrow(/rootLayer requires rootSelector/)
+    expect(() => appPcPreset({ rootSelector: '  ' })).toThrow(/rootSelector cannot be empty/)
+    expect(() => appPcPreset({ rootSelector: '#app', rootLayer: '  ' })).toThrow(
+      /rootLayer cannot be empty/,
+    )
+    expect(() => appPcPreset({ rootSelector: '#app', rootInjectTo: [] })).toThrow(
+      /rootInjectTo cannot be an empty array/,
+    )
+  })
 })
 
 describe('reading more than one source unit', () => {
@@ -563,6 +594,42 @@ describe('withAtomicCss', () => {
     })
     expect(wrapped.routes.at(-1)).toMatchObject({ profile: 'pc' })
     expect(wrapped.routes.at(-1)!.property).toContain('--gutter-')
+  })
+
+  it('validates the wrapper inputs before spreading or iterating them', () => {
+    expect(() => withAtomicCss(null as never)).toThrow(/base must be an options object, not null/)
+    expect(() => withAtomicCss({ routes: {} } as never)).toThrow(/base.routes must be an array/)
+    expect(() => withAtomicCss({ unitToConvert: [3] } as never)).toThrow(
+      /base.unitToConvert\[0\] must be a string/,
+    )
+    expect(() => withAtomicCss({}, null as never)).toThrow(
+      /options must be an options object, not null/,
+    )
+    expect(() => withAtomicCss({}, { tokenPrefxies: ['--size-'] } as never)).toThrow(
+      /tokenPrefxies.*Did you mean "tokenPrefixes"/,
+    )
+    expect(() => withAtomicCss({}, { profile: '' })).toThrow(/profile must be a non-empty string/)
+    for (const tokenPrefixes of ['--size-', [''], ['--'], [' --size-'], [42]]) {
+      expect(() => withAtomicCss({}, { tokenPrefixes } as never)).toThrow(/tokenPrefixes/)
+    }
+  })
+
+  it('deduplicates token prefixes without folding case-sensitive custom-property names', () => {
+    const route = withAtomicCss(
+      {},
+      {
+        tokenPrefixes: ['--spacing', '--size-', '--size-', '--Size-'],
+      },
+    ).routes.at(-1)!
+    expect(route.property).toEqual([
+      '--spacing',
+      '--text-',
+      '--leading-',
+      '--radius-',
+      '--container-',
+      '--size-',
+      '--Size-',
+    ])
   })
 
   it('scales a theme token and the utility that multiplies it to the same size', async () => {

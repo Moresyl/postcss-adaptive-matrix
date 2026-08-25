@@ -1,6 +1,6 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
-import { rejectUnknownKeys } from './validation.js'
+import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -123,22 +123,6 @@ const PROFILE_KEYS = [
 const FLUID_KEYS = ['minWidth', 'maxWidth'] as const
 const QUERY_KEYS = ['type', 'condition', 'name'] as const
 
-function valueKind(value: unknown): string {
-  if (value instanceof RegExp) return 'a regular expression'
-  if (value === null) return 'null'
-  if (Array.isArray(value)) return 'an array'
-  return typeof value
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    !(value instanceof RegExp)
-  )
-}
-
 function requireArray(name: string, value: unknown): asserts value is readonly unknown[] {
   if (!Array.isArray(value)) {
     throw new TypeError(
@@ -171,25 +155,6 @@ function requirePatterns(name: string, value: unknown): void {
     }
     if (typeof entry === 'string' && !entry.trim()) {
       throw new TypeError(`[postcss-adaptive-matrix] ${name}[${index}] cannot be empty.`)
-    }
-  }
-}
-
-function requireFileMatchers(name: string, value: unknown): void {
-  const entries = Array.isArray(value) ? value : [value]
-  if (!entries.length) {
-    throw new TypeError(`[postcss-adaptive-matrix] ${name} cannot be an empty array.`)
-  }
-  for (const [index, entry] of entries.entries()) {
-    if (typeof entry !== 'string' && !(entry instanceof RegExp) && typeof entry !== 'function') {
-      const path = entries.length === 1 ? name : `${name}[${index}]`
-      throw new TypeError(
-        `[postcss-adaptive-matrix] ${path} must be a string, regular expression or predicate function, not ${valueKind(entry)}.`,
-      )
-    }
-    if (typeof entry === 'string' && !entry.trim()) {
-      const path = entries.length === 1 ? name : `${name}[${index}]`
-      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
     }
   }
 }

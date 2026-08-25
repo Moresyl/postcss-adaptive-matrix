@@ -1,3 +1,38 @@
+export function valueKind(value: unknown): string {
+  if (value instanceof RegExp) return 'a regular expression'
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'an array'
+  return typeof value
+}
+
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    !(value instanceof RegExp)
+  )
+}
+
+export function requireFileMatchers(name: string, value: unknown): void {
+  const entries = Array.isArray(value) ? value : [value]
+  if (!entries.length) {
+    throw new TypeError(`[postcss-adaptive-matrix] ${name} cannot be an empty array.`)
+  }
+  for (const [index, entry] of entries.entries()) {
+    if (typeof entry !== 'string' && !(entry instanceof RegExp) && typeof entry !== 'function') {
+      const path = entries.length === 1 ? name : `${name}[${index}]`
+      throw new TypeError(
+        `[postcss-adaptive-matrix] ${path} must be a string, regular expression or predicate function, not ${valueKind(entry)}.`,
+      )
+    }
+    if (typeof entry === 'string' && !entry.trim()) {
+      const path = entries.length === 1 ? name : `${name}[${index}]`
+      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
+    }
+  }
+}
+
 /** Levenshtein distance, used only while formatting a configuration error. */
 function editDistance(left: string, right: string): number {
   let previous = Array.from({ length: right.length + 1 }, (_, index) => index)

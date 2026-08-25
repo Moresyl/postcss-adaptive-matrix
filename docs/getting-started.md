@@ -61,6 +61,8 @@ What the preset decides for you:
 | Fluid range | 320 – 480 | 1024 – 1920 |
 | Applies when | default | `@media (min-width: 768px)` |
 
+The helper validates at its own call boundary. Unknown option names include a spelling suggestion, every design/bound width must be finite and positive, and root-only settings such as `container` or `rootLayer` require `rootSelector`; none can be silently ignored while the returned object appears valid.
+
 ## Writing your CSS
 
 Put everything both ends share — layout structure, colour, interaction states — in the base selector. Only what genuinely differs in size goes into `@adaptive pc`. Do not maintain two copies of the page:

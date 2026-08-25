@@ -14,6 +14,7 @@
 - `unitToConvert`、`root`、`root.selector` 的运行时形状错误现在会给出明确配置提示，不再泄漏底层 `trim` 异常。
 - 运行时配置校验现已覆盖全部集合及嵌套 query/library 结构。非有限阈值不会再输出 `NaNrem` 或 `Infinitypx`，缺少查询条件不会再输出 `@media undefined`；非法策略、路由边界、CSS 标识符和基础样式字符串都会在读取任何样式表前按精确配置路径报错。
 - JavaScript 配置的未知字段现会在每一层被拒绝，与公开 Schema 的封闭对象规则一致。相近拼写会得到明确字段建议，不再被混入解析结果后静默忽略。
+- `appPcPreset` 与 `withAtomicCss` 现会在构造配置前校验自身公开输入。helper 字段拼错、预设边界非有限、未配 `rootSelector` 却传 root 专属项、包装器集合形状错误及非法 token 前缀都会在调用处失败；重复自定义属性前缀按大小写敏感语义去重。
 - 可选 VisualViewport 运行时不再把双指缩放误判成软键盘：键盘遮挡会按当前 `scale` 下的布局高度计算。非法变量前缀会在注册监听前报错，视口指标未变化时也不会因噪声 resize 重复写 DOM。
 - 居中列 fixed 修正现按声明块内实际生效的 `position` 判断，同时遵守顺序与 `!important`；前面的 `position: fixed` 兜底不会再误改后续已覆盖为 `static` 或 `absolute` 的元素。
 - CLI 会在读取任何内容前拒绝歧义输入：显式 stdin（`-`）不再因与其它输入混用而隐藏或被误当文件，一个 `--from` 也不会再抹掉多个文件各自用于路由的路径身份。

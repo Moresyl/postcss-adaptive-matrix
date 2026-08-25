@@ -218,6 +218,8 @@ Tailwind 4 和 UnoCSS `presetWind4` 换了形状——工具类里没有长度�
 withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
 ```
 
+前缀必须是以 `--` 开头的非空自定义属性前缀。包装器会先校验要展开的集合，字段名拼错时给出建议，并在不折叠大小写的前提下去重——自定义属性名本来就区分大小写。
+
 ### 字号 token 照样可缩放
 
 `--text-lg` 这种名字不长得像字体属性，但它承载的就是字号。默认的 `textProperties` 里包含 `--text-*` 与 `--leading-*`，所以它拿到的是和手写 `font-size` 完全相同的 `rem + vw` 混合公式，浏览器文字缩放不受影响：

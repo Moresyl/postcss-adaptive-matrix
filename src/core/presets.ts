@@ -4,6 +4,174 @@ import type {
   AppPcPresetOptions,
   AtomicCssOptions,
 } from './types.js'
+import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
+
+const APP_PC_PRESET_KEYS = [
+  'appDesignWidth',
+  'pcDesignWidth',
+  'breakpoint',
+  'appFluidMin',
+  'appFluidMax',
+  'pcFluidMin',
+  'pcFluidMax',
+  'rootSelector',
+  'container',
+  'fixedContainingBlock',
+  'rootInjectTo',
+  'rootLayer',
+  'rootLogical',
+] as const satisfies readonly (keyof AppPcPresetOptions)[]
+
+const ATOMIC_CSS_KEYS = [
+  'profile',
+  'tokenPrefixes',
+] as const satisfies readonly (keyof AtomicCssOptions)[]
+
+function requireOptionsObject(
+  name: string,
+  value: unknown,
+): asserts value is Record<string, unknown> {
+  if (!isObject(value)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${name} must be an options object, not ${valueKind(value)}.`,
+    )
+  }
+}
+
+function requireOptionalBoolean(name: string, value: unknown): void {
+  if (value !== undefined && typeof value !== 'boolean') {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${name} must be a boolean, not ${valueKind(value)}.`,
+    )
+  }
+}
+
+function validateAppPcPresetOptions(value: unknown): asserts value is AppPcPresetOptions {
+  requireOptionsObject('appPcPreset options', value)
+  rejectUnknownKeys('appPcPreset options', value, APP_PC_PRESET_KEYS)
+  for (const field of [
+    'appDesignWidth',
+    'pcDesignWidth',
+    'breakpoint',
+    'appFluidMin',
+    'appFluidMax',
+    'pcFluidMin',
+    'pcFluidMax',
+  ] as const) {
+    const current = value[field]
+    if (current !== undefined && (!Number.isFinite(current) || (current as number) <= 0)) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] appPcPreset options.${field} must be a positive finite number.`,
+      )
+    }
+  }
+  if (typeof value.breakpoint === 'number' && value.breakpoint <= 0.02) {
+    throw new RangeError(
+      '[postcss-adaptive-matrix] appPcPreset options.breakpoint must be greater than 0.02px so the app media range remains non-negative.',
+    )
+  }
+  for (const field of ['container', 'fixedContainingBlock', 'rootLogical'] as const) {
+    requireOptionalBoolean(`appPcPreset options.${field}`, value[field])
+  }
+  if (value.rootSelector !== undefined) {
+    if (typeof value.rootSelector !== 'string') {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] appPcPreset options.rootSelector must be a string, not ${valueKind(value.rootSelector)}.`,
+      )
+    }
+    if (!value.rootSelector.trim()) {
+      throw new TypeError(
+        '[postcss-adaptive-matrix] appPcPreset options.rootSelector cannot be empty.',
+      )
+    }
+  }
+  if (
+    value.rootLayer !== undefined &&
+    value.rootLayer !== false &&
+    typeof value.rootLayer !== 'string'
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] appPcPreset options.rootLayer must be a string or false, not ${valueKind(value.rootLayer)}.`,
+    )
+  }
+  if (typeof value.rootLayer === 'string' && !value.rootLayer.trim()) {
+    throw new TypeError('[postcss-adaptive-matrix] appPcPreset options.rootLayer cannot be empty.')
+  }
+  if (value.rootInjectTo !== undefined) {
+    requireFileMatchers('appPcPreset options.rootInjectTo', value.rootInjectTo)
+  }
+  const rootOnly = [
+    'container',
+    'fixedContainingBlock',
+    'rootInjectTo',
+    'rootLayer',
+    'rootLogical',
+  ] as const
+  const orphan = rootOnly.find((field) => value[field] !== undefined)
+  if (orphan && value.rootSelector === undefined) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] appPcPreset options.${orphan} requires rootSelector; without a root, that setting would be ignored.`,
+    )
+  }
+}
+
+function validateAtomicCssOptions(value: unknown): asserts value is AtomicCssOptions {
+  requireOptionsObject('withAtomicCss options', value)
+  rejectUnknownKeys('withAtomicCss options', value, ATOMIC_CSS_KEYS)
+  if (value.profile !== undefined && (typeof value.profile !== 'string' || !value.profile.trim())) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] withAtomicCss options.profile must be a non-empty string.',
+    )
+  }
+  if (value.tokenPrefixes !== undefined) {
+    if (!Array.isArray(value.tokenPrefixes)) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] withAtomicCss options.tokenPrefixes must be an array, not ${valueKind(value.tokenPrefixes)}.`,
+      )
+    }
+    for (const [index, prefix] of value.tokenPrefixes.entries()) {
+      if (
+        typeof prefix !== 'string' ||
+        prefix.length <= 2 ||
+        prefix.trim() !== prefix ||
+        !prefix.startsWith('--')
+      ) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] withAtomicCss options.tokenPrefixes[${index}] must be a non-empty custom-property prefix starting with "--".`,
+        )
+      }
+    }
+  }
+}
+
+function validateAtomicCssBase(value: unknown): asserts value is AdaptiveMatrixOptions {
+  requireOptionsObject('withAtomicCss base', value)
+  if (
+    value.unitToConvert !== undefined &&
+    typeof value.unitToConvert !== 'string' &&
+    !Array.isArray(value.unitToConvert)
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert must be a string or array, not ${valueKind(value.unitToConvert)}.`,
+    )
+  }
+  if (Array.isArray(value.unitToConvert)) {
+    for (const [index, unit] of value.unitToConvert.entries()) {
+      if (typeof unit !== 'string') {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert[${index}] must be a string, not ${valueKind(unit)}.`,
+        )
+      }
+    }
+  }
+  for (const field of ['routes', 'textProperties'] as const) {
+    if (value[field] !== undefined && !Array.isArray(value[field])) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] withAtomicCss base.${field} must be an array, not ${valueKind(value[field])}.`,
+      )
+    }
+  }
+}
 
 /**
  * A practical two-canvas preset: author the app at 375px and desktop at 1440px.
@@ -18,11 +186,21 @@ import type {
  * file was the preset disagreeing with itself.
  */
 export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOptions {
+  validateAppPcPresetOptions(options)
   const breakpoint = options.breakpoint ?? 768
   const appFluidMin = options.appFluidMin ?? 320
   const appFluidMax = options.appFluidMax ?? 480
   const pcFluidMin = options.pcFluidMin ?? 1024
   const pcFluidMax = options.pcFluidMax ?? 1920
+
+  if (appFluidMax <= appFluidMin) {
+    throw new RangeError(
+      '[postcss-adaptive-matrix] appPcPreset requires appFluidMax > appFluidMin.',
+    )
+  }
+  if (pcFluidMax <= pcFluidMin) {
+    throw new RangeError('[postcss-adaptive-matrix] appPcPreset requires pcFluidMax > pcFluidMin.')
+  }
 
   // The `app` route is redundant while `defaultProfile` is `app`, and stops
   // being redundant the moment someone spreads this preset over a desktop-first
@@ -118,6 +296,8 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
   base: T,
   options: AtomicCssOptions = {},
 ): T & { unitToConvert: string[]; routes: AdaptiveRoute[] } {
+  validateAtomicCssBase(base)
+  validateAtomicCssOptions(options)
   const units =
     base.unitToConvert === undefined
       ? ['px']
@@ -126,7 +306,7 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
         : [...base.unitToConvert]
   if (!units.some((unit) => unit.toLowerCase() === 'rem')) units.push('rem')
 
-  const prefixes = [...THEME_TOKEN_PREFIXES, ...(options.tokenPrefixes ?? [])]
+  const prefixes = [...new Set([...THEME_TOKEN_PREFIXES, ...(options.tokenPrefixes ?? [])])]
 
   return {
     ...base,

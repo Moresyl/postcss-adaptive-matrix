@@ -218,6 +218,8 @@ Length families you extend the theme with are added via `tokenPrefixes`:
 withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
 ```
 
+Prefixes must be non-empty custom-property prefixes beginning with `--`. The wrapper validates the collections it needs before spreading them, rejects misspelled option names with a suggestion, and deduplicates repeated prefixes without folding case—custom-property names are case-sensitive.
+
 ### Font-size tokens stay zoomable
 
 A name like `--text-lg` does not look like a font property, but a font size is exactly what it carries. The default `textProperties` includes `--text-*` and `--leading-*`, so it gets precisely the same `rem + vw` hybrid as a hand-written `font-size`, and browser text zoom is unaffected:
