@@ -145,7 +145,7 @@ Inside an at-rule the plugin does not know, nested **rules** are still processed
 `fixedContainingBlock` is the one place the compiler rewrites positioning, and it is deliberately narrow:
 
 - it must be enabled explicitly (`appPcPreset` enables it when it establishes a centred column, because that is exactly the configuration where the problem appears);
-- it only handles a rule that **itself** declares `position: fixed`. Inherited positioning from another rule cannot be observed statically, and guessing from selector combinations would create hidden runtime coupling;
+- it only handles a rule whose **winning local declaration** is `position: fixed`. Declaration order and `!important` are respected within that rule; inherited positioning and winners from other rules cannot be observed statically, and guessing from selector combinations would create hidden runtime coupling;
 - it only handles the inline axis;
 - it only substitutes on unambiguous shapes such as `0` or `100%`, adding with `calc()` otherwise, and it is idempotent.
 

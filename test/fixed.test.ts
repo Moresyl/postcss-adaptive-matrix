@@ -99,6 +99,34 @@ describe('fixed containing block', () => {
     expect(css).not.toContain('--adaptive-root-gutter)')
   })
 
+  it('uses the winning position declaration instead of any earlier fixed fallback', async () => {
+    const overridden = await run('.bar { position: fixed; position: static; left: 0 }')
+    expect(overridden).toContain('left: 0')
+    expect(overridden).not.toContain('left: var(--adaptive-root-gutter)')
+
+    const winning = await run('.bar { position: static; position: fixed; left: 0 }')
+    expect(winning).toContain('left: var(--adaptive-root-gutter)')
+  })
+
+  it('honours declaration importance when resolving the effective position', async () => {
+    const importantFixed = await run(
+      '.bar { position: fixed !important; position: absolute; left: 0 }',
+    )
+    expect(importantFixed).toContain('left: var(--adaptive-root-gutter)')
+
+    const importantStatic = await run(
+      '.bar { position: fixed; position: static !important; left: 0 }',
+    )
+    expect(importantStatic).toContain('left: 0')
+    expect(importantStatic).not.toContain('left: var(--adaptive-root-gutter)')
+
+    const laterImportant = await run(
+      '.bar { position: fixed !important; position: absolute !important; left: 0 }',
+    )
+    expect(laterImportant).toContain('left: 0')
+    expect(laterImportant).not.toContain('left: var(--adaptive-root-gutter)')
+  })
+
   it('stays off unless asked for', async () => {
     const css = await run('.bar { position: fixed; left: 0 }', {
       ...CONFIG,

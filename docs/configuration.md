@@ -316,7 +316,7 @@ and does three things to rules that themselves declare `position: fixed`:
 
 When the column equals the viewport, the gutter is `0`, so narrow-screen output is identical to what you would have written by hand. The correction is idempotent and does not reprocess a value that already contains these variables.
 
-Only the rule's own `position` declaration is considered: inheriting positioning from elsewhere is not something CSS allows you to observe statically, and guessing would be worse than missing.
+Only the rule's winning local `position` declaration is considered. Order and `!important` are respected inside that declaration block; inheriting positioning or resolving a winner from another rule is not something this local transform can observe statically, and guessing would be worse than missing.
 
 It is on by default when `appPcPreset` is given a `rootSelector` — both of that preset's profiles set `rootMaxWidth`, which is exactly the configuration where the problem appears. Turn it off with `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })`.
 

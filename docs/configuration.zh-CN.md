@@ -316,7 +316,7 @@ root: { selector: '#app', injectTo: 'src/styles/main' }
 
 列宽等于视口时留白为 `0`，因此窄屏输出与手写完全一致。修正幂等，已含这两个变量的值不再二次处理。
 
-只看规则自身的 `position` 声明：从别处继承定位是 CSS 不允许静态观察的，猜测比漏掉更糟。
+只看规则内最终获胜的 `position` 声明，并遵守同一声明块里的顺序和 `!important`；从其它规则继承定位或解析跨规则胜者不是这次局部静态转换能观察到的，猜错比漏掉更糟。
 
 `appPcPreset` 传了 `rootSelector` 时默认开启——该预设的两张 profile 都设了 `rootMaxWidth`，正是会出现这一问题的配置。用 `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })` 关闭。
 

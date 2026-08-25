@@ -203,13 +203,16 @@ function transformDeclaration(
  * see, and guessing would be worse than missing it.
  */
 function correctFixedRule(rule: Rule): void {
-  let fixed = false
+  let position: Declaration | undefined
   for (const node of rule.nodes) {
-    if (node.type === 'decl' && node.prop.toLowerCase() === 'position') {
-      if (isFixedPositionValue(node.value)) fixed = true
-    }
+    if (node.type !== 'decl' || node.prop.toLowerCase() !== 'position') continue
+    // Within one declaration block, !important beats normal declarations and
+    // the later declaration wins when importance is equal. Looking for *any*
+    // `fixed` value would rewrite an element whose effective position is
+    // actually `static` or `absolute` after a fallback/override.
+    if (!position || node.important || !position.important) position = node
   }
-  if (!fixed) return
+  if (!position || !isFixedPositionValue(position.value)) return
 
   for (const node of rule.nodes) {
     if (node.type !== 'decl') continue
