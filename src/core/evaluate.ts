@@ -43,8 +43,14 @@ function tokenize(input: string): Token[] | null {
   let rest = input.trim()
 
   while (rest.length) {
-    if (rest[0] === ' ' || rest[0] === '\t' || rest[0] === '\n') {
+    if (/\s/.test(rest[0]!)) {
       rest = rest.slice(1)
+      continue
+    }
+    if (rest.startsWith('/*')) {
+      const close = rest.indexOf('*/', 2)
+      if (close < 0) return null
+      rest = rest.slice(close + 2)
       continue
     }
     if (rest[0] === '(' || rest[0] === ')') {
@@ -296,12 +302,46 @@ export function evaluateLength(value: string, context: EvaluationContext): numbe
  */
 export function splitComponents(value: string): string[] {
   const parts: string[] = []
-  let depth = 0
+  const blocks: string[] = []
   let current = ''
-  for (const character of value) {
-    if (character === '(') depth += 1
-    if (character === ')') depth -= 1
-    if (depth === 0 && /\s/.test(character)) {
+  let quote: "'" | '"' | null = null
+  let comment = false
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]!
+    const next = value[index + 1]
+    if (comment) {
+      current += character
+      if (character === '*' && next === '/') {
+        current += '/'
+        comment = false
+        index += 1
+      }
+      continue
+    }
+    if (quote) {
+      current += character
+      if (character === '\\' && next !== undefined) {
+        current += next
+        index += 1
+      } else if (character === quote) {
+        quote = null
+      }
+      continue
+    }
+    if (character === '/' && next === '*') {
+      current += '/*'
+      comment = true
+      index += 1
+      continue
+    }
+    if (character === "'" || character === '"') {
+      current += character
+      quote = character
+      continue
+    }
+    if (character === '(' || character === '[' || character === '{') blocks.push(character)
+    else if (character === ')' || character === ']' || character === '}') blocks.pop()
+    if (blocks.length === 0 && /\s/.test(character)) {
       if (current) parts.push(current)
       current = ''
       continue

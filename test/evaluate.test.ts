@@ -32,6 +32,7 @@ describe('evaluateLength', () => {
     expect(evaluateLength('max(10vw, 40px)', context)).toBe(100)
     expect(evaluateLength('clamp(20px, 10vw, 60px)', context)).toBe(60)
     expect(evaluateLength('clamp(20px, 10vw, 600px)', context)).toBe(100)
+    expect(evaluateLength('calc(10vw/* fluid */ +\r\n8px)', context)).toBe(108)
   })
 
   it('resolves clamp() the way the spec does when the bounds are inverted', () => {
@@ -86,6 +87,7 @@ describe('evaluateLength', () => {
     expect(evaluateLength('calc()', context)).toBeNull()
     expect(evaluateLength('calc(16px, 32px)', context)).toBeNull()
     expect(evaluateLength('10.', context)).toBeNull()
+    expect(evaluateLength('calc(16px /* open)', context)).toBeNull()
   })
 
   it('tracks number and length dimensions instead of inventing pixels', () => {
@@ -121,5 +123,10 @@ describe('splitComponents', () => {
     expect(splitComponents('clamp(1px, 2vw, 3px) 4px')).toEqual(['clamp(1px, 2vw, 3px)', '4px'])
     expect(splitComponents('16px')).toEqual(['16px'])
     expect(splitComponents('  8px   16px  ')).toEqual(['8px', '16px'])
+    expect(splitComponents('"not a length" [a b] 4px')).toEqual(['"not a length"', '[a b]', '4px'])
+    expect(splitComponents('8px/* keep this together */ 16px')).toEqual([
+      '8px/* keep this together */',
+      '16px',
+    ])
   })
 })
