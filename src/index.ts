@@ -32,6 +32,8 @@ export type {
   CliErrorReport,
   CliFileReport,
   CliJsonReport,
+  CliQualityGateCategory,
+  CliQualityGateReport,
   CliReportSummary,
   CliSuccessReport,
 } from './core/report.js'

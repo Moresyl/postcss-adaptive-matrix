@@ -221,6 +221,74 @@ describe('runCli', () => {
     expect(out).not.toContain('Unknown adaptive profile')
   })
 
+  it('can turn compiler warnings into a failing CI quality gate', async () => {
+    const path = await file('app.css', '@adaptive nope { .page { padding: 16px } }')
+
+    expect(await runCli([path, '--no-color', '--fail-on', 'warnings'])).toBe(1)
+    expect(out).toContain('Unknown adaptive profile "nope"')
+    expect(err).toContain('Quality gate failed: warnings=1')
+
+    out = ''
+    err = ''
+    expect(await runCli([path, '--css', '--fail-on', 'warnings'])).toBe(1)
+    expect(out).toContain('.page')
+    expect(out).not.toContain('Quality gate')
+    expect(err).toContain('Unknown adaptive profile "nope"')
+    expect(err).toContain('Quality gate failed: warnings=1')
+  })
+
+  it('separates successful JSON compilation from a failed continuity gate', async () => {
+    const path = await file(
+      'app.css',
+      '.card { font-size: 16px }\n@adaptive pc { .card { font-size: 18px } }',
+    )
+
+    expect(await runCli([path, '--json', '--fail-on', 'continuity'])).toBe(1)
+    expect(err).toBe('')
+    const report = JSON.parse(out) as {
+      ok: boolean
+      summary: { continuityIssues: number }
+      gate: { failOn: string[]; passed: boolean }
+    }
+    expect(report.ok).toBe(true)
+    expect(report.summary.continuityIssues).toBe(1)
+    expect(report.gate).toEqual({ failOn: ['continuity'], passed: false })
+  })
+
+  it('passes a requested gate with no selected findings', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(await runCli([path, '--json', '--fail-on', 'warnings'])).toBe(0)
+    expect(JSON.parse(out).gate).toEqual({ failOn: ['warnings'], passed: true })
+  })
+
+  it('requires targets for a compatibility gate before reading the stylesheet', async () => {
+    const missing = join(directory, 'missing.css')
+
+    expect(await runCli([missing, '--fail-on', 'compatibility'])).toBe(1)
+    expect(err).toContain('requires --targets')
+    expect(err).not.toContain('missing.css')
+  })
+
+  it('fails a compatibility gate on unsupported compiled syntax', async () => {
+    const path = await file('app.css', '.page { padding: 16px }')
+
+    expect(
+      await runCli([path, '--targets', 'ios_saf 13', '--fail-on', 'compatibility', '--no-color']),
+    ).toBe(1)
+    expect(out).toContain('needs clamp(), min(), max()')
+    expect(err).toMatch(/Quality gate failed: compatibility=\d+/)
+  })
+
+  it('rejects unknown or empty quality-gate categories', async () => {
+    expect(await runCli(['--fail-on', 'security'])).toBe(1)
+    expect(err).toContain('Unknown --fail-on category "security"')
+
+    err = ''
+    expect(await runCli(['--fail-on', ','])).toBe(1)
+    expect(err).toContain('--fail-on needs warnings, continuity, compatibility or any')
+  })
+
   it('surfaces compiler warnings rather than swallowing them', async () => {
     const path = await file('app.css', '@adaptive nope { .page { padding: 16px } }')
 

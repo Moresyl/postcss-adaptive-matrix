@@ -36,13 +36,14 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--from <path>` | 把输入当作位于这个路径 |
 | `--profile <name>` | 覆盖 `defaultProfile` |
 | `--targets <list>` | 按你要支持的最低浏览器版本审计产物，如 `"safari 14, ios_saf 13"` |
+| `--fail-on <list>` | 遇到 `warnings`、`continuity` 或 `compatibility` 时以 `1` 退出；可逗号组合，或写 `any` |
 | `--all` | 连未改动的声明一起列出 |
 | `--css` | 打印编译后的完整 CSS，而不是对照表 |
 | `--json` | 输出一份带版本号的 JSON 报告，供 CI、编辑器与看板集成 |
 | `--color` / `--no-color` | 强制开/关颜色；都不写则跟随终端，并遵守 `NO_COLOR` |
 | `-h, --help` | 帮助 |
 
-退出码：一切正常为 `0`，参数错误、文件读不到、配置非法为 `1`。所以可以直接串进 shell 判断。
+退出码：编译及所有已请求门禁均通过为 `0`；门禁失败、参数错误、文件读不到、配置非法为 `1`。所以可以直接串进 shell 判断。
 
 ## 读配置
 
@@ -223,6 +224,22 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 
 完整的特性 × 版本表、每一项的降级路径，以及编程式 API，见[浏览器特性支持与降级](./compatibility.zh-CN.md)。
 
+## CI 质量门禁
+
+发现与阻断分离：普通预览会报告问题但退出 `0`；只把你希望阻断流水线的类别显式打开：
+
+```bash
+npx adaptive-matrix src/app.css \
+  --targets "ios_saf 15.4, chrome 99" \
+  --fail-on warnings,continuity,compatibility
+```
+
+- `warnings`：编译器诊断，例如未知 `@adaptive` profile；
+- `continuity`：编译后的长度在断点处倒退；
+- `compatibility`：产物语法超出 `--targets` 声明的浏览器能力。选择它却没传 `--targets` 会直接报错，绝不会空跑成通过。
+
+`any` 一次启用三类。完整发现仍会输出，随后命令以 `1` 退出，并把简洁计数写到 stderr。配合 `--css` 时 stdout 仍然只有 CSS；配合 `--json` 时编译仍为 `"ok": true`，独立的 `gate` 表示策略是否通过，调用方可以区分「输入非法」与「产物有效但违反策略」。
+
 ## 机器可读报告
 
 结果交给程序而不是人读时，用 `--json`：
@@ -242,6 +259,7 @@ npx adaptive-matrix src/app.css src/admin.css \
   "ok": true,
   "profiles": { "default": "app", "authored": ["app", "pc"], "libraries": 6 },
   "targets": { "ios_saf": "13", "chrome": "90" },
+  "gate": { "failOn": ["continuity", "compatibility"], "passed": false },
   "summary": {
     "files": 2,
     "declarations": 31,
@@ -255,7 +273,7 @@ npx adaptive-matrix src/app.css src/admin.css \
 }
 ```
 
-每个文件都带声明变化（`context`、`prop`、`before`、`after`）、编译器告警、结构化断点连续性问题；传了 `--targets` 时，还会包含稳定特性 ID、实际语法样本、受影响浏览器、失败方式及降级方案。默认 `changes` 只含已转换/生成的声明；加 `--all` 才包含原样保留项。
+每个文件都带声明变化（`context`、`prop`、`before`、`after`）、编译器告警、结构化断点连续性问题；传了 `--targets` 时，还会包含稳定特性 ID、实际语法样本、受影响浏览器、失败方式及降级方案。未传 `--fail-on` 时 `gate` 为 `null`。默认 `changes` 只含已转换/生成的声明；加 `--all` 才包含原样保留项。
 
 失败同样可机器解析，并保留退出码 `1`：
 
@@ -267,7 +285,7 @@ npx adaptive-matrix src/app.css src/admin.css \
 }
 ```
 
-`--json` 与 `--css` 是互斥的输出协议。JSON 一律写 stdout，且不含 ANSI 颜色码。TypeScript 调用方可以直接从包中导入 `CliJsonReport`、`CliSuccessReport`、`CliErrorReport` 与 `CLI_REPORT_FORMAT_VERSION`，无需自行重复声明结构。
+`--json` 与 `--css` 是互斥的输出协议。JSON 一律写 stdout，且不含 ANSI 颜色码。TypeScript 调用方可以直接从包中导入 `CliJsonReport`、`CliSuccessReport`、`CliErrorReport`、`CliQualityGateReport` 与 `CLI_REPORT_FORMAT_VERSION`，无需自行重复声明结构。
 
 ## 看整份产物
 

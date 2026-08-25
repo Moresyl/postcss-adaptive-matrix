@@ -22,6 +22,7 @@ import {
   type CliDeclarationChange,
   type CliErrorReport,
   type CliFileReport,
+  type CliQualityGateCategory,
   type CliSuccessReport,
 } from './core/report.js'
 import type { AdaptiveMatrixOptions } from './core/types.js'
@@ -42,6 +43,8 @@ Options
       --profile <name> override defaultProfile
       --targets <list> audit the output against the oldest browsers you
                        support, e.g. "safari 14, ios_saf 13, chrome 90"
+      --fail-on <list> exit 1 on warnings, continuity regressions or
+                       compatibility findings; comma-separate or use "any"
       --all            list unchanged declarations too
       --css            print the compiled stylesheet instead of a diff
       --json           print one versioned JSON report for automation; errors
@@ -76,6 +79,7 @@ interface CliArgs {
   from?: string
   profile?: string
   targets?: Record<string, string>
+  failOn: CliQualityGateCategory[]
   all: boolean
   css: boolean
   json: boolean
@@ -87,6 +91,34 @@ interface CliArgs {
 type Change = CliDeclarationChange
 
 class CliError extends Error {}
+
+const QUALITY_GATE_CATEGORIES = [
+  'warnings',
+  'continuity',
+  'compatibility',
+] as const satisfies readonly CliQualityGateCategory[]
+
+function parseQualityGate(input: string): CliQualityGateCategory[] {
+  const selected = new Set<CliQualityGateCategory>()
+  for (const entry of input.split(',')) {
+    const category = entry.trim().toLowerCase()
+    if (!category) continue
+    if (category === 'any') {
+      for (const known of QUALITY_GATE_CATEGORIES) selected.add(known)
+      continue
+    }
+    if (!QUALITY_GATE_CATEGORIES.includes(category as CliQualityGateCategory)) {
+      throw new CliError(
+        `Unknown --fail-on category "${entry.trim()}". Use warnings, continuity, compatibility or any.`,
+      )
+    }
+    selected.add(category as CliQualityGateCategory)
+  }
+  if (!selected.size) {
+    throw new CliError('--fail-on needs warnings, continuity, compatibility or any.')
+  }
+  return [...selected]
+}
 
 /**
  * Reads `"safari 14, ios_saf 13"` into a target map.
@@ -127,6 +159,7 @@ function parseTargets(input: string): Record<string, string> {
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     files: [],
+    failOn: [],
     all: false,
     css: false,
     json: false,
@@ -162,6 +195,9 @@ function parseArgs(argv: string[]): CliArgs {
         break
       case '--targets':
         args.targets = parseTargets(value())
+        break
+      case '--fail-on':
+        args.failOn = [...new Set([...args.failOn, ...parseQualityGate(value())])]
         break
       case '--all':
         args.all = true
@@ -508,6 +544,9 @@ export async function runCli(argv: string[]): Promise<number> {
         '--from names one logical source path and cannot be shared by multiple input files.',
       )
     }
+    if (args.failOn.includes('compatibility') && !args.targets) {
+      throw new CliError('--fail-on compatibility requires --targets to define browser support.')
+    }
     const options = args.config ? await loadConfig(args.config) : {}
     if (args.profile) options.defaultProfile = args.profile
 
@@ -545,6 +584,9 @@ export async function runCli(argv: string[]): Promise<number> {
           ]
 
     let total = 0
+    let totalWarnings = 0
+    let totalContinuity = 0
+    let totalCompatibility = 0
     const jsonFiles: CliFileReport[] = []
     for (const input of inputs) {
       const from = args.from ? resolve(args.from) : input.from
@@ -554,6 +596,9 @@ export async function runCli(argv: string[]): Promise<number> {
         options,
         args.targets,
       )
+      totalWarnings += warnings.length
+      totalContinuity += issues.length
+      totalCompatibility += audit?.findings.length ?? 0
 
       if (args.css) {
         // Warnings go to stderr so that `--css > out.css` still shows them and
@@ -591,6 +636,18 @@ export async function runCli(argv: string[]): Promise<number> {
       process.stdout.write(`${lines.join('\n')}\n`)
     }
 
+    const gateCounts: Record<CliQualityGateCategory, number> = {
+      warnings: totalWarnings,
+      continuity: totalContinuity,
+      compatibility: totalCompatibility,
+    }
+    const gate = args.failOn.length
+      ? {
+          failOn: args.failOn,
+          passed: args.failOn.every((category) => gateCounts[category] === 0),
+        }
+      : null
+
     if (args.json) {
       writeJson({
         formatVersion: CLI_REPORT_FORMAT_VERSION,
@@ -615,10 +672,19 @@ export async function runCli(argv: string[]): Promise<number> {
             0,
           ),
         },
+        gate,
         files: jsonFiles,
       } satisfies CliSuccessReport)
     } else if (!args.css && inputs.length > 1) {
       process.stdout.write(`${total} declarations converted across ${inputs.length} files\n`)
+    }
+    if (gate && !gate.passed) {
+      const failed = gate.failOn
+        .filter((category) => gateCounts[category] > 0)
+        .map((category) => `${category}=${gateCounts[category]}`)
+        .join(', ')
+      if (!args.json) process.stderr.write(`Quality gate failed: ${failed}.\n`)
+      return 1
     }
     return 0
   } catch (error) {

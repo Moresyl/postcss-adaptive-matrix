@@ -48,6 +48,13 @@ export interface CliReportSummary {
   compatibilityFindings: number
 }
 
+export type CliQualityGateCategory = 'warnings' | 'continuity' | 'compatibility'
+
+export interface CliQualityGateReport {
+  failOn: CliQualityGateCategory[]
+  passed: boolean
+}
+
 export interface CliSuccessReport {
   formatVersion: typeof CLI_REPORT_FORMAT_VERSION
   ok: true
@@ -58,6 +65,8 @@ export interface CliSuccessReport {
   }
   targets: Record<string, string> | null
   summary: CliReportSummary
+  /** Null when `--fail-on` was not requested. Compilation may succeed while this gate fails. */
+  gate: CliQualityGateReport | null
   files: CliFileReport[]
 }
 

@@ -7,6 +7,7 @@
 ### Correctness and diagnostics
 
 - Added `adaptive-matrix --json`: one versioned report across one or many files, with structured changes, warnings, breakpoint continuity issues, browser compatibility findings and aggregate counts. Failures are JSON with exit code 1, `--all` controls unchanged declarations, and the report types/version constant are public TypeScript exports.
+- Added opt-in CLI quality gates with `--fail-on warnings,continuity,compatibility` (or `any`). Valid compiled output now exits non-zero when selected policy findings exist, including in `--css` and `--json` workflows; JSON distinguishes compilation success from gate success.
 - Explicitly positive CSS lengths such as `+16px` now compile to a valid `clamp()` expression instead of the invalid `+clamp(...)`.
 - Standard property names and `propList` patterns now follow CSS's ASCII case-insensitive semantics, so `FONT-SIZE` keeps the accessible `rem + vw` text formula. Custom-property filters and routes remain case-sensitive, as CSS requires.
 - `atRuleName` is normalised before both validation and matching; surrounding whitespace can no longer pass validation and leave an unknown block that browsers discard.

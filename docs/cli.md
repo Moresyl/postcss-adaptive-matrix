@@ -36,13 +36,14 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--from <path>` | Treat the input as living at this path |
 | `--profile <name>` | Override `defaultProfile` |
 | `--targets <list>` | Audit the output against the oldest browsers you support, e.g. `"safari 14, ios_saf 13"` |
+| `--fail-on <list>` | Exit `1` on `warnings`, `continuity`, or `compatibility`; comma-separate them or use `any` |
 | `--all` | List unchanged declarations too |
 | `--css` | Print the compiled stylesheet instead of the comparison |
 | `--json` | Print one versioned JSON report for CI, editor and dashboard integrations |
 | `--color` / `--no-color` | Force colour on/off; with neither it follows the terminal and honours `NO_COLOR` |
 | `-h, --help` | Help |
 
-Exit codes: `0` when everything is fine, `1` for a bad argument, an unreadable file, or an invalid configuration. So it drops straight into a shell condition.
+Exit codes: `0` when compilation and every requested quality gate pass; `1` for a failed gate, bad argument, unreadable file, or invalid configuration. So it drops straight into a shell condition.
 
 ## Reading a configuration
 
@@ -223,6 +224,22 @@ Known names: `chrome`, `edge`, `safari`, `firefox`, `ios_saf`, `samsung`; `andro
 
 For the full feature × version matrix, the degradation path for each feature and the programmatic API, see [Browser support and degradation](./compatibility.md).
 
+## CI quality gates
+
+Discovery and enforcement are separate: an ordinary preview reports findings but exits `0`; opt into exactly the categories that should block your pipeline:
+
+```bash
+npx adaptive-matrix src/app.css \
+  --targets "ios_saf 15.4, chrome 99" \
+  --fail-on warnings,continuity,compatibility
+```
+
+- `warnings` covers compiler diagnostics such as an unknown `@adaptive` profile;
+- `continuity` covers a compiled length that goes backwards at a breakpoint;
+- `compatibility` covers output syntax unsupported by a declared `--targets` browser. Selecting it without `--targets` is an error, never an empty pass.
+
+`any` enables all three. Findings are still printed in full, then the command exits `1` and writes a compact count to stderr. With `--css`, stdout remains CSS only. With `--json`, compilation remains `"ok": true` and a separate `gate` says whether policy passed—consumers can distinguish malformed input from valid output that violates policy.
+
 ## Machine-readable reports
 
 Use `--json` when another program, rather than a person, consumes the result:
@@ -242,6 +259,7 @@ The command writes exactly one JSON document even for several files. Its top-lev
   "ok": true,
   "profiles": { "default": "app", "authored": ["app", "pc"], "libraries": 6 },
   "targets": { "ios_saf": "13", "chrome": "90" },
+  "gate": { "failOn": ["continuity", "compatibility"], "passed": false },
   "summary": {
     "files": 2,
     "declarations": 31,
@@ -255,7 +273,7 @@ The command writes exactly one JSON document even for several files. Its top-lev
 }
 ```
 
-Each file carries declaration changes (`context`, `prop`, `before`, `after`), compiler warnings, structured continuity issues, and—when `--targets` is present—compatibility findings with a stable feature ID, the observed sample, affected browsers, failure mode and fallback. By default `changes` contains converted/generated declarations; add `--all` to include declarations left as authored.
+Each file carries declaration changes (`context`, `prop`, `before`, `after`), compiler warnings, structured continuity issues, and—when `--targets` is present—compatibility findings with a stable feature ID, the observed sample, affected browsers, failure mode and fallback. `gate` is `null` unless `--fail-on` is present. By default `changes` contains converted/generated declarations; add `--all` to include declarations left as authored.
 
 Errors remain machine-readable and keep exit code `1`:
 
@@ -267,7 +285,7 @@ Errors remain machine-readable and keep exit code `1`:
 }
 ```
 
-`--json` and `--css` are mutually exclusive output protocols. JSON always goes to stdout and contains no ANSI colour codes. TypeScript consumers can import `CliJsonReport`, `CliSuccessReport`, `CliErrorReport` and `CLI_REPORT_FORMAT_VERSION` from the package rather than restating the shape.
+`--json` and `--css` are mutually exclusive output protocols. JSON always goes to stdout and contains no ANSI colour codes. TypeScript consumers can import `CliJsonReport`, `CliSuccessReport`, `CliErrorReport`, `CliQualityGateReport` and `CLI_REPORT_FORMAT_VERSION` from the package rather than restating the shape.
 
 ## Seeing the whole output
 
