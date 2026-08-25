@@ -146,4 +146,16 @@ describe('splitComponents', () => {
       '16px',
     ])
   })
+
+  it('does not split malformed component structure into plausible fragments', () => {
+    for (const value of [
+      '8px ) 16px',
+      '8px [a) 16px',
+      '8px calc(1px + 2px',
+      '8px "open 16px',
+      '8px /* open 16px',
+    ]) {
+      expect(splitComponents(value), value).toEqual([value])
+    }
+  })
 })

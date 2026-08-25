@@ -362,7 +362,11 @@ export function splitComponents(value: string): string[] {
       continue
     }
     if (character === '(' || character === '[' || character === '{') blocks.push(character)
-    else if (character === ')' || character === ']' || character === '}') blocks.pop()
+    else if (character === ')' || character === ']' || character === '}') {
+      const expected = character === ')' ? '(' : character === ']' ? '[' : '{'
+      if (blocks.at(-1) !== expected) return [value]
+      blocks.pop()
+    }
     if (blocks.length === 0 && /\s/.test(character)) {
       if (current) parts.push(current)
       current = ''
@@ -370,6 +374,7 @@ export function splitComponents(value: string): string[] {
     }
     current += character
   }
+  if (quote || comment || blocks.length) return [value]
   if (current) parts.push(current)
   return parts
 }
