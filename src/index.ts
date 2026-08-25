@@ -25,6 +25,16 @@ export type {
   CompatFinding,
   CompatShortfall,
 } from './core/compat.js'
+export { CLI_REPORT_FORMAT_VERSION } from './core/report.js'
+export type {
+  CliCompatibilityReport,
+  CliDeclarationChange,
+  CliErrorReport,
+  CliFileReport,
+  CliJsonReport,
+  CliReportSummary,
+  CliSuccessReport,
+} from './core/report.js'
 
 export function defineConfig<T extends AdaptiveMatrixOptions>(config: T): T {
   return config

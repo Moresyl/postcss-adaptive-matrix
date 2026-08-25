@@ -105,7 +105,7 @@ At this point component-library adaptation, safe-area variables, the centred roo
 | **Container queries** | `unit: 'cqi'` with `@container`: sizes follow an ancestor rather than the window |
 | **Atomic CSS** | Tailwind and UnoCSS, both major versions, including the theme tokens their utilities read |
 | **Optional runtime** | A VisualViewport observer for WebViews, on-screen keyboards and dynamic viewports |
-| **CLI preview** | Change a number, see the converted declarations — no build, no browser |
+| **CLI preview + JSON report** | Inspect converted declarations interactively or feed versioned diagnostics to CI — no build, no browser |
 | **Breakpoint seam check** | Finds every place where widening the window makes something *smaller* — where two design files disagree |
 | **Browser support audit** | Checks the compiled output against the oldest browsers you intend to support |
 | **Engineering** | Complete TypeScript types, ESM + CJS, and a language-agnostic conformance suite |

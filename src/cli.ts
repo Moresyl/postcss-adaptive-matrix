@@ -16,6 +16,14 @@ import { type CompatAudit, auditCompatibility, resolveBrowser } from './core/com
 import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
+import {
+  CLI_REPORT_FORMAT_VERSION,
+  type CliCompatibilityReport,
+  type CliDeclarationChange,
+  type CliErrorReport,
+  type CliFileReport,
+  type CliSuccessReport,
+} from './core/report.js'
 import type { AdaptiveMatrixOptions } from './core/types.js'
 import { adaptiveMatrix } from './postcss/plugin.js'
 
@@ -35,6 +43,8 @@ Options
                        support, e.g. "safari 14, ios_saf 13, chrome 90"
       --all            list unchanged declarations too
       --css            print the compiled stylesheet instead of a diff
+      --json           print one versioned JSON report for automation; errors
+                       are JSON too and still use a non-zero exit code
       --color          force colour; --no-color forces plain. Without either,
                        colour follows the terminal and honours NO_COLOR
   -h, --help
@@ -64,17 +74,13 @@ interface CliArgs {
   targets?: Record<string, string>
   all: boolean
   css: boolean
+  json: boolean
   color: boolean
   help: boolean
 }
 
 /** One declaration the compiler touched, or deliberately did not. */
-interface Change {
-  context: string
-  prop: string
-  before: string | null
-  after: string
-}
+type Change = CliDeclarationChange
 
 class CliError extends Error {}
 
@@ -119,6 +125,7 @@ function parseArgs(argv: string[]): CliArgs {
     files: [],
     all: false,
     css: false,
+    json: false,
     color: process.stdout.isTTY === true && !process.env['NO_COLOR'],
     help: false,
   }
@@ -157,6 +164,9 @@ function parseArgs(argv: string[]): CliArgs {
         break
       case '--css':
         args.css = true
+        break
+      case '--json':
+        args.json = true
         break
       case '--color':
         args.color = true
@@ -432,12 +442,47 @@ function report(
   return { converted: converted.length, lines }
 }
 
+function jsonCompatibility(audit: CompatAudit | null): CliCompatibilityReport | null {
+  if (!audit) return null
+  return {
+    findings: audit.findings.map(({ feature, sample, shortfalls }) => ({
+      id: feature.id,
+      title: feature.title,
+      sample,
+      emittedBy: feature.emittedBy,
+      failure: feature.failure,
+      fallback: feature.fallback,
+      shortfalls,
+    })),
+    satisfied: audit.satisfied,
+    unknownBrowsers: audit.unknownBrowsers,
+  }
+}
+
+function writeJson(value: unknown): void {
+  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+}
+
+function writeCliError(error: unknown, json: boolean): void {
+  const message = error instanceof Error ? error.message : String(error)
+  if (json) {
+    writeJson({
+      formatVersion: CLI_REPORT_FORMAT_VERSION,
+      ok: false,
+      error: { message },
+    } satisfies CliErrorReport)
+  } else {
+    process.stderr.write(`${message}\n`)
+  }
+}
+
 export async function runCli(argv: string[]): Promise<number> {
   let args: CliArgs
   try {
     args = parseArgs(argv)
   } catch (error) {
-    process.stderr.write(`${(error as Error).message}\n\n${HELP}`)
+    if (argv.includes('--json')) writeCliError(error, true)
+    else process.stderr.write(`${(error as Error).message}\n\n${HELP}`)
     return 1
   }
 
@@ -447,6 +492,9 @@ export async function runCli(argv: string[]): Promise<number> {
   }
 
   try {
+    if (args.json && args.css) {
+      throw new CliError('--json and --css are different output formats; choose one.')
+    }
     const options = args.config ? await loadConfig(args.config) : {}
     if (args.profile) options.defaultProfile = args.profile
 
@@ -484,6 +532,7 @@ export async function runCli(argv: string[]): Promise<number> {
           ]
 
     let total = 0
+    const jsonFiles: CliFileReport[] = []
     for (const input of inputs) {
       const from = args.from ? resolve(args.from) : input.from
       const { root, changes, warnings, issues, audit } = await compile(
@@ -502,6 +551,20 @@ export async function runCli(argv: string[]): Promise<number> {
         process.stdout.write(`${root.toString()}\n`)
         continue
       }
+      if (args.json) {
+        const converted = changes.filter((change) => change.before !== change.after)
+        total += converted.length
+        jsonFiles.push({
+          file: input.label,
+          converted: converted.length,
+          unchanged: changes.length - converted.length,
+          changes: args.all ? changes : converted,
+          warnings,
+          continuity: issues,
+          compatibility: jsonCompatibility(audit),
+        })
+        continue
+      }
       const { converted, lines } = report(
         input.label,
         changes,
@@ -515,13 +578,38 @@ export async function runCli(argv: string[]): Promise<number> {
       process.stdout.write(`${lines.join('\n')}\n`)
     }
 
-    if (!args.css && inputs.length > 1) {
+    if (args.json) {
+      writeJson({
+        formatVersion: CLI_REPORT_FORMAT_VERSION,
+        ok: true,
+        profiles: {
+          default: resolved.defaultProfile,
+          authored: Object.keys(resolved.profiles).filter(
+            (name) => !name.startsWith(LIBRARY_PROFILE_PREFIX),
+          ),
+          libraries,
+        },
+        targets: args.targets ?? null,
+        summary: {
+          files: jsonFiles.length,
+          declarations: jsonFiles.reduce((sum, file) => sum + file.converted + file.unchanged, 0),
+          converted: total,
+          unchanged: jsonFiles.reduce((sum, file) => sum + file.unchanged, 0),
+          warnings: jsonFiles.reduce((sum, file) => sum + file.warnings.length, 0),
+          continuityIssues: jsonFiles.reduce((sum, file) => sum + file.continuity.length, 0),
+          compatibilityFindings: jsonFiles.reduce(
+            (sum, file) => sum + (file.compatibility?.findings.length ?? 0),
+            0,
+          ),
+        },
+        files: jsonFiles,
+      } satisfies CliSuccessReport)
+    } else if (!args.css && inputs.length > 1) {
       process.stdout.write(`${total} declarations converted across ${inputs.length} files\n`)
     }
     return 0
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    process.stderr.write(`${message}\n`)
+    writeCliError(error, args.json)
     return 1
   }
 }

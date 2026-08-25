@@ -44,11 +44,16 @@ describeBuilt('the built package', () => {
     expect(required.default).toBe(required)
     expect(typeof required.appPcPreset).toBe('function')
     expect(typeof required.findContinuityIssues).toBe('function')
+    expect(required.CLI_REPORT_FORMAT_VERSION).toBe(1)
     expect(required.postcss).toBe(true)
 
-    const imported = await import('../dist/index.js')
+    // Cast because standalone `npm run typecheck` may inspect a stale dist from
+    // the previous build. The package test itself runs after `npm run build` in
+    // the full gate and asserts the fresh runtime shape below.
+    const imported = (await import('../dist/index.js')) as Record<string, unknown>
     expect(typeof imported.default).toBe('function')
     expect(typeof imported.appPcPreset).toBe('function')
+    expect(imported.CLI_REPORT_FORMAT_VERSION).toBe(1)
   })
 
   it('leaves an entry that has no default export alone', () => {
@@ -73,6 +78,7 @@ describeBuilt('the built package', () => {
     // named export statement. They live in a merged namespace instead.
     expect(declarations).toContain('declare namespace _cjs')
     expect(declarations).toContain('type AdaptiveMatrixOptions')
+    expect(declarations).toContain('type CliJsonReport')
     expect(declarations).toContain('default: typeof adaptiveMatrix')
 
     // The ESM declarations describe an ES module and must keep saying so.

@@ -36,6 +36,7 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--targets <list>` | Audit the output against the oldest browsers you support, e.g. `"safari 14, ios_saf 13"` |
 | `--all` | List unchanged declarations too |
 | `--css` | Print the compiled stylesheet instead of the comparison |
+| `--json` | Print one versioned JSON report for CI, editor and dashboard integrations |
 | `--color` / `--no-color` | Force colour on/off; with neither it follows the terminal and honours `NO_COLOR` |
 | `-h, --help` | Help |
 
@@ -219,6 +220,52 @@ When every target is new enough, there is one line:
 Known names: `chrome`, `edge`, `safari`, `firefox`, `ios_saf`, `samsung`; `android` and `webview` map to `chrome`. An unrecognised name is an error and exits `1` rather than being skipped silently — a target quietly dropped is worse than no audit at all, because it reads like a pass.
 
 For the full feature × version matrix, the degradation path for each feature and the programmatic API, see [Browser support and degradation](./compatibility.md).
+
+## Machine-readable reports
+
+Use `--json` when another program, rather than a person, consumes the result:
+
+```bash
+npx adaptive-matrix src/app.css src/admin.css \
+  -c adaptive.config.json \
+  --targets "ios_saf 13, chrome 90" \
+  --json > adaptive-report.json
+```
+
+The command writes exactly one JSON document even for several files. Its top-level shape is stable and versioned:
+
+```json
+{
+  "formatVersion": 1,
+  "ok": true,
+  "profiles": { "default": "app", "authored": ["app", "pc"], "libraries": 6 },
+  "targets": { "ios_saf": "13", "chrome": "90" },
+  "summary": {
+    "files": 2,
+    "declarations": 31,
+    "converted": 18,
+    "unchanged": 13,
+    "warnings": 0,
+    "continuityIssues": 1,
+    "compatibilityFindings": 2
+  },
+  "files": []
+}
+```
+
+Each file carries declaration changes (`context`, `prop`, `before`, `after`), compiler warnings, structured continuity issues, and—when `--targets` is present—compatibility findings with a stable feature ID, the observed sample, affected browsers, failure mode and fallback. By default `changes` contains converted/generated declarations; add `--all` to include declarations left as authored.
+
+Errors remain machine-readable and keep exit code `1`:
+
+```json
+{
+  "formatVersion": 1,
+  "ok": false,
+  "error": { "message": "defaultProfile \"ghost\" does not exist." }
+}
+```
+
+`--json` and `--css` are mutually exclusive output protocols. JSON always goes to stdout and contains no ANSI colour codes. TypeScript consumers can import `CliJsonReport`, `CliSuccessReport`, `CliErrorReport` and `CLI_REPORT_FORMAT_VERSION` from the package rather than restating the shape.
 
 ## Seeing the whole output
 

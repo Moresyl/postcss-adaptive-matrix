@@ -36,6 +36,7 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--targets <list>` | 按你要支持的最低浏览器版本审计产物，如 `"safari 14, ios_saf 13"` |
 | `--all` | 连未改动的声明一起列出 |
 | `--css` | 打印编译后的完整 CSS，而不是对照表 |
+| `--json` | 输出一份带版本号的 JSON 报告，供 CI、编辑器与看板集成 |
 | `--color` / `--no-color` | 强制开/关颜色；都不写则跟随终端，并遵守 `NO_COLOR` |
 | `-h, --help` | 帮助 |
 
@@ -219,6 +220,52 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 已知名字：`chrome`、`edge`、`safari`、`firefox`、`ios_saf`、`samsung`；`android`、`webview` 归到 `chrome`。名字不认识会报错并以 `1` 退出，不会静默跳过——被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
 
 完整的特性 × 版本表、每一项的降级路径，以及编程式 API，见[浏览器特性支持与降级](./compatibility.zh-CN.md)。
+
+## 机器可读报告
+
+结果交给程序而不是人读时，用 `--json`：
+
+```bash
+npx adaptive-matrix src/app.css src/admin.css \
+  -c adaptive.config.json \
+  --targets "ios_saf 13, chrome 90" \
+  --json > adaptive-report.json
+```
+
+即使输入多个文件，命令也只写一份 JSON 文档。顶层结构稳定且带版本号：
+
+```json
+{
+  "formatVersion": 1,
+  "ok": true,
+  "profiles": { "default": "app", "authored": ["app", "pc"], "libraries": 6 },
+  "targets": { "ios_saf": "13", "chrome": "90" },
+  "summary": {
+    "files": 2,
+    "declarations": 31,
+    "converted": 18,
+    "unchanged": 13,
+    "warnings": 0,
+    "continuityIssues": 1,
+    "compatibilityFindings": 2
+  },
+  "files": []
+}
+```
+
+每个文件都带声明变化（`context`、`prop`、`before`、`after`）、编译器告警、结构化断点连续性问题；传了 `--targets` 时，还会包含稳定特性 ID、实际语法样本、受影响浏览器、失败方式及降级方案。默认 `changes` 只含已转换/生成的声明；加 `--all` 才包含原样保留项。
+
+失败同样可机器解析，并保留退出码 `1`：
+
+```json
+{
+  "formatVersion": 1,
+  "ok": false,
+  "error": { "message": "defaultProfile \"ghost\" does not exist." }
+}
+```
+
+`--json` 与 `--css` 是互斥的输出协议。JSON 一律写 stdout，且不含 ANSI 颜色码。TypeScript 调用方可以直接从包中导入 `CliJsonReport`、`CliSuccessReport`、`CliErrorReport` 与 `CLI_REPORT_FORMAT_VERSION`，无需自行重复声明结构。
 
 ## 看整份产物
 

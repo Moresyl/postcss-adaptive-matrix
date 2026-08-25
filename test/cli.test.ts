@@ -64,6 +64,97 @@ describe('runCli', () => {
     expect(out).toContain('1 converted, 1 left as authored')
   })
 
+  it('emits a versioned machine-readable report with changes and compatibility findings', async () => {
+    const path = await file(
+      'app.css',
+      '.page { padding: 16px; border: 1px solid }\n@adaptive ghost { .lost { width: 10px } }',
+    )
+
+    expect(await runCli([path, '--json', '--targets', 'ios_saf 13', '--no-color'])).toBe(0)
+    expect(err).toBe('')
+    expect(out).not.toContain(String.fromCharCode(27))
+
+    const report = JSON.parse(out) as {
+      formatVersion: number
+      ok: boolean
+      profiles: { default: string; authored: string[]; libraries: number }
+      targets: Record<string, string>
+      summary: Record<string, number>
+      files: Array<{
+        file: string
+        converted: number
+        unchanged: number
+        changes: Array<{ context: string; prop: string; before: string | null; after: string }>
+        warnings: string[]
+        compatibility: {
+          findings: Array<{
+            id: string
+            failure: string
+            fallback: string
+            shortfalls: Array<{ browser: string; target: string; since: string | null }>
+          }>
+        }
+      }>
+    }
+    expect(report.formatVersion).toBe(1)
+    expect(report.ok).toBe(true)
+    expect(report.profiles.default).toBe('app')
+    expect(report.profiles.authored).toEqual(['app', 'pc'])
+    expect(report.profiles.libraries).toBeGreaterThan(5)
+    expect(report.targets).toEqual({ ios_saf: '13' })
+    expect(report.summary).toMatchObject({ files: 1, converted: 1, unchanged: 2, warnings: 1 })
+    expect(report.files[0]!.changes).toEqual([
+      expect.objectContaining({ context: '.page', prop: 'padding', before: '16px' }),
+    ])
+    expect(report.files[0]!.warnings[0]).toContain('Unknown adaptive profile "ghost"')
+    expect(report.files[0]!.compatibility.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'math-functions',
+          failure: expect.any(String),
+          fallback: expect.any(String),
+          shortfalls: [
+            expect.objectContaining({ browser: 'ios_saf', target: '13', since: '13.4-13.7' }),
+          ],
+        }),
+      ]),
+    )
+  })
+
+  it('writes one JSON document for several files and includes unchanged declarations with --all', async () => {
+    const first = await file('first.css', '.a { width: 16px; color: red }')
+    const second = await file('second.css', '.b { height: 24px }')
+
+    expect(await runCli([first, second, '--json', '--all'])).toBe(0)
+    const report = JSON.parse(out) as {
+      summary: { files: number; converted: number; unchanged: number; declarations: number }
+      files: Array<{ changes: Array<{ prop: string }> }>
+    }
+    expect(report.summary).toEqual(
+      expect.objectContaining({ files: 2, converted: 2, unchanged: 1, declarations: 3 }),
+    )
+    expect(report.files).toHaveLength(2)
+    expect(report.files[0]!.changes.map((change) => change.prop)).toEqual(['width', 'color'])
+  })
+
+  it('keeps JSON errors parseable and preserves a non-zero exit code', async () => {
+    expect(await runCli(['--json', '--css'])).toBe(1)
+    expect(err).toBe('')
+    expect(JSON.parse(out)).toEqual({
+      formatVersion: 1,
+      ok: false,
+      error: { message: '--json and --css are different output formats; choose one.' },
+    })
+
+    out = ''
+    expect(await runCli(['--unknown', '--json'])).toBe(1)
+    expect(JSON.parse(out)).toMatchObject({
+      formatVersion: 1,
+      ok: false,
+      error: { message: 'Unknown option --unknown.' },
+    })
+  })
+
   it('reports a length that shrinks as the viewport grows', async () => {
     // 16px on the app canvas and 18px on the PC canvas are each plausible on
     // their own, but the app canvas has already reached 17.57px by the time
