@@ -549,7 +549,9 @@ export async function runCli(argv: string[]): Promise<number> {
   try {
     args = parseArgs(argv)
   } catch (error) {
-    if (argv.includes('--json')) writeCliError(error, true)
+    const terminator = argv.indexOf('--')
+    const optionArgs = terminator === -1 ? argv : argv.slice(0, terminator)
+    if (optionArgs.includes('--json')) writeCliError(error, true)
     else process.stderr.write(`${(error as Error).message}\n\n${HELP}`)
     return 1
   }

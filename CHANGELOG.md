@@ -6,7 +6,7 @@
 
 ### Correctness and diagnostics
 
-- The CLI now supports the conventional `--` option terminator. Every following argument is treated as a file path, so valid stylesheets whose names begin with `-` are no longer rejected as unknown options.
+- The CLI now supports the conventional `--` option terminator. Every following argument is treated strictly as a file path, so valid stylesheets whose names begin with `-` are no longer rejected as unknown options or mistaken for output-format flags on an earlier argument error.
 - Component-library definitions now reject duplicate names before two route sets can silently share one overwritten derived profile. Library names cannot hide surrounding whitespace, and class/token prefixes are grammar-checked so malformed prefixes cannot silently match nothing or claim every custom property.
 - Compatibility detection now masks comments and quoted strings while preserving source offsets. Feature examples in documentation comments, `content` text or string data can no longer fabricate browser shortfalls and fail an enabled CLI compatibility gate.
 - Single-declaration continuity checks now recognise case-insensitive `VAR()` at their fast-path boundary, matching the token resolver instead of skipping breakpoint token changes written in uppercase.

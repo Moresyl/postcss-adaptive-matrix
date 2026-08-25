@@ -544,6 +544,12 @@ describe('runCli', () => {
     expect(err).toBe('')
   })
 
+  it('does not treat --json after the option terminator as a flag on parse errors', async () => {
+    expect(await runCli(['--unknown', '--', '--json'])).toBe(1)
+    expect(out).toBe('')
+    expect(err).toContain('Unknown option --unknown')
+  })
+
   it('fails when an option is missing its value', async () => {
     expect(await runCli(['--profile'])).toBe(1)
     expect(err).toContain('--profile needs a value')
