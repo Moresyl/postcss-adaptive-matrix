@@ -50,6 +50,14 @@ describe('routingSelector', () => {
     expect(routingSelector(':is(.page-hero:not(.van-cell))')).toBe(':is(.page-hero:not())')
   })
 
+  it('understands escaped pseudo-class names the way the CSS parser does', () => {
+    expect(routingSelector(String.raw`.page:n\6ft(.van-cell)`)).toBe(String.raw`.page:n\6ft()`)
+    expect(routingSelector(String.raw`.page:n\6f t(.van-cell)`)).toBe(String.raw`.page:n\6f t()`)
+    expect(routingSelector(String.raw`.page:h\61s(.van-icon)`)).toBe(String.raw`.page:h\61s()`)
+    expect(specificity(String.raw`:n\6ft(#main, .item)`)).toEqual([1, 0, 0])
+    expect(specificity(String.raw`:n\6f t(#main, .item)`)).toEqual([1, 0, 0])
+  })
+
   it('leaves an ordinary selector byte-for-byte alone', () => {
     for (const selector of ['.a > .b', 'div[title="x, y"]::before', '.a:hover', '*']) {
       expect(routingSelector(selector)).toBe(selector)
@@ -143,6 +151,19 @@ describe('specificity', () => {
 
   it('does not count selector-looking text inside comments', () => {
     expect(specificity('.a/* #fake .x div */ > span')).toEqual([0, 1, 1])
+  })
+
+  it('does not end an attribute at an escaped closing bracket', () => {
+    expect(specificity(String.raw`[data-x=\].fake] > span`)).toEqual([0, 1, 1])
+    expect(splitSelectorList(String.raw`[data-x=\],fake], .b`)).toEqual([
+      String.raw`[data-x=\],fake]`,
+      '.b',
+    ])
+  })
+
+  it('keeps whitespace-terminated escapes inside one identifier', () => {
+    expect(specificity(String.raw`.foo\20 bar`)).toEqual([0, 1, 0])
+    expect(specificity(String.raw`f\6f o`)).toEqual([0, 0, 1])
   })
 
   it('orders the way the cascade does', () => {

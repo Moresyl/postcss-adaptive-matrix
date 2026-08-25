@@ -16,6 +16,7 @@
 - Root selector 在包进 `:where()` 前也会通过同一套与语法版本无关的结构守卫。未平衡的字符串、注释、圆括号、属性方括号或未转义规则花括号，不再能够破坏生成的 foundation。
 - Token 替换与连续性诊断现会先按 `!important`、再按源码顺序决定胜者。带层 token 或分散在不同全局选择器写法中的 token 会被保守拒绝而非猜测，同时正确解析大小写不敏感的 `var()` 与字符串内括号。
 - 选择器路由与 specificity 分析现会统一跳过 CSS 注释。注释中的组件库类名、逗号、伪类或 ID 不再能够误选画布，或虚构 selector list / specificity 诊断。
+- 选择器分析现会解码转义伪类名，并正确处理属性中的转义右方括号。`:n\\6ft()` 这类等价写法不再能够绕过 `:not()` / `:has()` 路由语义或产生错误 specificity。
 - 标准属性名与 `propList` 模式按 CSS 规则不区分 ASCII 大小写，`FONT-SIZE` 仍会保留可缩放的 `rem + vw` 文字公式；自定义属性过滤与路由则按 CSS 规则继续区分大小写。
 - 长度匹配现会遵守非 ASCII 及转义 CSS identifier 的边界。identifier 内形似 dimension 的文本（包括 value-parser 拆出的十六进制转义续段）会保持原样，不再被局部替换成函数。
 - `atRuleName` 在校验与匹配前统一规范化，首尾空格不再出现「校验通过、实际匹配不到，最后被浏览器整块丢弃」的情况。

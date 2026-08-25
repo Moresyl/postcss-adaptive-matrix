@@ -56,6 +56,33 @@ function isIdentifierStart(character: string): boolean {
   return /[a-zA-Z_\u0080-\uFFFF\\]/.test(character)
 }
 
+/** Index after one CSS identifier, including a whitespace-terminated hex escape. */
+function identifierEnd(value: string, start: number): number {
+  let index = start
+  while (index < value.length) {
+    const character = value[index]!
+    if (character !== '\\') {
+      if (!isIdentifierChar(character)) break
+      index += 1
+      continue
+    }
+    let cursor = index + 1
+    let digits = 0
+    while (cursor < value.length && digits < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
+      digits += 1
+      cursor += 1
+    }
+    if (digits && /\s/.test(value[cursor] ?? '')) {
+      if (value[cursor] === '\r' && value[cursor + 1] === '\n') cursor += 1
+      cursor += 1
+    } else if (!digits && cursor < value.length) {
+      cursor += 1
+    }
+    index = cursor
+  }
+  return index
+}
+
 /** Index just past the string literal starting at `start`. */
 function skipString(selector: string, start: number): number {
   const quote = selector[start]
@@ -92,6 +119,10 @@ function skipAttribute(selector: string, start: number): number {
     }
     if (character === '"' || character === "'") {
       index = skipString(selector, index)
+      continue
+    }
+    if (character === '\\') {
+      index += 2
       continue
     }
     if (character === ']') return index + 1
@@ -139,14 +170,45 @@ interface Pseudo {
   after: number
 }
 
+/** Decodes the escapes that CSS identifiers use for pseudo-class names. */
+function decodeIdentifier(value: string): string {
+  let output = ''
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]!
+    if (character !== '\\') {
+      output += character
+      continue
+    }
+    let cursor = index + 1
+    let hex = ''
+    while (cursor < value.length && hex.length < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
+      hex += value[cursor]!
+      cursor += 1
+    }
+    if (hex) {
+      const codePoint = Number.parseInt(hex, 16)
+      output +=
+        codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)
+          ? '\uFFFD'
+          : String.fromCodePoint(codePoint)
+      if (/\s/.test(value[cursor] ?? '')) cursor += 1
+      index = cursor - 1
+    } else if (cursor < value.length) {
+      output += value[cursor]!
+      index = cursor
+    }
+  }
+  return output
+}
+
 /** Reads the pseudo-class or pseudo-element starting at the colon at `start`. */
 function readPseudo(selector: string, start: number): Pseudo | null {
   const doubled = selector[start + 1] === ':'
   let index = start + (doubled ? 2 : 1)
   const nameStart = index
-  while (index < selector.length && isIdentifierChar(selector[index]!)) index += 1
+  index = identifierEnd(selector, index)
   if (index === nameStart) return null
-  const name = selector.slice(nameStart, index).toLowerCase()
+  const name = decodeIdentifier(selector.slice(nameStart, index)).toLowerCase()
   return {
     name,
     element: doubled || LEGACY_PSEUDO_ELEMENTS.has(name),
@@ -331,8 +393,7 @@ export function specificity(selector: string): Specificity {
       continue
     }
     if (character === '#' || character === '.') {
-      let end = index + 1
-      while (end < selector.length && isIdentifierChar(selector[end]!)) end += 1
+      const end = identifierEnd(selector, index + 1)
       // A lone `.` or `#` is not a selector, so it counts as nothing.
       if (end > index + 1) {
         if (character === '#') ids += 1
@@ -372,8 +433,7 @@ export function specificity(selector: string): Specificity {
       continue
     }
     if (isIdentifierStart(character)) {
-      let end = index
-      while (end < selector.length && isIdentifierChar(selector[end]!)) end += 1
+      const end = identifierEnd(selector, index)
       // `*` and the combinators contribute nothing; a bare identifier is a type.
       types += 1
       index = end
