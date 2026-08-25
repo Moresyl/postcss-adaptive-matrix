@@ -477,6 +477,13 @@ describe('presets and foundation', () => {
 describe('reading more than one source unit', () => {
   const atomic = { unitToConvert: ['px', 'rem'] } as const
 
+  it('preserves finite-overflow CSS numbers instead of emitting Infinity', async () => {
+    const result = await process('.a { width: 1e999px; margin-left: -1e999px }')
+    expect(result.css).toContain('width: 1e999px')
+    expect(result.css).toContain('margin-left: -1e999px')
+    expect(result.css).not.toContain('Infinity')
+  })
+
   it('leaves rem alone under the default configuration', async () => {
     // The default reads `px` only, so an atomic framework's output passes
     // through untouched rather than being read as a pile of one-pixel lengths.

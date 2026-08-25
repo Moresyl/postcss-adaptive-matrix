@@ -229,7 +229,9 @@ function convertResolvedLength(
   options: ResolvedAdaptiveMatrixOptions,
   sourceUnit: string = options.unitToConvert[0]!,
 ): string {
-  if (!Number.isFinite(pixels)) return `${pixels}${sourceUnit}`
+  if (!Number.isFinite(pixels)) {
+    throw new RangeError('[postcss-adaptive-matrix] Length value must be a finite number.')
+  }
   if (pixels === 0 || Math.abs(pixels) < options.minPixelValue) {
     return `${format(pixels, options.precision)}${sourceUnit}`
   }
@@ -360,6 +362,10 @@ function convertResolvedValue(
         // `hairline` describe how small a thing is on screen, and `0.0625rem`
         // is the same hairline as `1px` however it was written.
         const pixels = Number.parseFloat(number) * unitScale(unit, options)
+        // The CSS token is still a number even when its magnitude overflows a
+        // JavaScript double. Keeping the authored token is safer than replacing
+        // it with `Infinitypx`, which is not CSS syntax and drops the declaration.
+        if (!Number.isFinite(pixels)) return match
         if (
           pixels === 0 ||
           Math.abs(pixels) < options.minPixelValue ||
