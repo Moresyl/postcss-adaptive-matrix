@@ -335,6 +335,24 @@ function isCustomPropertyName(name: string): boolean {
   return true
 }
 
+function referenceName(value: string): string | null {
+  let clean = ''
+  let cursor = 0
+  for (;;) {
+    const start = value.indexOf('/*', cursor)
+    if (start < 0) {
+      clean += value.slice(cursor)
+      break
+    }
+    const end = value.indexOf('*/', start + 2)
+    if (end < 0) return null
+    clean += `${value.slice(cursor, start)} `
+    cursor = end + 2
+  }
+  const name = clean.trim()
+  return isCustomPropertyName(name) ? name : null
+}
+
 function substitute(
   value: string,
   width: number,
@@ -357,8 +375,9 @@ function substitute(
     if (end < 0) return null
 
     const { name, fallback } = splitArguments(value.slice(start + 4, end))
-    if (!isCustomPropertyName(name)) return null
-    const canonicalName = decodeCssIdentifier(name)
+    const parsedName = referenceName(name)
+    if (parsedName === null) return null
+    const canonicalName = decodeCssIdentifier(parsedName)
 
     // `--a: var(--b); --b: var(--a)` is invalid CSS, not a length. Guard
     // anyway: a stylesheet is an input, and inputs are not always valid.

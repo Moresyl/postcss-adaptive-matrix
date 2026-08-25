@@ -140,6 +140,13 @@ describe('theme token resolution', () => {
     expect(tokens.resolve(String.raw`var(--\g, 16px)`, 400)).toBe('16px')
   })
 
+  it('treats comments around a var() name as whitespace', () => {
+    const tokens = table(':root { --x: 16px }')
+    expect(tokens.resolve('var(/* before */ --x /**/)', 400)).toBe('16px')
+    expect(tokens.resolve('var(--/**/x, 8px)', 400)).toBeNull()
+    expect(tokens.resolve('var(--x/* open, 8px)', 400)).toBeNull()
+  })
+
   it('matches equivalent escaped and literal custom-property names', () => {
     expect(table(String.raw`:root { --\67 ap: 16px }`).resolve('var(--gap)', 400)).toBe('16px')
     expect(table(':root { --gap: 16px }').resolve(String.raw`var(--\67 ap)`, 400)).toBe('16px')
