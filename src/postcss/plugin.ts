@@ -102,7 +102,15 @@ function shouldIgnoreRule(rule: Rule): boolean {
 function isFollowedByEquivalent(declaration: Declaration, value: string): boolean {
   let node = declaration.next()
   while (node?.type === 'comment') node = node.next()
-  return node?.type === 'decl' && node.prop === declaration.prop && node.value === value
+  if (node?.type !== 'decl' || node.value !== value) return false
+  const sameProperty =
+    declaration.prop.startsWith('--') || node.prop.startsWith('--')
+      ? node.prop === declaration.prop
+      : node.prop.toLowerCase() === declaration.prop.toLowerCase()
+  // A normal twin can never override an important authored fallback. In that
+  // shape the output looks complete but the fixed pixel value still wins, so a
+  // new important twin is required. The inverse is already strong enough.
+  return sameProperty && (!declaration.important || node.important)
 }
 
 interface ProcessorContext {

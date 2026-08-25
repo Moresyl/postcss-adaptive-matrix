@@ -207,6 +207,25 @@ describe('adaptiveMatrix', () => {
     expect(twice.css).toBe(once.css)
   })
 
+  it('does not accept a weaker twin after an important fallback', async () => {
+    const converted = 'clamp(85.33333px, 26.66667vw, 128px)'
+    const result = await process(`.box { WIDTH: 100px !important; width: ${converted} }`, {
+      preserveOriginal: true,
+    })
+
+    expect(result.css).toContain(`WIDTH: 100px !important; WIDTH: ${converted} !important`)
+    expect(result.css.match(/clamp\(/g)).toHaveLength(2)
+  })
+
+  it('recognises a case-insensitive standard-property twin of equal strength', async () => {
+    const converted = 'clamp(85.33333px, 26.66667vw, 128px)'
+    const result = await process(`.box { WIDTH: 100px; width: ${converted} }`, {
+      preserveOriginal: true,
+    })
+
+    expect(result.css.match(/clamp\(/g)).toHaveLength(1)
+  })
+
   it('supports file include/exclude and functional design widths', async () => {
     const options = defineConfig({
       include: /src/,
