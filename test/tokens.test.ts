@@ -147,6 +147,13 @@ describe('theme token resolution', () => {
     expect(tokens.resolve('var(--x/* open, 8px)', 400)).toBeNull()
   })
 
+  it('does not split fallback arguments on escaped or commented commas', () => {
+    expect(table(String.raw`:root { --\,: 16px }`).resolve(String.raw`var(--\,)`, 400)).toBe(
+      '16px',
+    )
+    expect(table('.a { color: red }').resolve('var(--missing/* , */, 8px)', 400)).toBe('8px')
+  })
+
   it('matches equivalent escaped and literal custom-property names', () => {
     expect(table(String.raw`:root { --\67 ap: 16px }`).resolve('var(--gap)', 400)).toBe('16px')
     expect(table(':root { --gap: 16px }').resolve(String.raw`var(--\67 ap)`, 400)).toBe('16px')

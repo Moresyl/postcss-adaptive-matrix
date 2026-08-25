@@ -292,8 +292,26 @@ function closingParen(value: string, open: number): number {
 /** Splits `--name, fallback` on its first top-level comma. */
 function splitArguments(inner: string): { name: string; fallback: string | null } {
   let depth = 0
+  let comment = false
   for (let index = 0; index < inner.length; index += 1) {
-    const character = inner[index]
+    const character = inner[index]!
+    const next = inner[index + 1]
+    if (comment) {
+      if (character === '*' && next === '/') {
+        comment = false
+        index += 1
+      }
+      continue
+    }
+    if (character === '/' && next === '*') {
+      comment = true
+      index += 1
+      continue
+    }
+    if (character === '\\') {
+      index += 1
+      continue
+    }
     if (character === '(') depth += 1
     else if (character === ')') depth -= 1
     else if (character === ',' && depth === 0) {
