@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { convertLength, round } from '../src/core/convert.js'
+import { convertLength, createConverter, round } from '../src/core/convert.js'
 import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
 import { resolveOptions } from '../src/core/options.js'
 
@@ -161,6 +161,22 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ root: { selector: '#app', layer: ' ' } })).toThrow(
       /root\.layer cannot be empty/,
     )
+    for (const containerName of ['9page', 'two names', 'inherit', 'none']) {
+      expect(() => resolveOptions({ root: { selector: '#app', containerName } })).toThrow(
+        /containerName.*valid non-reserved unescaped CSS custom identifier/,
+      )
+    }
+    for (const layer of ['two names', 'framework..layout', 'framework,layout']) {
+      expect(() => resolveOptions({ root: { selector: '#app', layer } })).toThrow(
+        /one dot-separated CSS layer name/,
+      )
+    }
+    expect(() =>
+      resolveOptions({ root: { selector: '#app', layer: 'framework.layout' } }),
+    ).not.toThrow()
+    expect(() =>
+      resolveOptions({ root: { selector: '#app', layer: 'revert-layer' } }),
+    ).not.toThrow()
   })
 
   it('names the profile in every complaint about one', () => {
@@ -205,6 +221,12 @@ describe('configuration validation', () => {
     expect(() =>
       resolveOptions(profile({ type: 'container', name: ' ', condition: '(width > 1px)' })),
     ).toThrow(/query\.name must be a non-empty string/)
+    expect(() =>
+      resolveOptions(profile({ type: 'container', name: '9card', condition: '(width > 1px)' })),
+    ).toThrow(/query\.name.*valid non-reserved unescaped CSS custom identifier/)
+    expect(() =>
+      resolveOptions(profile({ type: 'container', name: 'initial', condition: '(width > 1px)' })),
+    ).toThrow(/query\.name.*valid non-reserved unescaped CSS custom identifier/)
   })
 
   it('rejects malformed profile containers and blank profile names', () => {
@@ -287,6 +309,11 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ unitToConvert: ['px', 16] as never })).toThrow(
       /unitToConvert\[1\] must be a unit string, not number/,
     )
+    for (const unit of ['%', 'px|rem', 'two words']) {
+      expect(() => resolveOptions({ unitToConvert: unit })).toThrow(
+        /not a valid unescaped CSS unit identifier/,
+      )
+    }
   })
 
   it('rejects a rootValue that cannot be a font size', () => {
@@ -339,6 +366,28 @@ describe('configuration validation', () => {
     expect(() =>
       convertLength(10, 'width', 'dynamic', options.profiles.dynamic!, options, ''),
     ).toThrow('invalid designWidth')
+  })
+
+  it('keeps memoised values isolated when profile names and values contain spaces', () => {
+    // These two tuples had the same old space-joined key:
+    //   ['a', 10, 20, true, '0 16px']
+    //   ['a 10', 20, 1, false, '16px']
+    // A custom text token compiled first could therefore poison a later width
+    // with a leading zero and the wrong canvas formula.
+    const options = resolveOptions({
+      defaultProfile: 'a',
+      libraries: false,
+      profiles: {
+        a: { designWidth: 10, textAnchorWidth: 20, fluid: { minWidth: 10, maxWidth: 30 } },
+        'a 10': { designWidth: 20, textAnchorWidth: 1, fluid: { minWidth: 10, maxWidth: 30 } },
+      },
+    })
+    const converter = createConverter(options)
+    converter.convert('0 16px', '--text-x', 'a', options.profiles.a!, '/app.css')
+
+    expect(converter.convert('16px', 'width', 'a 10', options.profiles['a 10']!, '/app.css')).toBe(
+      'clamp(8px, 80vw, 24px)',
+    )
   })
 
   it('rejects a textAnchorWidth that is not a positive width', () => {

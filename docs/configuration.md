@@ -91,6 +91,8 @@ unitToConvert: ['px', 'rem']
 
 There is exactly one conversion rule between units: **`rem` becomes pixels via `rootValue`; every other unit is read at face value.**
 
+Every listed unit must be an unescaped CSS identifier (`px`, `rem`, `rpx`, `dp`, etc.). A percentage is not a unit token, and punctuation or whitespace cannot occur inside one; values such as `%`, `px|rem`, or `two words` are rejected instead of being compiled into a misleading regular expression.
+
 `em` is read at face value too, deliberately. `em` is relative to the font size an element inherits, which is only known at runtime, and no build-time constant can stand in for it. Treating `em` as `rem` is correct only where the two happen to be equal — a minority of places in any stylesheet.
 
 `rootValue` governs both ends:
@@ -274,6 +276,8 @@ interface RootFoundationOptions {
 ```
 
 No global styles are injected by default. This is enabled only by configuring `root` explicitly or passing `rootSelector` to `appPcPreset`.
+
+`containerName` must be a non-reserved CSS custom identifier. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
 
 ### injectTo
 

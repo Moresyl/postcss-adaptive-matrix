@@ -17,6 +17,7 @@
  * function — that a JSON document cannot express but a config file can.
  */
 import { resolveOptions } from '../../src/core/options.js'
+import { CSS_CUSTOM_IDENTIFIER_SOURCE, CSS_IDENTIFIER_SOURCE } from '../../src/core/syntax.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -43,6 +44,10 @@ interface Field {
 type Fields<T> = { [K in keyof Required<T>]: Field }
 
 const DEFAULTS = resolveOptions()
+const CSS_IDENTIFIER_PATTERN = `^${CSS_IDENTIFIER_SOURCE}$`
+const CSS_CUSTOM_IDENTIFIER_PATTERN = `^${CSS_CUSTOM_IDENTIFIER_SOURCE}$`
+const CSS_TRIMMED_IDENTIFIER_PATTERN = `^\\s*${CSS_IDENTIFIER_SOURCE}\\s*$`
+const CSS_OPTIONAL_IDENTIFIER_PATTERN = `^(?:\\s*${CSS_IDENTIFIER_SOURCE}\\s*|\\s*)$`
 
 const PATTERN = {
   description: 'A substring, or a regular expression in a JavaScript config.',
@@ -81,6 +86,7 @@ const QUERY: Fields<AdaptiveQuery> = {
     description: 'Container name, for a container query that targets one.',
     'x-description-zh': '容器名，仅在容器查询需要指定容器时使用。',
     type: 'string',
+    pattern: CSS_CUSTOM_IDENTIFIER_PATTERN,
   },
 }
 
@@ -281,6 +287,7 @@ const ROOT: Fields<RootFoundationOptions> = {
     description: 'Name given to that container.',
     'x-description-zh': '该容器的名称。',
     type: 'string',
+    pattern: CSS_CUSTOM_IDENTIFIER_PATTERN,
   },
   safeAreaVariables: {
     description: 'Declares `env(safe-area-inset-*)` as custom properties, with zero fallbacks.',
@@ -290,7 +297,10 @@ const ROOT: Fields<RootFoundationOptions> = {
   layer: {
     description: 'Cascade layer the foundation is written into, or `false` for none.',
     'x-description-zh': '基础样式写入的层叠层；`false` 表示不使用层。',
-    oneOf: [{ type: 'string' }, { const: false }],
+    oneOf: [
+      { type: 'string', pattern: `^${CSS_IDENTIFIER_SOURCE}(?:\\.${CSS_IDENTIFIER_SOURCE})*$` },
+      { const: false },
+    ],
   },
   fixedContainingBlock: {
     description: 'Keeps `position: fixed` descendants aligned to the root column.',
@@ -372,6 +382,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     'x-description-zh': '用于选择画布的指令名。',
     type: 'string',
     minLength: 1,
+    pattern: CSS_TRIMMED_IDENTIFIER_PATTERN,
     default: DEFAULTS.atRuleName,
   },
   strategy: {
@@ -401,7 +412,14 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       'Units read as design-canvas lengths. A list reads several in one pass, which is what mixing hand-written CSS with an atomic framework needs.',
     'x-description-zh':
       '被当作设计稿长度读取的单位。传数组可一次读取多种，手写 CSS 与原子化框架混用时正需要如此。',
-    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' }, minItems: 1 }],
+    oneOf: [
+      { type: 'string', pattern: CSS_TRIMMED_IDENTIFIER_PATTERN },
+      {
+        type: 'array',
+        items: { type: 'string', pattern: CSS_OPTIONAL_IDENTIFIER_PATTERN },
+        minItems: 1,
+      },
+    ],
     default: DEFAULTS.unitToConvert,
   },
   rootValue: {

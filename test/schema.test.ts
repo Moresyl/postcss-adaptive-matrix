@@ -150,5 +150,9 @@ describe('the published options schema', () => {
     const query = (profile.properties!.query!.oneOf as Subschema[])[1]!
     expect(query.required).toEqual(['condition'])
     expect(query.additionalProperties).toBe(false)
+    expect(query.properties!.name!.pattern).toBeTypeOf('string')
+    expect(options.unitToConvert!.oneOf).toEqual(
+      expect.arrayContaining([expect.objectContaining({ pattern: expect.any(String) })]),
+    )
   })
 })

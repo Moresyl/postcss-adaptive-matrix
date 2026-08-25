@@ -454,6 +454,9 @@ describe('presets and foundation', () => {
     expect(() => appPcPreset({ rootSelector: '#app', rootLayer: '  ' })).toThrow(
       /rootLayer cannot be empty/,
     )
+    expect(() => appPcPreset({ rootSelector: '#app', rootLayer: 'two names' })).toThrow(
+      /one dot-separated CSS layer name/,
+    )
     expect(() => appPcPreset({ rootSelector: '#app', rootInjectTo: [] })).toThrow(
       /rootInjectTo cannot be an empty array/,
     )
@@ -601,6 +604,9 @@ describe('withAtomicCss', () => {
     expect(() => withAtomicCss({ routes: {} } as never)).toThrow(/base.routes must be an array/)
     expect(() => withAtomicCss({ unitToConvert: [3] } as never)).toThrow(
       /base.unitToConvert\[0\] must be a string/,
+    )
+    expect(() => withAtomicCss({ unitToConvert: '%' })).toThrow(
+      /not a valid unescaped CSS unit identifier/,
     )
     expect(() => withAtomicCss({}, null as never)).toThrow(
       /options must be an options object, not null/,

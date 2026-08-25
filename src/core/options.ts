@@ -1,5 +1,6 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
+import { isCssCustomIdentifier, isCssIdentifier, isCssLayerName } from './syntax.js'
 import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
@@ -265,6 +266,11 @@ function validateRootShape(root: unknown): void {
   if (typeof root.containerName === 'string' && !root.containerName.trim()) {
     throw new Error('[postcss-adaptive-matrix] root.containerName cannot be empty.')
   }
+  if (typeof root.containerName === 'string' && !isCssCustomIdentifier(root.containerName)) {
+    throw new Error(
+      `[postcss-adaptive-matrix] root.containerName "${root.containerName}" is not a valid non-reserved unescaped CSS custom identifier.`,
+    )
+  }
   if (root.layer !== undefined && root.layer !== false && typeof root.layer !== 'string') {
     throw new TypeError(
       `[postcss-adaptive-matrix] root.layer must be a string or false, not ${valueKind(root.layer)}.`,
@@ -272,6 +278,11 @@ function validateRootShape(root: unknown): void {
   }
   if (typeof root.layer === 'string' && !root.layer.trim()) {
     throw new Error('[postcss-adaptive-matrix] root.layer cannot be empty.')
+  }
+  if (typeof root.layer === 'string' && !isCssLayerName(root.layer)) {
+    throw new Error(
+      `[postcss-adaptive-matrix] root.layer "${root.layer}" must be one dot-separated CSS layer name, such as "adaptive-matrix" or "framework.layout".`,
+    )
   }
   if (root.injectTo !== undefined) requireFileMatchers('root.injectTo', root.injectTo)
 }
@@ -425,6 +436,11 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
           `[postcss-adaptive-matrix] Profile "${name}" query.name must be a non-empty string.`,
         )
       }
+      if (typeof profile.query.name === 'string' && !isCssCustomIdentifier(profile.query.name)) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] Profile "${name}" query.name "${profile.query.name}" is not a valid non-reserved unescaped CSS custom identifier.`,
+        )
+      }
       if (profile.query.name !== undefined && (profile.query.type ?? 'media') !== 'container') {
         throw new TypeError(
           `[postcss-adaptive-matrix] Profile "${name}" query.name only applies to container queries.`,
@@ -463,6 +479,11 @@ function normaliseUnits(input: string | readonly string[]): string[] {
     const unit = entry.trim()
     const key = unit.toLowerCase()
     if (!unit || seen.has(key)) continue
+    if (!isCssIdentifier(unit)) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] unitToConvert[${index}] "${unit}" is not a valid unescaped CSS unit identifier.`,
+      )
+    }
     seen.add(key)
     units.push(unit)
   }
@@ -542,11 +563,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       '[postcss-adaptive-matrix] atRuleName cannot be empty; it names the directive that selects a canvas, such as "adaptive".',
     )
   }
-  if (
-    !/^(?:--|-[A-Za-z_\u0080-\uFFFF]|[A-Za-z_\u0080-\uFFFF])[-A-Za-z0-9_\u0080-\uFFFF]*$/.test(
-      atRuleName,
-    )
-  ) {
+  if (!isCssIdentifier(atRuleName)) {
     throw new Error(
       `[postcss-adaptive-matrix] atRuleName "${options.atRuleName}" is not a valid unescaped CSS identifier.`,
     )

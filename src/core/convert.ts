@@ -40,7 +40,7 @@ const VIEWPORT_RELATIVE = new RegExp(
 const UNIT_PATTERNS = new Map<string, RegExp>()
 
 function unitPattern(units: string[]): RegExp {
-  const key = units.join('|')
+  const key = JSON.stringify(units.map((unit) => unit.toLowerCase()))
   const cached = UNIT_PATTERNS.get(key)
   if (cached) return cached
   const escaped = units.map((unit) => unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
@@ -425,7 +425,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       profile: AdaptiveProfile,
       file: string,
     ): string {
-      const widthKey = `${profileName} ${file}`
+      const widthKey = JSON.stringify([profileName, file])
       let resolvedWidths = widths.get(widthKey)
       if (resolvedWidths === undefined) {
         resolvedWidths = [
@@ -444,7 +444,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
 
       // The anchor belongs in the key alongside the design width: two canvases
       // can agree on the latter and still write text differently.
-      const key = `${profileName} ${designWidth} ${anchorWidth} ${accessibleText ? 1 : 0} ${value}`
+      const key = JSON.stringify([profileName, designWidth, anchorWidth, accessibleText, value])
       const cached = values.get(key)
       if (cached !== undefined) return cached
 

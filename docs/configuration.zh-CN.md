@@ -91,6 +91,8 @@ unitToConvert: ['px', 'rem']
 
 单位之间的换算规则只有一条：**`rem` 按 `rootValue` 折成像素，其它单位按面值读。**
 
+列表中的每个单位都必须是未转义 CSS 标识符（如 `px`、`rem`、`rpx`、`dp`）。百分比不是单位 token，单位内部也不能有标点或空白；`%`、`px|rem`、`two words` 这类值会直接被拒绝，不会被编成含义误导的正则。
+
 `em` 也按面值读，这是刻意的。`em` 相对的是元素继承来的字号，那是运行时才知道的事，构建期没有任何常数能替它。把 `em` 当 `rem` 处理，只在两者恰好相等的地方是对的——而那在一份样式表里是少数。
 
 `rootValue` 同时管两头：
@@ -274,6 +276,8 @@ interface RootFoundationOptions {
 ```
 
 默认不注入全局样式。只有显式配置 `root` 或在 `appPcPreset` 传 `rootSelector` 才启用。
+
+`containerName` 必须是非保留 CSS custom-ident；`layer` 必须是 `adaptive-matrix`、`framework.layout` 这类单个点分层名。空格、逗号、空片段或 CSS-wide 关键字都会在生成非法 `container-name` / `@layer` 前被拒绝。命名容器 profile 的 `query.name` 遵守同一 custom-ident 规则。
 
 ### injectTo
 

@@ -4,6 +4,7 @@ import type {
   AppPcPresetOptions,
   AtomicCssOptions,
 } from './types.js'
+import { isCssIdentifier, isCssLayerName } from './syntax.js'
 import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 
 const APP_PC_PRESET_KEYS = [
@@ -97,6 +98,11 @@ function validateAppPcPresetOptions(value: unknown): asserts value is AppPcPrese
   if (typeof value.rootLayer === 'string' && !value.rootLayer.trim()) {
     throw new TypeError('[postcss-adaptive-matrix] appPcPreset options.rootLayer cannot be empty.')
   }
+  if (typeof value.rootLayer === 'string' && !isCssLayerName(value.rootLayer)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] appPcPreset options.rootLayer "${value.rootLayer}" must be one dot-separated CSS layer name.`,
+    )
+  }
   if (value.rootInjectTo !== undefined) {
     requireFileMatchers('appPcPreset options.rootInjectTo', value.rootInjectTo)
   }
@@ -162,7 +168,21 @@ function validateAtomicCssBase(value: unknown): asserts value is AdaptiveMatrixO
           `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert[${index}] must be a string, not ${valueKind(unit)}.`,
         )
       }
+      if (unit.trim() && !isCssIdentifier(unit.trim())) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert[${index}] "${unit.trim()}" is not a valid unescaped CSS unit identifier.`,
+        )
+      }
     }
+  }
+  if (
+    typeof value.unitToConvert === 'string' &&
+    value.unitToConvert.trim() &&
+    !isCssIdentifier(value.unitToConvert.trim())
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert "${value.unitToConvert.trim()}" is not a valid unescaped CSS unit identifier.`,
+    )
   }
   for (const field of ['routes', 'textProperties'] as const) {
     if (value[field] !== undefined && !Array.isArray(value[field])) {
