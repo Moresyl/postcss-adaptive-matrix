@@ -1,4 +1,5 @@
 import { toArray } from './matchers.js'
+import { rejectUnknownKeys } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -134,6 +135,17 @@ const REGISTRY: Record<string, RegistryEntry> = {
   },
 }
 
+const LIBRARY_KEYS = [
+  'name',
+  'extends',
+  'designWidth',
+  'prefix',
+  'tokenPrefix',
+  'file',
+  'scoped',
+  'basedOn',
+] as const
+
 export const BUILT_IN_LIBRARIES = Object.freeze(Object.keys(REGISTRY).sort())
 
 /**
@@ -248,6 +260,7 @@ export function resolveLibrary(entry: LibraryEntry): LibraryAdaptation {
       `[postcss-adaptive-matrix] A library entry must be a built-in name or options object, not ${libraryValueKind(entry)}.`,
     )
   }
+  rejectUnknownKeys('library', entry, LIBRARY_KEYS)
 
   if (entry.extends !== undefined) {
     if (typeof entry.extends !== 'string' || !entry.extends.trim()) {

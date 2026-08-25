@@ -458,6 +458,22 @@ describe('runCli', () => {
     expect(out).toBe('')
   })
 
+  it('reports a misspelled JSON field with a suggestion before reading input', async () => {
+    const config = join(directory, 'typo.config.json')
+    await writeFile(config, JSON.stringify({ minPixeValue: 2 }), 'utf8')
+
+    expect(
+      await runCli([join(directory, 'absent.css'), '-c', config, '--json', '--no-color']),
+    ).toBe(1)
+    expect(err).toBe('')
+    expect(JSON.parse(out)).toMatchObject({
+      formatVersion: 1,
+      ok: false,
+      error: { message: expect.stringMatching(/minPixeValue.*Did you mean "minPixelValue"/) },
+    })
+    expect(out).not.toContain('absent.css')
+  })
+
   it('reports the exact path of a malformed JSON option without a stack trace', async () => {
     const config = join(directory, 'invalid.config.json')
     await writeFile(

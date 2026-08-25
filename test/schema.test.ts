@@ -147,5 +147,8 @@ describe('the published options schema', () => {
     // anything, and the compiler throws rather than guessing one.
     const profile = options.profiles!.additionalProperties as Subschema
     expect(profile.required).toEqual(['designWidth', 'fluid'])
+    const query = (profile.properties!.query!.oneOf as Subschema[])[1]!
+    expect(query.required).toEqual(['condition'])
+    expect(query.additionalProperties).toBe(false)
   })
 })

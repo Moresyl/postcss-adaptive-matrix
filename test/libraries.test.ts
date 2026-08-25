@@ -56,6 +56,14 @@ describe('resolveLibrary', () => {
     expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: ' ' })).toThrow(
       /file cannot be empty/,
     )
+    expect(() =>
+      resolveLibrary({
+        name: 'kit',
+        designWidth: 375,
+        tokenPrefix: '--kit-',
+        tokenPrefx: '--typo-',
+      } as never),
+    ).toThrow(/library\.tokenPrefx.*Did you mean "tokenPrefix"/)
   })
 
   it('exposes the typed library-list convenience API', () => {

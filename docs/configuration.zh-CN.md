@@ -54,10 +54,13 @@ propList: ['*', '!border*', '!box-shadow']
 | `fontFluidity: NaN` / `rootMaxWidth: Infinity` | 输出 `NaNrem` 或 `Infinitypx`；声明无效并被浏览器丢弃 |
 | `query: { type: 'media' }` | 输出 `@media undefined`，把原本有效的规则包进无效查询 |
 | `propList: 'width'` | JavaScript/JSON 结构错误；不前置校验就会在深处泄漏 `.every is not a function` |
+| `minPixeValue: 2` | 未知字段；不拦截就会被混入选项后静默忽略，错误会建议 `minPixelValue` |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
 | `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |
 
 `unit` 与 `strategy` 在 profile 级别同样校验。集合成员及嵌套的 route、query、root、library 字段都会带完整路径校验（例如 `routes[0].media[1].minWidth`），因此 JavaScript 配置也会得到与公开 JSON Schema 一样的前置保护。
+
+每层对象都和 Schema 的 `additionalProperties: false` 一样是封闭的：顶层选项，或 `profiles`、`fluid`、`query`、`routes`、`media`、`root`、`libraries` 内字段一旦拼错，绝不会静默忽略。能明确判断为相近字段时（短名字两次编辑内，长名字三次），错误会直接给建议；完全无关的键只拒绝，不乱猜。
 
 ### unknownProfile
 

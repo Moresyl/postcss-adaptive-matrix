@@ -54,10 +54,13 @@ A configuration usually lives in a `.mjs` file with no type checking behind it, 
 | `fontFluidity: NaN` / `rootMaxWidth: Infinity` | Writes `NaNrem` or `Infinitypx`; the declaration is invalid and the browser drops it |
 | `query: { type: 'media' }` | Writes `@media undefined`, an invalid wrapper around otherwise valid rules |
 | `propList: 'width'` | A JavaScript/JSON shape error that would otherwise escape later as an internal `.every is not a function` |
+| `minPixeValue: 2` | An unknown field that would otherwise be spread into the options and ignored; the error suggests `minPixelValue` |
 | `root.selector: ''` | Compiles to `:where()`, which is a parse error — the whole foundation, safe-area variables included, is discarded |
 | `textAnchorWidth: 0` | Division by zero, turning every text length into `Infinity` |
 
 `unit` and `strategy` are validated at profile level too. Collection members and nested route, query, root, and library fields are checked with their full path (for example `routes[0].media[1].minWidth`), so JavaScript configs receive the same early protection as JSON files backed by the published schema.
+
+Objects are closed at every level, just like the schema's `additionalProperties: false`: a misspelled top-level option or a field inside `profiles`, `fluid`, `query`, `routes`, `media`, `root`, or `libraries` is never silently ignored. When an unambiguous field is within two edits (three for a long name), the error names it; unrelated keys are rejected without inventing a guess.
 
 ### unknownProfile
 

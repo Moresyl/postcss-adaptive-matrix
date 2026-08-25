@@ -1,5 +1,6 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
 import { appPcPreset } from './presets.js'
+import { rejectUnknownKeys } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -69,6 +70,58 @@ const RESERVED_AT_RULES = new Set([
 ])
 
 const UNKNOWN_PROFILE_POLICIES = new Set(['warn', 'error', 'ignore'])
+
+const OPTION_KEYS = [
+  'profiles',
+  'defaultProfile',
+  'routes',
+  'libraries',
+  'atRuleName',
+  'strategy',
+  'unit',
+  'precision',
+  'unitToConvert',
+  'rootValue',
+  'minPixelValue',
+  'hairline',
+  'fontFluidity',
+  'textProperties',
+  'propList',
+  'selectorExclude',
+  'valueExclude',
+  'include',
+  'exclude',
+  'transformCustomProperties',
+  'preserveOriginal',
+  'root',
+  'unknownProfile',
+] as const satisfies readonly (keyof AdaptiveMatrixOptions)[]
+
+const ROUTE_KEYS = ['profile', 'file', 'selector', 'property', 'media'] as const
+const MEDIA_KEYS = ['minWidth', 'maxWidth'] as const
+const ROOT_KEYS = [
+  'selector',
+  'center',
+  'container',
+  'containerName',
+  'safeAreaVariables',
+  'layer',
+  'fixedContainingBlock',
+  'logical',
+  'injectTo',
+] as const
+const PROFILE_KEYS = [
+  'designWidth',
+  'fluid',
+  'query',
+  'unit',
+  'strategy',
+  'fontFluidity',
+  'textAnchorWidth',
+  'rootMaxWidth',
+] as const
+const FLUID_KEYS = ['minWidth', 'maxWidth'] as const
+const QUERY_KEYS = ['type', 'condition', 'name'] as const
 
 function valueKind(value: unknown): string {
   if (value instanceof RegExp) return 'a regular expression'
@@ -156,6 +209,7 @@ function validateRouteShape(route: unknown, index: number): void {
       `[postcss-adaptive-matrix] ${path} must be an object, not ${valueKind(route)}.`,
     )
   }
+  rejectUnknownKeys(path, route, ROUTE_KEYS)
   if (route.profile !== false && typeof route.profile !== 'string') {
     throw new TypeError(
       `[postcss-adaptive-matrix] ${path}.profile must be a profile name or false, not ${valueKind(route.profile)}.`,
@@ -203,13 +257,7 @@ function validateRouteShape(route: unknown, index: number): void {
           `[postcss-adaptive-matrix] ${path}.media[${matcherIndex}] must be an object, not ${valueKind(matcher)}.`,
         )
       }
-      for (const field of Object.keys(matcher)) {
-        if (field !== 'minWidth' && field !== 'maxWidth') {
-          throw new TypeError(
-            `[postcss-adaptive-matrix] ${path}.media[${matcherIndex}].${field} is not a supported media bound.`,
-          )
-        }
-      }
+      rejectUnknownKeys(`${path}.media[${matcherIndex}]`, matcher, MEDIA_KEYS)
     }
   }
   if (
@@ -231,6 +279,7 @@ function validateRootShape(root: unknown): void {
       `[postcss-adaptive-matrix] root must be false or an options object, not ${valueKind(root)}.`,
     )
   }
+  rejectUnknownKeys('root', root, ROOT_KEYS)
   if (typeof root.selector !== 'string') {
     throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
   }
@@ -268,6 +317,7 @@ function validateInputShape(input: unknown): void {
       `[postcss-adaptive-matrix] Options must be an object, not ${valueKind(input)}.`,
     )
   }
+  rejectUnknownKeys('options', input, OPTION_KEYS)
   if (input.profiles !== undefined && !isObject(input.profiles)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] profiles must be an object keyed by profile name, not ${valueKind(input.profiles)}.`,
@@ -324,9 +374,12 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
   if (!isObject(profile)) {
     throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" must be an object.`)
   }
+  const path = `profiles[${JSON.stringify(name)}]`
+  rejectUnknownKeys(path, profile, PROFILE_KEYS)
   if (!isObject(profile.fluid)) {
     throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" fluid must be an object.`)
   }
+  rejectUnknownKeys(`${path}.fluid`, profile.fluid, FLUID_KEYS)
   const { minWidth, maxWidth } = profile.fluid
   if (
     !Number.isFinite(minWidth) ||
@@ -384,6 +437,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
           `[postcss-adaptive-matrix] Profile "${name}" query must be a string, query object or false.`,
         )
       }
+      rejectUnknownKeys(`${path}.query`, profile.query, QUERY_KEYS)
       if (typeof profile.query.condition !== 'string' || !profile.query.condition.trim()) {
         throw new TypeError(
           `[postcss-adaptive-matrix] Profile "${name}" query.condition must be a non-empty string.`,

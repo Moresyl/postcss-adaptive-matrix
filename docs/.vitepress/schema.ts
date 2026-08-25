@@ -119,7 +119,7 @@ const PROFILE: Fields<AdaptiveProfile> = {
     'x-description-zh': '`@adaptive <画布>` 生成的包裹层；`false` 表示不包裹。',
     oneOf: [
       { type: 'string' },
-      { type: 'object', properties: QUERY, required: ['condition'] },
+      { type: 'object', properties: QUERY, required: ['condition'], additionalProperties: false },
       { const: false },
     ],
   },

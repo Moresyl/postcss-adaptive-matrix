@@ -71,6 +71,62 @@ describe('configuration validation', () => {
   })
 
   it.each([
+    [{ minPixeValue: 2 }, /options\.minPixeValue.*Did you mean "minPixelValue"/],
+    [
+      {
+        profiles: {
+          app: {
+            designWidht: 375,
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+          },
+        },
+      },
+      /profiles\["app"\]\.designWidht.*Did you mean "designWidth"/,
+    ],
+    [
+      {
+        profiles: {
+          app: { designWidth: 375, fluid: { minWdth: 320, minWidth: 320, maxWidth: 480 } },
+        },
+      },
+      /profiles\["app"\]\.fluid\.minWdth.*Did you mean "minWidth"/,
+    ],
+    [
+      {
+        profiles: {
+          app: {
+            designWidth: 375,
+            fluid: { minWidth: 320, maxWidth: 480 },
+            query: { condition: '(width > 1px)', conditon: '(width > 2px)' },
+          },
+        },
+      },
+      /profiles\["app"\]\.query\.conditon.*Did you mean "condition"/,
+    ],
+    [
+      { routes: [{ profile: 'app', selector: '.a', selectr: '.b' }] },
+      /routes\[0\]\.selectr.*Did you mean "selector"/,
+    ],
+    [
+      { routes: [{ profile: 'app', media: { minWidth: 320, maxWidht: 480 } }] },
+      /routes\[0\]\.media\[0\]\.maxWidht.*Did you mean "maxWidth"/,
+    ],
+    [
+      { root: { selector: '#app', containerNme: 'page' } },
+      /root\.containerNme.*Did you mean "containerName"/,
+    ],
+  ] as const)('rejects a misspelled configuration field %#', (input, message) => {
+    expect(() => resolveOptions(input as never)).toThrow(message)
+  })
+
+  it('does not invent a suggestion for an unrelated unknown field', () => {
+    expect(() => resolveOptions({ banana: true } as never)).toThrow(
+      /options\.banana is not a supported configuration field\.$/,
+    )
+  })
+
+  it.each([
     [{ textProperties: [16] }, /textProperties\[0\].*must be a string/],
     [{ propList: [' '] }, /propList\[0\] cannot be empty/],
     [{ selectorExclude: [16] }, /selectorExclude\[0\].*string or regular expression/],
