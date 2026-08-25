@@ -64,6 +64,7 @@ export interface CompatFeature {
 // recognises neither in JavaScript, so using it here would let declarations
 // such as `--间距` or `--\95f4\8ddd` disappear from the browser-support audit.
 const CUSTOM_PROPERTY_DECLARATION = String.raw`(?:^|[;{\s])--(?:\\(?:[0-9a-f]{1,6}[ \t\r\n\f]?|[^\r\n\f0-9a-f])|[-_a-z0-9\u0080-\uFFFF])+\s*:`
+const FUNCTION_START = String.raw`(?:^|[^-_a-z0-9\\\u0080-\uFFFF])`
 const DIMENSION_START = String.raw`(?:^|[^\w.\\\-\u0080-\uFFFF])${CSS_NUMBER_SOURCE}`
 const DIMENSION_END = String.raw`(?![-_a-z0-9\\\u0080-\uFFFF])`
 
@@ -148,7 +149,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
       'Each declaration holding one is dropped, so the property falls back to whatever it inherits or to its initial value. Not a slightly wrong size: no size at all.',
     fallback:
       "strategy: 'viewport' emits a bare viewport length instead, which is supported almost everywhere but has no bounds — the design keeps scaling past the ends of its fluid range. preserveOriginal: true is the other half: it keeps the authored pixel value as a preceding declaration, so a browser that drops the fluid one lands on the design-canvas size rather than on nothing. The two compose.",
-    detect: /(?:^|[^\w-])(?:clamp|min|max)\(/i,
+    detect: new RegExp(`${FUNCTION_START}(?:clamp|min|max)\\(`, 'i'),
   },
   {
     id: 'container-query-units',
@@ -198,7 +199,10 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     // A declaration counts as much as a reference: `--adaptive-safe-top: …`
     // is already the feature, and a browser that cannot parse it never gets
     // as far as the `var()` that would have read it.
-    detect: new RegExp(String.raw`var\(\s*--|${CUSTOM_PROPERTY_DECLARATION}`, 'i'),
+    detect: new RegExp(
+      `${FUNCTION_START}var\\(\\s*--|${CUSTOM_PROPERTY_DECLARATION}`,
+      'i',
+    ),
   },
   {
     id: 'env-function',
@@ -209,7 +213,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
       'Worth being precise about, because the fallback argument does not do what it looks like it does. The 0px in env(safe-area-inset-top, 0px) covers an environment variable the browser knows but has no value for — not a browser that has never heard of env(). Where the function itself is unsupported, --adaptive-safe-top holds an unreadable value, and every declaration reading it through var() is dropped at computed-value time.',
     fallback:
       'root.safeAreaVariables: false. Every browser lacking env() also predates the notches it exists to clear, so there is nothing to compensate for.',
-    detect: /\benv\(/i,
+    detect: new RegExp(`${FUNCTION_START}env\\(`, 'i'),
   },
   {
     id: 'viewport-units',

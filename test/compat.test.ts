@@ -188,6 +188,13 @@ describe('detection', () => {
     expect(found).not.toContain('viewport-units')
   })
 
+  it('does not read function names out of longer or international identifiers', () => {
+    const found = ids('.a { a: 宽clamp(1px,2px,3px); b: xvar(--x); c: myenv(foo) }')
+    expect(found).not.toContain('math-functions')
+    expect(found).not.toContain('custom-properties')
+    expect(found).not.toContain('env-function')
+  })
+
   it('uses the complete CSS number grammar for viewport and container units', () => {
     const found = ids('.a { a: -2vw; b: +.5vi; c: -1e2cqi }')
     expect(found).toContain('viewport-units')
