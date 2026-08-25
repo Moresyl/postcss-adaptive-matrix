@@ -1,6 +1,7 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { allMatch, boundaryOf, widthConditions } from './media.js'
+import { decodeCssIdentifier } from './syntax.js'
 
 /**
  * Resolves `var()` references against the theme tokens declared in the same
@@ -99,7 +100,7 @@ export function collectTokens(root: Root): TokenTable {
 
   root.walkDecls((declaration: Declaration) => {
     if (!declaration.prop.startsWith('--')) return
-    const name = declaration.prop.trim()
+    const name = decodeCssIdentifier(declaration.prop.trim())
 
     const conditions: string[] = []
     let readable = true
@@ -357,19 +358,20 @@ function substitute(
 
     const { name, fallback } = splitArguments(value.slice(start + 4, end))
     if (!isCustomPropertyName(name)) return null
+    const canonicalName = decodeCssIdentifier(name)
 
     // `--a: var(--b); --b: var(--a)` is invalid CSS, not a length. Guard
     // anyway: a stylesheet is an input, and inputs are not always valid.
-    if (active.has(name)) return null
+    if (active.has(canonicalName)) return null
 
-    const resolution = lookup(name, width)
+    const resolution = lookup(canonicalName, width)
     if (resolution.status === 'unknown') return null
 
     let replacement: string | null
     if (resolution.status === 'value') {
-      active.add(name)
+      active.add(canonicalName)
       replacement = substitute(resolution.value, width, lookup, active, depth + 1)
-      active.delete(name)
+      active.delete(canonicalName)
     } else if (fallback !== null) {
       replacement = substitute(fallback, width, lookup, active, depth + 1)
     } else {

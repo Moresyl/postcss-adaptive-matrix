@@ -42,6 +42,41 @@ export function isCssLayerName(value: string): boolean {
   return value.split('.').every((part) => isCssIdentifier(part))
 }
 
+/** Decodes CSS identifier escapes without changing case. */
+export function decodeCssIdentifier(value: string): string {
+  let output = ''
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index]!
+    if (character !== '\\') {
+      output += character
+      continue
+    }
+
+    let cursor = index + 1
+    let hex = ''
+    while (cursor < value.length && hex.length < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
+      hex += value[cursor]!
+      cursor += 1
+    }
+    if (hex) {
+      const codePoint = Number.parseInt(hex, 16)
+      output +=
+        codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)
+          ? '\uFFFD'
+          : String.fromCodePoint(codePoint)
+      if (/\s/.test(value[cursor] ?? '')) {
+        if (value[cursor] === '\r' && value[cursor + 1] === '\n') cursor += 1
+        cursor += 1
+      }
+      index = cursor - 1
+    } else if (cursor < value.length) {
+      output += value[cursor]!
+      index = cursor
+    }
+  }
+  return output
+}
+
 /**
  * Reports structural syntax that can escape or swallow a generated wrapper.
  *

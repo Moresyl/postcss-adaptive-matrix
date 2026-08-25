@@ -140,6 +140,12 @@ describe('theme token resolution', () => {
     expect(tokens.resolve(String.raw`var(--\g, 16px)`, 400)).toBe('16px')
   })
 
+  it('matches equivalent escaped and literal custom-property names', () => {
+    expect(table(String.raw`:root { --\67 ap: 16px }`).resolve('var(--gap)', 400)).toBe('16px')
+    expect(table(':root { --gap: 16px }').resolve(String.raw`var(--\67 ap)`, 400)).toBe('16px')
+    expect(table(':root { --Gap: 16px }').resolve('var(--gap)', 400)).toBeNull()
+  })
+
   it('leaves env() unresolved, so a safe-area value stays unknown', () => {
     // The foundation layer writes `--adaptive-safe-top: env(...)`. Substituting
     // it is correct and still yields nothing a number can be put to, which is

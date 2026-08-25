@@ -1,3 +1,5 @@
+import { decodeCssIdentifier } from './syntax.js'
+
 /**
  * Selector structure: which element a selector actually matches, and what
  * splitting it would cost.
@@ -170,37 +172,6 @@ interface Pseudo {
   after: number
 }
 
-/** Decodes the escapes that CSS identifiers use for pseudo-class names. */
-function decodeIdentifier(value: string): string {
-  let output = ''
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index]!
-    if (character !== '\\') {
-      output += character
-      continue
-    }
-    let cursor = index + 1
-    let hex = ''
-    while (cursor < value.length && hex.length < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
-      hex += value[cursor]!
-      cursor += 1
-    }
-    if (hex) {
-      const codePoint = Number.parseInt(hex, 16)
-      output +=
-        codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)
-          ? '\uFFFD'
-          : String.fromCodePoint(codePoint)
-      if (/\s/.test(value[cursor] ?? '')) cursor += 1
-      index = cursor - 1
-    } else if (cursor < value.length) {
-      output += value[cursor]!
-      index = cursor
-    }
-  }
-  return output
-}
-
 /** Reads the pseudo-class or pseudo-element starting at the colon at `start`. */
 function readPseudo(selector: string, start: number): Pseudo | null {
   const doubled = selector[start + 1] === ':'
@@ -208,7 +179,7 @@ function readPseudo(selector: string, start: number): Pseudo | null {
   const nameStart = index
   index = identifierEnd(selector, index)
   if (index === nameStart) return null
-  const name = decodeIdentifier(selector.slice(nameStart, index)).toLowerCase()
+  const name = decodeCssIdentifier(selector.slice(nameStart, index)).toLowerCase()
   return {
     name,
     element: doubled || LEGACY_PSEUDO_ELEMENTS.has(name),
