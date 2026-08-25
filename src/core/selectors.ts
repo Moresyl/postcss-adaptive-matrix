@@ -1,4 +1,4 @@
-import { decodeCssIdentifier } from './syntax.js'
+import { decodeCssIdentifier, isCssWhitespace } from './syntax.js'
 
 /**
  * Selector structure: which element a selector actually matches, and what
@@ -74,7 +74,7 @@ function identifierEnd(value: string, start: number): number {
       digits += 1
       cursor += 1
     }
-    if (digits && /\s/.test(value[cursor] ?? '')) {
+    if (digits && isCssWhitespace(value[cursor] ?? '')) {
       if (value[cursor] === '\r' && value[cursor + 1] === '\n') cursor += 1
       cursor += 1
     } else if (!digits && cursor < value.length) {

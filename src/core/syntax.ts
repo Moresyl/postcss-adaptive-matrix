@@ -29,6 +29,11 @@ export const CSS_CUSTOM_IDENTIFIER_SOURCE = `(?!(?:${CSS_WIDE_OR_RESERVED.map(as
 
 const CSS_CUSTOM_IDENTIFIER = new RegExp(`^${CSS_CUSTOM_IDENTIFIER_SOURCE}$`)
 
+/** The five code points CSS Syntax defines as whitespace. */
+export function isCssWhitespace(character: string): boolean {
+  return /[ \t\r\n\f]/.test(character)
+}
+
 export function isCssIdentifier(value: string): boolean {
   return CSS_IDENTIFIER.test(value)
 }
@@ -64,7 +69,7 @@ export function decodeCssIdentifier(value: string): string {
         codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)
           ? '\uFFFD'
           : String.fromCodePoint(codePoint)
-      if (/\s/.test(value[cursor] ?? '')) {
+      if (isCssWhitespace(value[cursor] ?? '')) {
         if (value[cursor] === '\r' && value[cursor + 1] === '\n') cursor += 1
         cursor += 1
       }

@@ -101,9 +101,7 @@ describe('theme token resolution', () => {
   it('does not substitute var-shaped text inside strings or comments', () => {
     const tokens = table(':root { --x: 16px }')
     expect(tokens.resolve('"var(--missing)" VAR(--x)', 400)).toBe('"var(--missing)" 16px')
-    expect(tokens.resolve('/* var(--missing) */ var(--x)', 400)).toBe(
-      '/* var(--missing) */ 16px',
-    )
+    expect(tokens.resolve('/* var(--missing) */ var(--x)', 400)).toBe('/* var(--missing) */ 16px')
     expect(tokens.resolve(String.raw`"escaped \" var(--missing)" var(--x)`, 400)).toBe(
       String.raw`"escaped \" var(--missing)" 16px`,
     )
@@ -148,9 +146,7 @@ describe('theme token resolution', () => {
   })
 
   it('does not split fallback arguments on escaped or commented commas', () => {
-    expect(table(String.raw`:root { --\,: 16px }`).resolve(String.raw`var(--\,)`, 400)).toBe(
-      '16px',
-    )
+    expect(table(String.raw`:root { --\,: 16px }`).resolve(String.raw`var(--\,)`, 400)).toBe('16px')
     expect(table('.a { color: red }').resolve('var(--missing/* , */, 8px)', 400)).toBe('8px')
   })
 
@@ -158,6 +154,12 @@ describe('theme token resolution', () => {
     expect(table(String.raw`:root { --\67 ap: 16px }`).resolve('var(--gap)', 400)).toBe('16px')
     expect(table(':root { --gap: 16px }').resolve(String.raw`var(--\67 ap)`, 400)).toBe('16px')
     expect(table(':root { --Gap: 16px }').resolve('var(--gap)', 400)).toBeNull()
+  })
+
+  it('does not consume non-CSS whitespace after a hexadecimal escape', () => {
+    const tokens = table(':root { --x\\31\u00a0a: 16px; --x1a: 8px }')
+    expect(tokens.resolve('var(--x\\31\u00a0a)', 400)).toBe('16px')
+    expect(tokens.resolve('var(--x1a)', 400)).toBe('8px')
   })
 
   it('leaves env() unresolved, so a safe-area value stays unknown', () => {

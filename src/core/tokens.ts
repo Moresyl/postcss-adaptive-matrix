@@ -1,7 +1,7 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { allMatch, boundaryOf, widthConditions } from './media.js'
-import { decodeCssIdentifier } from './syntax.js'
+import { decodeCssIdentifier, isCssWhitespace } from './syntax.js'
 
 /**
  * Resolves `var()` references against the theme tokens declared in the same
@@ -339,7 +339,7 @@ function isCustomPropertyName(name: string): boolean {
       cursor += 1
     }
     if (digits) {
-      if (/\s/.test(name[cursor] ?? '')) {
+      if (isCssWhitespace(name[cursor] ?? '')) {
         if (name[cursor] === '\r' && name[cursor + 1] === '\n') cursor += 1
         cursor += 1
       }

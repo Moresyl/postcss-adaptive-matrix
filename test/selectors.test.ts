@@ -58,6 +58,11 @@ describe('routingSelector', () => {
     expect(specificity(String.raw`:n\6f t(#main, .item)`)).toEqual([1, 0, 0])
   })
 
+  it('does not consume non-CSS whitespace after a hexadecimal escape', () => {
+    const selector = ':n\\6f\u00a0t(.van-cell)'
+    expect(routingSelector(selector)).toBe(selector)
+  })
+
   it('leaves an ordinary selector byte-for-byte alone', () => {
     for (const selector of ['.a > .b', 'div[title="x, y"]::before', '.a:hover', '*']) {
       expect(routingSelector(selector)).toBe(selector)
