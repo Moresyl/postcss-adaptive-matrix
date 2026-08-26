@@ -226,15 +226,14 @@ file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }
 ## libraries
 
 ```ts
-type LibraryEntry =
-  | string                                              // 内置名称
-  | LibraryAdaptation                                   // 完整定义
-  | (Partial<LibraryAdaptation> & { extends: string })  // 基于内置项修改
+type LibraryEntry = string | LibraryAdaptation
 
 libraries?: LibraryEntry[] | 'auto' | false
 ```
 
 默认 `'auto'`：全部内置库生效，使用 Vant 或 Element Plus 的项目不需要任何配置。`false` 整体关闭。给出数组则只启用列出的条目。
+
+继承条目最少只需 `{ extends: 'vant' }`，`name` 与 `designWidth` 会从内置定义取得。独立自定义条目没有推断来源，因此仍必须提供这两个字段。
 
 条目展开成若干条路由，追加在 `routes` 之后——显式路由永远优先。
 

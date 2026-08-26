@@ -256,13 +256,15 @@ You can still handle things yourself with explicit `routes`, `exclude: /node_mod
 
 ```ts
 type LibraryEntry =
-  | string                                              // a built-in name
-  | LibraryAdaptation                                   // a complete definition
-  | (Partial<LibraryAdaptation> & { extends: string })  // adjust a built-in
+  | string
+  | LibraryAdaptation
 
-interface LibraryAdaptation {
-  name: string
-  designWidth: number | false
+type LibraryAdaptation = LibraryAdaptationOptions & (
+  | { extends: string; name?: string; designWidth?: number | false }
+  | { extends?: never; name: string; designWidth: number | false }
+)
+
+interface LibraryAdaptationOptions {
   prefix?: string | string[]
   tokenPrefix?: string | string[]
   file?: FileMatcher | FileMatcher[]
@@ -270,6 +272,8 @@ interface LibraryAdaptation {
   basedOn?: string
 }
 ```
+
+An inherited entry gets `name` and `designWidth` from the built-in, so `{ extends: 'vant' }` is complete. A standalone definition has nowhere to infer them from and still requires both.
 
 `basedOn` says which profile's fluid range, unit and strategy to borrow; it defaults to `defaultProfile`. The derived canvas replaces only `designWidth`, so it stops growing at the same viewport width as the page — which is exactly why the components and the page stay aligned.
 

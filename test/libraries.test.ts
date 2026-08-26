@@ -10,15 +10,25 @@ import {
 } from '../src/core/libraries.js'
 import { resolveOptions } from '../src/core/options.js'
 import { createProfileResolver } from '../src/core/resolve.js'
-import type { AdaptiveProfile, LibraryEntry } from '../src/core/types.js'
+import type { AdaptiveProfile, LibraryAdaptation, LibraryEntry } from '../src/core/types.js'
 
 const PROFILES: Record<string, AdaptiveProfile> = {
   app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 }, unit: 'vw' },
 }
 
+// @ts-expect-error A standalone definition has nowhere to inherit its identity or canvas from.
+const INCOMPLETE_LIBRARY: LibraryAdaptation = { prefix: 'incomplete-' }
+void INCOMPLETE_LIBRARY
+
 describe('resolveLibrary', () => {
   it('looks up a built-in by name', () => {
     expect(resolveLibrary('vant').designWidth).toBe(375)
+  })
+
+  it('lets the public adaptation type inherit fields it does not need to repeat', () => {
+    const inherited: LibraryAdaptation = { extends: 'vant' }
+
+    expect(resolveLibrary(inherited)).toMatchObject({ name: 'vant', designWidth: 375 })
   })
 
   it('passes a custom definition through untouched', () => {

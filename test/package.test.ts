@@ -78,6 +78,8 @@ describeBuilt('the built package', () => {
     // named export statement. They live in a merged namespace instead.
     expect(declarations).toContain('declare namespace _cjs')
     expect(declarations).toContain('type AdaptiveMatrixOptions')
+    expect(declarations).toContain('type LibraryEntry')
+    expect(declarations).toContain('type ResolvedLibraryAdaptation')
     expect(declarations).toContain('type CliJsonReport')
     expect(declarations).toContain('default: typeof adaptiveMatrix')
 

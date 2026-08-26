@@ -7,6 +7,7 @@ import type {
   AdaptiveRoute,
   LibraryAdaptation,
   LibraryEntry,
+  ResolvedLibraryAdaptation,
 } from './types.js'
 
 /**
@@ -23,7 +24,7 @@ import type {
  *
  * Anything not listed is one object away: pass a `LibraryAdaptation` directly.
  */
-interface RegistryEntry extends LibraryAdaptation {
+interface RegistryEntry extends ResolvedLibraryAdaptation {
   /**
    * False when the class prefix is too short to enable without being asked.
    *
@@ -192,7 +193,7 @@ function validateStringList(name: string, value: unknown): readonly string[] {
   return entries as readonly string[]
 }
 
-function validateLibraryPrefixes(library: LibraryAdaptation): void {
+function validateLibraryPrefixes(library: ResolvedLibraryAdaptation): void {
   const prefixes = validateStringList(`Library "${library.name}" prefix`, library.prefix)
   for (const [index, prefix] of prefixes.entries()) {
     const path = Array.isArray(library.prefix)
@@ -239,42 +240,47 @@ function validateLibraryFile(name: string, value: unknown): void {
   }
 }
 
-function validateLibrary(library: LibraryAdaptation): LibraryAdaptation {
+function validateLibrary(library: LibraryAdaptation): ResolvedLibraryAdaptation {
   if (typeof library.name !== 'string' || !library.name.trim()) {
     throw new TypeError('[postcss-adaptive-matrix] A library needs a name; it cannot be empty.')
   }
-  if (library.name !== library.name.trim()) {
+  const name = library.name
+  if (name !== name.trim()) {
     throw new TypeError(
-      `[postcss-adaptive-matrix] Library name "${library.name}" cannot have surrounding whitespace.`,
+      `[postcss-adaptive-matrix] Library name "${name}" cannot have surrounding whitespace.`,
     )
   }
+  const designWidth = library.designWidth
   if (
-    library.designWidth !== false &&
-    (!Number.isFinite(library.designWidth) || library.designWidth <= 0)
+    designWidth !== false &&
+    (typeof designWidth !== 'number' || !Number.isFinite(designWidth) || designWidth <= 0)
   ) {
     throw new RangeError(
-      `[postcss-adaptive-matrix] Library "${library.name}" requires a positive designWidth, or false to leave it unconverted.`,
+      `[postcss-adaptive-matrix] Library "${name}" requires a positive designWidth, or false to leave it unconverted.`,
     )
   }
-  validateLibraryPrefixes(library)
-  validateLibraryFile(`Library "${library.name}" file`, library.file)
-  if (library.scoped !== undefined && typeof library.scoped !== 'boolean') {
-    throw new TypeError(
-      `[postcss-adaptive-matrix] Library "${library.name}" scoped must be a boolean.`,
-    )
+  // Both required fields are now runtime-proven. Keep a standalone definition
+  // referentially intact; callers may use it as a stable configuration value.
+  const resolved = library as ResolvedLibraryAdaptation
+  validateLibraryPrefixes(resolved)
+  validateLibraryFile(`Library "${name}" file`, resolved.file)
+  if (resolved.scoped !== undefined && typeof resolved.scoped !== 'boolean') {
+    throw new TypeError(`[postcss-adaptive-matrix] Library "${name}" scoped must be a boolean.`)
   }
   if (
-    library.basedOn !== undefined &&
-    (typeof library.basedOn !== 'string' || !library.basedOn.trim())
+    resolved.basedOn !== undefined &&
+    (typeof resolved.basedOn !== 'string' || !resolved.basedOn.trim())
   ) {
     throw new TypeError(
-      `[postcss-adaptive-matrix] Library "${library.name}" basedOn must be a non-empty profile name.`,
+      `[postcss-adaptive-matrix] Library "${name}" basedOn must be a non-empty profile name.`,
     )
   }
-  return library
+  return resolved
 }
 
-function assertUniqueLibraryNames(libraries: LibraryAdaptation[]): LibraryAdaptation[] {
+function assertUniqueLibraryNames(
+  libraries: ResolvedLibraryAdaptation[],
+): ResolvedLibraryAdaptation[] {
   const names = new Set<string>()
   for (const library of libraries) {
     if (names.has(library.name)) {
@@ -288,7 +294,7 @@ function assertUniqueLibraryNames(libraries: LibraryAdaptation[]): LibraryAdapta
 }
 
 /** Drops `autoPrefix`, which is a registry concern and not part of the model. */
-function withoutRegistryFields(entry: RegistryEntry): LibraryAdaptation {
+function withoutRegistryFields(entry: RegistryEntry): ResolvedLibraryAdaptation {
   const { autoPrefix: _autoPrefix, ...library } = entry
   return library
 }
@@ -297,7 +303,7 @@ function withoutRegistryFields(entry: RegistryEntry): LibraryAdaptation {
  * Resolves one entry: a built-in name, a definition extending a built-in, or a
  * standalone definition.
  */
-export function resolveLibrary(entry: LibraryEntry): LibraryAdaptation {
+export function resolveLibrary(entry: LibraryEntry): ResolvedLibraryAdaptation {
   if (typeof entry === 'string') {
     const found = REGISTRY[entry]
     if (!found) throw unknownLibrary(entry)
@@ -323,7 +329,7 @@ export function resolveLibrary(entry: LibraryEntry): LibraryAdaptation {
     return validateLibrary({ ...withoutRegistryFields(base), name: base.name, ...overrides })
   }
 
-  return validateLibrary(entry as LibraryAdaptation)
+  return validateLibrary(entry)
 }
 
 /**
@@ -332,7 +338,7 @@ export function resolveLibrary(entry: LibraryEntry): LibraryAdaptation {
  * Libraries whose prefix is too generic keep only their path match here; see
  * `autoPrefix`.
  */
-export function autoLibraries(): LibraryAdaptation[] {
+export function autoLibraries(): ResolvedLibraryAdaptation[] {
   return BUILT_IN_LIBRARIES.map((name) => {
     const entry = REGISTRY[name]!
     const library = withoutRegistryFields(entry)
@@ -342,7 +348,9 @@ export function autoLibraries(): LibraryAdaptation[] {
 }
 
 /** Normalises the `libraries` option, including its `'auto'` and `false` forms. */
-export function resolveLibraries(input: AdaptiveMatrixOptions['libraries']): LibraryAdaptation[] {
+export function resolveLibraries(
+  input: AdaptiveMatrixOptions['libraries'],
+): ResolvedLibraryAdaptation[] {
   if (input === false) return []
   if (input === undefined || input === 'auto') return autoLibraries()
   if (!Array.isArray(input)) {
@@ -362,7 +370,7 @@ export function resolveLibraries(input: AdaptiveMatrixOptions['libraries']): Lib
 export const LIBRARY_PROFILE_PREFIX = 'library:'
 
 /** Name of the profile synthesised for a library's own canvas. */
-export function libraryProfileName(library: LibraryAdaptation): string {
+export function libraryProfileName(library: ResolvedLibraryAdaptation): string {
   return `${LIBRARY_PROFILE_PREFIX}${library.name}`
 }
 
@@ -381,7 +389,7 @@ export interface LibraryExpansion {
  * never emit a media wrapper of its own.
  */
 export function expandLibraries(
-  libraries: LibraryAdaptation[],
+  libraries: ResolvedLibraryAdaptation[],
   profiles: Record<string, AdaptiveProfile>,
   defaultProfile: string,
 ): LibraryExpansion {
@@ -461,6 +469,6 @@ export function expandLibraries(
 /** Convenience for configs: `libraries: [...]` without repeating the type. */
 export function defineLibraries(
   libraries: NonNullable<AdaptiveMatrixOptions['libraries']>,
-): LibraryAdaptation[] {
+): ResolvedLibraryAdaptation[] {
   return resolveLibraries(libraries)
 }

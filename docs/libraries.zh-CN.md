@@ -256,13 +256,15 @@ adaptiveMatrix({ libraries: false })
 
 ```ts
 type LibraryEntry =
-  | string                                              // 内置名称
-  | LibraryAdaptation                                   // 完整定义
-  | (Partial<LibraryAdaptation> & { extends: string })  // 基于内置项修改
+  | string
+  | LibraryAdaptation
 
-interface LibraryAdaptation {
-  name: string
-  designWidth: number | false
+type LibraryAdaptation = LibraryAdaptationOptions & (
+  | { extends: string; name?: string; designWidth?: number | false }
+  | { extends?: never; name: string; designWidth: number | false }
+)
+
+interface LibraryAdaptationOptions {
   prefix?: string | string[]
   tokenPrefix?: string | string[]
   file?: FileMatcher | FileMatcher[]
@@ -270,6 +272,8 @@ interface LibraryAdaptation {
   basedOn?: string
 }
 ```
+
+继承条目的 `name` 与 `designWidth` 取自内置定义，因此 `{ extends: 'vant' }` 已经完整。独立定义没有可推断来源，仍必须同时提供这两个字段。
 
 `basedOn` 指定借用哪张 profile 的流体区间、单位与策略，默认 `defaultProfile`。派生画布只替换 `designWidth`，因此它与页面在同一个视口宽度上停止增长——这正是组件和页面能保持对齐的原因。
 

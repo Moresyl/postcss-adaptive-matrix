@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- `LibraryAdaptation` now models its two valid shapes directly: an inherited entry requires only `extends`, while a standalone custom library still requires `name` and `designWidth`. Explicitly annotating `{ extends: 'vant' }` no longer makes TypeScript demand fields the runtime, schema and documentation already inherit.
 - The dead-band diagnostic now requires a conversion to generate a real `clamp()`/`min()`/`max()` bound. Static text marked as `calc(<rem>)` and unbounded output marked as `calc(<viewport-length>)` are not pinned by the profile's fluid interval, so they no longer produce misleading route warnings.
 - Static text routed through a differently scaled library canvas now remains idempotent when `rem` is also an input unit. The generated restatement carries a structural `calc(<rem>)` marker, so a consuming build cannot silently anchor `2rem` into `4rem` on its second pass.
 - Unbounded default-strategy output now uses the value-equivalent `calc(<viewport-length>)` spelling, and static text uses `calc(<rem>)`. Generated values remain identifiable to a second build and to continuity gates even without fluid bounds; explicit `strategy: 'viewport'` stays bare for compatibility.

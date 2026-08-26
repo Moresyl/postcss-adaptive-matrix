@@ -115,9 +115,12 @@ export interface MediaMatcher {
  * distorts it. Both are wrong, and both are what a plain ignore-list forces.
  * Giving the library its own canvas is what actually makes it fit.
  */
-export interface LibraryAdaptation {
-  /** Used in the derived profile name and in diagnostics. */
-  name: string
+export interface LibraryAdaptationOptions {
+  /**
+   * Used in the derived profile name and in diagnostics. Inherits the built-in
+   * name when `extends` is present.
+   */
+  name?: string
   /**
    * Built-in to start from, so a single field can be corrected without
    * restating the rest. Useful when a project themes a library onto its own
@@ -128,7 +131,7 @@ export interface LibraryAdaptation {
    * Canvas the library was authored against, or `false` to keep its lengths in
    * fixed pixels — the right answer for desktop libraries sized in real pixels.
    */
-  designWidth: number | false
+  designWidth?: number | false
   /** Class prefixes, with an optional dot. Matched on selectors, so inlined CSS still routes. */
   prefix?: string | readonly string[]
   /**
@@ -161,11 +164,27 @@ export interface LibraryAdaptation {
 }
 
 /**
+ * A custom library definition or an override of a built-in definition.
+ *
+ * Extending a built-in supplies its identity and canvas, so neither field has
+ * to be repeated. A standalone definition has no source for those values and
+ * therefore still requires both.
+ */
+export type LibraryAdaptation = LibraryAdaptationOptions &
+  ({ extends: string } | { extends?: never; name: string; designWidth: number | false })
+
+/** A library definition after a built-in, if any, has been inherited. */
+export interface ResolvedLibraryAdaptation extends LibraryAdaptationOptions {
+  name: string
+  designWidth: number | false
+  extends?: never
+}
+
+/**
  * One entry of the `libraries` option: a built-in name, a full definition, or a
  * correction layered onto a built-in.
  */
-export type LibraryEntry =
-  string | LibraryAdaptation | (Partial<LibraryAdaptation> & { extends: string })
+export type LibraryEntry = string | LibraryAdaptation
 
 export interface RootFoundationOptions {
   /** Element that carries the layout. Defaults to `:root`. */
@@ -285,7 +304,7 @@ export interface ResolvedAdaptiveMatrixOptions extends Omit<
   include?: FileMatcher | readonly FileMatcher[]
   exclude?: FileMatcher | readonly FileMatcher[]
   /** Built-in names already looked up, so nothing downstream consults the registry. */
-  libraries: LibraryAdaptation[]
+  libraries: ResolvedLibraryAdaptation[]
 }
 
 export interface AppPcPresetOptions {

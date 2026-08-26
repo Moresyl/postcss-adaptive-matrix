@@ -23,7 +23,7 @@ import type {
   AdaptiveProfile,
   AdaptiveQuery,
   AdaptiveRoute,
-  LibraryAdaptation,
+  LibraryAdaptationOptions,
   MediaMatcher,
   RootFoundationOptions,
 } from '../../src/core/types.js'
@@ -218,7 +218,7 @@ const ROUTE: Fields<AdaptiveRoute> = {
   }),
 }
 
-const LIBRARY: Fields<LibraryAdaptation> = {
+const LIBRARY: Fields<LibraryAdaptationOptions> = {
   name: {
     description: 'Used in the derived profile name and in diagnostics.',
     'x-description-zh': '用于派生画布的命名与诊断信息。',
