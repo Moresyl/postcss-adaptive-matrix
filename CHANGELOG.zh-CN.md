@@ -6,6 +6,7 @@
 
 ### 正确性与诊断
 
+- 导出的核心 `convertValue()` API 现在有省略/单侧 fluid 边界、多长度值、按文件画布函数及非法动态结果的直接合约测试，不再只依赖 PostCSS 插件入口的间接覆盖。
 - `appPcPreset({ container: false })` 与 `{ fixedContainingBlock: false }` 不再仅因字段出现就启用整套 root 基础样式。root 缺席时这些能力本来就关闭，因此 false 现在保持“不注入全局 CSS”的默认；true 仍会启用 root，真正有意义的 root 专属配置也保留原有简写行为。
 - 可选视口观察器现在用 `null` 表示“没有动画帧”，因此标准允许的句柄 `0` 仍能被合并与取消。销毁操作永久且幂等：竞态中已取得的监听回调无法再排入销毁后写入，手动 `update()` 在清理后返回 `null`。
 - Profile 名及其在 `defaultProfile`、路由、组件库 `basedOn` 和 `withAtomicCss` 中的引用现在会拒绝首尾空白，避免创建会被 `@adaptive` 先裁剪、因而永远选不中的画布。内部空格仍受支持并有测试覆盖，`a 10` 这类现有名称会保持精确身份。

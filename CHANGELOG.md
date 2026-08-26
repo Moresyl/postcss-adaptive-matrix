@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- The exported core `convertValue()` API now has direct contract coverage for omitted and one-sided fluid bounds, multi-length values, file-aware canvas functions and invalid dynamic results, rather than relying on indirect PostCSS-plugin coverage alone.
 - `appPcPreset({ container: false })` and `{ fixedContainingBlock: false }` no longer enable the entire root foundation merely because the keys are present. These capabilities are already off while root is absent, so their false values now preserve the no-global-CSS default; `true` still enables root, and meaningful root-only settings retain their existing shorthand behaviour.
 - The optional viewport observer now uses `null` as its idle animation-frame sentinel, so a standards-valid handle of `0` is still coalesced and cancelled. Destruction is permanent and idempotent: a racing captured listener cannot queue a post-destroy write, and manual `update()` returns `null` after teardown.
 - Profile names and their references in `defaultProfile`, routes, library `basedOn`, and `withAtomicCss` now reject surrounding whitespace before it can create a canvas that `@adaptive` trims and therefore can never select. Internal spaces remain supported and tested, so existing names such as `a 10` keep their exact identity.

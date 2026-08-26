@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { convertLength, createConverter, round } from '../src/core/convert.js'
+import { convertLength, convertValue, createConverter, round } from '../src/core/convert.js'
 import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
 import { resolveOptions } from '../src/core/options.js'
 
@@ -625,6 +625,48 @@ describe('configuration validation', () => {
     expect(() => convertLength(10, 'font-size', 'a', options.profiles.a!, options, '')).toThrow(
       'invalid textAnchorWidth',
     )
+  })
+})
+
+describe('convertValue public core API', () => {
+  it('uses omitted and one-sided fluid bounds exactly like the PostCSS entry', () => {
+    const unbounded = resolveOptions({
+      libraries: false,
+      hairline: 0,
+      profiles: { app: 400 },
+    })
+    const upperBounded = resolveOptions({
+      libraries: false,
+      hairline: 0,
+      profiles: { app: { designWidth: 400, fluid: { maxWidth: 600 } } },
+    })
+
+    expect(convertValue('40px 20px', 'margin', 'app', unbounded.profiles.app!, unbounded, '')).toBe(
+      'calc(10vw) calc(5vw)',
+    )
+    expect(
+      convertValue('40px 20px', 'margin', 'app', upperBounded.profiles.app!, upperBounded, ''),
+    ).toBe('min(10vw, 60px) min(5vw, 30px)')
+  })
+
+  it('resolves file-aware canvas functions and names an invalid result', () => {
+    const options = resolveOptions({
+      libraries: false,
+      hairline: 0,
+      profiles: { app: ({ file }) => (file.includes('wide') ? 800 : 400) },
+    })
+
+    expect(convertValue('40px', 'width', 'app', options.profiles.app!, options, '/wide.css')).toBe(
+      'calc(5vw)',
+    )
+
+    const invalid = resolveOptions({
+      libraries: false,
+      profiles: { app: () => Number.NaN },
+    })
+    expect(() =>
+      convertValue('40px', 'width', 'app', invalid.profiles.app!, invalid, '/broken.css'),
+    ).toThrow(/invalid designWidth for "\/broken\.css"/)
   })
 })
 
