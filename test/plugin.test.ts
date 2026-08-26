@@ -581,6 +581,19 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('@adaptive watch')
   })
 
+  it('does not resolve inherited object names as adaptive profiles', async () => {
+    const unknown = await process('@adaptive toString { .a { width: 20px } }')
+    expect(unknown.warnings()[0]?.text).toContain('Unknown adaptive profile "toString"')
+    expect(unknown.css).toContain('@adaptive toString')
+
+    const configured = await process('@adaptive constructor { .a { width: 20px } }', {
+      profiles: { constructor: 400 },
+      libraries: false,
+    })
+    expect(configured.warnings()).toEqual([])
+    expect(configured.css).toContain('width: calc(5vw)')
+  })
+
   it('does not tell an unknown profile error to enable the mode it is already in', async () => {
     const failure = await process('@adaptive watch { .a { width: 20px } }', {
       unknownProfile: 'error',
