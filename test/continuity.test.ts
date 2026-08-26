@@ -1,5 +1,6 @@
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
+import adaptiveMatrix from '../src/index.js'
 import { findContinuityIssues } from '../src/core/continuity.js'
 import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 
@@ -76,6 +77,26 @@ const check = (css: string) => findContinuityIssues(postcss.parse(css))
 const fluid = (value: number) => `min(${value}px, 100vw)`
 
 describe('findContinuityIssues', () => {
+  it('tracks unbounded compiler output across a profile breakpoint', async () => {
+    const result = await postcss([
+      adaptiveMatrix({
+        defaultProfile: 'app',
+        libraries: false,
+        hairline: 0,
+        profiles: {
+          app: { designWidth: 400, query: '(max-width: 767.98px)' },
+          pc: { designWidth: 800, query: '(min-width: 768px)' },
+        },
+      }),
+    ]).process('.card { width: 40px } @adaptive pc { .card { width: 20px } }', {
+      from: '/project/src/app.css',
+    })
+
+    expect(result.css).toContain('calc(10vw)')
+    expect(result.css).toContain('calc(2.5vw)')
+    expect(findContinuityIssues(result.root)).toHaveLength(1)
+  })
+
   it('finds a length that shrinks as the viewport grows', () => {
     // Measured in Chrome before this check existed: a card authored at 16px on
     // a 375 canvas and 18px on a 1440 canvas renders 17.57px at 767px and

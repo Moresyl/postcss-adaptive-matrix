@@ -138,7 +138,7 @@ Every formula this compiler emits is non-decreasing in **absolute value** across
 
 A bigger tap target on a phone, tightened up above 600px — both numbers were written by a person who compared them. Quasar is a "keep pixels" entry, neither side was converted, and reporting it would be noise.
 
-So a report requires **at least one side to be a compiler-produced formula**. There is no unwrapped spelling of a bounded fluid size: every viewport-dependent length this compiler emits sits inside `clamp()` / `min()` / `max()` / `calc()` (no exception across all 69 conformance fixtures), which is how the check decides. One side converted and the other not still reports — that is precisely a canvas change, and nobody compared those two numbers.
+So a report requires **at least one side to be a compiler-produced formula**. Under the default math strategy every generated length has a function wrapper: two bounds use `clamp()`, one uses `min()` / `max()`, and an unbounded or static preferred value uses the equivalent `calc(value)` marker. That is how the check distinguishes generated output without mistaking deliberately authored breakpoint pixels for a seam. The explicit compatibility mode `strategy: 'viewport'` remains bare and therefore outside this diagnostic; its whole purpose is avoiding math functions. One side converted and the other not still reports — that is precisely a canvas change, and nobody compared those two numbers.
 
 Substitution happens before the decision, so "the declaration is just `var(--x)` and the formula is in the token" counts too.
 

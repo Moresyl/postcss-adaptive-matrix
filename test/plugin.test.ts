@@ -63,8 +63,8 @@ describe('adaptiveMatrix', () => {
       ).css
 
     const unbounded = await compile()
-    expect(unbounded).toContain('width: 10vw')
-    expect(unbounded).toContain('margin: -10vw')
+    expect(unbounded).toContain('width: calc(10vw)')
+    expect(unbounded).toContain('margin: calc(-10vw)')
     expect(await compile({})).toBe(unbounded)
 
     const lowerBounded = await compile({ minWidth: 320 })
@@ -91,6 +91,19 @@ describe('adaptiveMatrix', () => {
 
     expect(once.css).toContain('calc(0.65rem + 1.4vw)')
     expect(twice.css).toBe(once.css)
+  })
+
+  it('only treats calc(rem) as a static-text marker when text is configured static', async () => {
+    const base = withAtomicCss({
+      defaultProfile: 'app',
+      libraries: false,
+      profiles: { app: { designWidth: 400 } },
+    })
+    const fluid = await process('.a { font-size: calc(2rem) }', base)
+    const fixed = await process('.a { font-size: calc(2rem) }', { ...base, fontFluidity: 0 })
+
+    expect(fluid.css).toContain('vw')
+    expect(fixed.css).toBe('.a { font-size: calc(2rem) }')
   })
 
   it('still converts authored pixel terms inside an unbounded fluid text calc', async () => {
@@ -197,6 +210,15 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('height: 16px宽')
     expect(result.css).toContain(String.raw`margin: \31 6px`)
     expect(result.css).toContain('padding: clamp(13.65333px, 4.26667vw, 20.48px)')
+  })
+
+  it('does not consume non-CSS whitespace as a hexadecimal escape terminator', async () => {
+    const result = await process(String.raw`.a { width: x\31${'\u000b'}6px; height: 6px }`, {
+      hairline: 0,
+    })
+
+    expect(result.css).not.toContain(`${'\u000b'}6px`)
+    expect(result.css).toContain(`${'\u000b'}clamp(`)
   })
 
   it('honors property, selector, value, and comment exclusions', async () => {

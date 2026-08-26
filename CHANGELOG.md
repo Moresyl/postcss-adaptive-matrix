@@ -6,6 +6,10 @@
 
 ### Correctness and diagnostics
 
+- The dead-band diagnostic now requires a conversion to generate a real `clamp()`/`min()`/`max()` bound. Static text marked as `calc(<rem>)` and unbounded output marked as `calc(<viewport-length>)` are not pinned by the profile's fluid interval, so they no longer produce misleading route warnings.
+- Static text routed through a differently scaled library canvas now remains idempotent when `rem` is also an input unit. The generated restatement carries a structural `calc(<rem>)` marker, so a consuming build cannot silently anchor `2rem` into `4rem` on its second pass.
+- Unbounded default-strategy output now uses the value-equivalent `calc(<viewport-length>)` spelling, and static text uses `calc(<rem>)`. Generated values remain identifiable to a second build and to continuity gates even without fluid bounds; explicit `strategy: 'viewport'` stays bare for compatibility.
+- Hex-escape continuation detection now uses CSS's exact five whitespace code points. Vertical tab and other JavaScript-only whitespace no longer hide a real following dimension from conversion after the value parser separates it.
 - Profile `fluid`, `fluid.minWidth`, and `fluid.maxWidth` are now independently optional. No bounds emits the preferred viewport expression, either bound emits `min()`/`max()`, and both retain `clamp()`; validation applies only to values actually supplied.
 - `root.selector` is now optional and resolves to `:root`. An empty `root: {}` can enable the default foundation without repeating a selector the compiler already knows.
 - `appPcPreset({ root: true })` and its root-specific settings now enable the same `:root` foundation without requiring `rootSelector`. A sole custom profile is also inferred as `defaultProfile`; ambiguity across multiple non-`app` profiles still fails explicitly.

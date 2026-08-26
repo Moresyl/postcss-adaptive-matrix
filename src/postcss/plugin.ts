@@ -159,6 +159,8 @@ interface ProcessorContext {
    * only honest test for that is whether a conversion happened.
    */
   converted: number
+  /** Newly generated clamp/min/max expressions, read as a per-rule delta. */
+  bounded: number
 }
 
 function transformDeclaration(
@@ -189,13 +191,15 @@ function transformDeclaration(
     return
   }
 
-  const converted = context.converter.convert(
-    declaration.value,
+  const original = declaration.value
+  const conversion = context.converter.convertWithMetadata(
+    original,
     declaration.prop,
     target.name,
     target.profile,
     file,
   )
+  const converted = conversion.value
   if (converted === declaration.value || isFollowedByEquivalent(declaration, converted)) {
     return
   }
@@ -205,6 +209,7 @@ function transformDeclaration(
     declaration.value = converted
   }
   context.converted += 1
+  if (conversion.generatedBounds) context.bounded += 1
 }
 
 /**
@@ -243,8 +248,11 @@ function transformRule(rule: Rule, inherited: ActiveProfile, context: ProcessorC
   warnOnSplitSelectorList(rule, inherited, active, context)
 
   const before = context.converted
+  const boundedBefore = context.bounded
   processContainer(rule, active, context, true)
-  if (context.converted > before) warnOnDeadBand(rule, inherited, active, context)
+  if (context.converted > before) {
+    warnOnDeadBand(rule, inherited, active, context, context.bounded > boundedBefore)
+  }
 
   if (context.correctsFixed) correctFixedRule(rule)
 }
@@ -355,6 +363,7 @@ function warnOnDeadBand(
   inherited: ActiveProfile,
   active: ActiveProfile,
   context: ProcessorContext,
+  generatedBounds: boolean,
 ): void {
   const band = context.band
   if (!band || !active.convert) return
@@ -370,6 +379,9 @@ function warnOnDeadBand(
     )
     return
   }
+  // Static text and unbounded default output carry calc() as an idempotence
+  // marker, but neither is constrained by the profile's fluid interval.
+  if (!generatedBounds) return
   // Bare viewport lengths have no bounds to fall outside of.
   const strategy = active.profile.strategy ?? context.options.strategy
   if (strategy !== 'clamp') return
@@ -655,6 +667,7 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOption
         {
           atRuleName,
           band: EVERY_WIDTH,
+          bounded: 0,
           converted: 0,
           converter,
           correctsFixed,

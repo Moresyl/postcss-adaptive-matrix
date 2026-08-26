@@ -212,16 +212,16 @@ routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
 
 ### The warning you get for free
 
-You do not have to know about any of this to find the problem. When a rule converts a length and its band lies entirely outside its canvas's fluid range, the compiler says so:
+You do not have to know about any of this to find the problem. When a rule generates a bounded length and its band lies entirely outside its canvas's fluid range, the compiler says so:
 
 ```
 Every converted length here is a constant: this rule is live from 1024px up, but canvas
-"app" stops scaling outside 320px–600px, so its clamp() is pinned to its maximum across
+"app" stops scaling outside 320px–600px, so its bounded expression is pinned to its maximum across
 that whole range. The numbers in a breakpoint are usually measured on a different design
 file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
 ```
 
-This is arithmetic, not a heuristic: two numbers that do not overlap. It is reported once per canvas per band per file, and only for rules that actually converted something — a breakpoint that only changes `display` and `color` has no lengths to be constant about.
+This is arithmetic, not a heuristic: two numbers that do not overlap. It is reported once per canvas per band per file, and only for rules whose conversion generated `clamp()`, `min()` or `max()` — a breakpoint that only changes `display` and `color`, deliberately static text, and an unbounded viewport expression have no generated bounds to pin.
 
 ## libraries
 

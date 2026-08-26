@@ -13,17 +13,11 @@ import type { AdaptiveMatrixOptions } from '../src/index.js'
  *
  * The combination worth naming is `withAtomicCss` with a static text setting.
  * Atomic mode adds `rem` to `unitToConvert`, and text is normally written as
- * `rem + vw`; the `vw` is what tells a second pass the value is already
- * compiled. Take it away — `fontFluidity: 0` — and `font-size: 32px` becomes a
- * bare `font-size: 2rem`, which the next pass reads as a design length and
- * converts all over again.
- *
- * It survives, but not because anything defends it: `rootValue` is used at both
- * ends, so 32 ÷ 16 written and 2 × 16 read are exact inverses and the value is
- * its own fixed point. That is a property of the arithmetic rather than a rule
- * anybody wrote down, which is precisely why it wants a test. Change either end
- * of that division and the failure is silent — no error, no warning, just text
- * that shrinks a little more on every save in a watch loop.
+ * `rem + vw`; the function wrapper tells a second pass the value is already
+ * compiled. `fontFluidity: 0` removes the fluid half, so the compiler preserves
+ * the same trace as `calc(2rem)`. Without it, a library canvas whose text is
+ * restated against the page canvas applies that ratio again on every pass:
+ * 2rem silently becomes 4rem.
  *
  * A second pass is not a hypothetical. A package that ships pre-compiled CSS
  * goes through the consuming application's pipeline again; so does anything a
@@ -84,6 +78,33 @@ describe('a second pass over compiled output', () => {
     const once = await compile('.a { font-size: 32px }', options)
     expect(once).toContain('rem')
     expect(once).not.toContain('vw')
+    expect(await compile(once, options)).toBe(once)
+  })
+
+  it('does not rescale static text routed through a different library canvas', async () => {
+    const options = {
+      ...withAtomicCss(base),
+      fontFluidity: 0,
+      libraries: [{ name: 'probe', designWidth: 375, prefix: 'probe-' }],
+    } satisfies AdaptiveMatrixOptions
+    const once = await compile('.probe-title { font-size: 16px }', options)
+
+    // 16px on the library's 375 canvas is the same design size as 32px on the
+    // page's 750 canvas, hence 2rem. A second pass used to anchor that 2rem a
+    // second time and silently turn it into 4rem.
+    expect(once).toContain('2rem')
+    expect(await compile(once, options)).toBe(once)
+  })
+
+  it('keeps an unbounded marker stable when the output unit is also readable input', async () => {
+    const options = {
+      ...base,
+      profiles: { app: { designWidth: 750 } },
+      unitToConvert: ['px', 'vw'],
+    } satisfies AdaptiveMatrixOptions
+    const once = await compile('.a { width: 75px }', options)
+
+    expect(once).toContain('calc(10vw)')
     expect(await compile(once, options)).toBe(once)
   })
 

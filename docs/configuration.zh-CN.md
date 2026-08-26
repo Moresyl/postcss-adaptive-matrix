@@ -212,16 +212,16 @@ routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
 
 ### 白送的那条告警
 
-上面这些你一条都不用先知道，也能发现问题。只要一条规则确实换算了长度、而它的生效区间又整个落在所属画布的流体区间之外，编译器就会说出来：
+上面这些你一条都不用先知道，也能发现问题。只要一条规则确实生成了带边界的长度、而它的生效区间又整个落在所属画布的流体区间之外，编译器就会说出来：
 
 ```
 Every converted length here is a constant: this rule is live from 1024px up, but canvas
-"app" stops scaling outside 320px–600px, so its clamp() is pinned to its maximum across
+"app" stops scaling outside 320px–600px, so its bounded expression is pinned to its maximum across
 that whole range. The numbers in a breakpoint are usually measured on a different design
 file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
 ```
 
-这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对真的换算了东西的规则报——一段只改 `display` 和 `color` 的断点里没有长度，也就无所谓常量不常量。
+这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对换算后确实新增 `clamp()`、`min()` 或 `max()` 的规则报——只改 `display` 和 `color` 的断点、刻意保持静态的文字、无边界视口表达式，都没有可被钉住的生成边界。
 
 ## libraries
 

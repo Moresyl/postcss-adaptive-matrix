@@ -287,6 +287,16 @@ describe('the dead-band warning', () => {
     expect(warnings).toEqual([])
   })
 
+  it('stays quiet for deliberately static text, which has no fluid bounds', async () => {
+    const { css, warnings } = await run('@media (min-width: 1024px) { .a { font-size: 40px } }', {
+      ...base,
+      fontFluidity: 0,
+    })
+
+    expect(css).toContain('calc(')
+    expect(warnings).toEqual([])
+  })
+
   it('stays quiet where the band and the canvas overlap', async () => {
     const { warnings } = await run('@media (min-width: 400px) { .a { padding: 40px } }', base)
     expect(warnings).toEqual([])

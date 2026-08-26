@@ -6,7 +6,7 @@ import type {
   ResolvedAdaptiveMatrixOptions,
   ScaleUnit,
 } from './types.js'
-import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { CSS_NUMBER_SOURCE, isCssWhitespace } from './syntax.js'
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
@@ -30,7 +30,12 @@ const VIEWPORT_RELATIVE = new RegExp(
   `(?:^|[^\\w.-])${CSS_NUMBER_SOURCE}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\\w-])`,
   'i',
 )
+const VIEWPORT_RELATIVE_EXACT = new RegExp(
+  `^${CSS_NUMBER_SOURCE}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))$`,
+  'i',
+)
 const ROOT_RELATIVE = new RegExp(`(?:^|[^\\w.-])${CSS_NUMBER_SOURCE}rem(?![\\w-])`, 'i')
+const ROOT_RELATIVE_EXACT = new RegExp(`^${CSS_NUMBER_SOURCE}rem$`, 'i')
 
 /**
  * The unit pattern depends only on `unitToConvert`, so it is built once per
@@ -269,14 +274,22 @@ function convertResolvedLength(
     options.precision,
     options.rootValue,
   )
+  // A function is the structural trace that distinguishes generated output
+  // from authored lengths on a later pass and in continuity diagnostics.
+  // Hybrid text already has calc(); a bare viewport or static-rem preferred
+  // value gets the zero-cost equivalent spelling. This is especially important
+  // for a library canvas: without the marker, 2rem can be anchored into 4rem
+  // when a consuming build reads the precompiled stylesheet again.
+  const compiledPreferred = preferred.startsWith('calc(') ? preferred : `calc(${preferred})`
+  if (accessibleText && fluidity === 0) return compiledPreferred
   const { minWidth, maxWidth } = profile.fluid ?? {}
-  if (minWidth === undefined && maxWidth === undefined) return preferred
+  if (minWidth === undefined && maxWidth === undefined) return compiledPreferred
 
   const formatBoundary = (width: number): string =>
     `${format(boundaryValue(scaled, canvas, fluidity, width) / divisor, options.precision)}${boundaryUnit}`
   if (minWidth === undefined || maxWidth === undefined) {
     const boundary = formatBoundary(minWidth ?? maxWidth!)
-    if (boundary === preferred) return preferred
+    if (boundary === preferred) return compiledPreferred
     const lowerBounded = minWidth !== undefined
     const fn = lowerBounded === scaled >= 0 ? 'max' : 'min'
     return `${fn}(${preferred}, ${boundary})`
@@ -286,8 +299,10 @@ function convertResolvedLength(
   const end = boundaryValue(scaled, canvas, fluidity, maxWidth)
   const lowerBound = format(Math.min(start, end) / divisor, options.precision)
   const upperBound = format(Math.max(start, end) / divisor, options.precision)
-  // Nothing can move between identical bounds, so a clamp() would be dead weight.
-  if (lowerBound === upperBound) return `${lowerBound}${boundaryUnit}`
+  // Nothing can move between identical bounds, so clamp() would be dead
+  // weight. Keep the lightweight function marker: generated output must remain
+  // distinguishable from authored pixels/rem on a later pass and at a seam.
+  if (lowerBound === upperBound) return `calc(${lowerBound}${boundaryUnit})`
   return `clamp(${lowerBound}${boundaryUnit}, ${preferred}, ${upperBound}${boundaryUnit})`
 }
 
@@ -336,15 +351,28 @@ function containsRelativeLength(nodes: Node[], pattern: RegExp): boolean {
  * otherwise scale the generated static half on a second pass. A layout
  * `calc(100vw - 32px)` still converts: its pixel term is a design measurement.
  */
-function isAlreadyFluid(node: Node, accessibleText: boolean): boolean {
+function isAlreadyFluid(node: Node, accessibleText: boolean, staticText: boolean): boolean {
   if (node.type !== 'function') return false
   const hasViewportLength = containsRelativeLength(node.nodes, VIEWPORT_RELATIVE)
   if (BOUNDING_FUNCTIONS.has(node.value.toLowerCase())) return hasViewportLength
-  return (
-    accessibleText &&
+  const isUnboundedMarker =
     node.value.toLowerCase() === 'calc' &&
-    hasViewportLength &&
-    containsRelativeLength(node.nodes, ROOT_RELATIVE)
+    node.nodes.length === 1 &&
+    node.nodes[0]!.type === 'word' &&
+    VIEWPORT_RELATIVE_EXACT.test(node.nodes[0]!.value)
+  const isStaticTextMarker =
+    staticText &&
+    node.value.toLowerCase() === 'calc' &&
+    node.nodes.length === 1 &&
+    node.nodes[0]!.type === 'word' &&
+    ROOT_RELATIVE_EXACT.test(node.nodes[0]!.value)
+  return (
+    isUnboundedMarker ||
+    isStaticTextMarker ||
+    (accessibleText &&
+      node.value.toLowerCase() === 'calc' &&
+      hasViewportLength &&
+      containsRelativeLength(node.nodes, ROOT_RELATIVE))
   )
 }
 
@@ -356,7 +384,7 @@ function isAlreadyFluid(node: Node, accessibleText: boolean): boolean {
  * word. Converting that apparent dimension would mutate an identifier.
  */
 function continuesHexEscape(value: string, index: number): boolean {
-  if (index === 0 || !/\s/.test(value[index - 1]!)) return false
+  if (index === 0 || !isCssWhitespace(value[index - 1]!)) return false
   let cursor = index - 2
   // CRLF is one CSS newline and may be the single whitespace consumed after
   // an escape, even though it occupies two JavaScript code units.
@@ -376,11 +404,13 @@ function convertResolvedValue(
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
-): string {
+): { value: string; generatedBounds: boolean } {
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
+  const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
+  let generatedBounds = false
   parsed.walk((node) => {
-    if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText)) return false
+    if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText, staticText)) return false
     if (node.type !== 'word') return undefined
     if (continuesHexEscape(value, node.sourceIndex)) return undefined
     node.value = node.value.replace(
@@ -410,12 +440,19 @@ function convertResolvedValue(
           options,
           unit,
         )
+        if (
+          converted.startsWith('clamp(') ||
+          converted.startsWith('min(') ||
+          converted.startsWith('max(')
+        ) {
+          generatedBounds = true
+        }
         return `${prefix}${converted}`
       },
     )
     return undefined
   })
-  return valueParser.stringify(parsed.nodes)
+  return { value: valueParser.stringify(parsed.nodes), generatedBounds }
 }
 
 export function convertValue(
@@ -433,7 +470,7 @@ export function convertValue(
     isAccessibleTextProperty(property, options),
     profile,
     options,
-  )
+  ).value
 }
 
 /** Cleared wholesale rather than evicted; the point is a ceiling, not a policy. */
@@ -451,7 +488,50 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
   const widths = new Map<string, [design: number, anchor: number]>()
   const textProperties = new Map<string, boolean>()
-  const values = new Map<string, string>()
+  const values = new Map<string, { value: string; generatedBounds: boolean }>()
+
+  const convertWithMetadata = (
+    value: string,
+    property: string,
+    profileName: string,
+    profile: AdaptiveProfile,
+    file: string,
+  ): { value: string; generatedBounds: boolean } => {
+    const widthKey = JSON.stringify([profileName, file])
+    let resolvedWidths = widths.get(widthKey)
+    if (resolvedWidths === undefined) {
+      resolvedWidths = [
+        resolveDesignWidth(profileName, profile, file),
+        resolveTextAnchorWidth(profileName, profile, file),
+      ]
+      widths.set(widthKey, resolvedWidths)
+    }
+    const [designWidth, anchorWidth] = resolvedWidths
+
+    let accessibleText = textProperties.get(property)
+    if (accessibleText === undefined) {
+      accessibleText = isAccessibleTextProperty(property, options)
+      textProperties.set(property, accessibleText)
+    }
+
+    // The anchor belongs in the key alongside the design width: two canvases
+    // can agree on the latter and still write text differently.
+    const key = JSON.stringify([profileName, designWidth, anchorWidth, accessibleText, value])
+    const cached = values.get(key)
+    if (cached !== undefined) return cached
+
+    const converted = convertResolvedValue(
+      value,
+      designWidth,
+      anchorWidth,
+      accessibleText,
+      profile,
+      options,
+    )
+    if (values.size >= MAX_CACHE_ENTRIES) values.clear()
+    values.set(key, converted)
+    return converted
+  }
 
   return {
     /**
@@ -482,41 +562,11 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       profile: AdaptiveProfile,
       file: string,
     ): string {
-      const widthKey = JSON.stringify([profileName, file])
-      let resolvedWidths = widths.get(widthKey)
-      if (resolvedWidths === undefined) {
-        resolvedWidths = [
-          resolveDesignWidth(profileName, profile, file),
-          resolveTextAnchorWidth(profileName, profile, file),
-        ]
-        widths.set(widthKey, resolvedWidths)
-      }
-      const [designWidth, anchorWidth] = resolvedWidths
-
-      let accessibleText = textProperties.get(property)
-      if (accessibleText === undefined) {
-        accessibleText = isAccessibleTextProperty(property, options)
-        textProperties.set(property, accessibleText)
-      }
-
-      // The anchor belongs in the key alongside the design width: two canvases
-      // can agree on the latter and still write text differently.
-      const key = JSON.stringify([profileName, designWidth, anchorWidth, accessibleText, value])
-      const cached = values.get(key)
-      if (cached !== undefined) return cached
-
-      const converted = convertResolvedValue(
-        value,
-        designWidth,
-        anchorWidth,
-        accessibleText,
-        profile,
-        options,
-      )
-      if (values.size >= MAX_CACHE_ENTRIES) values.clear()
-      values.set(key, converted)
-      return converted
+      return convertWithMetadata(value, property, profileName, profile, file).value
     },
+
+    /** Internal diagnostic evidence collected during the conversion's existing parse. */
+    convertWithMetadata,
   }
 }
 
