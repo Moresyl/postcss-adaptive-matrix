@@ -85,7 +85,7 @@ const config = {
 }
 ```
 
-小程序端建议只用单画布：小程序没有 `@media`，`query: false` 是必须的，`rpx` 也已经在做类似的事，两套换算叠加会翻倍。
+小程序端建议只用单画布。Taro 官方[把 CSS 媒体查询列入小程序端不支持的 selector](https://docs.taro.zone/en/docs/use-h5/#partial-css-selectors-are-not-supported)，因此只有当这份构建确实写了 `@adaptive` 块时才需要设置 `query: false`；不使用该指令、直接选择唯一画布的构建完全不用填写 `query`。`rpx` 也已经在做类似换算，不要再叠加第二套长度转换，否则效果会翻倍。
 
 ---
 
@@ -99,17 +99,17 @@ const config = {
 
 Sass / Less 不属于这个话题：预处理器在 PostCSS 之前跑完，PostCSS 拿到的已经是展开后的 CSS。
 
-### 2. `from` 必须传
+### 2. 只有按路径匹配时才需要 `from`
 
-按文件路径判定画布的功能——`routes` 的 `file` 通道、`include` / `exclude`、组件库的路径匹配——全部依赖 PostCSS 的 `from`。
+普通转换以及 selector、property、media 路由都不依赖源文件路径。只有按文件路径判定的功能——`routes` 的 `file` 通道、`include` / `exclude`、`root.injectTo`、组件库的路径匹配——才依赖 PostCSS 的 `from`。
 
-Vite、Webpack、Nuxt、Taro 都会传。但如果你手写 `postcss(...).process(css)` 而不传 `from`，文件路径退化成空串，所有 `file` 匹配静默失效——不报错，只是组件库不再被认领。
+Vite、Webpack、Nuxt、Taro 都会传。如果你手写 `postcss(...).process(css)`，又显式配置了上述路径功能却没有传 `from`，编译器会给出一次告警：路径已经退化成空串，该匹配不可能生效。没有配置任何路径功能时，则既不告警也不要求 `from`。
 
 ```js
-// 错
+// 配置了按路径匹配时错误
 await postcss([adaptiveMatrix(options)]).process(css)
 
-// 对
+// 向这些 matcher 提供所需路径
 await postcss([adaptiveMatrix(options)]).process(css, { from: '/abs/path/app.css' })
 ```
 

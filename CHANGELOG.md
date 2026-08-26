@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- `from` is no longer documented as a blanket requirement. Ordinary conversion and selector/property/media routing work without it; explicitly configured path matching now emits one targeted warning when the source path is absent. Taro guidance likewise requires `query: false` only for builds that actually use `@adaptive`, and the public `minPixelValue` descriptions now consistently say the implemented strict “below” boundary.
 - Dead-band findings are now attached to the declaration that actually converted, with its real selector/property-routed canvas and media band. Nested child rules can no longer make an unconverted parent warn on the wrong canvas; routed custom-property tokens are judged against their own profile and get a property-route suggestion; declarations inside media queries nested in a rule are no longer missed. An explicit `@adaptive` selection no longer receives route advice that cannot override it.
 - Property-based coverage now exercises omitted, minimum-only and maximum-only fluid bounds across multiple canvases, positive/negative layout lengths, zoom-accessible text, both sides of each bound and a complete second compilation pass.
 - A profile's output unit is no longer read back as a design-input unit for that same profile. This keeps bare `strategy: 'viewport'` output idempotent when `unitToConvert` also lists `vw`/`vi`/`cqw`/`cqi`; an intentional conversion between different configured units still works.

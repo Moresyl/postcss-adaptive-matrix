@@ -278,6 +278,7 @@ export interface AdaptiveMatrixOptions {
    * ship; change it only if the page actually sets a different root font size.
    */
   rootValue?: number
+  /** Values with an absolute size below this number stay in their authored unit. */
   minPixelValue?: number
   /** Values with an absolute size at or below this number stay in px. */
   hairline?: number

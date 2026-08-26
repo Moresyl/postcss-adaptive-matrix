@@ -85,7 +85,7 @@ const config = {
 }
 ```
 
-On the mini-program side, use a single canvas: mini programs have no `@media`, so `query: false` is mandatory, and `rpx` is already doing something similar — stacking two conversions doubles the effect.
+On the mini-program side, use a single canvas. Taro [lists CSS media queries among the selectors its mini-program target does not support](https://docs.taro.zone/en/docs/use-h5/#partial-css-selectors-are-not-supported), so set `query: false` only when that build actually contains `@adaptive` blocks; a build that selects its one canvas without the directive does not need `query` at all. `rpx` is already doing something similar, so do not stack two length conversions or the effect doubles.
 
 ---
 
@@ -99,17 +99,17 @@ Putting it **after** a nesting plugin such as `postcss-nesting` is fine too — 
 
 Sass and Less are not part of this discussion: a preprocessor finishes before PostCSS starts, so PostCSS already receives expanded CSS.
 
-### 2. `from` is mandatory
+### 2. `from` is required only for path matching
 
-Everything that decides a canvas by file path — the `file` channel in `routes`, `include` / `exclude`, and component-library path matching — depends on PostCSS's `from`.
+Ordinary conversion plus selector, property and media routing work without a source path. Only features that decide by file path — the `file` channel in `routes`, `include` / `exclude`, `root.injectTo`, and component-library path matching — depend on PostCSS's `from`.
 
-Vite, Webpack, Nuxt and Taro all pass it. But if you hand-write `postcss(...).process(css)` without `from`, the file path degrades to an empty string and every `file` match silently stops working — no error, the component libraries simply stop being claimed.
+Vite, Webpack, Nuxt and Taro all pass it. If you hand-write `postcss(...).process(css)` without `from` while explicitly configuring one of those path features, the compiler warns once: the file path has degraded to an empty string and that match cannot work. No path-based option means no warning and no requirement.
 
 ```js
-// wrong
+// wrong when path-based matching is configured
 await postcss([adaptiveMatrix(options)]).process(css)
 
-// right
+// supplies the path those matchers need
 await postcss([adaptiveMatrix(options)]).process(css, { from: '/abs/path/app.css' })
 ```
 

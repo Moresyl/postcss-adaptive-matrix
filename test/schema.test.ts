@@ -172,5 +172,8 @@ describe('the published options schema', () => {
     expect(options.unitToConvert!.oneOf).toEqual(
       expect.arrayContaining([expect.objectContaining({ pattern: expect.any(String) })]),
     )
+    expect(options.minPixelValue!.description).toContain('below')
+    expect(options.minPixelValue!['x-description-zh']).toContain('小于')
+    expect(options.minPixelValue!['x-description-zh']).not.toContain('等于')
   })
 })

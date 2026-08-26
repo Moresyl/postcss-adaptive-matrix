@@ -635,6 +635,44 @@ function shouldProcessFile(file: string, options: ResolvedAdaptiveMatrixOptions)
   return true
 }
 
+/**
+ * Names the first explicitly configured feature that cannot work without a
+ * PostCSS source path.
+ *
+ * `from` is not a blanket requirement: selector/property/media routing and
+ * ordinary conversion are completely independent of it. Warning for every
+ * source-less call would make the zero-config API noisy and teach the wrong
+ * contract. This deliberately covers only path behaviour the caller opted
+ * into, plus custom libraries whose path is their only usable identity.
+ */
+function sourcePathDependency(
+  input: AdaptiveMatrixOptions,
+  options: ResolvedAdaptiveMatrixOptions,
+): string | null {
+  if (input.include !== undefined) return 'include'
+  if (input.exclude !== undefined) return 'exclude'
+  if (input.routes?.some((route) => route.file !== undefined)) return 'routes[].file'
+  if (input.root && input.root.injectTo !== undefined) return 'root.injectTo'
+
+  // Omitted / `auto` libraries are defaults, not a caller assertion that a
+  // particular path must match. An explicit list can contain a scoped library
+  // (path AND selector/token) or a path-only custom library; both genuinely
+  // lose their identity when `from` is absent. Explicit built-in names retain
+  // safe selector/token routes and therefore do not need a warning.
+  if (Array.isArray(input.libraries)) {
+    const hasEntries = (value: unknown): boolean =>
+      value !== undefined && (!Array.isArray(value) || value.length > 0)
+    const dependent = options.libraries.find(
+      (library) =>
+        hasEntries(library.file) &&
+        (library.scoped === true ||
+          (!hasEntries(library.prefix) && !hasEntries(library.tokenPrefix))),
+    )
+    if (dependent) return `libraries[${JSON.stringify(dependent.name)}].file`
+  }
+  return null
+}
+
 function appendFoundation(root: Root, file: string, options: ResolvedAdaptiveMatrixOptions): void {
   if (options.root && options.root.injectTo && !matchesFile(options.root.injectTo, file)) {
     return
@@ -667,16 +705,30 @@ function appendFoundation(root: Root, file: string, options: ResolvedAdaptiveMat
 
 export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOptions = {}) => {
   const options = resolveOptions(inputOptions)
+  const needsSourcePath = sourcePathDependency(inputOptions, options)
   const propertyMatches = createPropertyMatcher(options.propList)
   const resolver = createProfileResolver(options)
   const converter = createConverter(options)
   const correctsFixed = wantsFixedCorrection(options)
   const atRuleName = options.atRuleName.toLowerCase()
+  // `Once` runs per Root, including every Root inside one PostCSS Document.
+  // The Result is the build-level identity: dedupe there without suppressing
+  // the same warning when a reusable Processor handles a later build.
+  const sourcePathWarnings = new WeakSet<Result>()
 
   return {
     postcssPlugin: PLUGIN_NAME,
     Once(root: Root, { result }) {
       const file = root.source?.input.file ?? result.opts.from?.toString() ?? ''
+      if (!file && needsSourcePath && !sourcePathWarnings.has(result)) {
+        sourcePathWarnings.add(result)
+        result.warn(
+          `No source path was provided, so ${needsSourcePath} has no real path to match for this stylesheet. ` +
+            `Pass { from: '/absolute/path/file.css' } to PostCSS when using path-based matching; ` +
+            'ordinary conversion and non-file routes do not require from.',
+          { plugin: PLUGIN_NAME },
+        )
+      }
       if (!shouldProcessFile(file, options)) return
       converter.beginFile()
       processContainer(

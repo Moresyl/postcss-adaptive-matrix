@@ -532,6 +532,9 @@ describe('matchers and math helpers', () => {
     const profile = options.profiles.app!
     expect(convertLength(0, 'width', 'app', profile, options, '')).toBe('0px')
     expect(convertLength(1, 'width', 'app', profile, options, '')).toBe('1px')
+    // The threshold is the minimum value that converts, not another hairline:
+    // `hairline` owns the inclusive "at or below" contract beside it.
+    expect(convertLength(2, 'width', 'app', profile, options, '')).not.toBe('2px')
     expect(() =>
       convertLength(Number.POSITIVE_INFINITY, 'width', 'app', profile, options, ''),
     ).toThrow(/Length value must be a finite number/)

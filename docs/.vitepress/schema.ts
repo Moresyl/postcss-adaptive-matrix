@@ -446,8 +446,8 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     default: DEFAULTS.rootValue,
   },
   minPixelValue: {
-    description: 'Values at or below this stay in pixels.',
-    'x-description-zh': '小于等于该值的长度保持像素。',
+    description: 'Values below this stay in their authored unit.',
+    'x-description-zh': '绝对值小于该值的长度保持原单位。',
     type: 'number',
     minimum: 0,
     default: DEFAULTS.minPixelValue,

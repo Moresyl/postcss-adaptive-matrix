@@ -13,6 +13,85 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  describe('optional PostCSS source paths', () => {
+    const withoutFrom = (css: string, options: AdaptiveMatrixOptions = {}) =>
+      postcss([adaptiveMatrix(options)]).process(css, { from: undefined })
+
+    it('does not require from for ordinary conversion or non-file routes', async () => {
+      const ordinary = await withoutFrom('.card { width: 16px }')
+      const selector = await withoutFrom('.desktop { width: 16px }', {
+        libraries: false,
+        strategy: 'viewport',
+        hairline: 0,
+        profiles: {
+          app: { designWidth: 375 },
+          pc: { designWidth: 1440 },
+        },
+        routes: [{ profile: 'pc', selector: '.desktop' }],
+      })
+
+      expect(ordinary.css).toContain('4.26667vw')
+      expect(selector.css).toContain('width: 1.11111vw')
+      expect(ordinary.warnings()).toHaveLength(0)
+      expect(selector.warnings()).toHaveLength(0)
+    })
+
+    it.each([
+      ['include', { include: 'src/' }],
+      ['exclude', { exclude: 'vendor/' }],
+      ['routes[].file', { routes: [{ profile: 'pc', file: 'desktop/' }] }],
+      ['root.injectTo', { root: { injectTo: 'styles/main' } }],
+    ] satisfies [string, AdaptiveMatrixOptions][])(
+      'warns when %s actually needs from',
+      async (name, options) => {
+        const result = await withoutFrom('.card { width: 16px }', options)
+
+        expect(result.warnings()).toHaveLength(1)
+        expect(result.warnings()[0]!.text).toContain(`${name} has no real path to match`)
+        expect(result.warnings()[0]!.text).toContain('non-file routes do not require from')
+      },
+    )
+
+    it('warns for a path-only custom library but not auto or selector-addressable libraries', async () => {
+      const pathOnly = await withoutFrom('.vendor { width: 16px }', {
+        libraries: [{ name: 'vendor', designWidth: 375, file: 'vendor/' }],
+      })
+      const emptiedPrefixes = await withoutFrom('.vendor { width: 16px }', {
+        libraries: [
+          {
+            extends: 'vant',
+            name: 'vendor-empty-prefixes',
+            prefix: [],
+            tokenPrefix: [],
+          },
+        ],
+      })
+      const automatic = await withoutFrom('.page { width: 16px }')
+      const named = await withoutFrom('.van-cell { width: 16px }', { libraries: ['vant'] })
+
+      expect(pathOnly.warnings()).toHaveLength(1)
+      expect(pathOnly.warnings()[0]!.text).toContain(
+        'libraries["vendor"].file has no real path to match',
+      )
+      expect(emptiedPrefixes.warnings()).toHaveLength(1)
+      expect(automatic.warnings()).toHaveLength(0)
+      expect(named.warnings()).toHaveLength(0)
+    })
+
+    it('warns once per build across a Document, and again for a later build', async () => {
+      const processor = postcss([adaptiveMatrix({ include: 'src/' })])
+      const document = postcss.document()
+      document.append(postcss.parse('.a { width: 16px }'))
+      document.append(postcss.parse('.b { width: 16px }'))
+
+      const first = await processor.process(document, { from: undefined })
+      const second = await processor.process('.c { width: 16px }', { from: undefined })
+
+      expect(first.warnings()).toHaveLength(1)
+      expect(second.warnings()).toHaveLength(1)
+    })
+  })
+
   it('processes every source root in a PostCSS Document independently', async () => {
     const document = postcss.document()
     document.append(postcss.parse('.mobile { width: 16px }', { from: '/src/mobile.css' }))
@@ -36,6 +115,7 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('.mobile { width: 4.26667vw }')
     expect(result.css).toContain('.desktop { width: 1.11111vw }')
     expect(result.css.match(/postcss-adaptive-matrix foundation \*\//g)).toHaveLength(1)
+    expect(result.warnings()).toHaveLength(0)
   })
 
   it('converts ordinary rules with bounded fluid lengths and zoomable text', async () => {
