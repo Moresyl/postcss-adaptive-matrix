@@ -1,5 +1,5 @@
-import { matchesAnyPattern, matchesFile, toArray } from './matchers.js'
-import { routingSelector } from './selectors.js'
+import { matchesFile, matchesPattern, toArray } from './matchers.js'
+import { routingClassSelector, routingSelector } from './selectors.js'
 import { decodeCssIdentifier } from './syntax.js'
 import type { WidthBand } from './media.js'
 import type {
@@ -152,9 +152,21 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
     ): ActiveProfile {
       if (inherited.explicit || !hasSelectorRoutes) return inherited
       const subject = routingSelector(selector)
+      let classSubject: string | undefined
       for (const route of routes) {
         if (!route.selector.length) continue
-        if (!matchesAnyPattern(route.selector, subject)) continue
+        let matched = false
+        for (const pattern of route.selector) {
+          const candidate =
+            typeof pattern === 'string' && pattern.startsWith('.')
+              ? (classSubject ??= routingClassSelector(selector))
+              : subject
+          if (matchesPattern(pattern, candidate)) {
+            matched = true
+            break
+          }
+        }
+        if (!matched) continue
         if (route.file.length && !matchesFile(route.file, file)) continue
         if (!inBand(route, band)) continue
         return route.active

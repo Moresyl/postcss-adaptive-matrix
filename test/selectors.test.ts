@@ -3,6 +3,7 @@ import {
   compareSpecificity,
   formatSpecificity,
   nestedSelectorLists,
+  routingClassSelector,
   routingSelector,
   specificity,
   splitIsSpecificityNeutral,
@@ -62,7 +63,8 @@ describe('routingSelector', () => {
     expect(routingSelector(String.raw`.v\61 n-cell`)).toBe('.van-cell')
     expect(routingSelector(String.raw`.van\2d cell`)).toBe('.van-cell')
     expect(routingSelector(String.raw`.\2e van-cell`)).not.toContain('.van-')
-    expect(routingSelector('[data-icon=".van-cell"]')).not.toContain('.van-')
+    expect(routingSelector('[data-icon=".van-cell"]')).toContain('.van-')
+    expect(routingClassSelector('[data-icon=".van-cell"]')).not.toContain('.van-')
     expect(routingSelector('[data-layout="desktop"]')).toContain('[data-layout="desktop"]')
   })
 

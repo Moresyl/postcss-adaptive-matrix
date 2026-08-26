@@ -235,14 +235,14 @@ export function splitSelectorList(selector: string): string[] {
  * against `:not` or `:has` still works, and so a selector that is *only* an
  * exclusion does not collapse to the empty string.
  */
-export function routingSelector(selector: string): string {
+function rewriteRoutingSelector(selector: string, maskAttributeClassText: boolean): string {
   // Nothing to exclude without a pseudo-class, and most selectors in a
   // stylesheet have none. This runs on every rule of every file, so the check
   // that skips the rewrite entirely is worth more than anything inside it.
   if (
     !selector.includes(':') &&
     !selector.includes('/*') &&
-    !selector.includes('[') &&
+    (!maskAttributeClassText || !selector.includes('[')) &&
     !selector.includes('\\')
   ) {
     return selector
@@ -266,11 +266,11 @@ export function routingSelector(selector: string): string {
     }
     if (character === '[') {
       const end = skipAttribute(selector, index)
-      // A dot inside an attribute value is data, not a class selector. Keep the
-      // attribute available to authored routes while making that distinction
-      // visible to dot-prefixed library routes. The full-width marker is only
-      // used in this private routing subject; emitted CSS remains untouched.
-      output += selector.slice(index, end).replaceAll('.', '\uFF0E')
+      const attribute = selector.slice(index, end)
+      // A dot inside an attribute value is data, not a class selector. The
+      // full-width marker is only used in the private class-routing subject;
+      // generic authored routes still receive the byte-for-byte attribute.
+      output += maskAttributeClassText ? attribute.replaceAll('.', '\uFF0E') : attribute
       index = end
       continue
     }
@@ -293,7 +293,10 @@ export function routingSelector(selector: string): string {
           // Everything else may still hold an exclusion further down, so it is
           // rewritten rather than copied.
           if (!EXCLUDED_ARGUMENTS.has(pseudo.name)) {
-            output += routingSelector(selector.slice(pseudo.open + 1, close))
+            output += rewriteRoutingSelector(
+              selector.slice(pseudo.open + 1, close),
+              maskAttributeClassText,
+            )
           }
           output += ')'
           index = close + 1
@@ -305,6 +308,16 @@ export function routingSelector(selector: string): string {
     index += 1
   }
   return output
+}
+
+/** Selector subject for general authored routes. */
+export function routingSelector(selector: string): string {
+  return rewriteRoutingSelector(selector, false)
+}
+
+/** Selector subject for dot-prefixed class routes such as built-in libraries. */
+export function routingClassSelector(selector: string): string {
+  return rewriteRoutingSelector(selector, true)
 }
 
 /**

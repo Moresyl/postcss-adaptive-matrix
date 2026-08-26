@@ -46,6 +46,18 @@ describe('profile resolution', () => {
     expect(resolver.forSelector(inherited, '.vd-button', '/src/bundle.css').name).toBe('vendor')
   })
 
+  it('keeps authored attribute routes separate from class routes', () => {
+    const resolver = resolverFor([
+      { profile: 'vendor', selector: '[data-icon=".vd-cell"]' },
+      { profile: false, selector: '.vd-' },
+    ])
+    const inherited = resolver.forFile('/src/page.css')
+
+    expect(resolver.forSelector(inherited, '[data-icon=".vd-cell"]', '/src/page.css').name).toBe(
+      'vendor',
+    )
+  })
+
   it('never overrides a profile the author named explicitly', () => {
     const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'] }])
     const resolvedBase = resolveOptions({ ...base, libraries: false })
