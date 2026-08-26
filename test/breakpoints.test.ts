@@ -66,6 +66,18 @@ describe('bandOf', () => {
     expect(boundaryOf('(MAX-WIDTH: 1E2EM)')).toBe(1600)
   })
 
+  it('reads escaped media identifiers without inventing escaped structure', () => {
+    expect(bandOf(String.raw`(m\69 n-width: 64r\65 m)`)).toEqual({
+      lo: 1024,
+      hi: Infinity,
+    })
+    expect(bandOf(String.raw`scr\65 en a\6e d (width >= 1024px)`)).toEqual({
+      lo: 1024,
+      hi: Infinity,
+    })
+    expect(bandOf(String.raw`\28 min-width: 1024px)`)).toBeNull()
+  })
+
   it('does not treat Unicode spaces as media-query whitespace', () => {
     expect(bandOf('(min-width:\u00a01024px)')).toBeNull()
     expect(bandOf('screen\u00a0and\u00a0(min-width: 1024px)')).toBeNull()

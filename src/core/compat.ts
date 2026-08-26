@@ -16,7 +16,7 @@
  * feature is not "does it work" but "how much disappears when it doesn't".
  */
 import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
-import { CSS_NUMBER_SOURCE, decodeCssIdentifier, isCssWhitespace } from './syntax.js'
+import { CSS_NUMBER_SOURCE, canonicalizeCssIdentifierEscapes } from './syntax.js'
 
 export type CompatFeatureId =
   | 'math-functions'
@@ -413,46 +413,8 @@ function compatibilitySyntax(css: string): { syntax: string; positions: number[]
     }
   }
 
-  const masked = syntax.join('')
-  let canonical = ''
-  const positions: number[] = []
-  for (let index = 0; index < masked.length; index += 1) {
-    const character = masked[index]!
-    if (character !== '\\') {
-      canonical += character
-      positions.push(index)
-      continue
-    }
-
-    let end = index + 1
-    let digits = 0
-    while (end < masked.length && digits < 6 && /[0-9a-f]/i.test(masked[end]!)) {
-      digits += 1
-      end += 1
-    }
-    if (digits && isCssWhitespace(masked[end] ?? '')) {
-      if (masked[end] === '\r' && masked[end + 1] === '\n') end += 1
-      end += 1
-    } else if (!digits && end < masked.length) {
-      end += 1
-    }
-    if (end === index + 1) {
-      canonical += character
-      positions.push(index)
-      continue
-    }
-
-    const decoded = decodeCssIdentifier(masked.slice(index, end))
-    // Escaped punctuation remains part of an identifier token. Replacing it
-    // with a non-ASCII identifier character prevents `x\2e clamp()` from
-    // inventing a dot boundary, while letters, digits, `_` and `-` retain the
-    // feature names an escape merely spelled differently.
-    canonical += /^[-_a-z0-9\u0080-\uFFFF]$/i.test(decoded) ? decoded : '\uFFFD'
-    positions.push(index)
-    index = end - 1
-  }
-
-  return { syntax: canonical, positions }
+  const canonical = canonicalizeCssIdentifierEscapes(syntax.join(''))
+  return { syntax: canonical.text, positions: canonical.positions }
 }
 
 /** Which of the compiler's features appear in a stylesheet, in table order. */

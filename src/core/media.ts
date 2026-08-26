@@ -10,7 +10,7 @@
  * that never happen.
  */
 
-import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { CSS_NUMBER_SOURCE, canonicalizeCssIdentifierEscapes } from './syntax.js'
 
 const WIDTH_FEATURE = new RegExp(
   `^\\([ \\t\\r\\n\\f]*(min|max)-width[ \\t\\r\\n\\f]*:[ \\t\\r\\n\\f]*(${CSS_NUMBER_SOURCE})(px|r?em)?[ \\t\\r\\n\\f]*\\)$`,
@@ -148,7 +148,8 @@ function trimCssWhitespace(value: string): string {
  * rules above exclude.
  */
 function conditionsIn(params: string, projectOrientation: boolean): string[] | null {
-  const clean = withoutComments(params)
+  const authored = withoutComments(params)
+  const clean = authored === null ? null : canonicalizeCssIdentifierEscapes(authored).text
   if (clean === null || /[,]|\bnot\b|\bonly\b/i.test(clean)) return null
   const parts = clean.split(/[ \t\r\n\f]+and[ \t\r\n\f]+/i).map((part) => trimCssWhitespace(part))
   const conditions: string[] = []

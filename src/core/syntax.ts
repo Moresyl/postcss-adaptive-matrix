@@ -99,6 +99,50 @@ export function canonicalCssIdentifierName(value: string): string {
 }
 
 /**
+ * Decodes identifier escapes while refusing to manufacture CSS structure.
+ * Escaped punctuation is still part of an identifier token, so it becomes an
+ * inert non-ASCII identifier character rather than `(`, `:`, `,`, and so on.
+ */
+export function canonicalizeCssIdentifierEscapes(value: string): {
+  text: string
+  positions: number[]
+} {
+  let output = ''
+  const positions: number[] = []
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== '\\') {
+      output += value[index]
+      positions.push(index)
+      continue
+    }
+
+    let end = index + 1
+    let digits = 0
+    while (end < value.length && digits < 6 && /[0-9a-f]/i.test(value[end]!)) {
+      digits += 1
+      end += 1
+    }
+    if (digits && isCssWhitespace(value[end] ?? '')) {
+      if (value[end] === '\r' && value[end + 1] === '\n') end += 1
+      end += 1
+    } else if (!digits && end < value.length) {
+      end += 1
+    }
+    if (end === index + 1) {
+      output += '\\'
+      positions.push(index)
+      continue
+    }
+
+    const decoded = decodeCssIdentifier(value.slice(index, end))
+    output += /^[-_a-z0-9\u0080-\uFFFF]$/i.test(decoded) ? decoded : '\uFFFD'
+    positions.push(index)
+    index = end - 1
+  }
+  return { text: output, positions }
+}
+
+/**
  * Reports structural syntax that can escape or swallow a generated wrapper.
  *
  * This deliberately does not try to parse the evolving media/container-query
