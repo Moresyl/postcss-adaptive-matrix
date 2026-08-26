@@ -299,7 +299,8 @@ export interface AdaptiveMatrixOptions {
   exclude?: FileMatcher | readonly FileMatcher[]
   transformCustomProperties?: boolean
   preserveOriginal?: boolean
-  root?: RootFoundationOptions | false
+  /** `true` enables the default `:root` foundation; an object customises it. */
+  root?: RootFoundationOptions | boolean
   unknownProfile?: 'warn' | 'error' | 'ignore'
 }
 

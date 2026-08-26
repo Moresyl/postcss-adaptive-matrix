@@ -630,9 +630,11 @@ describe('selector lists that span two canvases', () => {
 
 describe('presets and foundation', () => {
   it('uses :root when the opt-in foundation selector is omitted', async () => {
-    const result = await process('.a { width: 10px }', { root: {}, libraries: false })
+    const shorthand = await process('.a { width: 10px }', { root: true, libraries: false })
+    const object = await process('.a { width: 10px }', { root: {}, libraries: false })
 
-    expect(result.css).toContain(':where(:root)')
+    expect(shorthand.css).toBe(object.css)
+    expect(shorthand.css).toContain(':where(:root)')
   })
 
   it('injects an opt-in centered root, safe-area variables, and profile caps', async () => {

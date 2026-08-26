@@ -82,6 +82,7 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain('interface RootValueContext')
       expect(declarations).toContain('type RootValueResolver')
       expect(declarations).toContain('rootValue?: number | RootValueResolver')
+      expect(declarations).toContain('root?: RootFoundationOptions | boolean')
     }
   })
 

@@ -295,9 +295,9 @@ interface RootFoundationOptions {
 }
 ```
 
-No global styles are injected by default. This is enabled only by configuring `root` explicitly, passing `root: true` to `appPcPreset`, or supplying one of that helper's root settings. `rootSelector` only overrides the default `:root`; it is not required to enable the foundation.
+No global styles are injected by default. `root: true` enables the main plugin's default `:root` foundation; an object customises it. The same shorthand works in `appPcPreset`, where any root-only helper setting also enables it. `rootSelector` only overrides the default selector; it is not required to enable the foundation.
 
-`root` itself has no required members. `root: {}` enables the foundation on `:root`; set `selector` only when the layout is carried by another element such as `#app`.
+`root` itself has no required members. Prefer `root: true` when there is nothing to customise; `root: {}` remains equivalent. Set `selector` only when the layout is carried by another element such as `#app`.
 
 `containerName` must be a non-reserved CSS custom identifier. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
 

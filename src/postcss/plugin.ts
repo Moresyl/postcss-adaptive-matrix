@@ -663,7 +663,7 @@ function sourcePathDependency(
   if (input.include !== undefined) return 'include'
   if (input.exclude !== undefined) return 'exclude'
   if (input.routes?.some((route) => route.file !== undefined)) return 'routes[].file'
-  if (input.root && input.root.injectTo !== undefined) return 'root.injectTo'
+  if (typeof input.root === 'object' && input.root.injectTo !== undefined) return 'root.injectTo'
   if (typeof input.rootValue === 'function') return 'rootValue'
 
   // Omitted / `auto` libraries are defaults, not a caller assertion that a

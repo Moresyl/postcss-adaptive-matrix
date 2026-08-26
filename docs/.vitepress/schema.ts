@@ -531,6 +531,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
         properties: ROOT,
         additionalProperties: false,
       },
+      { const: true },
       { const: false },
     ],
     default: false,

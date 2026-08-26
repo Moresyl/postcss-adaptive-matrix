@@ -244,10 +244,10 @@ function validateRouteShape(route: unknown, index: number): void {
 }
 
 function validateRootShape(root: unknown): void {
-  if (root === undefined || root === false) return
+  if (root === undefined || typeof root === 'boolean') return
   if (!isObject(root)) {
     throw new TypeError(
-      `[postcss-adaptive-matrix] root must be false or an options object, not ${valueKind(root)}.`,
+      `[postcss-adaptive-matrix] root must be true, false or an options object, not ${valueKind(root)}.`,
     )
   }
   rejectUnknownKeys('root', root, ROOT_KEYS)
@@ -538,7 +538,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   const root =
     input.root === undefined || input.root === false
       ? false
-      : { ...input.root, selector: input.root.selector ?? ':root' }
+      : input.root === true
+        ? { selector: ':root' }
+        : { ...input.root, selector: input.root.selector ?? ':root' }
   const options: ResolvedAdaptiveMatrixOptions = {
     ...DEFAULTS,
     ...input,

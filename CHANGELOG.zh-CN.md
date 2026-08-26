@@ -22,6 +22,7 @@
 - 十六进制转义续段判断现在严格使用 CSS 定义的五个空白字符。垂直制表符等仅被 JavaScript 视为空白的字符，不会再在值解析器切分后藏住后方本应转换的真实 dimension。
 - Profile 的 `fluid`、`fluid.minWidth`、`fluid.maxWidth` 现均可独立省略：无边界输出首选视口表达式，只写一端输出 `min()`/`max()`，两端都写仍输出 `clamp()`；运行时只校验实际传入的值。
 - `root.selector` 现可省略并解析为 `:root`；只写 `root: {}` 即可启用默认基础样式，不必重复填写编译器已经确定的选择器。
+- 主插件现在也支持用 `root: true` 无信息简写启用默认 `:root` 基础样式，与 `appPcPreset` 一致；只有确实需要定制时才使用对象形式，省略或 `false` 仍不会注入任何内容。
 - `rootValue` 继续保持可选，并额外支持 `(context: { file: string }) => number`，按源文件解析一次正数有限标尺。同一 monorepo 可以用一份配置同时编译 `10px`/`rem` 的旧子应用与 `16px`/`rem` 的新子应用；缺少 `from` 时只给出一次精准告警，不会让普通转换整体失败。
 - `appPcPreset({ root: true })` 及其 root 专属配置现在无需 `rootSelector` 即可启用同一套 `:root` 基础样式；只有一张自定义 profile 时也会自动推断为 `defaultProfile`，多张非 `app` profile 的歧义仍会明确报错。
 - CLI 现支持通行的 `--` 选项终止符；其后所有参数都严格按文件路径处理，因此以 `-` 开头的合法样式表文件名不再被误报为未知选项，也不会在前置参数出错时被误当成输出格式标志。

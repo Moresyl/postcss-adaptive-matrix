@@ -468,10 +468,11 @@ describe('configuration validation', () => {
       /root.selector cannot be empty/,
     )
     expect(() => resolveOptions({ root: { selector: '#app' } })).not.toThrow()
-    expect(() => resolveOptions({ root: true as never })).toThrow(
-      /root must be false or an options object/,
-    )
+    expect(resolveOptions({ root: true }).root).toEqual({ selector: ':root' })
     expect(resolveOptions({ root: {} }).root).toMatchObject({ selector: ':root' })
+    expect(() => resolveOptions({ root: null as never })).toThrow(
+      /root must be true, false or an options object/,
+    )
     expect(() => resolveOptions({ root: { selector: 1 as never } })).toThrow(
       /root\.selector must be a string/,
     )

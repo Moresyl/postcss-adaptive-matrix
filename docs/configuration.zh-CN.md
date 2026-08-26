@@ -295,9 +295,9 @@ interface RootFoundationOptions {
 }
 ```
 
-默认不注入全局样式。只有显式配置 `root`、给 `appPcPreset` 传 `root: true`，或填写该 helper 的任一 root 专属配置时才启用。`rootSelector` 只用于覆盖默认的 `:root`，启用基础样式不再要求填写它。
+默认不注入全局样式。主插件可直接用 `root: true` 启用默认 `:root` 基础样式，对象形式只在需要定制时使用；`appPcPreset` 同样支持该简写，填写任一 root 专属配置也会启用。`rootSelector` 只用于覆盖默认选择器，不负责启用。
 
-`root` 内没有必填成员。`root: {}` 会在 `:root` 上启用基础样式；只有布局实际由 `#app` 等其他元素承载时才需要填写 `selector`。
+`root` 内没有必填成员。没有需要定制的信息时优先写 `root: true`，`root: {}` 仍完全等价；只有布局实际由 `#app` 等其他元素承载时才需要填写 `selector`。
 
 `containerName` 必须是非保留 CSS custom-ident；`layer` 必须是 `adaptive-matrix`、`framework.layout` 这类单个点分层名。空格、逗号、空片段或 CSS-wide 关键字都会在生成非法 `container-name` / `@layer` 前被拒绝。命名容器 profile 的 `query.name` 遵守同一 custom-ident 规则。
 
