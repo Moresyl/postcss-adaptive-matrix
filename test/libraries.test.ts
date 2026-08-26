@@ -31,6 +31,26 @@ describe('resolveLibrary', () => {
     expect(resolveLibrary(inherited)).toMatchObject({ name: 'vant', designWidth: 375 })
   })
 
+  it('treats undefined inherited-library overrides as omitted optional fields', () => {
+    const library = resolveLibrary({
+      extends: 'vant',
+      name: undefined,
+      designWidth: undefined,
+      prefix: undefined,
+      tokenPrefix: undefined,
+      file: undefined,
+      scoped: undefined,
+      basedOn: undefined,
+    })
+    expect(library).toMatchObject({
+      name: 'vant',
+      designWidth: 375,
+      prefix: 'van-',
+      tokenPrefix: '--van-',
+    })
+    expect(library.file).toBeDefined()
+  })
+
   it('passes a custom definition through untouched', () => {
     const custom = { name: 'internal-kit', designWidth: 414, prefix: 'ik-' }
     expect(resolveLibrary(custom)).toBe(custom)
@@ -72,6 +92,9 @@ describe('resolveLibrary', () => {
       /basedOn cannot be used with designWidth: false/,
     )
     expect(() => resolveLibrary({ extends: ' ' })).toThrow(/extends must be a non-empty name/)
+    expect(() => resolveLibrary({ extends: ' vant ' })).toThrow(
+      /extends cannot have surrounding whitespace/,
+    )
     expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: ' ' })).toThrow(
       /file cannot be empty/,
     )

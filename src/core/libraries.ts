@@ -331,11 +331,20 @@ export function resolveLibrary(entry: LibraryEntry): ResolvedLibraryAdaptation {
     if (typeof entry.extends !== 'string' || !entry.extends.trim()) {
       throw new TypeError('[postcss-adaptive-matrix] Library extends must be a non-empty name.')
     }
+    if (entry.extends !== entry.extends.trim()) {
+      throw new TypeError(
+        '[postcss-adaptive-matrix] Library extends cannot have surrounding whitespace.',
+      )
+    }
     const base = REGISTRY[entry.extends]
     if (!base) throw unknownLibrary(entry.extends)
-    const { extends: _extends, ...overrides } = entry
+    const overrides = Object.fromEntries(
+      Object.entries(entry).filter(([key, value]) => key !== 'extends' && value !== undefined),
+    )
     // `name` defaults to the base so diagnostics and the derived profile keep
-    // referring to the library the reader recognises.
+    // referring to the library the reader recognises. An optional field set to
+    // `undefined` is omission, not a request to erase what `extends` inherited;
+    // matcher arrays use `[]` when clearing is actually intended.
     return validateLibrary({ ...withoutRegistryFields(base), name: base.name, ...overrides })
   }
 
