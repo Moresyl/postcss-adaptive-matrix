@@ -91,6 +91,7 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain(
         "type AdaptiveProfileInput = AdaptiveProfile | AdaptiveProfile['designWidth']",
       )
+      expect(declarations).toMatch(/fluid\?: \{\s*minWidth\?: number;\s*maxWidth\?: number;\s*\};/)
       expect(declarations).toContain("Omit<T, 'unitToConvert' | 'routes' | 'textProperties'>")
     }
   })
