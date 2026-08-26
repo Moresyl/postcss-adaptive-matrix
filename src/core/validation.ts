@@ -17,11 +17,15 @@ export function isObject(value: unknown): value is Record<string, unknown> {
 /** A configuration record, excluding Date/Map/Promise/class instances. */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!isObject(value)) return false
-  const prototype = Object.getPrototypeOf(value) as { constructor?: { name?: unknown } } | null
-  // Constructor-name comparison keeps ordinary records from another realm
-  // usable while rejecting host/exotic objects whose enumerable surface would
-  // otherwise look exactly like an empty configuration.
-  return prototype === null || prototype.constructor?.name === 'Object'
+  const prototype = Object.getPrototypeOf(value) as object | null
+  if (prototype === null) return true
+  // An ordinary Object.prototype sits directly above null in every realm.
+  // A class instance sits above that prototype instead, even when its class is
+  // deliberately named `Object`; constructor-name checking alone therefore
+  // lets a spoofed exotic value masquerade as an empty configuration record.
+  if (Object.getPrototypeOf(prototype) !== null) return false
+  const constructor: unknown = Object.getOwnPropertyDescriptor(prototype, 'constructor')?.value
+  return typeof constructor === 'function' && constructor.name === 'Object'
 }
 
 export function requireFileMatchers(name: string, value: unknown): void {

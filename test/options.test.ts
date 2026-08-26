@@ -182,6 +182,10 @@ describe('configuration validation', () => {
     expect(() =>
       resolveOptions({ routes: { profile: 'app', media: new Date() as never } }),
     ).toThrow(/routes\.media must be an object/)
+    const PretendsToBeObject = { Object: class Object {} }.Object
+    expect(() => resolveOptions(new PretendsToBeObject() as never)).toThrow(
+      /Options must be an object/,
+    )
 
     const nullPrototype = Object.assign(Object.create(null) as Record<string, unknown>, {
       precision: 4,
