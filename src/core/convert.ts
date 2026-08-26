@@ -6,7 +6,12 @@ import type {
   ResolvedAdaptiveMatrixOptions,
   ScaleUnit,
 } from './types.js'
-import { CSS_NUMBER_SOURCE, canonicalCssPropertyName, isCssWhitespace } from './syntax.js'
+import {
+  CSS_NUMBER_SOURCE,
+  canonicalCssIdentifierName,
+  canonicalCssPropertyName,
+  isCssWhitespace,
+} from './syntax.js'
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
@@ -348,7 +353,7 @@ export function convertLength(
 }
 
 function shouldSkipFunction(node: Node): boolean {
-  return node.type === 'function' && SKIPPED_FUNCTIONS.has(node.value.toLowerCase())
+  return node.type === 'function' && SKIPPED_FUNCTIONS.has(canonicalCssIdentifierName(node.value))
 }
 
 /** Finds a real length token while ignoring comments, strings and separators. */
@@ -377,15 +382,16 @@ function containsRelativeLength(nodes: Node[], pattern: RegExp): boolean {
 function isAlreadyFluid(node: Node, accessibleText: boolean, staticText: boolean): boolean {
   if (node.type !== 'function') return false
   const hasViewportLength = containsRelativeLength(node.nodes, VIEWPORT_RELATIVE)
-  if (BOUNDING_FUNCTIONS.has(node.value.toLowerCase())) return hasViewportLength
+  const name = canonicalCssIdentifierName(node.value)
+  if (BOUNDING_FUNCTIONS.has(name)) return hasViewportLength
   const isUnboundedMarker =
-    node.value.toLowerCase() === 'calc' &&
+    name === 'calc' &&
     node.nodes.length === 1 &&
     node.nodes[0]!.type === 'word' &&
     VIEWPORT_RELATIVE_EXACT.test(node.nodes[0]!.value)
   const isStaticTextMarker =
     staticText &&
-    node.value.toLowerCase() === 'calc' &&
+    name === 'calc' &&
     node.nodes.length === 1 &&
     node.nodes[0]!.type === 'word' &&
     ROOT_RELATIVE_EXACT.test(node.nodes[0]!.value)
@@ -393,7 +399,7 @@ function isAlreadyFluid(node: Node, accessibleText: boolean, staticText: boolean
     isUnboundedMarker ||
     isStaticTextMarker ||
     (accessibleText &&
-      node.value.toLowerCase() === 'calc' &&
+      name === 'calc' &&
       hasViewportLength &&
       containsRelativeLength(node.nodes, ROOT_RELATIVE))
   )

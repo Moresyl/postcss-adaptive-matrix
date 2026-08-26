@@ -93,6 +93,11 @@ export function canonicalCssPropertyName(value: string): string {
     : decoded.replace(/[A-Z]/g, (letter) => letter.toLowerCase())
 }
 
+/** Canonical identity for an ASCII-case-insensitive CSS identifier. */
+export function canonicalCssIdentifierName(value: string): string {
+  return decodeCssIdentifier(value).replace(/[A-Z]/g, (letter) => letter.toLowerCase())
+}
+
 /**
  * Reports structural syntax that can escape or swallow a generated wrapper.
  *

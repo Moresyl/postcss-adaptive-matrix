@@ -358,6 +358,13 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('outline: .5px solid')
   })
 
+  it('recognises escaped CSS function names before deciding whether to convert', async () => {
+    const css = String.raw`.a { width: cl\61mp(10px, 5vw, 20px); src: u\72l(16px) }`
+    const result = await process(css, { hairline: 0 })
+
+    expect(result.css).toBe(css)
+  })
+
   it('does not convert a dimension-looking substring inside a CSS identifier', async () => {
     const result = await process(
       String.raw`.a { width: 宽16px; height: 16px宽; margin: \31 6px; padding: 16px }`,
