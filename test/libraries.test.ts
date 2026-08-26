@@ -34,6 +34,14 @@ describe('resolveLibrary', () => {
     const second = resolveLibrary('vant')
     expect(second.file).toHaveLength(1)
     expect((second.file as RegExp[])[0]!.source).toContain('vant')
+
+    const synthetic = {
+      name: 'synthetic',
+      designWidth: 375,
+      file: /synthetic/,
+    }
+    const detached = resolveLibrary({ extends: 'vant', ...synthetic })
+    expect(detached.file).toBe(synthetic.file)
   })
 
   it('lets the public adaptation type inherit fields it does not need to repeat', () => {

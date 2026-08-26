@@ -316,11 +316,12 @@ function withoutRegistryFields(entry: RegistryEntry): ResolvedLibraryAdaptation 
   const cloneFiles = (
     value: ResolvedLibraryAdaptation['file'],
   ): ResolvedLibraryAdaptation['file'] => {
-    if (!Array.isArray(value)) return value
-    const matchers = value as readonly FileMatcher[]
-    return matchers.map((matcher) =>
-      matcher instanceof RegExp ? new RegExp(matcher.source, matcher.flags) : matcher,
-    )
+    const cloneMatcher = (matcher: FileMatcher): FileMatcher =>
+      matcher instanceof RegExp ? new RegExp(matcher.source, matcher.flags) : matcher
+    if (!Array.isArray(value)) {
+      return value === undefined ? undefined : cloneMatcher(value as FileMatcher)
+    }
+    return (value as readonly FileMatcher[]).map(cloneMatcher)
   }
   // The registry is process-global. Every lookup must receive fresh collection
   // values or a caller that customises one resolved entry can silently rewrite
