@@ -18,10 +18,15 @@ export interface AdaptiveQuery {
 export interface AdaptiveProfile {
   /** Width of the design canvas used while authoring this profile. */
   designWidth: number | ((context: ProfileContext) => number)
-  /** Viewport/container interval in which lengths are allowed to scale. */
-  fluid: {
-    minWidth: number
-    maxWidth: number
+  /**
+   * Optional viewport/container bounds for scaling.
+   *
+   * With neither bound the preferred viewport expression remains unbounded.
+   * One bound emits `min()`/`max()`; both emit `clamp()`.
+   */
+  fluid?: {
+    minWidth?: number
+    maxWidth?: number
   }
   /** Wrapper generated for `@adaptive <profile>`. `false` unwraps it. */
   query?: string | AdaptiveQuery | false
@@ -65,6 +70,7 @@ export interface AdaptiveProfile {
 export interface AdaptiveRoute {
   /** Target profile, or `false` to leave matching lengths in fixed pixels. */
   profile: string | false
+  /** At least one of `file`, `selector`, `property`, or `media` must be supplied. */
   file?: FileMatcher | readonly FileMatcher[]
   selector?: Pattern | readonly Pattern[]
   /** Custom-property prefixes, e.g. `--van-`. Routes tokens declared on `:root`. */
@@ -162,7 +168,8 @@ export type LibraryEntry =
   string | LibraryAdaptation | (Partial<LibraryAdaptation> & { extends: string })
 
 export interface RootFoundationOptions {
-  selector: string
+  /** Element that carries the layout. Defaults to `:root`. */
+  selector?: string
   center?: boolean
   container?: boolean
   containerName?: string
@@ -206,6 +213,11 @@ export interface RootFoundationOptions {
    * tested against the path, a function decides for itself.
    */
   injectTo?: FileMatcher | readonly FileMatcher[]
+}
+
+/** Root options after public defaults have been applied. */
+export interface ResolvedRootFoundationOptions extends RootFoundationOptions {
+  selector: string
 }
 
 export interface AdaptiveMatrixOptions {
@@ -269,7 +281,7 @@ export interface ResolvedAdaptiveMatrixOptions extends Omit<
 > {
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
-  root: RootFoundationOptions | false
+  root: ResolvedRootFoundationOptions | false
   include?: FileMatcher | readonly FileMatcher[]
   exclude?: FileMatcher | readonly FileMatcher[]
   /** Built-in names already looked up, so nothing downstream consults the registry. */
@@ -284,6 +296,9 @@ export interface AppPcPresetOptions {
   appFluidMax?: number
   pcFluidMin?: number
   pcFluidMax?: number
+  /** Enables the root foundation. Its selector defaults to `:root`. */
+  root?: boolean
+  /** Overrides the root foundation selector; supplying it also enables the foundation. */
   rootSelector?: string
   container?: boolean
   /**

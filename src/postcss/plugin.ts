@@ -374,8 +374,13 @@ function warnOnDeadBand(
   const strategy = active.profile.strategy ?? context.options.strategy
   if (strategy !== 'clamp') return
 
-  const { minWidth, maxWidth } = active.profile.fluid
-  const pinned = band.lo >= maxWidth ? 'maximum' : band.hi <= minWidth ? 'minimum' : null
+  const { minWidth, maxWidth } = active.profile.fluid ?? {}
+  const pinned =
+    maxWidth !== undefined && band.lo >= maxWidth
+      ? 'maximum'
+      : minWidth !== undefined && band.hi <= minWidth
+        ? 'minimum'
+        : null
   if (!pinned) return
 
   const key = `${active.name}|${band.lo}|${band.hi}`
@@ -385,6 +390,12 @@ function warnOnDeadBand(
   const live =
     band.hi === Infinity ? `from ${band.lo}px up` : `between ${band.lo}px and ${band.hi}px`
   const bound = pinned === 'maximum' ? `minWidth: ${band.lo}` : `maxWidth: ${band.hi}`
+  const fluidRange =
+    minWidth !== undefined && maxWidth !== undefined
+      ? `outside ${minWidth}px–${maxWidth}px`
+      : minWidth !== undefined
+        ? `below ${minWidth}px`
+        : `above ${maxWidth}px`
   // A canvas that a selector route chose keeps that canvas at every viewport
   // width — which is right for a component library and wrong for a rule that
   // overrides one at a breakpoint. Such a route outranks a bare media route, so
@@ -395,7 +406,7 @@ function warnOnDeadBand(
       : `{ selector: […], media: { ${bound} }, profile: '…' }`
   context.result.warn(
     `Every converted length here is a constant: this rule is live ${live}, but canvas ` +
-      `"${active.name}" stops scaling outside ${minWidth}px–${maxWidth}px, so its clamp() ` +
+      `"${active.name}" stops scaling ${fluidRange}, so its bounded expression ` +
       `is pinned to its ${pinned} across that whole range. ` +
       'The numbers in a breakpoint are usually measured on a different design file — ' +
       `give it one with a route: ${suggestion}. ` +

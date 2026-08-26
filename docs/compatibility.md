@@ -48,7 +48,7 @@ Data from caniuse-lite `1.0.30001809`, baked into `src/core/compat-data.ts` by `
 
 ### `@layer` — the biggest single loss
 
-**What emits it**: `root.layer`. `appPcPreset` sets it to `'adaptive-matrix'` whenever a `rootSelector` is given.
+**What emits it**: `root.layer`. `appPcPreset` sets it to `'adaptive-matrix'` whenever its root foundation is enabled.
 
 **What is lost**: the entire `@layer` block is voided, so the root foundation goes **all at once** — the centred column, the safe-area variables and the fixed-position correction disappear together. This is the largest single loss in the table.
 
@@ -168,7 +168,7 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 
 ```
   needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          from: root.layer, which appPcPreset sets to 'adaptive-matrix' whenever a rootSelector is given
+          from: root.layer, which appPcPreset sets to 'adaptive-matrix' whenever its root foundation is enabled
           seen: @layer adaptive-matrix { :where(#app) {
           if unsupported: The whole @layer block is dropped, so the entire root
           foundation goes with it — the centred column, the safe-area variables

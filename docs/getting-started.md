@@ -61,7 +61,7 @@ What the preset decides for you:
 | Fluid range | 320 – 480 | 1024 – 1920 |
 | Applies when | default | `@media (min-width: 768px)` |
 
-The helper validates at its own call boundary. Unknown option names include a spelling suggestion, every design/bound width must be finite and positive, and root-only settings such as `container` or `rootLayer` require `rootSelector`; none can be silently ignored while the returned object appears valid.
+The helper validates at its own call boundary. Unknown option names include a spelling suggestion and every design/bound width must be finite and positive. `root: true` or any root-only setting enables the foundation on `:root`; `rootSelector` is needed only to override that selector. Explicit `root: false` rejects root-only settings instead of silently ignoring them.
 
 ## Writing your CSS
 
@@ -194,7 +194,7 @@ The static part is in `rem`, so the browser's text-zoom setting keeps working (W
 
 ## The root container
 
-Pass `rootSelector` and the plugin appends a low-priority `@layer adaptive-matrix`:
+Pass `root: true` and the plugin appends a low-priority `@layer adaptive-matrix` to `:root`. Use `rootSelector` only when another element, such as `#app`, carries the layout; supplying it also enables the foundation:
 
 - the root element gets `inline-size: 100%` and is centred horizontally;
 - app and desktop each stop growing at their fluid ceiling;
@@ -203,7 +203,7 @@ Pass `rootSelector` and the plugin appends a low-priority `@layer adaptive-matri
 
 That last one deserves its own note: once the page is a centred column, `position: fixed` falls back to the viewport as its containing block, so a bottom navigation bar sticks to the window edges, out of line with the content column it belongs to. `appPcPreset` corrects this by default; pass `fixedContainingBlock: false` if you do not want it. See [Configuration reference](./configuration.md#fixedcontainingblock).
 
-A project that already manages its own root container can simply omit `rootSelector`, and the plugin injects no global CSS at all.
+A project that already manages its own root container can omit all root settings (or explicitly pass `root: false`), and the plugin injects no global CSS at all.
 
 ### Component-based projects must say where to inject
 

@@ -101,10 +101,11 @@ const PROFILE: Fields<AdaptiveProfile> = {
     'x-also': '(context: { file, profile }) => number',
   },
   fluid: {
-    description: 'The interval in which lengths are allowed to scale.',
-    'x-description-zh': '长度允许缩放的视口区间。',
+    description:
+      'Optional bounds for scaling. Omit both for an unbounded expression, set either side for one bound, or both for clamp().',
+    'x-description-zh':
+      '可选的缩放边界。两端都省略则不设边界，只写一端则单侧限制，两端都写则输出 clamp()。',
     type: 'object',
-    required: ['minWidth', 'maxWidth'],
     additionalProperties: false,
     properties: {
       minWidth: {
@@ -138,8 +139,9 @@ const PROFILE: Fields<AdaptiveProfile> = {
   },
   strategy: {
     description:
-      'How a length is written: a bounded `clamp()`, or a bare viewport unit for engines without it.',
-    'x-description-zh': '长度的写法：带上下界的 `clamp()`，或面向不支持它的引擎输出裸视口单位。',
+      'How a length is written: an adaptive expression honouring optional bounds, or a bare viewport unit for engines without math functions.',
+    'x-description-zh':
+      '长度的写法：遵守可选边界的自适应表达式，或面向不支持数学函数的引擎输出裸视口单位。',
     type: 'string',
     enum: ['clamp', 'viewport'],
   },
@@ -269,10 +271,11 @@ const LIBRARY: Fields<LibraryAdaptation> = {
 
 const ROOT: Fields<RootFoundationOptions> = {
   selector: {
-    description: 'The element that carries the layout, such as `#app`.',
-    'x-description-zh': '承载布局的元素，例如 `#app`。',
+    description: 'The element that carries the layout. Defaults to `:root`.',
+    'x-description-zh': '承载布局的元素，默认为 `:root`。',
     type: 'string',
     minLength: 1,
+    default: ':root',
   },
   center: {
     description: 'Centres the root column once a profile caps its width.',
@@ -332,7 +335,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     additionalProperties: {
       type: 'object',
       properties: PROFILE,
-      required: ['designWidth', 'fluid'],
+      required: ['designWidth'],
       additionalProperties: false,
     },
     propertyNames: {
@@ -355,6 +358,12 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       type: 'object',
       properties: ROUTE,
       required: ['profile'],
+      anyOf: [
+        { required: ['file'] },
+        { required: ['selector'] },
+        { required: ['property'] },
+        { required: ['media'] },
+      ],
       additionalProperties: false,
     },
     default: [],
@@ -371,7 +380,12 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
         items: {
           oneOf: [
             { type: 'string' },
-            { type: 'object', properties: LIBRARY, additionalProperties: false },
+            {
+              type: 'object',
+              properties: LIBRARY,
+              additionalProperties: false,
+              anyOf: [{ required: ['extends'] }, { required: ['name', 'designWidth'] }],
+            },
           ],
         },
       },
@@ -514,7 +528,6 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       {
         type: 'object',
         properties: ROOT,
-        required: ['selector'],
         additionalProperties: false,
       },
       { const: false },

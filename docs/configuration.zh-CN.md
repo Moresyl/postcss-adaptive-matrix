@@ -31,6 +31,8 @@
 | `root` | `false` | 可选根布局基础样式 |
 | `unknownProfile` | `warn` | `warn`、`error`、`ignore` |
 
+内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段。只有主动写出某类嵌套对象时，决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
+
 `propList` 示例：
 
 ```js
@@ -243,7 +245,7 @@ libraries?: LibraryEntry[] | 'auto' | false
 ```ts
 interface AdaptiveProfile {
   designWidth: number | ((context: { file: string; profile: string }) => number)
-  fluid: { minWidth: number; maxWidth: number }
+  fluid?: { minWidth?: number; maxWidth?: number }
   query?: string | {
     type?: 'media' | 'container'
     condition: string
@@ -257,6 +259,8 @@ interface AdaptiveProfile {
 }
 ```
 
+Profile 中只有 `designWidth` 必填。省略 `fluid`（或写 `fluid: {}`）会输出无边界视口表达式；只给 `minWidth` 或 `maxWidth` 会用 `max()` / `min()` 限制单侧；两端都给才输出 `clamp()`。传入的边界必须是正有限数，同时存在时 `maxWidth` 必须大于 `minWidth`。显式使用兼容模式 `strategy: 'viewport'` 时，无论 `fluid` 如何配置都保持无边界输出。
+
 `query: false` 会移除 `@adaptive` 外壳但保留内部规则，适合构建不同产物时由环境选择 profile。
 
 查询条件仍可使用当前或未来的 CSS 媒体/容器查询语法，但结构边界必须完整：字符串、注释及 `()` / `[]` component-value 块必须闭合，未转义花括号或顶层 `;` 会被拒绝。这样既不会把查询语法锁死，又能防止 JavaScript 配置拼写错误提前结束生成的 at-rule，或吞掉后续规则。
@@ -267,7 +271,7 @@ interface AdaptiveProfile {
 
 ```ts
 interface RootFoundationOptions {
-  selector: string
+  selector?: string
   center?: boolean
   container?: boolean
   containerName?: string
@@ -279,11 +283,13 @@ interface RootFoundationOptions {
 }
 ```
 
-默认不注入全局样式。只有显式配置 `root` 或在 `appPcPreset` 传 `rootSelector` 才启用。
+默认不注入全局样式。只有显式配置 `root`、给 `appPcPreset` 传 `root: true`，或填写该 helper 的任一 root 专属配置时才启用。`rootSelector` 只用于覆盖默认的 `:root`，启用基础样式不再要求填写它。
+
+`root` 内没有必填成员。`root: {}` 会在 `:root` 上启用基础样式；只有布局实际由 `#app` 等其他元素承载时才需要填写 `selector`。
 
 `containerName` 必须是非保留 CSS custom-ident；`layer` 必须是 `adaptive-matrix`、`framework.layout` 这类单个点分层名。空格、逗号、空片段或 CSS-wide 关键字都会在生成非法 `container-name` / `@layer` 前被拒绝。命名容器 profile 的 `query.name` 遵守同一 custom-ident 规则。
 
-`selector` 会被放进 `:where(...)`，因此也遵守同一结构守卫：字符串、注释、括号及属性方括号必须闭合，未转义花括号或顶层分号会在生成 foundation 前被拒绝。
+`selector` 会被放进 `:where(...)`；因此显式传入时也遵守同一结构守卫：字符串、注释、括号及属性方括号必须闭合，未转义花括号或顶层分号会在生成 foundation 前被拒绝。
 
 ### injectTo
 
@@ -330,7 +336,7 @@ root: { selector: '#app', injectTo: 'src/styles/main' }
 
 只看规则内最终获胜的 `position` 声明，并遵守同一声明块里的顺序和 `!important`；从其它规则继承定位或解析跨规则胜者不是这次局部静态转换能观察到的，猜错比漏掉更糟。
 
-`appPcPreset` 传了 `rootSelector` 时默认开启——该预设的两张 profile 都设了 `rootMaxWidth`，正是会出现这一问题的配置。用 `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })` 关闭。
+只要启用了 `appPcPreset` 的 root 基础样式，该修正就默认开启——预设里的两张 profile 都设了 `rootMaxWidth`，正是会出现这一问题的配置。用 `appPcPreset({ root: true, fixedContainingBlock: false })` 关闭；只有真实布局根是 `#app` 时才需再写 `rootSelector: '#app'`。
 
 ## 旧 WebView 模式
 

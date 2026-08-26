@@ -51,6 +51,72 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('border: 1px solid')
   })
 
+  it('supports omitted, one-sided, and two-sided fluid bounds', async () => {
+    const compile = async (fluid?: { minWidth?: number; maxWidth?: number }) =>
+      (
+        await process('.a { width: 40px; margin: -40px }', {
+          defaultProfile: 'app',
+          libraries: false,
+          hairline: 0,
+          profiles: { app: { designWidth: 400, ...(fluid === undefined ? {} : { fluid }) } },
+        })
+      ).css
+
+    const unbounded = await compile()
+    expect(unbounded).toContain('width: 10vw')
+    expect(unbounded).toContain('margin: -10vw')
+    expect(await compile({})).toBe(unbounded)
+
+    const lowerBounded = await compile({ minWidth: 320 })
+    expect(lowerBounded).toContain('width: max(10vw, 32px)')
+    expect(lowerBounded).toContain('margin: min(-10vw, -32px)')
+
+    const upperBounded = await compile({ maxWidth: 600 })
+    expect(upperBounded).toContain('width: min(10vw, 60px)')
+    expect(upperBounded).toContain('margin: max(-10vw, -60px)')
+
+    const bounded = await compile({ minWidth: 320, maxWidth: 600 })
+    expect(bounded).toContain('width: clamp(32px, 10vw, 60px)')
+    expect(bounded).toContain('margin: clamp(-60px, -10vw, -32px)')
+  })
+
+  it('keeps unbounded zoomable text stable when rem is also an input unit', async () => {
+    const options = withAtomicCss({
+      defaultProfile: 'app',
+      libraries: false,
+      profiles: { app: { designWidth: 400 } },
+    })
+    const once = await process('.a { font-size: 16px }', options)
+    const twice = await process(once.css, options)
+
+    expect(once.css).toContain('calc(0.65rem + 1.4vw)')
+    expect(twice.css).toBe(once.css)
+  })
+
+  it('still converts authored pixel terms inside an unbounded fluid text calc', async () => {
+    const result = await process('.a { font-size: calc(16px + 1vw) }', {
+      defaultProfile: 'app',
+      libraries: false,
+      hairline: 0,
+      profiles: { app: { designWidth: 400 } },
+    })
+
+    expect(result.css).not.toContain('16px')
+    expect(result.css).toContain('calc(calc(0.65rem + 1.4vw) + 1vw)')
+  })
+
+  it('does not mistake relative units in comments for an existing fluid formula', async () => {
+    const result = await process('.a { font-size: calc(16px + /* 1rem + 1vw */ 2px) }', {
+      defaultProfile: 'app',
+      libraries: false,
+      hairline: 0,
+      profiles: { app: { designWidth: 400 } },
+    })
+
+    expect(result.css).not.toContain('16px')
+    expect(result.css).not.toMatch(/\/\* 1rem \+ 1vw \*\/ 2px/)
+  })
+
   it('converts explicitly positive lengths without emitting unary plus before a function', async () => {
     const result = await process('.a { width: +16px; inset: calc(+16px + 2px) }', {
       hairline: 0,
@@ -413,6 +479,12 @@ describe('selector lists that span two canvases', () => {
 })
 
 describe('presets and foundation', () => {
+  it('uses :root when the opt-in foundation selector is omitted', async () => {
+    const result = await process('.a { width: 10px }', { root: {}, libraries: false })
+
+    expect(result.css).toContain(':where(:root)')
+  })
+
   it('injects an opt-in centered root, safe-area variables, and profile caps', async () => {
     const result = await process('.a { width: 10px }', appPcPreset({ rootSelector: '#app' }))
     expect(result.css).toContain('@layer adaptive-matrix')
@@ -483,6 +555,17 @@ describe('presets and foundation', () => {
     })
   })
 
+  it('enables the preset foundation without requiring a selector', async () => {
+    expect(appPcPreset({ root: true }).root).toMatchObject({ selector: ':root' })
+    expect(appPcPreset({ container: true }).root).toMatchObject({
+      selector: ':root',
+      container: true,
+    })
+
+    const result = await process('.a { width: 10px }', appPcPreset({ root: true }))
+    expect(result.css).toContain(':where(:root)')
+  })
+
   it('rejects misspelled or malformed preset options at the helper boundary', () => {
     expect(() => appPcPreset({ appDesignWidht: 750 } as never)).toThrow(
       /appDesignWidht.*Did you mean "appDesignWidth"/,
@@ -502,9 +585,13 @@ describe('presets and foundation', () => {
     )
   })
 
-  it('rejects root-only preset settings that would otherwise be ignored', () => {
-    expect(() => appPcPreset({ container: true })).toThrow(/container requires rootSelector/)
-    expect(() => appPcPreset({ rootLayer: false })).toThrow(/rootLayer requires rootSelector/)
+  it('rejects contradictory or malformed preset root settings', () => {
+    expect(() => appPcPreset({ root: false, container: true })).toThrow(
+      /container cannot be used with root: false/,
+    )
+    expect(() => appPcPreset({ root: false, rootLayer: false })).toThrow(
+      /rootLayer cannot be used with root: false/,
+    )
     expect(() => appPcPreset({ rootSelector: '  ' })).toThrow(/rootSelector cannot be empty/)
     expect(() => appPcPreset({ rootSelector: '#app', rootLayer: '  ' })).toThrow(
       /rootLayer cannot be empty/,

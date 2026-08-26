@@ -58,6 +58,7 @@ export type {
   ProfileContext,
   QueryType,
   ResolvedAdaptiveMatrixOptions,
+  ResolvedRootFoundationOptions,
   RootFoundationOptions,
   ScaleUnit,
 } from './core/types.js'

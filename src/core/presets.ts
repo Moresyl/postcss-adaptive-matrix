@@ -15,6 +15,7 @@ const APP_PC_PRESET_KEYS = [
   'appFluidMax',
   'pcFluidMin',
   'pcFluidMax',
+  'root',
   'rootSelector',
   'container',
   'fixedContainingBlock',
@@ -22,6 +23,15 @@ const APP_PC_PRESET_KEYS = [
   'rootLayer',
   'rootLogical',
 ] as const satisfies readonly (keyof AppPcPresetOptions)[]
+
+const ROOT_PRESET_SETTING_KEYS = [
+  'rootSelector',
+  'container',
+  'fixedContainingBlock',
+  'rootInjectTo',
+  'rootLayer',
+  'rootLogical',
+] as const
 
 const ATOMIC_CSS_KEYS = [
   'profile',
@@ -71,7 +81,7 @@ function validateAppPcPresetOptions(value: unknown): asserts value is AppPcPrese
       '[postcss-adaptive-matrix] appPcPreset options.breakpoint must be greater than 0.02px so the app media range remains non-negative.',
     )
   }
-  for (const field of ['container', 'fixedContainingBlock', 'rootLogical'] as const) {
+  for (const field of ['root', 'container', 'fixedContainingBlock', 'rootLogical'] as const) {
     requireOptionalBoolean(`appPcPreset options.${field}`, value[field])
   }
   if (value.rootSelector !== undefined) {
@@ -106,17 +116,12 @@ function validateAppPcPresetOptions(value: unknown): asserts value is AppPcPrese
   if (value.rootInjectTo !== undefined) {
     requireFileMatchers('appPcPreset options.rootInjectTo', value.rootInjectTo)
   }
-  const rootOnly = [
-    'container',
-    'fixedContainingBlock',
-    'rootInjectTo',
-    'rootLayer',
-    'rootLogical',
-  ] as const
-  const orphan = rootOnly.find((field) => value[field] !== undefined)
-  if (orphan && value.rootSelector === undefined) {
+  const conflictingRootSetting = ROOT_PRESET_SETTING_KEYS.find(
+    (field) => value[field] !== undefined,
+  )
+  if (value.root === false && conflictingRootSetting) {
     throw new TypeError(
-      `[postcss-adaptive-matrix] appPcPreset options.${orphan} requires rootSelector; without a root, that setting would be ignored.`,
+      `[postcss-adaptive-matrix] appPcPreset options.${conflictingRootSetting} cannot be used with root: false; that setting would be ignored.`,
     )
   }
 }
@@ -212,6 +217,8 @@ export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOpt
   const appFluidMax = options.appFluidMax ?? 480
   const pcFluidMin = options.pcFluidMin ?? 1024
   const pcFluidMax = options.pcFluidMax ?? 1920
+  const rootEnabled =
+    options.root ?? ROOT_PRESET_SETTING_KEYS.some((field) => options[field] !== undefined)
 
   if (appFluidMax <= appFluidMin) {
     throw new RangeError(
@@ -248,9 +255,9 @@ export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOpt
         rootMaxWidth: pcFluidMax,
       },
     },
-    root: options.rootSelector
+    root: rootEnabled
       ? {
-          selector: options.rootSelector,
+          selector: options.rootSelector ?? ':root',
           center: true,
           container: options.container ?? false,
           containerName: 'adaptive-root',

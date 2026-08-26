@@ -81,7 +81,7 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
     title: '@layer',
     source: 'css-cascade-layers',
     emittedBy:
-      "root.layer, which appPcPreset sets to 'adaptive-matrix' whenever a rootSelector is given",
+      "root.layer, which appPcPreset sets to 'adaptive-matrix' whenever its root foundation is enabled",
     failure:
       'The whole @layer block is dropped, so the entire root foundation goes with it — the centred column, the safe-area variables and the fixed-position correction all vanish at once. This is the largest single loss in the list.',
     fallback:

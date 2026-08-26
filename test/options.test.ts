@@ -21,6 +21,40 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ propList: [] })).toThrow('propList')
   })
 
+  it('accepts omitted and one-sided fluid bounds while validating supplied values', () => {
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375 } } }).profiles.app!.fluid,
+    ).toBeUndefined()
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid: { minWidth: 320 } } } }).profiles
+        .app!.fluid,
+    ).toEqual({ minWidth: 320 })
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid: { maxWidth: 600 } } } }).profiles
+        .app!.fluid,
+    ).toEqual({ maxWidth: 600 })
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid: {} } } }).profiles.app!.fluid,
+    ).toEqual({})
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid: { minWidth: 0 } } } }),
+    ).toThrow(/fluid\.minWidth must be a positive finite number/)
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, fluid: { maxWidth: Infinity } } } }),
+    ).toThrow(/fluid\.maxWidth must be a positive finite number/)
+  })
+
+  it('infers the only authored profile instead of requiring its name twice', () => {
+    expect(resolveOptions({ profiles: { mobile: { designWidth: 375 } } }).defaultProfile).toBe(
+      'mobile',
+    )
+    expect(() =>
+      resolveOptions({
+        profiles: { mobile: { designWidth: 375 }, desktop: { designWidth: 1440 } },
+      }),
+    ).toThrow(/defaultProfile "app" does not exist/)
+  })
+
   it('rejects non-finite thresholds before they can leak into generated CSS', () => {
     expect(() => resolveOptions({ fontFluidity: Number.NaN })).toThrow(/fontFluidity/)
     expect(() => resolveOptions({ minPixelValue: Number.NaN })).toThrow(/minPixelValue/)
@@ -383,7 +417,7 @@ describe('configuration validation', () => {
     expect(resolveOptions({ atRuleName: ' Canvas ' }).atRuleName).toBe('canvas')
   })
 
-  it('rejects an empty root.selector, which compiles to an invalid :where()', () => {
+  it('defaults root.selector while rejecting an authored empty selector', () => {
     // `:where()` with nothing inside is a parse error, so the whole foundation
     // is discarded — safe-area variables and root cap included.
     expect(() => resolveOptions({ root: { selector: '' } })).toThrow(
@@ -396,7 +430,10 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ root: true as never })).toThrow(
       /root must be false or an options object/,
     )
-    expect(() => resolveOptions({ root: {} as never })).toThrow(/root\.selector must be a string/)
+    expect(resolveOptions({ root: {} }).root).toMatchObject({ selector: ':root' })
+    expect(() => resolveOptions({ root: { selector: 1 as never } })).toThrow(
+      /root\.selector must be a string/,
+    )
   })
 
   it('rejects an invalid dynamic design width at conversion time', () => {

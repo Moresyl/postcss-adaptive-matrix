@@ -61,7 +61,7 @@ export default {
 | 流体区间 | 320 ~ 480 | 1024 ~ 1920 |
 | 生效条件 | 默认 | `@media (min-width: 768px)` |
 
-helper 会在调用边界直接校验：未知选项名会附带拼写建议，设计宽度和流体边界必须是有限正数，`container`、`rootLayer` 等 root 专属项必须同时给出 `rootSelector`；不会再有字段被静默忽略、返回对象看起来却完全正常的情况。
+helper 会在调用边界直接校验：未知选项名会附带拼写建议，设计宽度和流体边界必须是有限正数。`root: true` 或任一 root 专属项会直接在 `:root` 上启用基础样式，只有覆盖该选择器时才需写 `rootSelector`；显式 `root: false` 又填写 root 专属项则会报错，不会静默忽略。
 
 ## 写业务 CSS
 
@@ -194,7 +194,7 @@ SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），
 
 ## 根容器
 
-传入 `rootSelector` 后，插件追加一个低优先级的 `@layer adaptive-matrix`：
+传入 `root: true` 后，插件会在 `:root` 上追加一个低优先级的 `@layer adaptive-matrix`。只有 `#app` 等其他元素实际承载布局时才需要写 `rootSelector`；填写它也会直接启用基础样式：
 
 - 根元素 `inline-size: 100%`，水平居中；
 - App 与 PC 各自在流体上限处停止增长；
@@ -203,7 +203,7 @@ SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），
 
 最后一条值得单独说：页面一旦成为居中的列，`position: fixed` 会退回以视口为包含块，底部导航栏就贴到了窗口两端，与它所在的内容列错开。`appPcPreset` 默认修正这一点，不需要时传 `fixedContainingBlock: false`。参见[配置参考](./configuration.zh-CN.md#fixedcontainingblock)。
 
-已经自己管理根容器的项目省略 `rootSelector` 即可，插件不会注入任何全局 CSS。
+已经自己管理根容器的项目省略全部 root 配置（或显式传 `root: false`）即可，插件不会注入任何全局 CSS。
 
 ### 组件化项目要指定注入位置
 

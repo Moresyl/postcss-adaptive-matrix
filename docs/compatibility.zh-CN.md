@@ -48,7 +48,7 @@
 
 ### `@layer` —— 丢得最多的一项
 
-**谁产出它**：`root.layer`。`appPcPreset` 只要给了 `rootSelector` 就会设成 `'adaptive-matrix'`。
+**谁产出它**：`root.layer`。只要启用了 root 基础样式，`appPcPreset` 就会设成 `'adaptive-matrix'`。
 
 **丢什么**：整个 `@layer` 块作废，根基础样式**一次性全没**——居中的列、安全区变量、固定定位修正，一起消失。这是表里单项损失最大的一条。
 
@@ -168,7 +168,7 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 
 ```
   needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          from: root.layer, which appPcPreset sets to 'adaptive-matrix' whenever a rootSelector is given
+          from: root.layer, which appPcPreset sets to 'adaptive-matrix' whenever its root foundation is enabled
           seen: @layer adaptive-matrix { :where(#app) {
           if unsupported: The whole @layer block is dropped, so the entire root
           foundation goes with it — the centred column, the safe-area variables

@@ -143,10 +143,28 @@ describe('the published options schema', () => {
     expect(schema.$id).toBe('https://example.test/schema/options.json')
     expect(schema.additionalProperties).toBe(false)
     expect(schema['x-description-zh']).toContain('x-description-zh')
-    // `fluid` is required on a profile; a canvas with no interval cannot bound
-    // anything, and the compiler throws rather than guessing one.
+    // Only the canvas measurement is irreducible. Bounds are optional: no
+    // bounds means a viewport expression, and either side can stand alone.
     const profile = options.profiles!.additionalProperties as Subschema
-    expect(profile.required).toEqual(['designWidth', 'fluid'])
+    expect(profile.required).toEqual(['designWidth'])
+    expect(profile.properties!.fluid!.required).toBeUndefined()
+    const rootObject = (options.root!.oneOf as Subschema[])[0]!
+    expect(rootObject.required).toBeUndefined()
+    expect(rootObject.properties!.selector!.default).toBe(':root')
+    const route = options.routes!.items as Subschema
+    expect(route.required).toEqual(['profile'])
+    expect(route.anyOf).toEqual([
+      { required: ['file'] },
+      { required: ['selector'] },
+      { required: ['property'] },
+      { required: ['media'] },
+    ])
+    const libraryArray = (options.libraries!.oneOf as Subschema[])[2]!
+    const libraryObject = ((libraryArray.items as Subschema).oneOf as Subschema[])[1]!
+    expect(libraryObject.anyOf).toEqual([
+      { required: ['extends'] },
+      { required: ['name', 'designWidth'] },
+    ])
     const query = (profile.properties!.query!.oneOf as Subschema[])[1]!
     expect(query.required).toEqual(['condition'])
     expect(query.additionalProperties).toBe(false)

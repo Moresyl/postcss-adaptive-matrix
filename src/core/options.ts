@@ -251,14 +251,16 @@ function validateRootShape(root: unknown): void {
     )
   }
   rejectUnknownKeys('root', root, ROOT_KEYS)
-  if (typeof root.selector !== 'string') {
+  if (root.selector !== undefined && typeof root.selector !== 'string') {
     throw new TypeError('[postcss-adaptive-matrix] root.selector must be a string.')
   }
-  const selectorIssue = cssComponentValueStructureIssue(root.selector)
-  if (selectorIssue) {
-    throw new TypeError(
-      `[postcss-adaptive-matrix] root.selector ${selectorIssue}; it cannot be safely wrapped in :where().`,
-    )
+  if (typeof root.selector === 'string') {
+    const selectorIssue = cssComponentValueStructureIssue(root.selector)
+    if (selectorIssue) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] root.selector ${selectorIssue}; it cannot be safely wrapped in :where().`,
+      )
+    }
   }
   for (const field of [
     'center',
@@ -363,20 +365,27 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
   }
   const path = `profiles[${JSON.stringify(name)}]`
   rejectUnknownKeys(path, profile, PROFILE_KEYS)
-  if (!isObject(profile.fluid)) {
-    throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" fluid must be an object.`)
-  }
-  rejectUnknownKeys(`${path}.fluid`, profile.fluid, FLUID_KEYS)
-  const { minWidth, maxWidth } = profile.fluid
-  if (
-    !Number.isFinite(minWidth) ||
-    !Number.isFinite(maxWidth) ||
-    minWidth <= 0 ||
-    maxWidth <= minWidth
-  ) {
-    throw new RangeError(
-      `[postcss-adaptive-matrix] Profile "${name}" requires fluid.minWidth > 0 and fluid.maxWidth > fluid.minWidth.`,
-    )
+  if (profile.fluid !== undefined) {
+    if (!isObject(profile.fluid)) {
+      throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" fluid must be an object.`)
+    }
+    rejectUnknownKeys(`${path}.fluid`, profile.fluid, FLUID_KEYS)
+    const { minWidth, maxWidth } = profile.fluid
+    if (minWidth !== undefined && (!Number.isFinite(minWidth) || minWidth <= 0)) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] Profile "${name}" fluid.minWidth must be a positive finite number.`,
+      )
+    }
+    if (maxWidth !== undefined && (!Number.isFinite(maxWidth) || maxWidth <= 0)) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] Profile "${name}" fluid.maxWidth must be a positive finite number.`,
+      )
+    }
+    if (minWidth !== undefined && maxWidth !== undefined && maxWidth <= minWidth) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] Profile "${name}" fluid.maxWidth must be greater than fluid.minWidth.`,
+      )
+    }
   }
   if (
     typeof profile.designWidth !== 'function' &&
@@ -518,13 +527,26 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   const preset = appPcPreset()
   const authored = input.profiles ?? preset.profiles!
   const libraries = resolveLibraries(input.libraries)
+  const authoredNames = Object.keys(authored)
+  const defaultProfile =
+    input.defaultProfile ??
+    (authored[DEFAULTS.defaultProfile]
+      ? DEFAULTS.defaultProfile
+      : authoredNames.length === 1
+        ? authoredNames[0]!
+        : DEFAULTS.defaultProfile)
+  const root =
+    input.root === undefined || input.root === false
+      ? false
+      : { ...input.root, selector: input.root.selector ?? ':root' }
   const options: ResolvedAdaptiveMatrixOptions = {
     ...DEFAULTS,
     ...input,
+    defaultProfile,
     unitToConvert: normaliseUnits(input.unitToConvert ?? DEFAULTS.unitToConvert),
     libraries,
     profiles: authored,
-    root: input.root ?? false,
+    root,
   }
 
   if (typeof options.defaultProfile !== 'string' || !options.defaultProfile.trim()) {

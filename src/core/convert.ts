@@ -30,6 +30,7 @@ const VIEWPORT_RELATIVE = new RegExp(
   `(?:^|[^\\w.-])${CSS_NUMBER_SOURCE}(?:[sld]?v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))(?![\\w-])`,
   'i',
 )
+const ROOT_RELATIVE = new RegExp(`(?:^|[^\\w.-])${CSS_NUMBER_SOURCE}rem(?![\\w-])`, 'i')
 
 /**
  * The unit pattern depends only on `unitToConvert`, so it is built once per
@@ -257,15 +258,8 @@ function convertResolvedLength(
   const scaled = anchored ? (pixels * anchorWidth) / designWidth : pixels
   const canvas = anchored ? anchorWidth : designWidth
 
-  const start = boundaryValue(scaled, canvas, fluidity, profile.fluid.minWidth)
-  const end = boundaryValue(scaled, canvas, fluidity, profile.fluid.maxWidth)
   const boundaryUnit = accessibleText ? 'rem' : 'px'
   const divisor = accessibleText ? options.rootValue : 1
-  const lowerBound = format(Math.min(start, end) / divisor, options.precision)
-  const upperBound = format(Math.max(start, end) / divisor, options.precision)
-  // Nothing can move between identical bounds, so a clamp() would be dead weight.
-  if (lowerBound === upperBound) return `${lowerBound}${boundaryUnit}`
-
   const preferred = preferredValue(
     scaled,
     canvas,
@@ -275,6 +269,25 @@ function convertResolvedLength(
     options.precision,
     options.rootValue,
   )
+  const { minWidth, maxWidth } = profile.fluid ?? {}
+  if (minWidth === undefined && maxWidth === undefined) return preferred
+
+  const formatBoundary = (width: number): string =>
+    `${format(boundaryValue(scaled, canvas, fluidity, width) / divisor, options.precision)}${boundaryUnit}`
+  if (minWidth === undefined || maxWidth === undefined) {
+    const boundary = formatBoundary(minWidth ?? maxWidth!)
+    if (boundary === preferred) return preferred
+    const lowerBounded = minWidth !== undefined
+    const fn = lowerBounded === scaled >= 0 ? 'max' : 'min'
+    return `${fn}(${preferred}, ${boundary})`
+  }
+
+  const start = boundaryValue(scaled, canvas, fluidity, minWidth)
+  const end = boundaryValue(scaled, canvas, fluidity, maxWidth)
+  const lowerBound = format(Math.min(start, end) / divisor, options.precision)
+  const upperBound = format(Math.max(start, end) / divisor, options.precision)
+  // Nothing can move between identical bounds, so a clamp() would be dead weight.
+  if (lowerBound === upperBound) return `${lowerBound}${boundaryUnit}`
   return `clamp(${lowerBound}${boundaryUnit}, ${preferred}, ${upperBound}${boundaryUnit})`
 }
 
@@ -300,9 +313,17 @@ function shouldSkipFunction(node: Node): boolean {
   return node.type === 'function' && SKIPPED_FUNCTIONS.has(node.value.toLowerCase())
 }
 
+/** Finds a real length token while ignoring comments, strings and separators. */
+function containsRelativeLength(nodes: Node[], pattern: RegExp): boolean {
+  return nodes.some((node) => {
+    if (node.type === 'word') return pattern.test(node.value)
+    return node.type === 'function' && containsRelativeLength(node.nodes, pattern)
+  })
+}
+
 /**
- * True for a `clamp()`/`min()`/`max()` that already carries a viewport-relative
- * term.
+ * True for a fluid expression that must not be treated as authored design
+ * measurements again.
  *
  * Such an expression is bounded fluid sizing somebody already wrote — by hand,
  * or by an earlier pass of this plugin over the same stylesheet. Its pixel
@@ -310,14 +331,21 @@ function shouldSkipFunction(node: Node): boolean {
  * design canvas, so converting them would nest one conversion inside another
  * and scale the value twice.
  *
- * Deliberately limited to the three bounding functions. `calc(100vw - 32px)`
- * keeps converting, because there the pixel term really is a design
- * measurement that happens to sit next to a viewport unit.
+ * Bounding functions are recognised for every property. Unbounded accessible
+ * text is recognised too, because `withAtomicCss` reads `rem` and would
+ * otherwise scale the generated static half on a second pass. A layout
+ * `calc(100vw - 32px)` still converts: its pixel term is a design measurement.
  */
-function isAlreadyBounded(node: Node): boolean {
+function isAlreadyFluid(node: Node, accessibleText: boolean): boolean {
   if (node.type !== 'function') return false
-  if (!BOUNDING_FUNCTIONS.has(node.value.toLowerCase())) return false
-  return VIEWPORT_RELATIVE.test(valueParser.stringify(node.nodes))
+  const hasViewportLength = containsRelativeLength(node.nodes, VIEWPORT_RELATIVE)
+  if (BOUNDING_FUNCTIONS.has(node.value.toLowerCase())) return hasViewportLength
+  return (
+    accessibleText &&
+    node.value.toLowerCase() === 'calc' &&
+    hasViewportLength &&
+    containsRelativeLength(node.nodes, ROOT_RELATIVE)
+  )
 }
 
 /**
@@ -352,7 +380,7 @@ function convertResolvedValue(
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
   parsed.walk((node) => {
-    if (shouldSkipFunction(node) || isAlreadyBounded(node)) return false
+    if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText)) return false
     if (node.type !== 'word') return undefined
     if (continuesHexEscape(value, node.sourceIndex)) return undefined
     node.value = node.value.replace(

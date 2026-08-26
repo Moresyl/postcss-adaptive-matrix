@@ -31,6 +31,8 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `root` | `false` | The optional root layout foundation |
 | `unknownProfile` | `warn` | `warn`, `error`, `ignore` |
 
+Most configurations require no user-supplied fields because the built-in preset fills the top level. Once you explicitly author a nested object, only values that define its identity or calculation are required: `profile.designWidth`, an object-form `query.condition`, a route's `profile` plus at least one matching channel, and a standalone custom library's `name` plus `designWidth` (an `extends` entry inherits them). `fluid` and `root` have no required members. A sole custom profile also becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
+
 `propList` example:
 
 ```js
@@ -243,7 +245,7 @@ For the built-in list, the matching channels and how to override or extend, see 
 ```ts
 interface AdaptiveProfile {
   designWidth: number | ((context: { file: string; profile: string }) => number)
-  fluid: { minWidth: number; maxWidth: number }
+  fluid?: { minWidth?: number; maxWidth?: number }
   query?: string | {
     type?: 'media' | 'container'
     condition: string
@@ -257,6 +259,8 @@ interface AdaptiveProfile {
 }
 ```
 
+Only `designWidth` is required in a profile. Omit `fluid` (or use `fluid: {}`) for an unbounded viewport expression, provide `minWidth` or `maxWidth` for a one-sided `max()`/`min()` limit, and provide both for `clamp()`. Supplied bounds must be positive finite numbers; when both exist, `maxWidth` must be greater than `minWidth`. The explicit `strategy: 'viewport'` compatibility mode remains unbounded regardless of `fluid`.
+
 `query: false` removes the `@adaptive` wrapper but keeps the rules inside it, which suits building separate artifacts with the profile chosen by environment.
 
 Query conditions may use current or future CSS media/container-query syntax, but their structural boundary must be complete: strings, comments and `()` / `[]` component-value blocks must close, while an unescaped brace or top-level `;` is rejected. This prevents a JavaScript configuration typo from ending the generated at-rule early or swallowing the rules that follow it without artificially freezing the query grammar.
@@ -267,7 +271,7 @@ Query conditions may use current or future CSS media/container-query syntax, but
 
 ```ts
 interface RootFoundationOptions {
-  selector: string
+  selector?: string
   center?: boolean
   container?: boolean
   containerName?: string
@@ -279,11 +283,13 @@ interface RootFoundationOptions {
 }
 ```
 
-No global styles are injected by default. This is enabled only by configuring `root` explicitly or passing `rootSelector` to `appPcPreset`.
+No global styles are injected by default. This is enabled only by configuring `root` explicitly, passing `root: true` to `appPcPreset`, or supplying one of that helper's root settings. `rootSelector` only overrides the default `:root`; it is not required to enable the foundation.
+
+`root` itself has no required members. `root: {}` enables the foundation on `:root`; set `selector` only when the layout is carried by another element such as `#app`.
 
 `containerName` must be a non-reserved CSS custom identifier. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
 
-`selector` is inserted inside `:where(...)`, so the same structural guard applies: strings, comments, parentheses and attribute brackets must close, and unescaped braces or a top-level semicolon are rejected before the foundation is generated.
+`selector` is inserted inside `:where(...)`, so an explicitly supplied selector uses the same structural guard: strings, comments, parentheses and attribute brackets must close, and unescaped braces or a top-level semicolon are rejected before the foundation is generated.
 
 ### injectTo
 
@@ -330,7 +336,7 @@ When the column equals the viewport, the gutter is `0`, so narrow-screen output 
 
 Only the rule's winning local `position` declaration is considered. Order and `!important` are respected inside that declaration block; inheriting positioning or resolving a winner from another rule is not something this local transform can observe statically, and guessing would be worse than missing.
 
-It is on by default when `appPcPreset` is given a `rootSelector` — both of that preset's profiles set `rootMaxWidth`, which is exactly the configuration where the problem appears. Turn it off with `appPcPreset({ rootSelector: '#app', fixedContainingBlock: false })`.
+It is on by default whenever `appPcPreset`'s root foundation is enabled — both of that preset's profiles set `rootMaxWidth`, which is exactly the configuration where the problem appears. Turn it off with `appPcPreset({ root: true, fixedContainingBlock: false })` (add `rootSelector: '#app'` only when that is the actual layout root).
 
 ## Legacy WebView mode
 
