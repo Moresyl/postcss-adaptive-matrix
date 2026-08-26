@@ -145,7 +145,8 @@ function validateAtomicCssOptions(value: unknown): asserts value is AtomicCssOpt
         typeof prefix !== 'string' ||
         prefix.length <= 2 ||
         prefix.trim() !== prefix ||
-        !prefix.startsWith('--')
+        !prefix.startsWith('--') ||
+        !isCssIdentifier(prefix)
       ) {
         throw new TypeError(
           `[postcss-adaptive-matrix] withAtomicCss options.${path} must be a non-empty custom-property prefix starting with "--".`,

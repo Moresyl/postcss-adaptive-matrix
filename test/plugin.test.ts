@@ -1061,7 +1061,7 @@ describe('withAtomicCss', () => {
       /tokenPrefxies.*Did you mean "tokenPrefixes"/,
     )
     expect(() => withAtomicCss({}, { profile: '' })).toThrow(/profile must be a non-empty string/)
-    for (const tokenPrefixes of ['', [''], ['--'], [' --size-'], [42]]) {
+    for (const tokenPrefixes of ['', [''], ['--'], [' --size-'], ['--bad:'], [42]]) {
       expect(() => withAtomicCss({}, { tokenPrefixes } as never)).toThrow(/tokenPrefixes/)
     }
   })
