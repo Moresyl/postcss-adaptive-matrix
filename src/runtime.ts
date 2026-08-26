@@ -218,15 +218,23 @@ export function observeAdaptiveViewport(
     },
   }
   const abort = () => observer.destroy()
-  browserWindow.addEventListener('resize', schedule, { passive: true })
-  browserWindow.addEventListener('orientationchange', schedule, { passive: true })
-  browserWindow.visualViewport?.addEventListener('resize', schedule, {
-    passive: true,
-  })
-  browserWindow.visualViewport?.addEventListener('scroll', schedule, {
-    passive: true,
-  })
-  options.signal?.addEventListener('abort', abort, { once: true })
-  update()
+  try {
+    browserWindow.addEventListener('resize', schedule, { passive: true })
+    browserWindow.addEventListener('orientationchange', schedule, { passive: true })
+    browserWindow.visualViewport?.addEventListener('resize', schedule, {
+      passive: true,
+    })
+    browserWindow.visualViewport?.addEventListener('scroll', schedule, {
+      passive: true,
+    })
+    options.signal?.addEventListener('abort', abort, { once: true })
+    update()
+  } catch (error) {
+    // Construction is transactional: callers cannot destroy an observer that
+    // was never returned, so roll back every listener if initial publication
+    // (or a host registration hook) rejects the setup.
+    observer.destroy()
+    throw error
+  }
   return observer
 }

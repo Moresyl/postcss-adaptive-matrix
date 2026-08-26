@@ -412,6 +412,28 @@ describe('observeAdaptiveViewport', () => {
     expect(target.setProperty).toHaveBeenCalledTimes(1)
   })
 
+  it('rolls back listeners when initial CSS-variable publication fails', () => {
+    const visual = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const host = stubWindow(visual)
+    const target = stubTarget()
+    target.setProperty.mockImplementationOnce(() => {
+      throw new Error('host rejected the CSS write')
+    })
+
+    expect(() =>
+      observeAdaptiveViewport({
+        window: host.window,
+        target: target.element,
+      }),
+    ).toThrow('host rejected the CSS write')
+
+    expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+    expect(visual.removeEventListener).toHaveBeenCalledTimes(2)
+  })
+
   it('does not publish or register listeners for an already-aborted signal', () => {
     const target = stubTarget()
     const host = stubWindow(undefined)
