@@ -49,7 +49,9 @@ function stubWindow(visualViewport: unknown, overrides: Record<string, unknown> 
 
 function stubTarget() {
   const values = new Map<string, string>()
-  const setProperty = vi.fn((name: string, value: string) => values.set(name, value))
+  const setProperty = vi.fn((name: string, value: string) => {
+    values.set(name, value)
+  })
   return { element: { style: { setProperty } } as unknown as HTMLElement, values, setProperty }
 }
 
@@ -350,6 +352,23 @@ describe('observeAdaptiveViewport', () => {
     expect(() => observeAdaptiveViewport({ signal: {} as never })).toThrow(
       /viewport options\.signal must be an AbortSignal/,
     )
+    expect(() => observeAdaptiveViewport({ target: {} as never })).toThrow(
+      /viewport options\.target must expose style\.setProperty/,
+    )
+    expect(() => observeAdaptiveViewport({ window: {} as never })).toThrow(
+      /viewport options\.window must expose browser event and animation-frame methods/,
+    )
+    expect(() => observeAdaptiveViewport({ document: {} as never })).toThrow(
+      /viewport options\.document must expose documentElement/,
+    )
+    const host = stubWindow({})
+    expect(() =>
+      observeAdaptiveViewport({ window: host.window, target: stubTarget().element }),
+    ).toThrow(/viewport options\.window\.visualViewport must expose browser event methods/)
+    const primitiveVisual = stubWindow(42)
+    expect(() =>
+      observeAdaptiveViewport({ window: primitiveVisual.window, target: stubTarget().element }),
+    ).toThrow(/viewport options\.window\.visualViewport must expose browser event methods/)
   })
 
   it('tears down automatically when an optional abort signal fires', () => {
@@ -372,6 +391,25 @@ describe('observeAdaptiveViewport', () => {
     const writes = target.setProperty.mock.calls.length
     host.flush()
     expect(target.setProperty).toHaveBeenCalledTimes(writes)
+  })
+
+  it('can abort safely during the initial CSS-variable publication', () => {
+    const host = stubWindow(undefined)
+    const controller = new AbortController()
+    const target = stubTarget()
+    target.setProperty.mockImplementationOnce(() => controller.abort())
+
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+      signal: controller.signal,
+    })
+
+    expect(observer.update()).toBeNull()
+    expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+    // Publication stops at the next variable because abort made update inert
+    // only after the current setProperty returned.
+    expect(target.setProperty).toHaveBeenCalledTimes(1)
   })
 
   it('does not publish or register listeners for an already-aborted signal', () => {

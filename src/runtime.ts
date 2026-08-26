@@ -38,6 +38,49 @@ function validateObserverOptions(value: unknown): asserts value is AdaptiveViewp
       )
     }
   }
+  const target = value.target
+  if (
+    target !== undefined &&
+    (!isObject(target) || !isObject(target.style) || typeof target.style.setProperty !== 'function')
+  ) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] viewport options.target must expose style.setProperty().',
+    )
+  }
+  const browserWindow = value.window
+  if (
+    browserWindow !== undefined &&
+    (!isObject(browserWindow) ||
+      typeof browserWindow.addEventListener !== 'function' ||
+      typeof browserWindow.removeEventListener !== 'function' ||
+      typeof browserWindow.requestAnimationFrame !== 'function' ||
+      typeof browserWindow.cancelAnimationFrame !== 'function')
+  ) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] viewport options.window must expose browser event and animation-frame methods.',
+    )
+  }
+  const visual = isObject(browserWindow) ? browserWindow.visualViewport : undefined
+  if (
+    visual !== undefined &&
+    visual !== null &&
+    (!isObject(visual) ||
+      typeof visual.addEventListener !== 'function' ||
+      typeof visual.removeEventListener !== 'function')
+  ) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] viewport options.window.visualViewport must expose browser event methods.',
+    )
+  }
+  const browserDocument = value.document
+  if (
+    browserDocument !== undefined &&
+    (!isObject(browserDocument) || !('documentElement' in browserDocument))
+  ) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] viewport options.document must expose documentElement.',
+    )
+  }
   const signal = value.signal
   if (
     signal !== undefined &&
@@ -129,10 +172,12 @@ export function observeAdaptiveViewport(
     for (const [name, value] of Object.entries(snapshot)) {
       const cssName = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
       publish(`--${prefix}-${cssName}`, String(value))
+      if (destroyed) return null
     }
     publish(`--${prefix}-vh`, `${height / 100}px`)
+    if (destroyed) return null
     publish(`--${prefix}-vw`, `${width / 100}px`)
-    return snapshot
+    return destroyed ? null : snapshot
   }
 
   // Only the scheduler clears the handle. `update` is public, and having it
@@ -156,20 +201,6 @@ export function observeAdaptiveViewport(
     return { update, destroy() {} }
   }
 
-  browserWindow.addEventListener('resize', schedule, { passive: true })
-  browserWindow.addEventListener('orientationchange', schedule, { passive: true })
-  browserWindow.visualViewport?.addEventListener('resize', schedule, {
-    passive: true,
-  })
-  browserWindow.visualViewport?.addEventListener('scroll', schedule, {
-    passive: true,
-  })
-  const abort = () => {
-    observer.destroy()
-  }
-  options.signal?.addEventListener('abort', abort, { once: true })
-  update()
-
   const observer: AdaptiveViewportObserver = {
     update,
     destroy() {
@@ -186,5 +217,16 @@ export function observeAdaptiveViewport(
       options.signal?.removeEventListener('abort', abort)
     },
   }
+  const abort = () => observer.destroy()
+  browserWindow.addEventListener('resize', schedule, { passive: true })
+  browserWindow.addEventListener('orientationchange', schedule, { passive: true })
+  browserWindow.visualViewport?.addEventListener('resize', schedule, {
+    passive: true,
+  })
+  browserWindow.visualViewport?.addEventListener('scroll', schedule, {
+    passive: true,
+  })
+  options.signal?.addEventListener('abort', abort, { once: true })
+  update()
   return observer
 }
