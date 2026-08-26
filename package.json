@@ -83,6 +83,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
     "bench:check": "tsx bench/index.ts --check",

@@ -10,6 +10,21 @@ permissions:
   contents: read
 
 jobs:
+  # Vitest 4's runner needs Node 20+, while the shipped plugin supports Node 18.
+  # Exercise the real ESM, CommonJS, runtime and CLI artefacts on that minimum
+  # independently so a dev-tool engine cannot silently narrow the public one.
+  runtime-node18:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke:runtime
+
   verify:
     strategy:
       fail-fast: false
