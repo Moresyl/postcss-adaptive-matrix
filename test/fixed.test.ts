@@ -108,6 +108,11 @@ describe('correctFixedDeclaration', () => {
     expect(isFixedPositionValue('/**/ FIXED /**/')).toBe(true)
     expect(isFixedPositionValue('sticky')).toBe(false)
     expect(isFixedPositionValue('fixed /* open')).toBe(false)
+    expect(isFixedPositionValue(String.raw`f\69 xed`)).toBe(true)
+  })
+
+  it('recognises escaped property spellings', () => {
+    expect(correctFixedDeclaration(String.raw`l\65 ft`, '0')).toBe('var(--adaptive-root-gutter)')
   })
 })
 
@@ -117,6 +122,11 @@ describe('fixed containing block', () => {
     expect(css).toContain('left: var(--adaptive-root-gutter)')
     expect(css).toContain('right: var(--adaptive-root-gutter)')
     expect(css).toContain('bottom: 0')
+  })
+
+  it('offsets a fixed bar whose property names and keyword use CSS escapes', async () => {
+    const css = await run(String.raw`.bar { p\6f sition: f\69 xed; l\65 ft: 0 }`)
+    expect(css).toContain(String.raw`l\65 ft: var(--adaptive-root-gutter)`)
   })
 
   it('publishes a gutter that collapses until a profile constrains the root', async () => {

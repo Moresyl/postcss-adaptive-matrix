@@ -14,7 +14,7 @@
  * is inert on phones and cannot regress the common case.
  */
 import type { ResolvedAdaptiveMatrixOptions } from './types.js'
-import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { CSS_NUMBER_SOURCE, canonicalCssPropertyName, decodeCssIdentifier } from './syntax.js'
 import { splitComponents } from './evaluate.js'
 
 /** Width of the root column, or `100vw` while it is unconstrained. */
@@ -49,7 +49,7 @@ function singleKeyword(value: string): string | null {
   // An unclosed comment makes the rest of the declaration ambiguous. Refuse to
   // reinterpret it as a keyword; malformed authored CSS is not ours to repair.
   if (withoutComments.includes('/*')) return null
-  const keyword = withoutComments.trim().toLowerCase()
+  const keyword = decodeCssIdentifier(withoutComments.trim()).toLowerCase()
   return /^[a-z-]+$/.test(keyword) ? keyword : null
 }
 
@@ -110,7 +110,7 @@ export function isFixedPositionValue(value: string): boolean {
  * fluid output rather than replacing it.
  */
 export function correctFixedDeclaration(property: string, value: string): string | null {
-  const name = property.toLowerCase()
+  const name = canonicalCssPropertyName(property)
 
   if (INSET_PROPERTIES.has(name)) {
     const corrected = correctInlineInset(value)

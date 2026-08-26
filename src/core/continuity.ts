@@ -4,6 +4,7 @@ import { evaluateLength, splitComponents } from './evaluate.js'
 import { ROOT_GUTTER_VARIABLE } from './fixed.js'
 import { allMatch, boundaryOf, widthConditions } from './media.js'
 import { collectTokens } from './tokens.js'
+import { canonicalCssPropertyName } from './syntax.js'
 
 /**
  * One place where a length moves backwards as the viewport grows.
@@ -114,11 +115,11 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
     // Skipping the declaration is not the same as ignoring the token: the
     // consumer *is* checked, with the token substituted in (see `tokens.ts`),
     // which is where its direction finally has a meaning to be wrong about.
-    if (declaration.prop.startsWith('--')) return
+    const prop = canonicalCssPropertyName(declaration.prop)
+    if (prop.startsWith('--')) return
     // Standard property names are ASCII case-insensitive in CSS. Grouping the
     // authored spelling would split `FONT-SIZE` and `font-size` into unrelated
     // declarations even though the cascade treats them as the same property.
-    const prop = declaration.prop.toLowerCase()
 
     const conditions: string[] = []
     const layers: string[] = []

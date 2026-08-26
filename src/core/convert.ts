@@ -6,7 +6,7 @@ import type {
   ResolvedAdaptiveMatrixOptions,
   ScaleUnit,
 } from './types.js'
-import { CSS_NUMBER_SOURCE, decodeCssIdentifier, isCssWhitespace } from './syntax.js'
+import { CSS_NUMBER_SOURCE, canonicalCssPropertyName, isCssWhitespace } from './syntax.js'
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
@@ -200,13 +200,13 @@ export function isAccessibleTextProperty(
   // the name. Libraries theme their typography through tokens like
   // `--van-font-size-md`; treating those as plain lengths would emit pure `vw`
   // text that no longer answers to browser zoom.
-  const isToken = property.startsWith('--')
   // Standard property names are ASCII case-insensitive in CSS, while custom
   // property names are case-sensitive. Preserve the latter and canonicalise
   // the former so `FONT-SIZE` cannot silently lose the zoomable text formula.
-  const subject = isToken ? decodeCssIdentifier(property) : property.toLowerCase()
+  const subject = canonicalCssPropertyName(property)
+  const isToken = subject.startsWith('--')
   return options.textProperties.some((candidate) => {
-    const pattern = candidate.startsWith('--') ? candidate : candidate.toLowerCase()
+    const pattern = canonicalCssPropertyName(candidate)
     if (pattern.endsWith('*')) {
       const prefix = pattern.slice(0, -1)
       return subject.startsWith(prefix) || (isToken && hasSegment(subject, prefix))

@@ -1,6 +1,6 @@
 import { matchesFile, matchesPattern, toArray } from './matchers.js'
 import { routingClassSelector, routingSelector } from './selectors.js'
-import { decodeCssIdentifier } from './syntax.js'
+import { canonicalCssPropertyName } from './syntax.js'
 import type { WidthBand } from './media.js'
 import type {
   ActiveProfile,
@@ -188,7 +188,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       band: WidthBand | null = null,
     ): ActiveProfile | undefined {
       if (inherited.explicit || !propertyRoutes.length) return undefined
-      const canonicalProperty = decodeCssIdentifier(property)
+      const canonicalProperty = canonicalCssPropertyName(property)
       for (const route of propertyRoutes) {
         if (!startsWithAny(canonicalProperty, route.property)) continue
         if (route.file.length && !matchesFile(route.file, file)) continue

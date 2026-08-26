@@ -83,6 +83,17 @@ export function decodeCssIdentifier(value: string): string {
 }
 
 /**
+ * Canonical property identity: standard properties fold ASCII case, custom
+ * properties preserve it. Escapes are spelling in both cases, not identity.
+ */
+export function canonicalCssPropertyName(value: string): string {
+  const decoded = decodeCssIdentifier(value)
+  return decoded.startsWith('--')
+    ? decoded
+    : decoded.replace(/[A-Z]/g, (letter) => letter.toLowerCase())
+}
+
+/**
  * Reports structural syntax that can escape or swallow a generated wrapper.
  *
  * This deliberately does not try to parse the evolving media/container-query

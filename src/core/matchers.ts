@@ -1,5 +1,5 @@
 import type { FileMatcher, Pattern } from './types.js'
-import { decodeCssIdentifier } from './syntax.js'
+import { canonicalCssPropertyName } from './syntax.js'
 
 /**
  * One value or several, always as a fresh mutable array.
@@ -88,7 +88,7 @@ export function createPropertyMatcher(propList: readonly string[]) {
   const canonical = (item: string): string => {
     const negated = item.startsWith('!')
     const pattern = negated ? item.slice(1) : item
-    const normalised = pattern.startsWith('--') ? pattern : pattern.toLowerCase()
+    const normalised = canonicalCssPropertyName(pattern)
     return negated ? `!${normalised}` : normalised
   }
   const patterns = propList.map(canonical)
@@ -98,9 +98,7 @@ export function createPropertyMatcher(propList: readonly string[]) {
   const excludeRegex = excludes.map(globToRegExp)
 
   return (property: string): boolean => {
-    const subject = property.startsWith('--')
-      ? decodeCssIdentifier(property)
-      : property.toLowerCase()
+    const subject = canonicalCssPropertyName(property)
     let included = false
     for (const pattern of includeRegex) {
       if (pattern.test(subject)) {

@@ -293,6 +293,21 @@ describe('adaptiveMatrix', () => {
     expect(upper.css).toContain('rem')
   })
 
+  it('treats escaped property spellings as the same CSS property', async () => {
+    const standard = await process(String.raw`.a { f\6f nt-size: 16px; w\69 dth: 40px }`, {
+      propList: ['font-size', 'width'],
+    })
+    const token = await process(String.raw`:root { \2d\2d van-padding-md: 16px }`, {
+      libraries: ['vant'],
+    })
+
+    expect(standard.css).toContain('f\\6f nt-size: clamp(')
+    expect(standard.css).toContain('rem')
+    expect(standard.css).toContain('w\\69 dth: clamp(')
+    expect(token.css).not.toContain('16px')
+    expect(token.css).toContain('4.26667vw')
+  })
+
   it('uses independent app and pc design canvases', async () => {
     const result = await process(`
       @adaptive app { .hero { width: 187.5px } }

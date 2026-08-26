@@ -35,6 +35,7 @@ import {
   splitSelectorList,
   type Specificity,
 } from '../core/selectors.js'
+import { canonicalCssPropertyName } from '../core/syntax.js'
 import type {
   ActiveProfile,
   AdaptiveMatrixOptions,
@@ -121,9 +122,7 @@ function isFollowedByEquivalent(declaration: Declaration, value: string): boolea
   while (node?.type === 'comment') node = node.next()
   if (node?.type !== 'decl' || node.value !== value) return false
   const sameProperty =
-    declaration.prop.startsWith('--') || node.prop.startsWith('--')
-      ? node.prop === declaration.prop
-      : node.prop.toLowerCase() === declaration.prop.toLowerCase()
+    canonicalCssPropertyName(node.prop) === canonicalCssPropertyName(declaration.prop)
   // A normal twin can never override an important authored fallback. In that
   // shape the output looks complete but the fixed pixel value still wins, so a
   // new important twin is required. The inverse is already strong enough.
@@ -179,14 +178,15 @@ function transformDeclaration(
 ): void {
   const { options, file } = context
   if (!context.converter.mightContainUnit(declaration.value)) return
+  const property = canonicalCssPropertyName(declaration.prop)
 
   // A library token is claimed by name, which is the only evidence available:
   // it is declared on `:root`, far from any class that identifies its owner.
   // Being claimed is itself the opt-in, so `transformCustomProperties` — a
   // switch about *authored* variables — does not get to veto it.
   let target = active
-  if (declaration.prop.startsWith('--')) {
-    const routed = context.resolver.forCustomProperty(active, declaration.prop, file, context.band)
+  if (property.startsWith('--')) {
+    const routed = context.resolver.forCustomProperty(active, property, file, context.band)
     if (!routed && !options.transformCustomProperties) return
     if (routed) target = routed
   }
@@ -203,7 +203,7 @@ function transformDeclaration(
   const original = declaration.value
   const conversion = context.converter.convertWithMetadata(
     original,
-    declaration.prop,
+    property,
     target.name,
     target.profile,
     file,
@@ -223,7 +223,7 @@ function transformDeclaration(
       owner.inherited,
       owner.selected,
       target,
-      declaration.prop,
+      property,
       context,
       conversion.generatedBounds,
     )
@@ -241,7 +241,7 @@ function transformDeclaration(
 function correctFixedRule(rule: Rule): void {
   let position: Declaration | undefined
   for (const node of rule.nodes) {
-    if (node.type !== 'decl' || node.prop.toLowerCase() !== 'position') continue
+    if (node.type !== 'decl' || canonicalCssPropertyName(node.prop) !== 'position') continue
     // Within one declaration block, !important beats normal declarations and
     // the later declaration wins when importance is equal. Looking for *any*
     // `fixed` value would rewrite an element whose effective position is

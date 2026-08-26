@@ -12,6 +12,11 @@ describe('theme token resolution', () => {
     expect(tokens.resolve('var(--gap)', 400)).toBe('16px')
   })
 
+  it('recognises a custom property whose leading hyphens are escaped', () => {
+    const tokens = table(String.raw`:root { \2d\2d gap: 16px }`)
+    expect(tokens.resolve('var(--gap)', 400)).toBe('16px')
+  })
+
   it('accepts the :root,:host pair component libraries ship', () => {
     // Vant declares all 815 of its tokens this way so one stylesheet themes
     // both the document and a shadow tree. Reading only `:root` saw none of

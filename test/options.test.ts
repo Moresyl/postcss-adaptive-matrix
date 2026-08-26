@@ -759,6 +759,8 @@ describe('matchers and math helpers', () => {
     expect(match('margin-left')).toBe(false)
     expect(match('font')).toBe(false)
     expect(match('MARGIN-LEFT')).toBe(false)
+    expect(match(String.raw`m\61 rgin-left`)).toBe(false)
+    expect(createPropertyMatcher(['Ä-size'])('ä-size')).toBe(false)
 
     const custom = createPropertyMatcher(['--Theme-*'])
     expect(custom('--Theme-gap')).toBe(true)

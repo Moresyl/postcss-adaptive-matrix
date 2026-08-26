@@ -110,8 +110,8 @@ export function collectTokens(root: Root): TokenTable {
   })
 
   root.walkDecls((declaration: Declaration) => {
-    if (!declaration.prop.startsWith('--')) return
     const name = decodeCssIdentifier(declaration.prop.trim())
+    if (!name.startsWith('--')) return
 
     const conditions: string[] = []
     let readable = true
