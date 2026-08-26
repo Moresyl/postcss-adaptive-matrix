@@ -365,6 +365,18 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toBe(css)
   })
 
+  it('converts escaped unit spellings without decoding unrelated identifiers', async () => {
+    const result = await process(
+      String.raw`.a { width: 16p\78; margin: 2r\65m; left: id\31 6px; right: 1\36 px }`,
+      { unitToConvert: ['px', 'rem'], hairline: 0 },
+    )
+
+    expect(result.css).toContain('width: clamp(13.65333px, 4.26667vw, 20.48px)')
+    expect(result.css).toContain('margin: clamp(27.30667px, 8.53333vw, 40.96px)')
+    expect(result.css).toContain(String.raw`left: id\31 6px`)
+    expect(result.css).toContain(String.raw`right: 1\36 px`)
+  })
+
   it('does not convert a dimension-looking substring inside a CSS identifier', async () => {
     const result = await process(
       String.raw`.a { width: 宽16px; height: 16px宽; margin: \31 6px; padding: 16px }`,

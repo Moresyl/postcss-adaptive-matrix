@@ -465,6 +465,54 @@ function convertResolvedValue(
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
   const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
   let generatedBounds = false
+  const replaceDimension = (
+    match: string,
+    prefix: string,
+    number: string,
+    unit: string,
+    authoredMatch: string = match,
+    authoredPrefix: string = prefix,
+  ): string => {
+    // The unit this profile emits is already in its target coordinate
+    // system. Reading it back as an authored design measurement breaks a
+    // second pass in bare viewport mode (`10vw` becomes `1.333vw`) and is
+    // conceptually wrong on the first pass too. A different configured
+    // output unit still permits an intentional `vw` -> `cqi` conversion.
+    if (unit.toLowerCase() === outputUnit) return authoredMatch
+    // Guarded in pixels, not in authored numbers: `minPixelValue` and
+    // `hairline` describe how small a thing is on screen, and `0.0625rem`
+    // is the same hairline as `1px` however it was written.
+    const pixels = Number.parseFloat(number) * unitScale(unit, rootValue)
+    // The CSS token is still a number even when its magnitude overflows a
+    // JavaScript double. Keeping the authored token is safer than replacing
+    // it with `Infinitypx`, which is not CSS syntax and drops the declaration.
+    if (!Number.isFinite(pixels)) return authoredMatch
+    if (
+      pixels === 0 ||
+      Math.abs(pixels) < options.minPixelValue ||
+      (options.hairline > 0 && Math.abs(pixels) <= options.hairline)
+    ) {
+      return authoredMatch
+    }
+    const converted = convertResolvedLength(
+      pixels,
+      designWidth,
+      anchorWidth,
+      accessibleText,
+      profile,
+      options,
+      rootValue,
+      unit,
+    )
+    if (
+      converted.startsWith('clamp(') ||
+      converted.startsWith('min(') ||
+      converted.startsWith('max(')
+    ) {
+      generatedBounds = true
+    }
+    return `${authoredPrefix}${converted}`
+  }
   parsed.walk((node) => {
     if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText, staticText)) return false
     if (node.type !== 'word') return undefined
@@ -476,50 +524,54 @@ function convertResolvedValue(
       return undefined
     }
     if (continuesHexEscape(value, node.sourceIndex)) return undefined
-    node.value = node.value.replace(
-      pattern,
-      (match, prefix: string, number: string, unit: string) => {
-        // The unit this profile emits is already in its target coordinate
-        // system. Reading it back as an authored design measurement breaks a
-        // second pass in bare viewport mode (`10vw` becomes `1.333vw`) and is
-        // conceptually wrong on the first pass too. A different configured
-        // output unit still permits an intentional `vw` -> `cqi` conversion.
-        if (unit.toLowerCase() === outputUnit) return match
-        // Guarded in pixels, not in authored numbers: `minPixelValue` and
-        // `hairline` describe how small a thing is on screen, and `0.0625rem`
-        // is the same hairline as `1px` however it was written.
-        const pixels = Number.parseFloat(number) * unitScale(unit, rootValue)
-        // The CSS token is still a number even when its magnitude overflows a
-        // JavaScript double. Keeping the authored token is safer than replacing
-        // it with `Infinitypx`, which is not CSS syntax and drops the declaration.
-        if (!Number.isFinite(pixels)) return match
-        if (
-          pixels === 0 ||
-          Math.abs(pixels) < options.minPixelValue ||
-          (options.hairline > 0 && Math.abs(pixels) <= options.hairline)
-        ) {
-          return match
-        }
-        const converted = convertResolvedLength(
-          pixels,
-          designWidth,
-          anchorWidth,
-          accessibleText,
-          profile,
-          options,
-          rootValue,
-          unit,
-        )
-        if (
-          converted.startsWith('clamp(') ||
-          converted.startsWith('min(') ||
-          converted.startsWith('max(')
-        ) {
-          generatedBounds = true
-        }
-        return `${prefix}${converted}`
-      },
-    )
+    if (!node.value.includes('\\')) {
+      node.value = node.value.replace(
+        pattern,
+        (match, prefix: string, number: string, unit: string) =>
+          replaceDimension(match, prefix, number, unit),
+      )
+      return undefined
+    }
+
+    // A unit is an identifier and may legally be escaped (`16p\78`). Match
+    // against a canonical view, but rebuild from the authored word so an
+    // unrelated escape and a guarded hairline retain their exact spelling.
+    const authored = node.value
+    const canonical = canonicalizeCssIdentifierEscapes(authored)
+    let rebuilt = ''
+    let cursor = 0
+    pattern.lastIndex = 0
+    for (const match of canonical.text.matchAll(pattern)) {
+      const offset = match.index
+      const prefix = match[1]!
+      const number = match[2]!
+      const unit = match[3]!
+      const canonicalNumberStart = offset + prefix.length
+      const canonicalUnitStart = canonicalNumberStart + number.length
+      const start = canonical.positions[offset] ?? offset
+      const numberStart = canonical.positions[canonicalNumberStart] ?? canonicalNumberStart
+      const unitStart = canonical.positions[canonicalUnitStart] ?? canonicalUnitStart
+      const end = canonical.positions[offset + match[0].length] ?? authored.length
+      const authoredMatch = authored.slice(start, end)
+
+      rebuilt += authored.slice(cursor, start)
+      // CSS escapes cannot form a number token. This equality prevents an
+      // identifier such as `1\36 px` from being manufactured into `16px` by
+      // the canonical view and then treated as a dimension.
+      rebuilt +=
+        authored.slice(numberStart, unitStart) === number
+          ? replaceDimension(
+              match[0],
+              prefix,
+              number,
+              unit,
+              authoredMatch,
+              authored.slice(start, numberStart),
+            )
+          : authoredMatch
+      cursor = end
+    }
+    node.value = rebuilt + authored.slice(cursor)
     return undefined
   })
   return { value: valueParser.stringify(parsed.nodes), generatedBounds }
@@ -635,6 +687,12 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       // every project, and runs on every declaration — free of a closure.
       for (const unit of unitsLower) {
         if (containsIgnoreCase(value, unit)) return true
+      }
+      if (value.includes('\\')) {
+        const canonical = canonicalizeCssIdentifierEscapes(value).text
+        for (const unit of unitsLower) {
+          if (containsIgnoreCase(canonical, unit)) return true
+        }
       }
       return false
     },
