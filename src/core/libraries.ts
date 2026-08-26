@@ -275,6 +275,11 @@ function validateLibrary(library: LibraryAdaptation): ResolvedLibraryAdaptation 
       `[postcss-adaptive-matrix] Library "${name}" basedOn must be a non-empty profile name.`,
     )
   }
+  if (resolved.designWidth === false && resolved.basedOn !== undefined) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Library "${name}" basedOn cannot be used with designWidth: false; an unconverted library does not borrow a profile.`,
+    )
+  }
   return resolved
 }
 

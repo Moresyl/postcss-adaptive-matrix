@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- `root.fixedContainingBlock: true` now requires at least one profile with `rootMaxWidth`; otherwise there is no centred-column offset to correct and the option only rewrites declarations into equivalent, permanently zero-gutter forms. Likewise, a library with `designWidth: false` now rejects `basedOn`, which an unconverted library never reads.
 - String `include` / `exclude`, file routes, library paths and `root.injectTo` now match across Windows `\\` and POSIX `/` separators. Regular expressions and predicate functions still receive the original host path, preserving explicit platform-sensitive behaviour.
 - A functional `designWidth` is now resolved once per profile/file and its result is reused as the omitted `textAnchorWidth` default. A stateful resolver can no longer make the fluid and static halves use different canvases; invalid results name the source file, and functional profile widths without `from` get the same targeted warning as other file-sensitive options.
 - Existing `px-to-viewport-ignore(-next)` and postcss-mobile-forever `mobile-ignore(-next)` directives are now honoured without a compatibility option, so replacing either compiler does not silently convert lengths their authors marked as fixed. The comments remain in output and survive the same second compilation guarantee as native directives.

@@ -6,6 +6,7 @@
 
 ### 正确性与诊断
 
+- `root.fixedContainingBlock: true` 现在要求至少一张 profile 设置 `rootMaxWidth`；否则根本没有居中列偏移需要修正，该选项只会把声明改写成留白永远为零的等价值。相同原则下，`designWidth: false` 的组件库现在会拒绝 `basedOn`，因为不换算的组件库从不读取它。
 - 字符串形式的 `include` / `exclude`、文件路由、组件库路径及 `root.injectTo` 现在可跨 Windows `\\` 与 POSIX `/` 分隔符匹配；正则与谓词函数仍收到原始宿主路径，保留显式的平台相关逻辑。
 - 函数型 `designWidth` 现在每个 profile/文件只解析一次，省略的 `textAnchorWidth` 会复用同一结果；带状态回调不再让流体项与静态项误用两张画布。非法返回值会指出源文件，动态 profile 宽度缺少 `from` 时也会像其他路径相关配置一样给出精准告警。
 - 现有 `px-to-viewport-ignore(-next)` 与 postcss-mobile-forever 的 `mobile-ignore(-next)` 指令无需兼容开关即可继续生效，替换旧编译器时不会静默转换作者明确要求固定的长度；注释仍保留在产物中，并与原生指令一样保证二次编译。

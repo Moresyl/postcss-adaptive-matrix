@@ -62,6 +62,12 @@ describe('resolveLibrary', () => {
     expect(() => resolveLibrary({ name: 'kit', designWidth: 375, basedOn: ' ' })).toThrow(
       /basedOn must be a non-empty profile name/,
     )
+    expect(() =>
+      resolveLibrary({ name: 'kit', designWidth: false, prefix: 'kit-', basedOn: 'app' }),
+    ).toThrow(/basedOn cannot be used with designWidth: false/)
+    expect(() => resolveLibrary({ extends: 'element-plus', basedOn: 'app' })).toThrow(
+      /basedOn cannot be used with designWidth: false/,
+    )
     expect(() => resolveLibrary({ extends: ' ' })).toThrow(/extends must be a non-empty name/)
     expect(() => resolveLibrary({ name: 'kit', designWidth: 375, file: ' ' })).toThrow(
       /file cannot be empty/,

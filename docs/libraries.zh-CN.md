@@ -277,6 +277,8 @@ interface LibraryAdaptationOptions {
 
 `basedOn` 指定借用哪张 profile 的流体区间、单位与策略，默认 `defaultProfile`。派生画布只替换 `designWidth`，因此它与页面在同一个视口宽度上停止增长——这正是组件和页面能保持对齐的原因。
 
+它只适用于会缩放的组件库。`designWidth: false` 会让组件库保持原值且不借用任何 profile，因此此时再传 `basedOn` 会直接报错，而不会被静默忽略。
+
 派生画布还会继承所属 profile 的 `textAnchorWidth`（默认就是该 profile 的 `designWidth`），见下。
 
 ### 库画布的文字锚点

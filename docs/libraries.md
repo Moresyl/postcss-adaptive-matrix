@@ -277,6 +277,8 @@ An inherited entry gets `name` and `designWidth` from the built-in, so `{ extend
 
 `basedOn` says which profile's fluid range, unit and strategy to borrow; it defaults to `defaultProfile`. The derived canvas replaces only `designWidth`, so it stops growing at the same viewport width as the page — which is exactly why the components and the page stay aligned.
 
+It only applies to a scaled library. With `designWidth: false` the library remains unconverted and borrows no profile, so supplying `basedOn` is rejected instead of being silently ignored.
+
 A derived canvas also inherits its profile's `textAnchorWidth` (which by default is that profile's `designWidth`), see below.
 
 ### Where a library canvas anchors its text

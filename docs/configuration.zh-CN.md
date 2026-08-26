@@ -368,6 +368,8 @@ root: { selector: '#app', injectTo: 'src/styles/main' }
 
 只要启用了 `appPcPreset` 的 root 基础样式，该修正就默认开启——预设里的两张 profile 都设了 `rootMaxWidth`，正是会出现这一问题的配置。用 `appPcPreset({ root: true, fixedContainingBlock: false })` 关闭；只有真实布局根是 `#app` 时才需再写 `rootSelector: '#app'`。
 
+不使用该预设时，仅在至少一张 profile 设置了 `rootMaxWidth` 后开启它。若没有这样的 profile，编译器会拒绝 `fixedContainingBlock: true`：此时根本不存在居中列，该选项只会改写声明，而留白永远为零。
+
 ## 旧 WebView 模式
 
 ```js

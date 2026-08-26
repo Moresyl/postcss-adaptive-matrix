@@ -368,6 +368,8 @@ Only the rule's winning local `position` declaration is considered. Order and `!
 
 It is on by default whenever `appPcPreset`'s root foundation is enabled — both of that preset's profiles set `rootMaxWidth`, which is exactly the configuration where the problem appears. Turn it off with `appPcPreset({ root: true, fixedContainingBlock: false })` (add `rootSelector: '#app'` only when that is the actual layout root).
 
+Outside that preset, enable it only when at least one profile sets `rootMaxWidth`. The compiler rejects `fixedContainingBlock: true` without such a profile: no centred column exists in that configuration, so the option would only rewrite declarations while keeping the gutter permanently at zero.
+
 ## Legacy WebView mode
 
 ```js

@@ -711,6 +711,21 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     validateProfile(name, profile)
   }
 
+  // The fixed-position rewrite only differs from the authored CSS when a
+  // profile constrains the centred root column. Without a cap, both published
+  // variables stay at their viewport defaults and every rewritten inset/width
+  // is needlessly more complex while rendering identically.
+  if (
+    options.root &&
+    options.root.fixedContainingBlock &&
+    !Object.values(authored).some((profile) => profile.rootMaxWidth !== undefined)
+  ) {
+    throw new Error(
+      '[postcss-adaptive-matrix] root.fixedContainingBlock needs at least one profile with rootMaxWidth. ' +
+        'Without a centred column there is no fixed-position offset to correct; remove fixedContainingBlock or add the intended rootMaxWidth.',
+    )
+  }
+
   // A band with no bounds matches every rule in the stylesheet, which is a
   // route that silently replaces `defaultProfile` — and reversed bounds match
   // nothing at all. Both read as working configuration, so neither may be

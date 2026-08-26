@@ -44,6 +44,22 @@ describe('configuration validation', () => {
     ).toThrow(/fluid\.maxWidth must be a positive finite number/)
   })
 
+  it('rejects a fixed-column correction when no profile creates a column', () => {
+    expect(() =>
+      resolveOptions({
+        profiles: { mobile: 375 },
+        root: { fixedContainingBlock: true },
+      }),
+    ).toThrow(/fixedContainingBlock needs at least one profile with rootMaxWidth/)
+
+    expect(
+      resolveOptions({
+        profiles: { mobile: { designWidth: 375, rootMaxWidth: 480 } },
+        root: { fixedContainingBlock: true },
+      }).root,
+    ).toMatchObject({ fixedContainingBlock: true })
+  })
+
   it('infers the only authored profile instead of requiring its name twice', () => {
     expect(resolveOptions({ profiles: { mobile: { designWidth: 375 } } }).defaultProfile).toBe(
       'mobile',
