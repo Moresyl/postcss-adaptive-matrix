@@ -1,7 +1,7 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { allMatch, boundaryOf, widthConditions } from './media.js'
-import { decodeCssIdentifier, isCssWhitespace } from './syntax.js'
+import { canonicalCssIdentifierName, decodeCssIdentifier, isCssWhitespace } from './syntax.js'
 
 /**
  * Resolves `var()` references against the theme tokens declared in the same
@@ -226,7 +226,41 @@ export function collectTokens(root: Root): TokenTable {
  * Finds the next `var(` that starts a token rather than ending an identifier,
  * so `--my-var(x)` and a hypothetical `xvar(` are left alone.
  */
-function findVar(value: string, from: number): number {
+interface VarFunction {
+  start: number
+  open: number
+}
+
+function identifierEnd(value: string, start: number): number {
+  let index = start
+  while (index < value.length) {
+    const character = value[index]!
+    if (/[-_A-Za-z0-9\u0080-\uFFFF]/.test(character)) {
+      index += 1
+      continue
+    }
+    if (character !== '\\') break
+    let cursor = index + 1
+    let digits = 0
+    while (cursor < value.length && digits < 6 && /[0-9a-f]/i.test(value[cursor]!)) {
+      digits += 1
+      cursor += 1
+    }
+    if (digits) {
+      if (isCssWhitespace(value[cursor] ?? '')) {
+        if (value[cursor] === '\r' && value[cursor + 1] === '\n') cursor += 1
+        cursor += 1
+      }
+    } else {
+      if (cursor >= value.length || /[\r\n\f]/.test(value[cursor]!)) break
+      cursor += 1
+    }
+    index = cursor
+  }
+  return index
+}
+
+function findVar(value: string, from: number): VarFunction | null {
   let quote: "'" | '"' | null = null
   let comment = false
   for (let index = from; index < value.length; index += 1) {
@@ -254,16 +288,17 @@ function findVar(value: string, from: number): number {
       quote = character
       continue
     }
-    if (character === '\\') {
-      index += 1
-      continue
-    }
-    if (value.slice(index, index + 4).toLowerCase() !== 'var(') continue
-
     const before = index === 0 ? '' : value[index - 1]!
-    if (!/[-_A-Za-z0-9\\\u0080-\uFFFF]/.test(before)) return index
+    if (/[-_A-Za-z0-9\\\u0080-\uFFFF]/.test(before)) continue
+    if (!/[-_A-Za-z\\\u0080-\uFFFF]/.test(character)) continue
+    const end = identifierEnd(value, index)
+    if (end === index || value[end] !== '(') continue
+    if (canonicalCssIdentifierName(value.slice(index, end)) === 'var') {
+      return { start: index, open: end }
+    }
+    index = end - 1
   }
-  return -1
+  return null
 }
 
 /** The index just past the `)` closing the group opened at `open`. */
@@ -379,7 +414,9 @@ function referenceName(value: string): string | null {
     cursor = end + 2
   }
   const name = clean.trim()
-  return isCustomPropertyName(name) ? name : null
+  if (isCustomPropertyName(name)) return name
+  const decoded = decodeCssIdentifier(name)
+  return isCustomPropertyName(decoded) ? decoded : null
 }
 
 function substitute(
@@ -389,21 +426,21 @@ function substitute(
   active: Set<string>,
   depth: number,
 ): string | null {
-  if (!/var\(/i.test(value)) return value
   if (depth > MAX_DEPTH) return null
 
   let result = ''
   let cursor = 0
   for (;;) {
-    const start = findVar(value, cursor)
-    if (start < 0) {
+    const found = findVar(value, cursor)
+    if (found === null) {
       result += value.slice(cursor)
       return result
     }
-    const end = closingParen(value, start + 3)
+    const { start, open } = found
+    const end = closingParen(value, open)
     if (end < 0) return null
 
-    const { name, fallback } = splitArguments(value.slice(start + 4, end))
+    const { name, fallback } = splitArguments(value.slice(open + 1, end))
     const parsedName = referenceName(name)
     if (parsedName === null) return null
     const canonicalName = decodeCssIdentifier(parsedName)

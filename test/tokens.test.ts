@@ -121,6 +121,15 @@ describe('theme token resolution', () => {
     expect(tokens.resolve('var(--missing, func(")")) var(--x)', 400)).toBe('func(")") 16px')
   })
 
+  it('resolves escaped spellings of var() and its custom-property name', () => {
+    const tokens = table(':root { --gap: 16px }')
+    expect(tokens.resolve(String.raw`v\61r(\2d\2d gap)`, 400)).toBe('16px')
+    expect(tokens.resolve(String.raw`xv\61r(--gap)`, 400)).toBe(String.raw`xv\61r(--gap)`)
+    expect(tokens.resolve(String.raw`"v\61r(--gap)" v\61r(--gap)`, 400)).toBe(
+      String.raw`"v\61r(--gap)" 16px`,
+    )
+  })
+
   it('does not substitute var-shaped text inside strings or comments', () => {
     const tokens = table(':root { --x: 16px }')
     expect(tokens.resolve('"var(--missing)" VAR(--x)', 400)).toBe('"var(--missing)" 16px')
