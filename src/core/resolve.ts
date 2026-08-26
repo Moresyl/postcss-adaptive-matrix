@@ -41,9 +41,17 @@ function bandSatisfies(band: WidthBand, matcher: MediaMatcher): boolean {
  * where they came from except their own names.
  */
 export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
+  const fallbackProfile = Object.hasOwn(options.profiles, options.defaultProfile)
+    ? options.profiles[options.defaultProfile]
+    : undefined
+  if (!fallbackProfile) {
+    throw new Error(
+      `[postcss-adaptive-matrix] Default profile "${options.defaultProfile}" does not exist.`,
+    )
+  }
   const fallback: ActiveProfile = {
     name: options.defaultProfile,
-    profile: options.profiles[options.defaultProfile]!,
+    profile: fallbackProfile,
     explicit: false,
     convert: true,
   }

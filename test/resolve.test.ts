@@ -103,6 +103,17 @@ describe('profile resolution', () => {
     expect(() => resolverFor([{ profile: 'ghost', file: /x/ }])).toThrow('unknown profile "ghost"')
   })
 
+  it('rejects an inherited object member as a manually supplied default profile', () => {
+    const options = resolveOptions({ ...base, libraries: false })
+    expect(() =>
+      createProfileResolver({
+        ...options,
+        defaultProfile: 'toString',
+        profiles: { app: options.profiles.app! },
+      }),
+    ).toThrow(/Default profile "toString" does not exist/)
+  })
+
   it('matches custom-property prefixes case-sensitively, as CSS does', () => {
     const resolver = resolverFor([{ profile: 'vendor', property: '--Theme-' }])
     const active = resolver.forFile('/src/app.css')
