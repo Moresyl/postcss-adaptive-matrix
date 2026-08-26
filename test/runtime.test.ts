@@ -336,7 +336,8 @@ describe('observeAdaptiveViewport', () => {
   })
 
   it('distinguishes omitted runtime options from malformed explicit values', () => {
-    for (const options of [null, [], 'adaptive']) {
+    const PretendsToBeObject = { Object: class Object {} }.Object
+    for (const options of [null, [], 'adaptive', new Date(), new PretendsToBeObject()]) {
       expect(() => observeAdaptiveViewport(options as never)).toThrow(
         /viewport options must be an object/,
       )

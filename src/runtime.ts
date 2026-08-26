@@ -1,4 +1,4 @@
-import { isObject, rejectUnknownKeys, valueKind } from './core/validation.js'
+import { isObject, isPlainObject, rejectUnknownKeys, valueKind } from './core/validation.js'
 
 export interface AdaptiveViewportObserverOptions {
   prefix?: string
@@ -25,7 +25,7 @@ export interface AdaptiveViewportObserver {
 const VIEWPORT_OPTION_KEYS = ['prefix', 'target', 'window', 'document', 'signal'] as const
 
 function validateObserverOptions(value: unknown): asserts value is AdaptiveViewportObserverOptions {
-  if (!isObject(value)) {
+  if (!isPlainObject(value)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] viewport options must be an object, not ${valueKind(value)}.`,
     )
