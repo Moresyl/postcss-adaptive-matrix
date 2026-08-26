@@ -795,6 +795,14 @@ describe('presets and foundation', () => {
     expect(result.css).toContain(':where(:root)')
   })
 
+  it('does not enable global root CSS when an already-off capability is set false', () => {
+    expect(appPcPreset({ container: false }).root).toBe(false)
+    expect(appPcPreset({ fixedContainingBlock: false }).root).toBe(false)
+    expect(appPcPreset({ root: false, container: false, fixedContainingBlock: false }).root).toBe(
+      false,
+    )
+  })
+
   it('rejects misspelled or malformed preset options at the helper boundary', () => {
     expect(() => appPcPreset({ appDesignWidht: 750 } as never)).toThrow(
       /appDesignWidht.*Did you mean "appDesignWidth"/,
@@ -817,6 +825,9 @@ describe('presets and foundation', () => {
   it('rejects contradictory or malformed preset root settings', () => {
     expect(() => appPcPreset({ root: false, container: true })).toThrow(
       /container cannot be used with root: false/,
+    )
+    expect(() => appPcPreset({ root: false, fixedContainingBlock: true })).toThrow(
+      /fixedContainingBlock cannot be used with root: false/,
     )
     expect(() => appPcPreset({ root: false, rootLayer: false })).toThrow(
       /rootLayer cannot be used with root: false/,

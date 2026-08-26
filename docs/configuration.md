@@ -313,7 +313,7 @@ interface RootFoundationOptions {
 }
 ```
 
-No global styles are injected by default. `root: true` enables the main plugin's default `:root` foundation; an object customises it. The same shorthand works in `appPcPreset`, where any root-only helper setting also enables it. `rootSelector` only overrides the default selector; it is not required to enable the foundation.
+No global styles are injected by default. `root: true` enables the main plugin's default `:root` foundation; an object customises it. The same shorthand works in `appPcPreset`, where a root-only helper setting that actually configures or enables the foundation also enables it. `container: false` and `fixedContainingBlock: false` alone describe capabilities that are already off and therefore do not inject global CSS. `rootSelector` only overrides the default selector; it is not required to enable the foundation.
 
 `root` itself has no required members. Prefer `root: true` when there is nothing to customise; `root: {}` remains equivalent. Set `selector` only when the layout is carried by another element such as `#app`.
 

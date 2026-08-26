@@ -313,7 +313,7 @@ interface RootFoundationOptions {
 }
 ```
 
-默认不注入全局样式。主插件可直接用 `root: true` 启用默认 `:root` 基础样式，对象形式只在需要定制时使用；`appPcPreset` 同样支持该简写，填写任一 root 专属配置也会启用。`rootSelector` 只用于覆盖默认选择器，不负责启用。
+默认不注入全局样式。主插件可直接用 `root: true` 启用默认 `:root` 基础样式，对象形式只在需要定制时使用；`appPcPreset` 同样支持该简写，填写真正定制或启用基础样式的 root 专属配置也会启用。单独写 `container: false` 或 `fixedContainingBlock: false` 只是关闭本来就没开的能力，因此不会注入全局 CSS。`rootSelector` 只用于覆盖默认选择器，不负责启用。
 
 `root` 内没有必填成员。没有需要定制的信息时优先写 `root: true`，`root: {}` 仍完全等价；只有布局实际由 `#app` 等其他元素承载时才需要填写 `selector`。
 

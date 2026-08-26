@@ -61,7 +61,7 @@ What the preset decides for you:
 | Fluid range | 320 – 480 | 1024 – 1920 |
 | Applies when | default | `@media (min-width: 768px)` |
 
-The helper validates at its own call boundary. Unknown option names include a spelling suggestion and every design/bound width must be finite and positive. `root: true` or any root-only setting enables the foundation on `:root`; `rootSelector` is needed only to override that selector. Explicit `root: false` rejects root-only settings instead of silently ignoring them.
+The helper validates at its own call boundary. Unknown option names include a spelling suggestion and every design/bound width must be finite and positive. `root: true` or a root-only setting that configures/enables the foundation enables it on `:root`; `rootSelector` is needed only to override that selector. Merely setting an already-off capability (`container: false` or `fixedContainingBlock: false`) does not inject global CSS. Explicit `root: false` rejects settings that would otherwise enable or customise the foundation instead of silently ignoring them.
 
 ## Writing your CSS
 

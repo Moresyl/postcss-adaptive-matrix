@@ -61,7 +61,7 @@ export default {
 | 流体区间 | 320 ~ 480 | 1024 ~ 1920 |
 | 生效条件 | 默认 | `@media (min-width: 768px)` |
 
-helper 会在调用边界直接校验：未知选项名会附带拼写建议，设计宽度和流体边界必须是有限正数。`root: true` 或任一 root 专属项会直接在 `:root` 上启用基础样式，只有覆盖该选择器时才需写 `rootSelector`；显式 `root: false` 又填写 root 专属项则会报错，不会静默忽略。
+helper 会在调用边界直接校验：未知选项名会附带拼写建议，设计宽度和流体边界必须是有限正数。`root: true` 或真正定制/启用基础样式的 root 专属项会直接在 `:root` 上启用它，只有覆盖该选择器时才需写 `rootSelector`；仅把本来就关闭的能力写成 `container: false` 或 `fixedContainingBlock: false` 不会注入全局 CSS。显式 `root: false` 又填写会启用或定制基础样式的字段则会报错，不会静默忽略。
 
 ## 写业务 CSS
 

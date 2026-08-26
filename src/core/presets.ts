@@ -34,6 +34,17 @@ const ROOT_PRESET_SETTING_KEYS = [
   'rootLogical',
 ] as const
 
+function enablesPresetRoot(options: AppPcPresetOptions): boolean {
+  return (
+    options.rootSelector !== undefined ||
+    options.container === true ||
+    options.fixedContainingBlock === true ||
+    options.rootInjectTo !== undefined ||
+    options.rootLayer !== undefined ||
+    options.rootLogical !== undefined
+  )
+}
+
 const ATOMIC_CSS_KEYS = [
   'profile',
   'tokenPrefixes',
@@ -117,9 +128,10 @@ function validateAppPcPresetOptions(value: unknown): asserts value is AppPcPrese
   if (value.rootInjectTo !== undefined) {
     requireFileMatchers('appPcPreset options.rootInjectTo', value.rootInjectTo)
   }
-  const conflictingRootSetting = ROOT_PRESET_SETTING_KEYS.find(
-    (field) => value[field] !== undefined,
-  )
+  const conflictingRootSetting = ROOT_PRESET_SETTING_KEYS.find((field) => {
+    if (field === 'container' || field === 'fixedContainingBlock') return value[field] === true
+    return value[field] !== undefined
+  })
   if (value.root === false && conflictingRootSetting) {
     throw new TypeError(
       `[postcss-adaptive-matrix] appPcPreset options.${conflictingRootSetting} cannot be used with root: false; that setting would be ignored.`,
@@ -234,8 +246,7 @@ export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOpt
   const appFluidMax = options.appFluidMax ?? 480
   const pcFluidMin = options.pcFluidMin ?? 1024
   const pcFluidMax = options.pcFluidMax ?? 1920
-  const rootEnabled =
-    options.root ?? ROOT_PRESET_SETTING_KEYS.some((field) => options[field] !== undefined)
+  const rootEnabled = options.root ?? enablesPresetRoot(options)
 
   if (appFluidMax <= appFluidMin) {
     throw new RangeError(
