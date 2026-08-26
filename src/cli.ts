@@ -319,9 +319,17 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
 }
 
 async function readStdin(): Promise<string> {
-  const chunks: Buffer[] = []
-  for await (const chunk of process.stdin) chunks.push(chunk as Buffer)
-  return Buffer.concat(chunks).toString('utf8')
+  const chunks: (Buffer | string)[] = []
+  for await (const chunk of process.stdin) {
+    // Node streams yield Buffers by default, but a host may have called
+    // setEncoding('utf8') before invoking the exported runCli(). Supporting
+    // both avoids making the otherwise optional stdin path depend on stream
+    // ownership details.
+    chunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk as Uint8Array))
+  }
+  return chunks
+    .map((chunk) => (typeof chunk === 'string' ? chunk : chunk.toString('utf8')))
+    .join('')
 }
 
 /**

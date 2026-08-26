@@ -515,6 +515,24 @@ describe('runCli', () => {
     expect(out).toContain('1 converted')
   })
 
+  it('also reads a UTF-8 string stream when the host setEncoding first', async () => {
+    const stdin = process.stdin
+    Object.defineProperty(process, 'stdin', {
+      configurable: true,
+      value: (function* pipe() {
+        yield '.page { padding: '
+        yield '16px }'
+      })(),
+    })
+    restore.push(() =>
+      Object.defineProperty(process, 'stdin', { configurable: true, value: stdin }),
+    )
+
+    expect(await runCli(['--no-color', '--from', '/project/src/app.css'])).toBe(0)
+    expect(out).toContain('.page')
+    expect(out).toContain('1 converted')
+  })
+
   it('rejects mixing explicit stdin with file inputs instead of ignoring either source', async () => {
     const path = await file('app.css', '.page { padding: 16px }')
 
