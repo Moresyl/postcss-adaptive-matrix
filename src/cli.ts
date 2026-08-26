@@ -265,7 +265,11 @@ function parseArgs(argv: string[]): CliArgs {
 async function loadJsonConfig(path: string, absolute: string): Promise<AdaptiveMatrixOptions> {
   let parsed: unknown
   try {
-    parsed = JSON.parse(await readFile(absolute, 'utf8'))
+    const source = await readFile(absolute, 'utf8')
+    // U+FEFF is a common UTF-8 BOM in files written by Windows editors. JSON
+    // itself does not admit it, but treating an encoding marker as user data
+    // makes an otherwise valid cross-platform config fail before validation.
+    parsed = JSON.parse(source.startsWith('\uFEFF') ? source.slice(1) : source)
   } catch (cause) {
     const detail = cause instanceof Error ? cause.message : String(cause)
     throw new CliError(`Could not load config ${path}: ${detail}`)
@@ -279,7 +283,7 @@ async function loadJsonConfig(path: string, absolute: string): Promise<AdaptiveM
 
 async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
   const absolute = resolve(path)
-  if (absolute.endsWith('.json')) return loadJsonConfig(path, absolute)
+  if (absolute.toLowerCase().endsWith('.json')) return loadJsonConfig(path, absolute)
   let loaded: unknown
   try {
     loaded = await import(pathToFileURL(absolute).href)

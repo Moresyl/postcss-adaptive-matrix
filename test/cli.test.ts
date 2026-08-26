@@ -433,6 +433,21 @@ describe('runCli', () => {
     expect(out).toContain('10vw')
   })
 
+  it('reads a BOM-prefixed JSON config with a case-insensitive extension', async () => {
+    const config = join(directory, 'adaptive.JSON')
+    await writeFile(
+      config,
+      `\uFEFF${JSON.stringify({ profiles: { mobile: 390 }, libraries: false })}`,
+      'utf8',
+    )
+    const path = await file('mobile.css', '.page { width: 39px }')
+
+    expect(await runCli([path, '--no-color', '-c', config])).toBe(0)
+    expect(out).toContain('mobile (default)')
+    expect(out).toContain('10vw')
+    expect(err).toBe('')
+  })
+
   it('fails on malformed JSON without a stack trace', async () => {
     const config = join(directory, 'broken.config.json')
     await writeFile(config, '{ "defaultProfile": "app", }', 'utf8')
