@@ -223,7 +223,7 @@ that whole range. The numbers in a breakpoint are usually measured on a differen
 file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
 ```
 
-这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对换算后确实新增 `clamp()`、`min()` 或 `max()` 的规则报——只改 `display` 和 `color` 的断点、刻意保持静态的文字、无边界视口表达式，都没有可被钉住的生成边界。
+这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对换算后确实新增 `clamp()`、`min()` 或 `max()` 的声明报——只改 `display` 和 `color` 的断点、刻意保持静态的文字、无边界视口表达式，都没有可被钉住的生成边界。经 selector 或 property 路由的声明会按真正执行转换的画布检查，原生 CSS 嵌套也包含在内。
 
 ## libraries
 

@@ -297,6 +297,69 @@ describe('the dead-band warning', () => {
     expect(warnings).toEqual([])
   })
 
+  it('attributes a nested rule conversion to the child canvas, not its parent', async () => {
+    const { warnings } = await run(
+      '@media (min-width: 1024px) { .parent { & .wide-child { padding: 40px } } }',
+      {
+        ...base,
+        profiles: {
+          ...base.profiles,
+          wide: { designWidth: 1440, fluid: { minWidth: 768, maxWidth: 1920 } },
+        },
+        routes: [{ profile: 'wide', selector: '.wide-child' }],
+      },
+    )
+
+    expect(warnings).toEqual([])
+  })
+
+  it('attributes a routed token conversion to its property canvas', async () => {
+    const { warnings } = await run('@media (min-width: 1024px) { :root { --wide-gap: 40px } }', {
+      ...base,
+      profiles: {
+        ...base.profiles,
+        wide: { designWidth: 1440, fluid: { minWidth: 768, maxWidth: 1920 } },
+      },
+      routes: [{ profile: 'wide', property: '--wide-' }],
+    })
+
+    expect(warnings).toEqual([])
+  })
+
+  it('suggests a property route when a routed token canvas is pinned', async () => {
+    const { warnings } = await run('@media (min-width: 1024px) { :root { --phone-gap: 40px } }', {
+      ...base,
+      profiles: {
+        ...base.profiles,
+        phoneTokens: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 600 } },
+      },
+      routes: [{ profile: 'phoneTokens', property: '--phone-' }],
+    })
+
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('canvas "phoneTokens"')
+    expect(warnings[0]).toContain("{ property: '--phone-gap', media:")
+  })
+
+  it('diagnoses declarations inside a media query nested in their rule', async () => {
+    const { warnings } = await run('.a { @media (min-width: 1024px) { padding: 40px } }', base)
+
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('live from 1024px up')
+  })
+
+  it('does not suggest an ineffective route for an explicit adaptive profile', async () => {
+    const { warnings } = await run(
+      '@media (min-width: 1024px) { @adaptive app { .a { padding: 40px } } }',
+      base,
+    )
+
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('@adaptive explicitly selected canvas "app"')
+    expect(warnings[0]).toContain('routes cannot override it')
+    expect(warnings[0]).not.toContain('give it one with a route')
+  })
+
   it('stays quiet where the band and the canvas overlap', async () => {
     const { warnings } = await run('@media (min-width: 400px) { .a { padding: 40px } }', base)
     expect(warnings).toEqual([])

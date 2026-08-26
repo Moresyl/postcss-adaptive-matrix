@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- Dead-band findings are now attached to the declaration that actually converted, with its real selector/property-routed canvas and media band. Nested child rules can no longer make an unconverted parent warn on the wrong canvas; routed custom-property tokens are judged against their own profile and get a property-route suggestion; declarations inside media queries nested in a rule are no longer missed. An explicit `@adaptive` selection no longer receives route advice that cannot override it.
 - A profile's output unit is no longer read back as a design-input unit for that same profile. This keeps bare `strategy: 'viewport'` output idempotent when `unitToConvert` also lists `vw`/`vi`/`cqw`/`cqi`; an intentional conversion between different configured units still works.
 - `LibraryAdaptation` now models its two valid shapes directly: an inherited entry requires only `extends`, while a standalone custom library still requires `name` and `designWidth`. Explicitly annotating `{ extends: 'vant' }` no longer makes TypeScript demand fields the runtime, schema and documentation already inherit.
 - The dead-band diagnostic now requires a conversion to generate a real `clamp()`/`min()`/`max()` bound. Static text marked as `calc(<rem>)` and unbounded output marked as `calc(<viewport-length>)` are not pinned by the profile's fluid interval, so they no longer produce misleading route warnings.

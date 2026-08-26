@@ -150,23 +150,20 @@ interface ProcessorContext {
   band: WidthBand | null
   /** Band/canvas findings already reported by `warnOnDeadBand`, per file. */
   deadBands: Set<string>
-  /**
-   * Declarations rewritten so far. Read as a before/after pair around a rule,
-   * it answers "did this rule convert anything" without a second walk.
-   *
-   * A breakpoint that only changes `display` and `color` is ordinary CSS and
-   * has no lengths to be constant, so it must not be warned about — and the
-   * only honest test for that is whether a conversion happened.
-   */
-  converted: number
-  /** Newly generated clamp/min/max expressions, read as a per-rule delta. */
-  bounded: number
+}
+
+/** The rule a directly nested declaration styles and how that rule was routed. */
+interface DeclarationOwner {
+  rule: Rule
+  inherited: ActiveProfile
+  selected: ActiveProfile
 }
 
 function transformDeclaration(
   declaration: Declaration,
   active: ActiveProfile,
   context: ProcessorContext,
+  owner?: DeclarationOwner,
 ): void {
   const { options, file } = context
   if (!context.converter.mightContainUnit(declaration.value)) return
@@ -208,8 +205,17 @@ function transformDeclaration(
   } else {
     declaration.value = converted
   }
-  context.converted += 1
-  if (conversion.generatedBounds) context.bounded += 1
+  if (owner) {
+    warnOnDeadBand(
+      owner.rule,
+      owner.inherited,
+      owner.selected,
+      target,
+      declaration.prop,
+      context,
+      conversion.generatedBounds,
+    )
+  }
 }
 
 /**
@@ -247,12 +253,7 @@ function transformRule(rule: Rule, inherited: ActiveProfile, context: ProcessorC
   const active = context.resolver.forSelector(inherited, rule.selector, context.file, context.band)
   warnOnSplitSelectorList(rule, inherited, active, context)
 
-  const before = context.converted
-  const boundedBefore = context.bounded
-  processContainer(rule, active, context, true)
-  if (context.converted > before) {
-    warnOnDeadBand(rule, inherited, active, context, context.bounded > boundedBefore)
-  }
+  processContainer(rule, active, context, true, { rule, inherited, selected: active })
 
   if (context.correctsFixed) correctFixedRule(rule)
 }
@@ -361,12 +362,14 @@ function warnOnSplitSelectorList(
 function warnOnDeadBand(
   rule: Rule,
   inherited: ActiveProfile,
-  active: ActiveProfile,
+  selected: ActiveProfile,
+  target: ActiveProfile,
+  property: string,
   context: ProcessorContext,
   generatedBounds: boolean,
 ): void {
   const band = context.band
-  if (!band || !active.convert) return
+  if (!band || !target.convert) return
   if (band.lo > band.hi) {
     const key = `unreachable|${band.lo}|${band.hi}`
     if (context.deadBands.has(key)) return
@@ -383,10 +386,10 @@ function warnOnDeadBand(
   // marker, but neither is constrained by the profile's fluid interval.
   if (!generatedBounds) return
   // Bare viewport lengths have no bounds to fall outside of.
-  const strategy = active.profile.strategy ?? context.options.strategy
+  const strategy = target.profile.strategy ?? context.options.strategy
   if (strategy !== 'clamp') return
 
-  const { minWidth, maxWidth } = active.profile.fluid ?? {}
+  const { minWidth, maxWidth } = target.profile.fluid ?? {}
   const pinned =
     maxWidth !== undefined && band.lo >= maxWidth
       ? 'maximum'
@@ -395,7 +398,7 @@ function warnOnDeadBand(
         : null
   if (!pinned) return
 
-  const key = `${active.name}|${band.lo}|${band.hi}`
+  const key = `${target.name}|${band.lo}|${band.hi}`
   if (context.deadBands.has(key)) return
   context.deadBands.add(key)
 
@@ -413,17 +416,23 @@ function warnOnDeadBand(
   // overrides one at a breakpoint. Such a route outranks a bare media route, so
   // suggesting one on its own would be advice that changes nothing.
   const suggestion =
-    active.name === inherited.name
+    target.name === inherited.name
       ? `{ media: { ${bound} }, profile: '…' }`
-      : `{ selector: […], media: { ${bound} }, profile: '…' }`
+      : property.startsWith('--') && target.name !== selected.name
+        ? `{ property: '${property}', media: { ${bound} }, profile: '…' }`
+        : `{ selector: […], media: { ${bound} }, profile: '…' }`
+  const repair = target.explicit
+    ? `@adaptive explicitly selected canvas "${target.name}", so routes cannot override it. ` +
+      `Choose a different profile in that @adaptive block, or widen "${target.name}"'s fluid range.`
+    : 'The numbers in a breakpoint are usually measured on a different design file — ' +
+      `give it one with a route: ${suggestion}. ` +
+      `Widening "${target.name}"'s fluid range instead makes it scale, but on the canvas ` +
+      'it was already using.'
   context.result.warn(
     `Every converted length here is a constant: this rule is live ${live}, but canvas ` +
-      `"${active.name}" stops scaling ${fluidRange}, so its bounded expression ` +
+      `"${target.name}" stops scaling ${fluidRange}, so its bounded expression ` +
       `is pinned to its ${pinned} across that whole range. ` +
-      'The numbers in a breakpoint are usually measured on a different design file — ' +
-      `give it one with a route: ${suggestion}. ` +
-      `Widening "${active.name}"'s fluid range instead makes it scale, but on the canvas ` +
-      'it was already using.',
+      repair,
     { node: rule, plugin: PLUGIN_NAME },
   )
 }
@@ -496,6 +505,7 @@ function transformAdaptiveAtRule(
   inherited: ActiveProfile,
   context: ProcessorContext,
   declarations: boolean,
+  owner?: DeclarationOwner,
 ): void {
   const name = context.options.atRuleName
   // `@adaptive pc;` — a canvas named but nothing given to it. Rewriting it the
@@ -525,6 +535,7 @@ function transformAdaptiveAtRule(
     { name: profileName, profile, explicit: true, convert: true },
     context,
     declarations,
+    owner,
   )
   const query = adaptiveQueryParams(profile)
   if (!query) {
@@ -568,6 +579,7 @@ function processContainer(
   active: ActiveProfile,
   context: ProcessorContext,
   declarations: boolean,
+  owner?: DeclarationOwner,
 ): void {
   let foundation = false
   for (const node of [...(container.nodes ?? [])]) {
@@ -584,7 +596,7 @@ function processContainer(
       continue
     }
     if (node.type === 'decl') {
-      if (declarations) transformDeclaration(node, active, context)
+      if (declarations) transformDeclaration(node, active, context, owner)
       continue
     }
     if (node.type === 'rule') {
@@ -596,7 +608,7 @@ function processContainer(
     if (name === context.atRuleName) {
       // Nested in a rule, `@adaptive` wraps that rule's own declarations; at the
       // root it wraps rules. Passing the flag down keeps both readings correct.
-      transformAdaptiveAtRule(node, active, context, declarations)
+      transformAdaptiveAtRule(node, active, context, declarations, owner)
     } else if (node.nodes) {
       const outer = context.band
       let inner = active
@@ -605,7 +617,13 @@ function processContainer(
         context.band = outer === null || own === null ? null : narrow(outer, own)
         inner = context.resolver.forMedia(active, context.band, context.file)
       }
-      processContainer(node, inner, context, declarations && NESTED_DECLARATION_CONTEXTS.has(name))
+      processContainer(
+        node,
+        inner,
+        context,
+        declarations && NESTED_DECLARATION_CONTEXTS.has(name),
+        owner,
+      )
       context.band = outer
     }
   }
@@ -667,8 +685,6 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOption
         {
           atRuleName,
           band: EVERY_WIDTH,
-          bounded: 0,
-          converted: 0,
           converter,
           correctsFixed,
           deadBands: new Set(),

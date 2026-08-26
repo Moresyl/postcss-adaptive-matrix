@@ -223,7 +223,7 @@ that whole range. The numbers in a breakpoint are usually measured on a differen
 file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
 ```
 
-This is arithmetic, not a heuristic: two numbers that do not overlap. It is reported once per canvas per band per file, and only for rules whose conversion generated `clamp()`, `min()` or `max()` — a breakpoint that only changes `display` and `color`, deliberately static text, and an unbounded viewport expression have no generated bounds to pin.
+This is arithmetic, not a heuristic: two numbers that do not overlap. It is reported once per canvas per band per file, and only for declarations whose conversion generated `clamp()`, `min()` or `max()` — a breakpoint that only changes `display` and `color`, deliberately static text, and an unbounded viewport expression have no generated bounds to pin. Selector- and property-routed declarations are checked against the canvas that actually converted them, including native CSS nesting.
 
 ## libraries
 
