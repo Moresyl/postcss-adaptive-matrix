@@ -345,6 +345,26 @@ describe('adaptiveMatrix', () => {
     expect(twice.css).toBe(once.css)
   })
 
+  it('honours established viewport-plugin ignore comments during migration', async () => {
+    const input = `
+      .card {
+        /* px-to-viewport-ignore-next */ width: 40px;
+        height: 30px; /* mobile-ignore */
+        /* mobile-ignore-next */ margin: 20px;
+        padding: 16px; /* px-to-viewport-ignore */
+        gap: 8px;
+      }
+    `
+    const once = await process(input)
+    const twice = await process(once.css)
+
+    for (const declaration of ['width: 40px', 'height: 30px', 'margin: 20px', 'padding: 16px']) {
+      expect(once.css).toContain(declaration)
+    }
+    expect(once.css).toContain('gap: clamp(')
+    expect(twice.css).toBe(once.css)
+  })
+
   it('can preserve the original fallback and transform custom properties', async () => {
     const result = await process('.box { --gap: 20px; width: 100px }', {
       preserveOriginal: true,

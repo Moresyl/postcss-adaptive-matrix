@@ -43,6 +43,8 @@ adaptiveMatrix({
 | Maximum desktop display width | `fluid.maxWidth` + `rootMaxWidth` |
 | Ignore comments | `adaptive-ignore` / `adaptive-ignore-next` / `adaptive-ignore-rule` |
 
+Existing `/* px-to-viewport-ignore(-next) */` and `/* mobile-ignore(-next) */` directives keep working during migration; they remain in the output for the same second-pass guarantee as the native comments. No compatibility option is required. The old `postcss-pxtorem` uppercase-unit trick (`1PX`) is intentionally not an ignore signal here because CSS units are case-insensitive — use an explicit comment instead.
+
 Two things need a different idea rather than a different name:
 
 **Landscape is not a global switch.** Create a landscape profile with an explicit media query, and landscape gets its own design width and scaling range instead of a ratio derived from portrait.

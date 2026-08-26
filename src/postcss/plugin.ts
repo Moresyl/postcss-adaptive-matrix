@@ -42,8 +42,14 @@ import type {
 } from '../core/types.js'
 
 export const PLUGIN_NAME = 'postcss-adaptive-matrix'
-const IGNORE_NEXT = 'adaptive-ignore-next'
-const IGNORE_LINE = 'adaptive-ignore'
+const IGNORE_NEXT = new Set([
+  'adaptive-ignore-next',
+  // Migration-safe defaults from the two viewport compilers whose existing
+  // stylesheets are most likely to pass through this one during replacement.
+  'px-to-viewport-ignore-next',
+  'mobile-ignore-next',
+])
+const IGNORE_LINE = new Set(['adaptive-ignore', 'px-to-viewport-ignore', 'mobile-ignore'])
 const IGNORE_RULE = 'adaptive-ignore-rule'
 
 /**
@@ -67,8 +73,13 @@ const NESTED_DECLARATION_CONTEXTS = new Set([
   'supports',
 ])
 
-function isComment(node: ChildNode | undefined, text: string): node is Comment {
-  return node?.type === 'comment' && node.text.trim() === text
+function isComment(
+  node: ChildNode | undefined,
+  text: string | ReadonlySet<string>,
+): node is Comment {
+  if (node?.type !== 'comment') return false
+  const comment = node.text.trim()
+  return typeof text === 'string' ? comment === text : text.has(comment)
 }
 
 /*

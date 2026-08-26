@@ -43,6 +43,8 @@ adaptiveMatrix({
 | 桌面端最大展示宽度 | `fluid.maxWidth` + `rootMaxWidth` |
 | 忽略注释 | `adaptive-ignore` / `adaptive-ignore-next` / `adaptive-ignore-rule` |
 
+迁移期间，已有的 `/* px-to-viewport-ignore(-next) */` 与 `/* mobile-ignore(-next) */` 指令会继续生效，并与原生注释一样保留在产物里以保证二次编译，无需增加任何兼容配置。旧 `postcss-pxtorem` 依赖大写单位跳过的写法（如 `1PX`）不会在这里被当作忽略信号，因为 CSS 单位本就不区分大小写；请改用明确注释。
+
 两处需要换个想法，而不是换个名字：
 
 **横屏不是全局开关。** 新建一个 landscape profile 并给它明确的媒体查询，横屏就拥有自己的设计宽度和缩放区间，而不是从竖屏推算出来的比例。

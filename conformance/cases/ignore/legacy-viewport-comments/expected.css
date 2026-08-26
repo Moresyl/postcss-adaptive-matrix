@@ -1,0 +1,9 @@
+.card {
+  /* px-to-viewport-ignore-next */
+  width: 40px;
+  height: 30px; /* mobile-ignore */
+  /* mobile-ignore-next */
+  margin: 20px;
+  padding: 16px; /* px-to-viewport-ignore */
+  gap: clamp(6.82667px, 2.13333vw, 10.24px);
+}
