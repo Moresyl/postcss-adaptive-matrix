@@ -358,7 +358,7 @@ root: { selector: '#app', injectTo: 'src/styles/main' }
 
 并对自身声明了 `position: fixed` 的规则做三件事：
 
-- `left` / `right` / `inset-inline-*` 为 `0` 时替换为留白，非零时改为 `calc(原值 + 留白)`，`auto` 不动；
+- `left` / `right` / `inset-inline-*`，以及 `inset-inline`、`inset` 简写中的行内轴分量，为 `0` 时替换为留白，非零时改为 `calc(原值 + 留白)`；`auto` 与 CSS 全局关键字不动；
 - `width` / `inline-size` 等为 `100%` 时改为 `min(100%, 列宽)`；
 - 块轴（`top` / `bottom`）不处理——居中列只约束行内轴。
 

@@ -358,7 +358,7 @@ Enabled, the compiler publishes two variables:
 
 and does three things to rules that themselves declare `position: fixed`:
 
-- `left` / `right` / `inset-inline-*` become the gutter when they are `0`, and `calc(original + gutter)` when they are not; `auto` is left alone;
+- `left` / `right` / `inset-inline-*`, plus the inline components of `inset-inline` and `inset`, become the gutter when they are `0`, and `calc(original + gutter)` when they are not; `auto` and CSS-wide keywords are left alone;
 - `width` / `inline-size` and friends become `min(100%, column width)` when they are `100%`;
 - the block axis (`top` / `bottom`) is untouched — a centred column only constrains the inline axis.
 

@@ -15,6 +15,7 @@
  */
 import type { ResolvedAdaptiveMatrixOptions } from './types.js'
 import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { splitComponents } from './evaluate.js'
 
 /** Width of the root column, or `100vw` while it is unconstrained. */
 export const ROOT_WIDTH_VARIABLE = '--adaptive-root-width'
@@ -57,6 +58,46 @@ function equalsNumber(value: string, pattern: RegExp, expected: number): boolean
   return match !== null && Number(match[1]) === expected
 }
 
+function correctInlineInset(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.includes(ROOT_GUTTER_VARIABLE) || trimmed.includes(ROOT_WIDTH_VARIABLE)) {
+    return trimmed
+  }
+  if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
+  const keyword = singleKeyword(trimmed)
+  if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return trimmed
+  return `calc(${trimmed} + ${GUTTER})`
+}
+
+function correctInsetShorthand(value: string, inlineOnly: boolean): string | null {
+  const parts = splitComponents(value)
+  const limit = inlineOnly ? 2 : 4
+  if (!parts.length || parts.length > limit) return null
+  // CSS-wide keywords are valid only as the whole shorthand. They cannot be
+  // expanded alongside another component, and have no numeric inline offset.
+  if (parts.some((part) => CSS_WIDE_KEYWORDS.has(singleKeyword(part) ?? ''))) return null
+
+  const corrected = [...parts]
+  if (inlineOnly) {
+    for (let index = 0; index < corrected.length; index += 1) {
+      corrected[index] = correctInlineInset(corrected[index]!)
+    }
+  } else if (corrected.length === 1) {
+    // One inset value applies to all four edges. Expand to vertical/horizontal
+    // so only the inline axis receives the centred-column gutter.
+    const inline = correctInlineInset(corrected[0]!)
+    if (inline === corrected[0]) return null
+    corrected.push(inline)
+  } else {
+    // In the 2/3/4-value grammar the second component is right; the fourth,
+    // when present, is left. The block-axis values stay authored.
+    corrected[1] = correctInlineInset(corrected[1]!)
+    if (corrected.length === 4) corrected[3] = correctInlineInset(corrected[3]!)
+  }
+  const result = corrected.join(' ')
+  return result === parts.join(' ') ? null : result
+}
+
 export function isFixedPositionValue(value: string): boolean {
   return singleKeyword(value) === 'fixed'
 }
@@ -71,23 +112,19 @@ export function isFixedPositionValue(value: string): boolean {
 export function correctFixedDeclaration(property: string, value: string): string | null {
   const name = property.toLowerCase()
 
-  // Already corrected — re-running the plugin must not stack gutters.
-  if (value.includes(ROOT_GUTTER_VARIABLE) || value.includes(ROOT_WIDTH_VARIABLE)) {
-    return null
-  }
-
   if (INSET_PROPERTIES.has(name)) {
-    const trimmed = value.trim()
-    // A bare `0` is the overwhelmingly common case and deserves the short form.
-    if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
-    // `auto` and CSS-wide keywords have no computable length. Putting one into
-    // calc() makes the declaration invalid and changes its fallback behaviour.
-    const keyword = singleKeyword(trimmed)
-    if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return null
-    return `calc(${trimmed} + ${GUTTER})`
+    const corrected = correctInlineInset(value)
+    return corrected === value.trim() ? null : corrected
   }
 
-  if (WIDTH_PROPERTIES.has(name) && equalsNumber(value.trim(), FULL_WIDTH, 100)) {
+  if (name === 'inset-inline') return correctInsetShorthand(value, true)
+  if (name === 'inset') return correctInsetShorthand(value, false)
+
+  if (
+    WIDTH_PROPERTIES.has(name) &&
+    !value.includes(ROOT_WIDTH_VARIABLE) &&
+    equalsNumber(value.trim(), FULL_WIDTH, 100)
+  ) {
     return `min(100%, ${ROOT_WIDTH})`
   }
 

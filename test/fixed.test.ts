@@ -47,6 +47,28 @@ describe('correctFixedDeclaration', () => {
     expect(correctFixedDeclaration('left', '12px')).toBe('calc(12px + var(--adaptive-root-gutter))')
   })
 
+  it('corrects logical and physical inset shorthands on the inline axis only', () => {
+    expect(correctFixedDeclaration('inset-inline', '0')).toBe('var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('inset-inline', '0 12px')).toBe(
+      'var(--adaptive-root-gutter) calc(12px + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('inset', '0')).toBe('0 var(--adaptive-root-gutter)')
+    expect(correctFixedDeclaration('inset', '10px 20px')).toBe(
+      '10px calc(20px + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('inset', '1px 2px 3px 4px')).toBe(
+      '1px calc(2px + var(--adaptive-root-gutter)) 3px calc(4px + var(--adaptive-root-gutter))',
+    )
+  })
+
+  it('leaves non-inline shorthand components and already-corrected values alone', () => {
+    expect(correctFixedDeclaration('inset-inline', 'auto auto')).toBeNull()
+    expect(correctFixedDeclaration('inset', 'auto')).toBeNull()
+    expect(correctFixedDeclaration('inset', 'inherit')).toBeNull()
+    expect(correctFixedDeclaration('inset', '0 var(--adaptive-root-gutter)')).toBeNull()
+    expect(correctFixedDeclaration('inset', '1px 2px 3px 4px 5px')).toBeNull()
+  })
+
   it('leaves auto alone, having no length to offset', () => {
     expect(correctFixedDeclaration('left', 'auto')).toBeNull()
     expect(correctFixedDeclaration('left', 'auto/**/')).toBeNull()
@@ -129,6 +151,16 @@ describe('fixed containing block', () => {
     expect(css).not.toContain('calc(inherit')
     expect(css).not.toContain('calc(revert-layer')
     expect(css).not.toContain('calc(unset')
+  })
+
+  it('keeps inset shorthand block values while offsetting both inline edges', async () => {
+    const css = await run('.bar { position: fixed; inset: 8px 12px 16px 20px }')
+    expect(css).toContain(
+      'inset: clamp(6.82667px, 2.13333vw, 10.24px) ' +
+        'calc(clamp(10.24px, 3.2vw, 15.36px) + var(--adaptive-root-gutter)) ' +
+        'clamp(13.65333px, 4.26667vw, 20.48px) ' +
+        'calc(clamp(17.06667px, 5.33333vw, 25.6px) + var(--adaptive-root-gutter))',
+    )
   })
 
   it('uses the winning position declaration instead of any earlier fixed fallback', async () => {
