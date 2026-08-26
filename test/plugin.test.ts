@@ -1068,6 +1068,9 @@ describe('withAtomicCss', () => {
       /tokenPrefxies.*Did you mean "tokenPrefixes"/,
     )
     expect(() => withAtomicCss({}, { profile: '' })).toThrow(/profile must be a non-empty string/)
+    expect(() => withAtomicCss({}, { profile: ' app ' })).toThrow(
+      /profile cannot have surrounding whitespace/,
+    )
     for (const tokenPrefixes of ['', [''], ['--'], [' --size-'], ['--bad:'], [42]]) {
       expect(() => withAtomicCss({}, { tokenPrefixes } as never)).toThrow(/tokenPrefixes/)
     }

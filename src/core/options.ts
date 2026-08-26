@@ -210,6 +210,11 @@ function validateRouteShape(route: unknown, path: string): void {
   if (typeof route.profile === 'string' && !route.profile.trim()) {
     throw new TypeError(`[postcss-adaptive-matrix] ${path}.profile cannot be empty.`)
   }
+  if (typeof route.profile === 'string' && route.profile !== route.profile.trim()) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] ${path}.profile cannot have surrounding whitespace.`,
+    )
+  }
   if (route.file !== undefined) requireFileMatchers(`${path}.file`, route.file)
   if (route.selector !== undefined) {
     requirePatterns(`${path}.selector`, route.selector)
@@ -352,6 +357,14 @@ function validateInputShape(input: unknown): void {
     (typeof input.defaultProfile !== 'string' || !input.defaultProfile.trim())
   ) {
     throw new TypeError('[postcss-adaptive-matrix] defaultProfile must be a non-empty string.')
+  }
+  if (
+    typeof input.defaultProfile === 'string' &&
+    input.defaultProfile !== input.defaultProfile.trim()
+  ) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] defaultProfile cannot have surrounding whitespace.',
+    )
   }
   if (input.routes !== undefined) {
     if (Array.isArray(input.routes)) {
@@ -703,6 +716,11 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   for (const [name, profile] of Object.entries(authored)) {
     if (!name.trim()) {
       throw new TypeError('[postcss-adaptive-matrix] Profile names cannot be empty.')
+    }
+    if (name !== name.trim()) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] Profile name ${JSON.stringify(name)} cannot have surrounding whitespace.`,
+      )
     }
     // `library:` belongs to the registry, and the expansion below overwrites
     // whatever shares a name with it. Someone writing `'library:vant'` is

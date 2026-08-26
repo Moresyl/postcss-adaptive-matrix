@@ -375,6 +375,21 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ profiles: { app: valid, '': valid } })).toThrow(
       /Profile names cannot be empty/,
     )
+    expect(() => resolveOptions({ profiles: { ' app ': valid } })).toThrow(
+      /Profile name " app ".*surrounding whitespace/,
+    )
+    expect(() =>
+      resolveOptions({ profiles: { 'a 10': valid }, defaultProfile: 'a 10' }),
+    ).not.toThrow()
+  })
+
+  it('rejects surrounding whitespace on references without banning internal spaces', () => {
+    expect(() => resolveOptions({ defaultProfile: ' app ' })).toThrow(
+      /defaultProfile cannot have surrounding whitespace/,
+    )
+    expect(() => resolveOptions({ routes: { profile: ' app ', selector: '.app' } })).toThrow(
+      /routes\.profile cannot have surrounding whitespace/,
+    )
   })
 
   it('rejects an unknown route target during option resolution', () => {

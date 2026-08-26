@@ -50,6 +50,7 @@ const CSS_TRIMMED_IDENTIFIER_PATTERN = `^\\s*${CSS_IDENTIFIER_SOURCE}\\s*$`
 const CSS_OPTIONAL_IDENTIFIER_PATTERN = `^(?:\\s*${CSS_IDENTIFIER_SOURCE}\\s*|\\s*)$`
 const CSS_CLASS_PREFIX_PATTERN = `^\\.?${CSS_IDENTIFIER_SOURCE}$`
 const CSS_TOKEN_PREFIX_PATTERN = String.raw`^--[-A-Za-z0-9_\u0080-\uFFFF]+$`
+const TRIMMED_NON_EMPTY_PATTERN = String.raw`^\S(?:[\s\S]*\S)?$`
 
 const PATTERN = {
   description: 'A substring, or a regular expression in a JavaScript config.',
@@ -225,7 +226,7 @@ const ROUTE: Fields<AdaptiveRoute> = {
   profile: {
     description: 'Target canvas, or `false` to leave matching lengths in fixed pixels.',
     'x-description-zh': '目标画布；`false` 表示匹配到的长度保持固定像素。',
-    oneOf: [{ type: 'string' }, { const: false }],
+    oneOf: [{ type: 'string', pattern: TRIMMED_NON_EMPTY_PATTERN }, { const: false }],
   },
   file: oneOrManyNonEmpty(FILE_MATCHER, {
     description: 'Stylesheet paths this route claims.',
@@ -267,6 +268,7 @@ const LIBRARY: Fields<LibraryAdaptationOptions> = {
     description: 'Used in the derived profile name and in diagnostics.',
     'x-description-zh': '用于派生画布的命名与诊断信息。',
     type: 'string',
+    pattern: TRIMMED_NON_EMPTY_PATTERN,
   },
   extends: {
     description:
@@ -311,6 +313,7 @@ const LIBRARY: Fields<LibraryAdaptationOptions> = {
     description: 'Profile whose fluid range, unit and strategy the derived canvas borrows.',
     'x-description-zh': '派生画布借用其流体区间、单位与输出策略的画布。',
     type: 'string',
+    pattern: TRIMMED_NON_EMPTY_PATTERN,
   },
 }
 
@@ -440,13 +443,14 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     propertyNames: {
       // `library:` is the registry's own namespace; a profile named into it
       // would be overwritten by the expansion and silently do nothing.
-      pattern: '^(?!library:)',
+      pattern: String.raw`^(?!library:)\S(?:[\s\S]*\S)?$`,
     },
   },
   defaultProfile: {
     description: 'Canvas used by anything no route or `@adaptive` claims.',
     'x-description-zh': '未被路由或 `@adaptive` 认领的内容所使用的画布。',
     type: 'string',
+    pattern: TRIMMED_NON_EMPTY_PATTERN,
     default: DEFAULTS.defaultProfile,
   },
   routes: {

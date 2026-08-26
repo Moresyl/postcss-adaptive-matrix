@@ -135,6 +135,11 @@ function validateAtomicCssOptions(value: unknown): asserts value is AtomicCssOpt
       '[postcss-adaptive-matrix] withAtomicCss options.profile must be a non-empty string.',
     )
   }
+  if (typeof value.profile === 'string' && value.profile !== value.profile.trim()) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] withAtomicCss options.profile cannot have surrounding whitespace.',
+    )
+  }
   if (value.tokenPrefixes !== undefined) {
     const tokenPrefixes = Array.isArray(value.tokenPrefixes)
       ? value.tokenPrefixes

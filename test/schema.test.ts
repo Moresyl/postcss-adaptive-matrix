@@ -152,6 +152,7 @@ describe('the published options schema', () => {
       expect.arrayContaining([{ type: 'number', exclusiveMinimum: 0 }]),
     )
     expect(options.profiles!.minProperties).toBe(1)
+    expect((options.profiles!.propertyNames as Subschema).pattern).toBeTypeOf('string')
     expect(profile.required).toEqual(['designWidth'])
     expect(profile.properties!.fluid!.required).toBeUndefined()
     const rootObject = (options.root!.oneOf as Subschema[])[0]!
@@ -164,6 +165,7 @@ describe('the published options schema', () => {
     expect(options.root!.oneOf).toEqual(expect.arrayContaining([{ const: true }, { const: false }]))
     const route = (options.routes!.oneOf as Subschema[])[0]!
     expect(route.required).toEqual(['profile'])
+    expect((route.properties!.profile!.oneOf as Subschema[])[0]!.pattern).toBeTypeOf('string')
     expect(route.anyOf).toEqual([
       { required: ['file'] },
       { required: ['selector'] },
