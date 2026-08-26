@@ -122,6 +122,8 @@ The `minPixelValue` and `hairline` thresholds are in **pixels**, not face value.
 
 ## AdaptiveRoute
 
+One route object can be passed directly; use an array only when order between multiple routes matters. Internally both forms become the same ordered list.
+
 ```ts
 interface AdaptiveRoute {
   profile: string | false

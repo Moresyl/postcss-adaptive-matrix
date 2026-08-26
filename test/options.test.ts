@@ -86,13 +86,14 @@ describe('configuration validation', () => {
   it('reports malformed JavaScript and JSON shapes at the option that owns them', () => {
     expect(() => resolveOptions(null as never)).toThrow(/Options must be an object, not null/)
     expect(() => resolveOptions({ profiles: [] as never })).toThrow(/profiles must be an object/)
-    expect(() => resolveOptions({ routes: {} as never })).toThrow(
-      /routes must be an array, not object/,
-    )
+    expect(() => resolveOptions({ routes: 16 as never })).toThrow(/routes\[0\] must be an object/)
     expect(resolveOptions({ propList: 'width' }).propList).toEqual(['width'])
     expect(resolveOptions({ textProperties: 'font-size' }).textProperties).toEqual(['font-size'])
     expect(resolveOptions({ selectorExclude: '.fixed' }).selectorExclude).toEqual(['.fixed'])
     expect(resolveOptions({ valueExclude: /fixed/ }).valueExclude).toEqual([/fixed/])
+    expect(
+      resolveOptions({ libraries: false, routes: { profile: 'app', selector: '.a' } }).routes,
+    ).toEqual([{ profile: 'app', selector: '.a' }])
     expect(() => resolveOptions({ routes: [{}] as never })).toThrow(/routes\[0\]\.profile/)
     expect(() =>
       resolveOptions({ routes: [{ profile: 'app', media: { width: 320 } }] as never }),

@@ -219,6 +219,19 @@ const ROUTE: Fields<AdaptiveRoute> = {
   }),
 }
 
+const ROUTE_SCHEMA = {
+  type: 'object',
+  properties: ROUTE,
+  required: ['profile'],
+  anyOf: [
+    { required: ['file'] },
+    { required: ['selector'] },
+    { required: ['property'] },
+    { required: ['media'] },
+  ],
+  additionalProperties: false,
+}
+
 const LIBRARY: Fields<LibraryAdaptationOptions> = {
   name: {
     description: 'Used in the derived profile name and in diagnostics.',
@@ -355,19 +368,13 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
   routes: {
     description: 'Evaluated in order; the first match wins. `@adaptive` always outranks these.',
     'x-description-zh': '按顺序求值，先匹配者胜出。`@adaptive` 始终优先于路由。',
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: ROUTE,
-      required: ['profile'],
-      anyOf: [
-        { required: ['file'] },
-        { required: ['selector'] },
-        { required: ['property'] },
-        { required: ['media'] },
-      ],
-      additionalProperties: false,
-    },
+    oneOf: [
+      ROUTE_SCHEMA,
+      {
+        type: 'array',
+        items: ROUTE_SCHEMA,
+      },
+    ],
     default: [],
   },
   libraries: {

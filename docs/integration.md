@@ -218,7 +218,7 @@ Length families you extend the theme with are added via `tokenPrefixes`:
 withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
 ```
 
-There is no base configuration to restate when the defaults already fit: `withAtomicCss()` is the complete zero-config form. Atomic-only settings are also accepted directly — `withAtomicCss({ tokenPrefixes: ['--size-'] })` — while `withAtomicCss(base, options)` remains the form for wrapping a real configuration.
+There is no base configuration to restate when the defaults already fit: `withAtomicCss()` is the complete zero-config form. Atomic-only settings are also accepted directly — `withAtomicCss({ tokenPrefixes: '--size-' })` — while `withAtomicCss(base, options)` remains the form for wrapping a real configuration. Use an array only for several extra prefixes.
 
 Prefixes must be non-empty custom-property prefixes beginning with `--`. The wrapper validates the collections it needs before spreading them, rejects misspelled option names with a suggestion, and deduplicates repeated prefixes without folding case—custom-property names are case-sensitive.
 

@@ -152,7 +152,7 @@ describe('the published options schema', () => {
     expect(rootObject.required).toBeUndefined()
     expect(rootObject.properties!.selector!.default).toBe(':root')
     expect(options.root!.oneOf).toEqual(expect.arrayContaining([{ const: true }, { const: false }]))
-    const route = options.routes!.items as Subschema
+    const route = (options.routes!.oneOf as Subschema[])[0]!
     expect(route.required).toEqual(['profile'])
     expect(route.anyOf).toEqual([
       { required: ['file'] },

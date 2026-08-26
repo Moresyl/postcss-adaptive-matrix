@@ -85,6 +85,8 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain('root?: RootFoundationOptions | boolean')
       expect(declarations).toContain('libraries?: LibraryEntry | readonly LibraryEntry[] |')
       expect(declarations).toContain('propList?: string | readonly string[]')
+      expect(declarations).toContain('routes?: AdaptiveRoute | readonly AdaptiveRoute[]')
+      expect(declarations).toContain('tokenPrefixes?: string | readonly string[]')
       expect(declarations).toContain("Omit<T, 'unitToConvert' | 'routes' | 'textProperties'>")
     }
   })

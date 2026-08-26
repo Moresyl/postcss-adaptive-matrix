@@ -250,7 +250,7 @@ export interface AdaptiveMatrixOptions {
   profiles?: Record<string, AdaptiveProfile>
   defaultProfile?: string
   /** Evaluated in order; the first match wins. `@adaptive` always outranks these. */
-  routes?: readonly AdaptiveRoute[]
+  routes?: AdaptiveRoute | readonly AdaptiveRoute[]
   /**
    * Component libraries to adapt.
    *
@@ -311,6 +311,7 @@ export interface ResolvedAdaptiveMatrixOptions extends Omit<
   | 'exclude'
   | 'libraries'
   | 'unitToConvert'
+  | 'routes'
   | 'textProperties'
   | 'propList'
   | 'selectorExclude'
@@ -318,6 +319,7 @@ export interface ResolvedAdaptiveMatrixOptions extends Omit<
 > {
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
+  routes: AdaptiveRoute[]
   textProperties: string[]
   propList: string[]
   selectorExclude: Pattern[]
@@ -374,7 +376,7 @@ export interface AtomicCssOptions {
    * Further custom-property prefixes to claim, for a theme extended with length
    * families of its own — `--size-`, `--gutter-`, whatever `@theme` declares.
    */
-  tokenPrefixes?: readonly string[]
+  tokenPrefixes?: string | readonly string[]
 }
 
 /** A profile together with how it was selected. */

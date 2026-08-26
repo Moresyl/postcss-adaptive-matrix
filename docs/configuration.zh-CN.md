@@ -122,6 +122,8 @@ rootValue: ({ file }) => file.replaceAll('\\', '/').includes('/legacy/') ? 10 : 
 
 ## AdaptiveRoute
 
+只有一条路由时可直接传对象；只有多条路由需要表达先后顺序时才用数组。两种形式在内部都会归一化成同一份有序列表。
+
 ```ts
 interface AdaptiveRoute {
   profile: string | false

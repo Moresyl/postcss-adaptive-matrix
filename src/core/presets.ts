@@ -4,6 +4,7 @@ import type {
   AppPcPresetOptions,
   AtomicCssOptions,
 } from './types.js'
+import { toArray } from './matchers.js'
 import { isCssIdentifier, isCssLayerName } from './syntax.js'
 import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 
@@ -135,12 +136,11 @@ function validateAtomicCssOptions(value: unknown): asserts value is AtomicCssOpt
     )
   }
   if (value.tokenPrefixes !== undefined) {
-    if (!Array.isArray(value.tokenPrefixes)) {
-      throw new TypeError(
-        `[postcss-adaptive-matrix] withAtomicCss options.tokenPrefixes must be an array, not ${valueKind(value.tokenPrefixes)}.`,
-      )
-    }
-    for (const [index, prefix] of value.tokenPrefixes.entries()) {
+    const tokenPrefixes = Array.isArray(value.tokenPrefixes)
+      ? value.tokenPrefixes
+      : [value.tokenPrefixes]
+    for (const [index, prefix] of tokenPrefixes.entries()) {
+      const path = Array.isArray(value.tokenPrefixes) ? `tokenPrefixes[${index}]` : 'tokenPrefixes'
       if (
         typeof prefix !== 'string' ||
         prefix.length <= 2 ||
@@ -148,7 +148,7 @@ function validateAtomicCssOptions(value: unknown): asserts value is AtomicCssOpt
         !prefix.startsWith('--')
       ) {
         throw new TypeError(
-          `[postcss-adaptive-matrix] withAtomicCss options.tokenPrefixes[${index}] must be a non-empty custom-property prefix starting with "--".`,
+          `[postcss-adaptive-matrix] withAtomicCss options.${path} must be a non-empty custom-property prefix starting with "--".`,
         )
       }
     }
@@ -189,12 +189,14 @@ function validateAtomicCssBase(value: unknown): asserts value is AdaptiveMatrixO
       `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert "${value.unitToConvert.trim()}" is not a valid unescaped CSS unit identifier.`,
     )
   }
-  for (const field of ['routes'] as const) {
-    if (value[field] !== undefined && !Array.isArray(value[field])) {
-      throw new TypeError(
-        `[postcss-adaptive-matrix] withAtomicCss base.${field} must be an array, not ${valueKind(value[field])}.`,
-      )
-    }
+  if (
+    value.routes !== undefined &&
+    !Array.isArray(value.routes) &&
+    (!isObject(value.routes) || value.routes instanceof RegExp)
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] withAtomicCss base.routes must be a route object or array, not ${valueKind(value.routes)}.`,
+    )
   }
   if (
     value.textProperties !== undefined &&
@@ -378,7 +380,13 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
         : [...base.unitToConvert]
   if (!units.some((unit) => unit.toLowerCase() === 'rem')) units.push('rem')
 
-  const prefixes = [...new Set([...THEME_TOKEN_PREFIXES, ...(options.tokenPrefixes ?? [])])]
+  const customPrefixes =
+    options.tokenPrefixes === undefined
+      ? []
+      : typeof options.tokenPrefixes === 'string'
+        ? [options.tokenPrefixes]
+        : options.tokenPrefixes
+  const prefixes = [...new Set([...THEME_TOKEN_PREFIXES, ...customPrefixes])]
   const inheritedTextProperties =
     base.textProperties === undefined
       ? undefined
@@ -392,7 +400,7 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
     // Appended, so anything the caller routed by hand is tested first — the
     // same order library routes take, and for the same reason.
     routes: [
-      ...(base.routes ?? []),
+      ...toArray<AdaptiveRoute>(base.routes),
       {
         profile: options.profile ?? base.defaultProfile ?? 'app',
         property: prefixes,

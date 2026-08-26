@@ -39,7 +39,7 @@ describe('adaptiveMatrix', () => {
     it.each([
       ['include', { include: 'src/' }],
       ['exclude', { exclude: 'vendor/' }],
-      ['routes[].file', { routes: [{ profile: 'pc', file: 'desktop/' }] }],
+      ['routes[].file', { routes: { profile: 'pc', file: 'desktop/' } }],
       ['root.injectTo', { root: { injectTo: 'styles/main' } }],
     ] satisfies [string, AdaptiveMatrixOptions][])(
       'warns when %s actually needs from',
@@ -941,6 +941,7 @@ describe('withAtomicCss', () => {
 
     expect(wrapped.routes.at(-1)).toMatchObject({ profile: 'pc' })
     expect(wrapped.routes.at(-1)!.property).toContain('--gutter-')
+    expect(withAtomicCss({ tokenPrefixes: '--size-' }).routes.at(-1)!.property).toContain('--size-')
     expect(() => withAtomicCss({ profile: '' })).toThrow(/profile must be a non-empty string/)
   })
 
@@ -1006,9 +1007,23 @@ describe('withAtomicCss', () => {
     expect(wrapped.routes.at(-1)!.property).toContain('--gutter-')
   })
 
+  it('accepts one route without wrapping it in an array', async () => {
+    const result = await process('.desktop { width: 144px }', {
+      libraries: false,
+      strategy: 'viewport',
+      hairline: 0,
+      profiles: { app: { designWidth: 375 }, pc: { designWidth: 1440 } },
+      routes: { profile: 'pc', selector: '.desktop' },
+    })
+
+    expect(result.css).toContain('width: 10vw')
+  })
+
   it('validates the wrapper inputs before spreading or iterating them', () => {
     expect(() => withAtomicCss(null as never)).toThrow(/base must be an options object, not null/)
-    expect(() => withAtomicCss({ routes: {} } as never)).toThrow(/base.routes must be an array/)
+    expect(() => withAtomicCss({ routes: 16 } as never)).toThrow(
+      /base.routes must be a route object or array/,
+    )
     expect(() => withAtomicCss({ unitToConvert: [3] } as never)).toThrow(
       /base.unitToConvert\[0\] must be a string/,
     )
@@ -1023,7 +1038,7 @@ describe('withAtomicCss', () => {
       /tokenPrefxies.*Did you mean "tokenPrefixes"/,
     )
     expect(() => withAtomicCss({}, { profile: '' })).toThrow(/profile must be a non-empty string/)
-    for (const tokenPrefixes of ['--size-', [''], ['--'], [' --size-'], [42]]) {
+    for (const tokenPrefixes of ['', [''], ['--'], [' --size-'], [42]]) {
       expect(() => withAtomicCss({}, { tokenPrefixes } as never)).toThrow(/tokenPrefixes/)
     }
   })

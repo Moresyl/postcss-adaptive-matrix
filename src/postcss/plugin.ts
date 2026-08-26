@@ -22,7 +22,7 @@ import {
   buildFoundationCss,
 } from '../core/foundation.js'
 import { LIBRARY_PROFILE_PREFIX } from '../core/libraries.js'
-import { createPropertyMatcher, matchesAnyPattern, matchesFile } from '../core/matchers.js'
+import { createPropertyMatcher, matchesAnyPattern, matchesFile, toArray } from '../core/matchers.js'
 import { EVERY_WIDTH, bandOf, narrow, type WidthBand } from '../core/media.js'
 import { resolveOptions } from '../core/options.js'
 import { createProfileResolver, type ProfileResolver } from '../core/resolve.js'
@@ -38,6 +38,7 @@ import {
 import type {
   ActiveProfile,
   AdaptiveMatrixOptions,
+  AdaptiveRoute,
   ResolvedAdaptiveMatrixOptions,
 } from '../core/types.js'
 
@@ -662,7 +663,8 @@ function sourcePathDependency(
 ): string | null {
   if (input.include !== undefined) return 'include'
   if (input.exclude !== undefined) return 'exclude'
-  if (input.routes?.some((route) => route.file !== undefined)) return 'routes[].file'
+  const routes = toArray<AdaptiveRoute>(input.routes)
+  if (routes.some((route) => route.file !== undefined)) return 'routes[].file'
   if (typeof input.root === 'object' && input.root.injectTo !== undefined) return 'root.injectTo'
   if (typeof input.rootValue === 'function') return 'rootValue'
   for (const [name, profile] of Object.entries(input.profiles ?? {})) {

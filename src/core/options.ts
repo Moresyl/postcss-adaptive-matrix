@@ -11,6 +11,7 @@ import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './v
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
+  AdaptiveRoute,
   MediaMatcher,
   ResolvedAdaptiveMatrixOptions,
 } from './types.js'
@@ -129,14 +130,6 @@ const PROFILE_KEYS = [
 ] as const
 const FLUID_KEYS = ['minWidth', 'maxWidth'] as const
 const QUERY_KEYS = ['type', 'condition', 'name'] as const
-
-function requireArray(name: string, value: unknown): asserts value is readonly unknown[] {
-  if (!Array.isArray(value)) {
-    throw new TypeError(
-      `[postcss-adaptive-matrix] ${name} must be an array, not ${valueKind(value)}.`,
-    )
-  }
-}
 
 function requireStrings(name: string, value: unknown): void {
   const entries = Array.isArray(value) ? value : [value]
@@ -316,8 +309,8 @@ function validateInputShape(input: unknown): void {
     )
   }
   if (input.routes !== undefined) {
-    requireArray('routes', input.routes)
-    input.routes.forEach(validateRouteShape)
+    const routes = Array.isArray(input.routes) ? input.routes : [input.routes]
+    routes.forEach(validateRouteShape)
   }
   for (const field of ['textProperties', 'propList'] as const) {
     if (input[field] !== undefined) requireStrings(field, input[field])
@@ -549,6 +542,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     ...input,
     defaultProfile,
     unitToConvert: normaliseUnits(input.unitToConvert ?? DEFAULTS.unitToConvert),
+    routes: toArray<AdaptiveRoute>(input.routes),
     textProperties: toArray(input.textProperties ?? DEFAULTS.textProperties),
     propList: toArray(input.propList ?? DEFAULTS.propList),
     selectorExclude: toArray(input.selectorExclude ?? DEFAULTS.selectorExclude),

@@ -218,7 +218,7 @@ Tailwind 4 和 UnoCSS `presetWind4` 换了形状——工具类里没有长度�
 withAtomicCss(appPcPreset(), { tokenPrefixes: ['--gutter-', '--size-'] })
 ```
 
-内置默认值已经合适时，不需要为了签名硬写一个空配置：`withAtomicCss()` 就是完整的零配置写法。原子 CSS 专属设置也可直接写成 `withAtomicCss({ tokenPrefixes: ['--size-'] })`；只有确实存在要保留的主配置时，才使用 `withAtomicCss(base, options)`。
+内置默认值已经合适时，不需要为了签名硬写一个空配置：`withAtomicCss()` 就是完整的零配置写法。原子 CSS 专属设置也可直接写成 `withAtomicCss({ tokenPrefixes: '--size-' })`；只有多个额外前缀才需要数组，只有确实存在要保留的主配置时才使用 `withAtomicCss(base, options)`。
 
 前缀必须是以 `--` 开头的非空自定义属性前缀。包装器会先校验要展开的集合，字段名拼错时给出建议，并在不折叠大小写的前提下去重——自定义属性名本来就区分大小写。
 
