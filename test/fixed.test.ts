@@ -100,6 +100,23 @@ describe('correctFixedDeclaration', () => {
   it('is idempotent, so a second pass cannot stack gutters', () => {
     const once = correctFixedDeclaration('left', '0')!
     expect(correctFixedDeclaration('left', once)).toBeNull()
+    expect(correctFixedDeclaration('left', 'var( --adaptive-root-gutter )')).toBeNull()
+    expect(correctFixedDeclaration('left', 'VAR(/**/--adaptive-root-gutter, 0px)')).toBeNull()
+  })
+
+  it('does not confuse similarly named authored variables with its own gutter', () => {
+    expect(correctFixedDeclaration('left', 'var(--adaptive-root-gutter-extra)')).toBe(
+      'calc(var(--adaptive-root-gutter-extra) + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('left', 'var(--adaptive-root-width)')).toBe(
+      'calc(var(--adaptive-root-width) + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('left', 'var(--Adaptive-root-gutter)')).toBe(
+      'calc(var(--Adaptive-root-gutter) + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('left', 'xvar(--adaptive-root-gutter)')).toBe(
+      'calc(xvar(--adaptive-root-gutter) + var(--adaptive-root-gutter))',
+    )
   })
 
   it('recognises only the fixed keyword', () => {

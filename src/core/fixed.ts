@@ -24,6 +24,13 @@ export const ROOT_GUTTER_VARIABLE = '--adaptive-root-gutter'
 
 const GUTTER = `var(${ROOT_GUTTER_VARIABLE})`
 const ROOT_WIDTH = `var(${ROOT_WIDTH_VARIABLE})`
+const CSS_GAP = String.raw`(?:[ \t\r\n\f]|\/\*[\s\S]*?\*\/)*`
+// Function names fold in CSS; custom-property names do not. Keep the latter
+// case-sensitive and require an argument boundary so `--…-gutter-extra` is not
+// mistaken for the generated variable.
+const GUTTER_REFERENCE = new RegExp(
+  String.raw`(?:^|[^-_A-Za-z0-9\\\u0080-\uFFFF])[vV][aA][rR]\(${CSS_GAP}--adaptive-root-gutter${CSS_GAP}(?:,|\))`,
+)
 
 /**
  * Physical and logical inset properties that move an element horizontally.
@@ -60,9 +67,7 @@ function equalsNumber(value: string, pattern: RegExp, expected: number): boolean
 
 function correctInlineInset(value: string): string {
   const trimmed = value.trim()
-  if (trimmed.includes(ROOT_GUTTER_VARIABLE) || trimmed.includes(ROOT_WIDTH_VARIABLE)) {
-    return trimmed
-  }
+  if (GUTTER_REFERENCE.test(trimmed)) return trimmed
   if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
   const keyword = singleKeyword(trimmed)
   if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return trimmed
@@ -120,11 +125,7 @@ export function correctFixedDeclaration(property: string, value: string): string
   if (name === 'inset-inline') return correctInsetShorthand(value, true)
   if (name === 'inset') return correctInsetShorthand(value, false)
 
-  if (
-    WIDTH_PROPERTIES.has(name) &&
-    !value.includes(ROOT_WIDTH_VARIABLE) &&
-    equalsNumber(value.trim(), FULL_WIDTH, 100)
-  ) {
+  if (WIDTH_PROPERTIES.has(name) && equalsNumber(value.trim(), FULL_WIDTH, 100)) {
     return `min(100%, ${ROOT_WIDTH})`
   }
 
