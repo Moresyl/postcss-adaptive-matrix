@@ -84,7 +84,10 @@ export function observeAdaptiveViewport(
       : options.document
   const target = options.target === undefined ? browserDocument?.documentElement : options.target
   const prefix = variablePrefix(options.prefix)
-  let frame = 0
+  // A requestAnimationFrame handle is an unsigned counter and may eventually
+  // wrap to zero. `null`, rather than a valid handle value, means idle.
+  let frame: number | null = null
+  let destroyed = false
   const published = new Map<string, string>()
 
   const publish = (name: string, value: string): void => {
@@ -94,7 +97,7 @@ export function observeAdaptiveViewport(
   }
 
   const update = (): AdaptiveViewportSnapshot | null => {
-    if (!browserWindow || !target) return null
+    if (destroyed || !browserWindow || !target) return null
     const visual = browserWindow.visualViewport
     const layoutWidth = positiveFinite(browserWindow.innerWidth, 0)
     const layoutHeight = positiveFinite(browserWindow.innerHeight, 0)
@@ -125,9 +128,9 @@ export function observeAdaptiveViewport(
   // frame both pending and unrecorded — `destroy` then had nothing to cancel
   // and the write landed on a torn-down observer one tick later.
   const schedule = () => {
-    if (!browserWindow || frame) return
+    if (destroyed || !browserWindow || frame !== null) return
     frame = browserWindow.requestAnimationFrame(() => {
-      frame = 0
+      frame = null
       update()
     })
   }
@@ -149,10 +152,12 @@ export function observeAdaptiveViewport(
   return {
     update,
     destroy() {
-      if (frame) browserWindow.cancelAnimationFrame(frame)
+      if (destroyed) return
+      destroyed = true
+      if (frame !== null) browserWindow.cancelAnimationFrame(frame)
       // Cleared so a second destroy cannot cancel whatever the host has since
       // reissued this handle to.
-      frame = 0
+      frame = null
       browserWindow.removeEventListener('resize', schedule)
       browserWindow.removeEventListener('orientationchange', schedule)
       browserWindow.visualViewport?.removeEventListener('resize', schedule)

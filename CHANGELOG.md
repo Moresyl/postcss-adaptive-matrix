@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- The optional viewport observer now uses `null` as its idle animation-frame sentinel, so a standards-valid handle of `0` is still coalesced and cancelled. Destruction is permanent and idempotent: a racing captured listener cannot queue a post-destroy write, and manual `update()` returns `null` after teardown.
 - Profile names and their references in `defaultProfile`, routes, library `basedOn`, and `withAtomicCss` now reject surrounding whitespace before it can create a canvas that `@adaptive` trims and therefore can never select. Internal spaces remain supported and tested, so existing names such as `a 10` keep their exact identity.
 - A single explicitly named path-scoped library now receives the same missing-`from` warning as that library inside an array. In particular, scalar `libraries: 'antd-mobile-2x'` can no longer silently lose the path that distinguishes its 750 canvas from the 375 build; ordinary selector-addressable single libraries remain path-independent and quiet.
 - Main `routes.property` entries now reject ordinary property names and malformed custom-property prefixes that its custom-property-only execution path could never visit. Valid unescaped `--...` prefixes remain case-sensitive, and bare `--` deliberately remains available to claim every custom property.

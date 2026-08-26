@@ -255,6 +255,29 @@ describe('observeAdaptiveViewport', () => {
     expect(host.window.cancelAnimationFrame).toHaveBeenCalledTimes(1)
   })
 
+  it('coalesces and cancels a frame whose browser handle is zero', () => {
+    const target = stubTarget()
+    let queued: (() => void) | undefined
+    const requestAnimationFrame = vi.fn((callback: () => void) => {
+      queued = callback
+      return 0
+    })
+    const cancelAnimationFrame = vi.fn()
+    const host = stubWindow(undefined, { requestAnimationFrame, cancelAnimationFrame })
+    const observer = observeAdaptiveViewport({ window: host.window, target: target.element })
+
+    host.fire('resize')
+    host.fire('orientationchange')
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+
+    observer.destroy()
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(0)
+    const writes = target.setProperty.mock.calls.length
+    queued!()
+    expect(target.setProperty).toHaveBeenCalledTimes(writes)
+    expect(observer.update()).toBeNull()
+  })
+
   it('reads the globals when it is given nothing at all', () => {
     // `observeAdaptiveViewport()` with no arguments is how every browser
     // consumer calls it; the options exist for tests and for shells that hand

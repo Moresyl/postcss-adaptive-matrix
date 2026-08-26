@@ -88,6 +88,8 @@ interface AdaptiveViewportObserver {
 }
 ```
 
+`destroy()` is idempotent and permanent: it cancels a queued animation frame even if the browser returned handle `0`, removes the listeners once, and later `update()` calls return `null` without writing.
+
 ## SSR
 
 With no `window` the constructor does not throw; the returned observer does nothing and `update()` returns `null`. So it can be called unconditionally at module top level, with no `if (typeof window !== 'undefined')` wrapper.

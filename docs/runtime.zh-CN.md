@@ -88,6 +88,8 @@ interface AdaptiveViewportObserver {
 }
 ```
 
+`destroy()` 可重复调用且永久生效：即使浏览器返回的动画帧句柄为 `0`，也会取消待执行帧；监听只解绑一次，之后再调用 `update()` 会返回 `null` 且不再写入。
+
 ## SSR
 
 没有 `window` 时构造函数不报错，返回的观察器什么也不做，`update()` 返回 `null`。所以可以无条件在模块顶层调用，不需要包 `if (typeof window !== 'undefined')`。
