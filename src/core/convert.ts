@@ -6,7 +6,7 @@ import type {
   ResolvedAdaptiveMatrixOptions,
   ScaleUnit,
 } from './types.js'
-import { CSS_NUMBER_SOURCE, isCssWhitespace } from './syntax.js'
+import { CSS_NUMBER_SOURCE, decodeCssIdentifier, isCssWhitespace } from './syntax.js'
 
 const SKIPPED_FUNCTIONS = new Set(['url', 'local', 'format'])
 
@@ -204,7 +204,7 @@ export function isAccessibleTextProperty(
   // Standard property names are ASCII case-insensitive in CSS, while custom
   // property names are case-sensitive. Preserve the latter and canonicalise
   // the former so `FONT-SIZE` cannot silently lose the zoomable text formula.
-  const subject = isToken ? property : property.toLowerCase()
+  const subject = isToken ? decodeCssIdentifier(property) : property.toLowerCase()
   return options.textProperties.some((candidate) => {
     const pattern = candidate.startsWith('--') ? candidate : candidate.toLowerCase()
     if (pattern.endsWith('*')) {

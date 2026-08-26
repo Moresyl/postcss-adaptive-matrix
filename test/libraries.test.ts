@@ -468,6 +468,9 @@ describe('library routing', () => {
     expect(resolver.forCustomProperty(base, '--van-padding-md', '/src/app.css')?.name).toBe(
       'library:vant',
     )
+    expect(
+      resolver.forCustomProperty(base, String.raw`--\76 an-padding-md`, '/src/app.css')?.name,
+    ).toBe('library:vant')
   })
 
   it('leaves application variables unclaimed', () => {

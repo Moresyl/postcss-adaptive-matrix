@@ -1,4 +1,5 @@
 import type { FileMatcher, Pattern } from './types.js'
+import { decodeCssIdentifier } from './syntax.js'
 
 /**
  * One value or several, always as a fresh mutable array.
@@ -97,7 +98,9 @@ export function createPropertyMatcher(propList: readonly string[]) {
   const excludeRegex = excludes.map(globToRegExp)
 
   return (property: string): boolean => {
-    const subject = property.startsWith('--') ? property : property.toLowerCase()
+    const subject = property.startsWith('--')
+      ? decodeCssIdentifier(property)
+      : property.toLowerCase()
     let included = false
     for (const pattern of includeRegex) {
       if (pattern.test(subject)) {

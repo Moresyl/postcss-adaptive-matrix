@@ -668,6 +668,22 @@ describe('configuration validation', () => {
     )
   })
 
+  it('recognises escaped custom-property names as accessible text tokens', () => {
+    const options = resolveOptions({ libraries: false })
+    const profile = options.profiles.app!
+    const escaped = convertLength(
+      16,
+      String.raw`--\74 ext-size`,
+      'app',
+      profile,
+      options,
+      '/app.css',
+    )
+
+    expect(escaped).toBe(convertLength(16, '--text-size', 'app', profile, options, '/app.css'))
+    expect(escaped).toContain('rem')
+  })
+
   it('rejects a textAnchorWidth that is not a positive width', () => {
     const withAnchor = (textAnchorWidth: unknown) =>
       resolveOptions({
@@ -747,6 +763,8 @@ describe('matchers and math helpers', () => {
     const custom = createPropertyMatcher(['--Theme-*'])
     expect(custom('--Theme-gap')).toBe(true)
     expect(custom('--theme-gap')).toBe(false)
+    expect(custom(String.raw`--\54 heme-gap`)).toBe(true)
+    expect(custom(String.raw`--\74 heme-gap`)).toBe(false)
   })
 
   it('supports reusable regexes, strings, arrays, and functions', () => {

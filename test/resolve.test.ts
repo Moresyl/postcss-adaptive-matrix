@@ -87,5 +87,8 @@ describe('profile resolution', () => {
 
     expect(resolver.forCustomProperty(active, '--Theme-gap', '/src/app.css')?.name).toBe('vendor')
     expect(resolver.forCustomProperty(active, '--theme-gap', '/src/app.css')).toBeUndefined()
+    expect(
+      resolver.forCustomProperty(active, String.raw`--\54 heme-gap`, '/src/app.css')?.name,
+    ).toBe('vendor')
   })
 })
