@@ -205,6 +205,25 @@ describe('detection', () => {
   it('detects non-ASCII and escaped custom-property declarations', () => {
     expect(ids(':root { --间距: 16px }')).toContain('custom-properties')
     expect(ids(String.raw`:root { --\95f4\8ddd: 16px }`)).toContain('custom-properties')
+    expect(ids(String.raw`:root { \2d\2d gap: 16px }`)).toContain('custom-properties')
+  })
+
+  it('detects feature names written with CSS escapes', () => {
+    const css = String.raw`.a:h\61s(.b) { width: cl\61mp(1px, 2v\77, 3px); color: v\61r(--x) }`
+    const found = ids(css)
+    expect(found).toContain('has-pseudo')
+    expect(found).toContain('math-functions')
+    expect(found).toContain('viewport-units')
+    expect(found).toContain('custom-properties')
+    expect(
+      detectFeatures(css).find(({ feature }) => feature.id === 'math-functions')?.sample,
+    ).toContain(String.raw`cl\61mp`)
+  })
+
+  it('does not turn escaped identifier punctuation into feature syntax', () => {
+    const found = ids(String.raw`.a { x: x\2e clamp(1px,2px,3px); y: x\28 var(--x) }`)
+    expect(found).not.toContain('math-functions')
+    expect(found).not.toContain('custom-properties')
   })
 
   it('does not treat Unicode spaces as CSS declaration or query whitespace', () => {

@@ -16,7 +16,7 @@
  * feature is not "does it work" but "how much disappears when it doesn't".
  */
 import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
-import { CSS_NUMBER_SOURCE } from './syntax.js'
+import { CSS_NUMBER_SOURCE, decodeCssIdentifier, isCssWhitespace } from './syntax.js'
 
 export type CompatFeatureId =
   | 'math-functions'
@@ -372,7 +372,7 @@ function sampleAt(css: string, index: number, length: number): string {
  * their code units with spaces preserves every match index for `sampleAt()`
  * while preventing those decoys from failing a compatibility quality gate.
  */
-function compatibilitySyntax(css: string): string {
+function compatibilitySyntax(css: string): { syntax: string; positions: number[] } {
   const syntax = css.split('')
   let quote: "'" | '"' | null = null
   let comment = false
@@ -413,13 +413,52 @@ function compatibilitySyntax(css: string): string {
     }
   }
 
-  return syntax.join('')
+  const masked = syntax.join('')
+  let canonical = ''
+  const positions: number[] = []
+  for (let index = 0; index < masked.length; index += 1) {
+    const character = masked[index]!
+    if (character !== '\\') {
+      canonical += character
+      positions.push(index)
+      continue
+    }
+
+    let end = index + 1
+    let digits = 0
+    while (end < masked.length && digits < 6 && /[0-9a-f]/i.test(masked[end]!)) {
+      digits += 1
+      end += 1
+    }
+    if (digits && isCssWhitespace(masked[end] ?? '')) {
+      if (masked[end] === '\r' && masked[end + 1] === '\n') end += 1
+      end += 1
+    } else if (!digits && end < masked.length) {
+      end += 1
+    }
+    if (end === index + 1) {
+      canonical += character
+      positions.push(index)
+      continue
+    }
+
+    const decoded = decodeCssIdentifier(masked.slice(index, end))
+    // Escaped punctuation remains part of an identifier token. Replacing it
+    // with a non-ASCII identifier character prevents `x\2e clamp()` from
+    // inventing a dot boundary, while letters, digits, `_` and `-` retain the
+    // feature names an escape merely spelled differently.
+    canonical += /^[-_a-z0-9\u0080-\uFFFF]$/i.test(decoded) ? decoded : '\uFFFD'
+    positions.push(index)
+    index = end - 1
+  }
+
+  return { syntax: canonical, positions }
 }
 
 /** Which of the compiler's features appear in a stylesheet, in table order. */
 export function detectFeatures(css: string): { feature: CompatFeature; sample: string }[] {
   const found: { feature: CompatFeature; sample: string }[] = []
-  const syntax = compatibilitySyntax(css)
+  const { syntax, positions } = compatibilitySyntax(css)
   for (const feature of COMPAT_FEATURES) {
     if (!feature.detect) continue
     // Rebuilt per call rather than shared: a `g`-flagged literal would carry
@@ -427,7 +466,9 @@ export function detectFeatures(css: string): { feature: CompatFeature; sample: s
     const pattern = new RegExp(feature.detect.source, feature.detect.flags)
     const match = pattern.exec(syntax)
     if (!match) continue
-    found.push({ feature, sample: sampleAt(css, match.index, match[0].length) })
+    const originalStart = positions[match.index] ?? match.index
+    const originalEnd = positions[match.index + match[0].length] ?? css.length
+    found.push({ feature, sample: sampleAt(css, originalStart, originalEnd - originalStart) })
   }
   return found
 }
