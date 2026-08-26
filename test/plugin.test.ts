@@ -70,7 +70,9 @@ describe('adaptiveMatrix', () => {
       })
 
       expect(result.warnings()).toHaveLength(1)
-      expect(result.warnings()[0]!.text).toContain('profiles["app"] cannot choose a file-specific')
+      expect(result.warnings()[0]!.text).toContain(
+        'profiles["app"].designWidth cannot choose a file-specific',
+      )
       expect(result.css).toContain('width: calc(2.13333vw)')
     })
 

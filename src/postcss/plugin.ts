@@ -669,7 +669,7 @@ function sourcePathDependency(
   if (typeof input.rootValue === 'function') return 'rootValue'
   for (const [name, profile] of Object.entries(input.profiles ?? {})) {
     if (typeof profile === 'number') continue
-    if (typeof profile === 'function') return `profiles[${JSON.stringify(name)}]`
+    if (typeof profile === 'function') return `profiles[${JSON.stringify(name)}].designWidth`
     if (typeof profile.designWidth === 'function')
       return `profiles[${JSON.stringify(name)}].designWidth`
     if (typeof profile.textAnchorWidth === 'function') {
