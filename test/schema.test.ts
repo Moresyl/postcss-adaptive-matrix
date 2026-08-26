@@ -166,6 +166,10 @@ describe('the published options schema', () => {
       { required: ['extends'] },
       { required: ['name', 'designWidth'] },
     ])
+    expect(libraryObject.properties!.extends!.enum).toEqual(expect.arrayContaining(['vant']))
+    expect(((libraryArray.items as Subschema).oneOf as Subschema[])[0]!.enum).toEqual(
+      expect.arrayContaining(['vant', 'element-plus']),
+    )
     const query = (profile.properties!.query!.oneOf as Subschema[])[1]!
     expect(query.required).toEqual(['condition'])
     expect(query.additionalProperties).toBe(false)

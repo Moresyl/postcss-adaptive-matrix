@@ -262,7 +262,7 @@ export interface AdaptiveMatrixOptions {
    * Entries expand into routes evaluated after `routes`, so an explicit route
    * always wins.
    */
-  libraries?: readonly LibraryEntry[] | 'auto' | false
+  libraries?: LibraryEntry | readonly LibraryEntry[] | false
   atRuleName?: string
   strategy?: OutputStrategy
   unit?: ScaleUnit

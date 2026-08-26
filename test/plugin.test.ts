@@ -108,12 +108,16 @@ describe('adaptiveMatrix', () => {
       })
       const automatic = await withoutFrom('.page { width: 16px }')
       const named = await withoutFrom('.van-cell { width: 16px }', { libraries: ['vant'] })
+      const single = await withoutFrom('.vendor { width: 16px }', {
+        libraries: { name: 'single-vendor', designWidth: 375, file: 'vendor/' },
+      })
 
       expect(pathOnly.warnings()).toHaveLength(1)
       expect(pathOnly.warnings()[0]!.text).toContain(
         'libraries["vendor"].file has no real path to match',
       )
       expect(emptiedPrefixes.warnings()).toHaveLength(1)
+      expect(single.warnings()).toHaveLength(1)
       expect(automatic.warnings()).toHaveLength(0)
       expect(named.warnings()).toHaveLength(0)
     })

@@ -241,10 +241,10 @@ file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }
 ```ts
 type LibraryEntry = string | LibraryAdaptation
 
-libraries?: LibraryEntry[] | 'auto' | false
+libraries?: LibraryEntry | readonly LibraryEntry[] | false // 字符串 'auto' 是默认值
 ```
 
-默认 `'auto'`：全部内置库生效，使用 Vant 或 Element Plus 的项目不需要任何配置。`false` 整体关闭。给出数组则只启用列出的条目。
+默认 `'auto'`：全部内置库生效，使用 Vant 或 Element Plus 的项目不需要任何配置。`false` 整体关闭；一个内置或自定义条目可直接传入，只有多个条目才需要数组。
 
 继承条目最少只需 `{ extends: 'vant' }`，`name` 与 `designWidth` 会从内置定义取得。独立自定义条目没有推断来源，因此仍必须提供这两个字段。
 

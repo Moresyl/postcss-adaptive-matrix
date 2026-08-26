@@ -16,6 +16,7 @@
  * of each description, and the JavaScript-only forms — a `RegExp`, a predicate
  * function — that a JSON document cannot express but a config file can.
  */
+import { BUILT_IN_LIBRARIES } from '../../src/core/libraries.js'
 import { resolveOptions } from '../../src/core/options.js'
 import { CSS_CUSTOM_IDENTIFIER_SOURCE, CSS_IDENTIFIER_SOURCE } from '../../src/core/syntax.js'
 import type {
@@ -229,6 +230,7 @@ const LIBRARY: Fields<LibraryAdaptationOptions> = {
       'Built-in to start from, so one field can be corrected without restating the rest.',
     'x-description-zh': '要继承的内置条目，只改一个字段而不必重写其余部分。',
     type: 'string',
+    enum: BUILT_IN_LIBRARIES,
   },
   designWidth: {
     description:
@@ -379,7 +381,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
         type: 'array',
         items: {
           oneOf: [
-            { type: 'string' },
+            { type: 'string', enum: BUILT_IN_LIBRARIES },
             {
               type: 'object',
               properties: LIBRARY,
@@ -388,6 +390,13 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
             },
           ],
         },
+      },
+      { type: 'string', enum: BUILT_IN_LIBRARIES },
+      {
+        type: 'object',
+        properties: LIBRARY,
+        additionalProperties: false,
+        anyOf: [{ required: ['extends'] }, { required: ['name', 'designWidth'] }],
       },
     ],
     default: 'auto',

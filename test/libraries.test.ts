@@ -46,7 +46,7 @@ describe('resolveLibrary', () => {
   })
 
   it('reports invalid runtime entries as configuration errors', () => {
-    expect(() => resolveLibraries('vant' as never)).toThrow(/libraries must be "auto", false/)
+    expect(resolveLibraries('vant').map((library) => library.name)).toEqual(['vant'])
     expect(() => resolveLibrary(null as never)).toThrow(/library entry.*not null/)
     expect(() => resolveLibrary([] as never)).toThrow(/library entry.*not an array/)
     expect(() => resolveLibrary({ name: 'kit' } as never)).toThrow(/positive designWidth/)
@@ -94,6 +94,7 @@ describe('resolveLibrary', () => {
       expect.arrayContaining(['vant', 'element-plus']),
     )
     expect(defineLibraries(['vant']).map((library) => library.name)).toEqual(['vant'])
+    expect(defineLibraries('vant').map((library) => library.name)).toEqual(['vant'])
   })
 
   it('accepts identifier-safe class and custom-property prefixes', () => {

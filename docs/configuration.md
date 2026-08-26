@@ -241,10 +241,10 @@ This is arithmetic, not a heuristic: two numbers that do not overlap. It is repo
 ```ts
 type LibraryEntry = string | LibraryAdaptation
 
-libraries?: LibraryEntry[] | 'auto' | false
+libraries?: LibraryEntry | readonly LibraryEntry[] | false // string 'auto' is the default
 ```
 
-Default `'auto'`: every built-in is active, so a project using Vant or Element Plus needs no configuration. `false` turns the whole thing off. Providing an array enables only the listed entries.
+Default `'auto'`: every built-in is active, so a project using Vant or Element Plus needs no configuration. `false` turns the whole thing off. Pass one built-in or custom entry directly; use an array only when enabling more than one.
 
 An inherited adaptation can be as small as `{ extends: 'vant' }`; it receives `name` and `designWidth` from the built-in. A standalone custom adaptation still requires both because there is nowhere to infer them from.
 

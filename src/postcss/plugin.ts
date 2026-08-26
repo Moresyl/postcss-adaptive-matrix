@@ -678,7 +678,7 @@ function sourcePathDependency(
   // (path AND selector/token) or a path-only custom library; both genuinely
   // lose their identity when `from` is absent. Explicit built-in names retain
   // safe selector/token routes and therefore do not need a warning.
-  if (Array.isArray(input.libraries)) {
+  if (Array.isArray(input.libraries) || typeof input.libraries === 'object') {
     const hasEntries = (value: unknown): boolean =>
       value !== undefined && (!Array.isArray(value) || value.length > 0)
     const dependent = options.libraries.find(

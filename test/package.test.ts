@@ -83,6 +83,7 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain('type RootValueResolver')
       expect(declarations).toContain('rootValue?: number | RootValueResolver')
       expect(declarations).toContain('root?: RootFoundationOptions | boolean')
+      expect(declarations).toContain('libraries?: LibraryEntry | readonly LibraryEntry[] |')
     }
   })
 

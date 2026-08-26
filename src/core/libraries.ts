@@ -347,18 +347,14 @@ export function autoLibraries(): ResolvedLibraryAdaptation[] {
   })
 }
 
-/** Normalises the `libraries` option, including its `'auto'` and `false` forms. */
+/** Normalises single/list `libraries` input, including its `'auto'` and `false` forms. */
 export function resolveLibraries(
   input: AdaptiveMatrixOptions['libraries'],
 ): ResolvedLibraryAdaptation[] {
   if (input === false) return []
   if (input === undefined || input === 'auto') return autoLibraries()
-  if (!Array.isArray(input)) {
-    throw new TypeError(
-      '[postcss-adaptive-matrix] libraries must be "auto", false or an array of library entries.',
-    )
-  }
-  return assertUniqueLibraryNames(input.map(resolveLibrary))
+  const entries: readonly LibraryEntry[] = Array.isArray(input) ? input : [input as LibraryEntry]
+  return assertUniqueLibraryNames(entries.map(resolveLibrary))
 }
 
 /**
