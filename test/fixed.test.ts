@@ -102,6 +102,7 @@ describe('correctFixedDeclaration', () => {
     expect(correctFixedDeclaration('left', once)).toBeNull()
     expect(correctFixedDeclaration('left', 'var( --adaptive-root-gutter )')).toBeNull()
     expect(correctFixedDeclaration('left', 'VAR(/**/--adaptive-root-gutter, 0px)')).toBeNull()
+    expect(correctFixedDeclaration('left', String.raw`v\61r(--adaptive-root-\67 utter)`)).toBeNull()
   })
 
   it('does not confuse similarly named authored variables with its own gutter', () => {
@@ -116,6 +117,9 @@ describe('correctFixedDeclaration', () => {
     )
     expect(correctFixedDeclaration('left', 'xvar(--adaptive-root-gutter)')).toBe(
       'calc(xvar(--adaptive-root-gutter) + var(--adaptive-root-gutter))',
+    )
+    expect(correctFixedDeclaration('left', 'fn("var(--adaptive-root-gutter)")')).toBe(
+      'calc(fn("var(--adaptive-root-gutter)") + var(--adaptive-root-gutter))',
     )
   })
 

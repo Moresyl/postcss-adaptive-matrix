@@ -13,8 +13,15 @@
  * as the viewport is narrower than the column, which means the whole mechanism
  * is inert on phones and cannot regress the common case.
  */
+import valueParser from 'postcss-value-parser'
 import type { ResolvedAdaptiveMatrixOptions } from './types.js'
-import { CSS_NUMBER_SOURCE, canonicalCssPropertyName, decodeCssIdentifier } from './syntax.js'
+import {
+  CSS_NUMBER_SOURCE,
+  canonicalCssIdentifierName,
+  canonicalCssPropertyName,
+  canonicalizeCssIdentifierEscapes,
+  decodeCssIdentifier,
+} from './syntax.js'
 import { splitComponents } from './evaluate.js'
 
 /** Width of the root column, or `100vw` while it is unconstrained. */
@@ -24,13 +31,23 @@ export const ROOT_GUTTER_VARIABLE = '--adaptive-root-gutter'
 
 const GUTTER = `var(${ROOT_GUTTER_VARIABLE})`
 const ROOT_WIDTH = `var(${ROOT_WIDTH_VARIABLE})`
-const CSS_GAP = String.raw`(?:[ \t\r\n\f]|\/\*[\s\S]*?\*\/)*`
-// Function names fold in CSS; custom-property names do not. Keep the latter
-// case-sensitive and require an argument boundary so `--…-gutter-extra` is not
-// mistaken for the generated variable.
-const GUTTER_REFERENCE = new RegExp(
-  String.raw`(?:^|[^-_A-Za-z0-9\\\u0080-\uFFFF])[vV][aA][rR]\(${CSS_GAP}--adaptive-root-gutter${CSS_GAP}(?:,|\))`,
-)
+
+/** True only for a real var() reference to this exact, case-sensitive name. */
+function referencesGutter(value: string): boolean {
+  const canonical = canonicalizeCssIdentifierEscapes(value).text
+  let found = false
+  valueParser(canonical).walk((node) => {
+    if (node.type !== 'function' || canonicalCssIdentifierName(node.value) !== 'var') {
+      return undefined
+    }
+    const first = node.nodes.find((entry) => entry.type !== 'space' && entry.type !== 'comment')
+    if (first?.type === 'word' && canonicalCssPropertyName(first.value) === ROOT_GUTTER_VARIABLE) {
+      found = true
+    }
+    return false
+  })
+  return found
+}
 
 /**
  * Physical and logical inset properties that move an element horizontally.
@@ -67,7 +84,7 @@ function equalsNumber(value: string, pattern: RegExp, expected: number): boolean
 
 function correctInlineInset(value: string): string {
   const trimmed = value.trim()
-  if (GUTTER_REFERENCE.test(trimmed)) return trimmed
+  if (referencesGutter(trimmed)) return trimmed
   if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
   const keyword = singleKeyword(trimmed)
   if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return trimmed
