@@ -12,7 +12,7 @@
  * as zero. A diagnostic that guesses is worse than one that stays quiet.
  */
 
-import { CSS_NUMBER_SOURCE, isCssWhitespace } from './syntax.js'
+import { CSS_NUMBER_SOURCE, canonicalizeCssIdentifierEscapes, isCssWhitespace } from './syntax.js'
 
 export interface EvaluationContext {
   /** Viewport width in pixels. */
@@ -308,7 +308,7 @@ function sameDimension(args: Quantity[]): boolean {
  * it is outside the supported subset.
  */
 export function evaluateLength(value: string, context: EvaluationContext): number | null {
-  const tokens = tokenize(value)
+  const tokens = tokenize(canonicalizeCssIdentifierEscapes(value).text)
   if (!tokens?.length) return null
   const result = new Parser(tokens, context).parse()
   if (result === null || !Number.isFinite(result.value)) return null

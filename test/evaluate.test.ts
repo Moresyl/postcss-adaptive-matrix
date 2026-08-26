@@ -39,6 +39,12 @@ describe('evaluateLength', () => {
     expect(evaluateLength('calc(10vw/* fluid */ +\r\n8px)', context)).toBe(108)
   })
 
+  it('evaluates escaped function and unit spellings without creating escaped operators', () => {
+    expect(evaluateLength(String.raw`cl\61mp(20p\78, 10v\77, 60px)`, context)).toBe(60)
+    expect(evaluateLength(String.raw`c\61lc(10vw + 8px)`, context)).toBe(108)
+    expect(evaluateLength(String.raw`x\28 10px)`, context)).toBeNull()
+  })
+
   it('resolves clamp() the way the spec does when the bounds are inverted', () => {
     // `clamp(a, b, c)` is `max(a, min(b, c))`, so a minimum above the maximum
     // wins. Mirroring the spec is what makes the diagnostic describe the
