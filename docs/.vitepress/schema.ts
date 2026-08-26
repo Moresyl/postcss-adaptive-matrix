@@ -435,7 +435,6 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       'The design canvases, by name. Defaults to the app and desktop canvases of `appPcPreset()`.',
     'x-description-zh': '按名字组织的设计画布集合。默认为 `appPcPreset()` 的移动端与桌面端画布。',
     type: 'object',
-    minProperties: 1,
     additionalProperties: {
       oneOf: [{ type: 'number', exclusiveMinimum: 0 }, PROFILE_SCHEMA],
       'x-also': '(context: { file, profile }) => number',

@@ -51,6 +51,14 @@ describe('configuration validation', () => {
     expect(options.libraries.length).toBeGreaterThan(0)
   })
 
+  it('treats an empty optional profile map as omitted', () => {
+    const options = resolveOptions({ profiles: {} })
+
+    expect(options.defaultProfile).toBe('app')
+    expect(options.profiles).toHaveProperty('app')
+    expect(options.profiles).toHaveProperty('pc')
+  })
+
   it('rejects missing profiles and invalid numeric ranges', () => {
     expect(() => resolveOptions({ defaultProfile: 'missing' })).toThrow(
       'defaultProfile "missing" does not exist',

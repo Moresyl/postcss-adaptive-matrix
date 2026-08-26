@@ -151,7 +151,7 @@ describe('the published options schema', () => {
     expect(profileInput.oneOf).toEqual(
       expect.arrayContaining([{ type: 'number', exclusiveMinimum: 0 }]),
     )
-    expect(options.profiles!.minProperties).toBe(1)
+    expect(options.profiles!.minProperties).toBeUndefined()
     expect((options.profiles!.propertyNames as Subschema).pattern).toBeTypeOf('string')
     expect(profile.required).toEqual(['designWidth'])
     expect(profile.properties!.fluid!.required).toBeUndefined()

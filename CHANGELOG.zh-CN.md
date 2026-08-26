@@ -11,6 +11,7 @@
 - 生成的居中列 gutter 引用现通过真实 `var()` 解析查找，不再做子串匹配；只有大小写精确一致的 `--adaptive-root-gutter` 会被修正或在连续性比较中剔除，相近变量名、字符串、fallback 与转义写法均不会误命中。
 - 视口 observer 初始化现具备事务性：监听注册或首次 CSS 变量写入失败时，会在重新抛错前移除所有已注册资源；后续动画帧发布失败时也只销毁一次，不会留下持续报错的 resize 循环。
 - CLI 的取值选项现也支持 `--config=adaptive.config.json`、`--from=src/app.css`、`--profile=pc`、`--targets=safari 14`、`--fail-on=any` 等通行的行内写法；空行内值会得到与缺少后续参数相同的精准错误。
+- 空的 `profiles: {}` 现在遵循该可选字段的省略语义，恢复内置 app/desktop 画布。条件拼装配置时不必再为了避免“用空集合覆盖可用默认值”而特判零条目；任何非空映射仍是一套完整的作者 profile 定义。
 - 导出的核心 `convertValue()` API 现在有省略/单侧 fluid 边界、多长度值、按文件画布函数及非法动态结果的直接合约测试，不再只依赖 PostCSS 插件入口的间接覆盖。
 - `appPcPreset({ container: false })` 与 `{ fixedContainingBlock: false }` 不再仅因字段出现就启用整套 root 基础样式。root 缺席时这些能力本来就关闭，因此 false 现在保持“不注入全局 CSS”的默认；true 仍会启用 root，真正有意义的 root 专属配置也保留原有简写行为。
 - 可选视口观察器现在用 `null` 表示“没有动画帧”，因此标准允许的句柄 `0` 仍能被合并与取消。销毁操作永久且幂等：竞态中已取得的监听回调无法再排入销毁后写入，手动 `update()` 在清理后返回 `null`。
