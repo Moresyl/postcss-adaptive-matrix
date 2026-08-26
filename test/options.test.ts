@@ -269,9 +269,12 @@ describe('configuration validation', () => {
     expect(() => resolveOptions(profile({ type: 'viewport', condition: '(width > 1px)' }))).toThrow(
       /query\.type/,
     )
-    expect(() => resolveOptions(profile({ condition: '(width > 1px)', name: 'page' }))).toThrow(
-      /query\.name only applies to container/,
-    )
+    expect(
+      resolveOptions(profile({ condition: '(width > 1px)', name: 'page' })).profiles.app!.query,
+    ).toEqual({ type: 'container', condition: '(width > 1px)', name: 'page' })
+    expect(() =>
+      resolveOptions(profile({ type: 'media', condition: '(width > 1px)', name: 'page' })),
+    ).toThrow(/query\.name only applies to container/)
     expect(() => resolveOptions(profile(' '))).toThrow(/query cannot be an empty string/)
     expect(() => resolveOptions(profile(null))).toThrow(/query must be a string/)
     expect(() =>

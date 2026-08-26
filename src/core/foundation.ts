@@ -34,7 +34,7 @@ function queryDetails(profile: AdaptiveProfile): {
     return { type: 'media', condition: profile.query }
   }
   return {
-    type: profile.query.type ?? 'media',
+    type: profile.query.type ?? (profile.query.name === undefined ? 'media' : 'container'),
     condition: profile.query.condition,
     name: profile.query.name,
   }

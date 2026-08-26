@@ -307,7 +307,6 @@ describe('adaptiveMatrix', () => {
           fluid: { minWidth: 400, maxWidth: 1200 },
           unit: 'cqi',
           query: {
-            type: 'container',
             name: 'workspace',
             condition: '(min-width: 400px)',
           },

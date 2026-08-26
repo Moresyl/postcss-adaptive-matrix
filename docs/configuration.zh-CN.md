@@ -291,6 +291,8 @@ Profile 中只有 `designWidth` 必填。省略 `fluid`（或写 `fluid: {}`）�
 
 `query: false` 会移除 `@adaptive` 外壳但保留内部规则，适合构建不同产物时由环境选择 profile。
 
+对象形式的 query 在没有 `type` 时默认使用媒体查询；只要提供 `name` 就会推断为命名容器查询，因此 `{ name: 'workspace', condition: '(min-width: 400px)' }` 无需重复写 `type: 'container'`。若同时显式写 `type: 'media'`，则会按冲突配置拒绝。
+
 查询条件仍可使用当前或未来的 CSS 媒体/容器查询语法，但结构边界必须完整：字符串、注释及 `()` / `[]` component-value 块必须闭合，未转义花括号或顶层 `;` 会被拒绝。这样既不会把查询语法锁死，又能防止 JavaScript 配置拼写错误提前结束生成的 at-rule，或吞掉后续规则。
 
 `textAnchorWidth` 默认等于 `designWidth`，只影响文字：文字有一段固定的 `rem`（用于保留浏览器缩放），固定长度必须相对某个宽度才有意义。手写画布用自己的设计宽度是对的；但当两张画布描述的是**同一份设计的两套单位**时（组件库画在 375、页面画在 750，Vant 的 16px 就是页面的 32px），各自锚在自己身上会让两边在任何视口下都对不上。组件库画布因此一律继承所属 profile 的锚点，无需配置。原理与实测见[静态部分锚在哪张画布上](./architecture.zh-CN.md#静态部分锚在哪张画布上)。

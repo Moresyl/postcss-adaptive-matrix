@@ -72,11 +72,12 @@ function oneOrMany(item: object, doc: Field): Field {
 
 const QUERY: Fields<AdaptiveQuery> = {
   type: {
-    description: 'Whether the wrapper is a media query or a container query.',
-    'x-description-zh': '包裹层用媒体查询还是容器查询。',
+    description:
+      'Whether the wrapper is a media or container query. Omit it for media, or when `name` already implies container.',
+    'x-description-zh':
+      '包裹层使用媒体还是容器查询。媒体查询可省略；有 `name` 时也会自动推断容器查询。',
     type: 'string',
     enum: ['media', 'container'],
-    default: 'media',
   },
   condition: {
     description: 'The query condition, written as it would appear in CSS.',
@@ -90,6 +91,19 @@ const QUERY: Fields<AdaptiveQuery> = {
     type: 'string',
     pattern: CSS_CUSTOM_IDENTIFIER_PATTERN,
   },
+}
+
+const QUERY_SCHEMA = {
+  type: 'object',
+  properties: QUERY,
+  required: ['condition'],
+  allOf: [
+    {
+      if: { required: ['name'] },
+      then: { properties: { type: { const: 'container' } } },
+    },
+  ],
+  additionalProperties: false,
 }
 
 const PROFILE: Fields<AdaptiveProfile> = {
@@ -126,11 +140,7 @@ const PROFILE: Fields<AdaptiveProfile> = {
   query: {
     description: 'Wrapper generated for `@adaptive <profile>`; `false` unwraps the block.',
     'x-description-zh': '`@adaptive <画布>` 生成的包裹层；`false` 表示不包裹。',
-    oneOf: [
-      { type: 'string' },
-      { type: 'object', properties: QUERY, required: ['condition'], additionalProperties: false },
-      { const: false },
-    ],
+    oneOf: [{ type: 'string' }, QUERY_SCHEMA, { const: false }],
   },
   unit: {
     description: 'Width unit the fluid half is written in.',

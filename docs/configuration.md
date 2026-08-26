@@ -291,6 +291,8 @@ Function-valued widths receive `{ file, profile }`. A missing `textAnchorWidth` 
 
 `query: false` removes the `@adaptive` wrapper but keeps the rules inside it, which suits building separate artifacts with the profile chosen by environment.
 
+An object query defaults to media when it has no `type`. Providing `name` is enough to select a named container query, so `{ name: 'workspace', condition: '(min-width: 400px)' }` needs no redundant `type: 'container'`. An explicit `type: 'media'` together with `name` is rejected as a conflict.
+
 Query conditions may use current or future CSS media/container-query syntax, but their structural boundary must be complete: strings, comments and `()` / `[]` component-value blocks must close, while an unescaped brace or top-level `;` is rejected. This prevents a JavaScript configuration typo from ending the generated at-rule early or swallowing the rules that follow it without artificially freezing the query grammar.
 
 `textAnchorWidth` defaults to `designWidth` and affects text only: text keeps a fixed `rem` component (so browser zoom keeps working), and a fixed length only means something relative to some width. A hand-written canvas anchoring to its own design width is correct; but when two canvases describe **the same design in two sets of units** (a library drawn on 375, pages drawn on 750, where Vant's 16px is the page's 32px), anchoring each to itself leaves the two misaligned at every viewport. Library canvases therefore always inherit the anchor of the profile they belong to, with nothing to configure. For the reasoning and the measurements see [Which canvas the static part anchors to](./architecture.md#which-canvas-the-static-part-anchors-to).

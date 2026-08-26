@@ -137,10 +137,22 @@ function normaliseProfiles(
 ): Record<string, AdaptiveProfile> {
   const normalised: Record<string, AdaptiveProfile> = {}
   for (const [name, profile] of Object.entries(profiles)) {
-    normalised[name] =
-      typeof profile === 'number' || typeof profile === 'function'
-        ? { designWidth: profile }
-        : profile
+    if (typeof profile === 'number' || typeof profile === 'function') {
+      normalised[name] = { designWidth: profile }
+      continue
+    }
+    if (
+      profile &&
+      typeof profile === 'object' &&
+      profile.query &&
+      typeof profile.query === 'object' &&
+      profile.query.name !== undefined &&
+      profile.query.type === undefined
+    ) {
+      normalised[name] = { ...profile, query: { ...profile.query, type: 'container' } }
+      continue
+    }
+    normalised[name] = profile
   }
   return normalised
 }
@@ -486,7 +498,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
           `[postcss-adaptive-matrix] Profile "${name}" query.name "${profile.query.name}" is not a valid non-reserved unescaped CSS custom identifier.`,
         )
       }
-      if (profile.query.name !== undefined && (profile.query.type ?? 'media') !== 'container') {
+      if (profile.query.name !== undefined && profile.query.type !== 'container') {
         throw new TypeError(
           `[postcss-adaptive-matrix] Profile "${name}" query.name only applies to container queries.`,
         )

@@ -182,6 +182,12 @@ describe('the published options schema', () => {
     expect(query.required).toEqual(['condition'])
     expect(query.additionalProperties).toBe(false)
     expect(query.properties!.name!.pattern).toBeTypeOf('string')
+    expect(query.allOf).toEqual([
+      {
+        if: { required: ['name'] },
+        then: { properties: { type: { const: 'container' } } },
+      },
+    ])
     expect(options.unitToConvert!.oneOf).toEqual(
       expect.arrayContaining([expect.objectContaining({ pattern: expect.any(String) })]),
     )
