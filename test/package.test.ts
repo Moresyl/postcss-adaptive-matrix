@@ -43,6 +43,7 @@ describeBuilt('the built package', () => {
     // and interop layers in bundlers still reach for it.
     expect(required.default).toBe(required)
     expect(typeof required.appPcPreset).toBe('function')
+    expect(typeof required.withAtomicCss).toBe('function')
     expect(typeof required.findContinuityIssues).toBe('function')
     expect(required.CLI_REPORT_FORMAT_VERSION).toBe(1)
     expect(required.postcss).toBe(true)
@@ -53,7 +54,31 @@ describeBuilt('the built package', () => {
     const imported = (await import('../dist/index.js')) as Record<string, unknown>
     expect(typeof imported.default).toBe('function')
     expect(typeof imported.appPcPreset).toBe('function')
+    expect(typeof imported.withAtomicCss).toBe('function')
     expect(imported.CLI_REPORT_FORMAT_VERSION).toBe(1)
+  })
+
+  it('ships the optional helper arguments in runtime and declarations', () => {
+    const required = require_('../dist/index.cjs') as {
+      defineConfig(): Record<string, unknown>
+      withAtomicCss(options?: { profile?: string; tokenPrefixes?: string[] }): {
+        routes: Array<{ profile: string | false; property?: string[] }>
+        unitToConvert: string[]
+      }
+    }
+
+    expect(required.defineConfig()).toEqual({})
+    expect(required.withAtomicCss().unitToConvert).toEqual(['px', 'rem'])
+    expect(required.withAtomicCss({ profile: 'pc' }).routes.at(-1)).toMatchObject({
+      profile: 'pc',
+    })
+
+    for (const name of ['index.d.ts', 'index.d.cts']) {
+      const declarations = readFileSync(new URL(`../dist/${name}`, import.meta.url), 'utf8')
+      expect(declarations).toContain('function defineConfig(): AdaptiveMatrixOptions')
+      expect(declarations).toContain('function withAtomicCss(): AtomicCssConfiguration')
+      expect(declarations).toContain('function withAtomicCss(options: AtomicCssOptions)')
+    }
   })
 
   it('leaves an entry that has no default export alone', () => {
