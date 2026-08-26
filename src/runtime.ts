@@ -188,7 +188,15 @@ export function observeAdaptiveViewport(
     if (destroyed || !browserWindow || frame !== null) return
     frame = browserWindow.requestAnimationFrame(() => {
       frame = null
-      update()
+      try {
+        update()
+      } catch {
+        // There is no promise or return value through which an animation-frame
+        // callback can hand an update failure back to the caller. Tear down
+        // before swallowing the host error, otherwise every later viewport
+        // event repeats it and keeps a broken observer alive indefinitely.
+        observer.destroy()
+      }
     })
   }
 

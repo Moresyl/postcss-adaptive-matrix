@@ -434,6 +434,25 @@ describe('observeAdaptiveViewport', () => {
     expect(visual.removeEventListener).toHaveBeenCalledTimes(2)
   })
 
+  it('tears down after an animation-frame publication fails', () => {
+    const host = stubWindow(undefined)
+    const target = stubTarget()
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+    })
+    target.setProperty.mockImplementationOnce(() => {
+      throw new Error('detached style target')
+    })
+    ;(host.window as unknown as { innerWidth: number }).innerWidth = 400
+
+    host.fire('resize')
+    expect(() => host.flush()).not.toThrow()
+
+    expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+    expect(observer.update()).toBeNull()
+  })
+
   it('does not publish or register listeners for an already-aborted signal', () => {
     const target = stubTarget()
     const host = stubWindow(undefined)
