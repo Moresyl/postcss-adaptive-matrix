@@ -223,6 +223,23 @@ describe('findContinuityIssues', () => {
     ).toEqual([])
   })
 
+  it('does not confuse an anonymous layer with the unlayered cascade', () => {
+    expect(
+      check(`
+        @layer { .a { width: ${fluid(40)} } }
+        @media (min-width: 768px) { .a { width: ${fluid(20)} } }
+      `),
+    ).toEqual([])
+
+    // Every anonymous layer is distinct even though none has a written name.
+    expect(
+      check(`
+        @layer { .b { width: ${fluid(40)} } }
+        @layer { @media (min-width: 768px) { .b { width: ${fluid(20)} } } }
+      `),
+    ).toEqual([])
+  })
+
   it('checks within a single layer, where source order still decides', () => {
     expect(
       check(`
@@ -359,6 +376,15 @@ describe('findContinuityIssues', () => {
 
   it('says nothing about a stylesheet with no breakpoints at all', () => {
     expect(check(`.a { width: ${fluid(40)} } .a { width: ${fluid(20)} }`)).toEqual([])
+  })
+
+  it('does not probe a physically impossible negative viewport below zero', () => {
+    expect(
+      check(`
+        @media (max-width: 0px) { .a { width: ${fluid(40)} } }
+        @media (min-width: 0px) { .a { width: ${fluid(20)} } }
+      `),
+    ).toEqual([])
   })
 
   it('does not treat a nested rule as its own selector', () => {

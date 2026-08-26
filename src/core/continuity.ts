@@ -100,6 +100,8 @@ function withoutGutter(value: string): string {
 function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
   const entries: Entry[] = []
   const poisoned = new Set<string>()
+  const anonymousLayers = new WeakMap<AtRule, string>()
+  let nextAnonymousLayer = 0
   let order = 0
 
   root.walkDecls((declaration: Declaration) => {
@@ -138,7 +140,17 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
           if (!parsed) readable = false
           else conditions.push(...parsed)
         } else if (name === 'layer') {
-          layers.push(at.params.trim())
+          const named = at.params.trim()
+          if (named) layers.push(named)
+          else {
+            let identity = anonymousLayers.get(at)
+            if (!identity) {
+              nextAnonymousLayer += 1
+              identity = `\0anonymous-layer-${nextAnonymousLayer}`
+              anonymousLayers.set(at, identity)
+            }
+            layers.push(identity)
+          }
         } else {
           readable = false
         }
@@ -238,6 +250,10 @@ export function findContinuityIssues(
     // values below.
     if (group.length < 2 && !/var\(/i.test(group[0]!.value)) continue
     for (const breakpoint of [...boundaries].sort((a, b) => a - b)) {
+      // There is no viewport below zero. Probing the synthetic negative side
+      // of `(max-width: 0px)` can invent a cascade transition no browser can
+      // ever render, so it is not a continuity seam.
+      if (breakpoint <= PROBE) continue
       const low = effective(group, breakpoint - PROBE)
       const high = effective(group, breakpoint + PROBE)
       if (!low || !high) continue
