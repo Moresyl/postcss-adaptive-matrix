@@ -20,6 +20,7 @@
 - `defaultProfile: null` 与 `unitToConvert: null` 同样会被拒绝，不再触发省略字段时的默认值；错误的 JavaScript/JSON 配置不会再被空值回退掩盖。
 - `observeAdaptiveViewport` 现在会把显式 `prefix: null` 判为无效，不再悄悄选用省略时的 `adaptive` 前缀；只有真正省略才使用默认值。
 - `appPcPreset().rootInjectTo` 现在支持只读匹配器数组，与主配置的 `root.injectTo` 契约一致；共享的 `as const` 配置不再需要额外复制。
+- `tsup` 内部仅用于构建的 `esbuild` 已固定到修复后的 0.28.2，关闭 Windows 开发服务器任意文件读取公告，同时不改变运行时依赖面。
 - `from` 不再被写成无条件必填项：普通转换以及 selector/property/media 路由无需它；只有显式配置路径匹配却缺少源路径时，才会给出一次精准告警。Taro 指引也改为仅在构建确实使用 `@adaptive` 时要求 `query: false`，`minPixelValue` 的公开说明则统一为实现中的严格“小于”边界。
 - 死区间发现现在归属到实际完成转换的声明，并携带真实的 selector/property 路由画布与媒体区间。嵌套子规则不再让未转换的父规则按错误画布告警；经 property 路由的 token 会按自己的 profile 判断并给出 property 路由建议；写在规则内部嵌套媒体查询中的声明也不再漏诊。显式 `@adaptive` 选中的画布不会再收到根本无法覆盖它的 route 建议。
 - 性质测试现在覆盖省略边界、仅最小边界、仅最大边界在多种画布、正负布局长度、可缩放文字、边界两侧及完整二次编译下的行为。
