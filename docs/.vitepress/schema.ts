@@ -16,7 +16,7 @@
  * of each description, and the JavaScript-only forms — a `RegExp`, a predicate
  * function — that a JSON document cannot express but a config file can.
  */
-import { BUILT_IN_LIBRARIES } from '../../src/core/libraries.js'
+import { BUILT_IN_LIBRARIES, resolveLibrary } from '../../src/core/libraries.js'
 import { resolveOptions } from '../../src/core/options.js'
 import { CSS_CUSTOM_IDENTIFIER_SOURCE, CSS_IDENTIFIER_SOURCE } from '../../src/core/syntax.js'
 import type {
@@ -68,6 +68,19 @@ const FILE_MATCHER = {
 /** `T | readonly T[]`, which nearly every matching option accepts. */
 function oneOrMany(item: object, doc: Field): Field {
   return { ...doc, oneOf: [item, { type: 'array', items: item }] }
+}
+
+/** A supplied matcher list must contain something; omission remains valid. */
+function oneOrManyNonEmpty(item: object, doc: Field): Field {
+  return { ...doc, oneOf: [item, { type: 'array', items: item, minItems: 1 }] }
+}
+
+/** Requires a one-or-many field to be present and not an empty array. */
+function requiresNonEmpty(field: 'prefix' | 'tokenPrefix' | 'file'): object {
+  return {
+    required: [field],
+    properties: { [field]: { not: { type: 'array', maxItems: 0 } } },
+  }
 }
 
 const QUERY: Fields<AdaptiveQuery> = {
@@ -214,22 +227,22 @@ const ROUTE: Fields<AdaptiveRoute> = {
     'x-description-zh': '目标画布；`false` 表示匹配到的长度保持固定像素。',
     oneOf: [{ type: 'string' }, { const: false }],
   },
-  file: oneOrMany(FILE_MATCHER, {
+  file: oneOrManyNonEmpty(FILE_MATCHER, {
     description: 'Stylesheet paths this route claims.',
     'x-description-zh': '该路由认领的样式文件路径。',
   }),
-  selector: oneOrMany(PATTERN, {
+  selector: oneOrManyNonEmpty(PATTERN, {
     description: 'Selectors this route claims, so inlined CSS still routes after the path is gone.',
     'x-description-zh': '该路由认领的选择器；即使被打包内联、路径丢失也仍能命中。',
   }),
-  property: oneOrMany(
+  property: oneOrManyNonEmpty(
     { type: 'string' },
     {
       description: 'Custom-property prefixes, e.g. `--van-`. Routes tokens declared on `:root`.',
       'x-description-zh': '自定义属性前缀，例如 `--van-`；用于路由声明在 `:root` 上的变量。',
     },
   ),
-  media: oneOrMany(MEDIA_MATCHER, {
+  media: oneOrManyNonEmpty(MEDIA_MATCHER, {
     description:
       'Width band the rule must be confined to by its enclosing queries. Matched by implication, not by text.',
     'x-description-zh': '规则必须被其外层查询限制在该宽度区间内。按逻辑蕴含匹配，而不是比对文本。',
@@ -268,21 +281,21 @@ const LIBRARY: Fields<LibraryAdaptationOptions> = {
     'x-description-zh': '该组件库绘制时使用的画布；`false` 表示其长度保持固定像素。',
     oneOf: [{ type: 'number', exclusiveMinimum: 0 }, { const: false }],
   },
-  prefix: oneOrMany(
+  prefix: oneOrManyNonEmpty(
     { type: 'string', pattern: CSS_CLASS_PREFIX_PATTERN },
     {
       description: 'Unescaped class prefixes, with an optional leading dot.',
       'x-description-zh': '未转义的类名前缀，可选一个开头的点。',
     },
   ),
-  tokenPrefix: oneOrMany(
+  tokenPrefix: oneOrManyNonEmpty(
     { type: 'string', pattern: CSS_TOKEN_PREFIX_PATTERN },
     {
       description: 'Custom-property prefixes, for a library themed through `:root` tokens.',
       'x-description-zh': '自定义属性前缀，用于通过 `:root` 变量做主题的组件库。',
     },
   ),
-  file: oneOrMany(FILE_MATCHER, {
+  file: oneOrManyNonEmpty(FILE_MATCHER, {
     description: 'Paths, for builds that keep vendor CSS in its own files.',
     'x-description-zh': '路径匹配，适用于第三方 CSS 仍保留独立文件的构建。',
   }),
@@ -298,6 +311,61 @@ const LIBRARY: Fields<LibraryAdaptationOptions> = {
     description: 'Profile whose fluid range, unit and strategy the derived canvas borrows.',
     'x-description-zh': '派生画布借用其流体区间、单位与输出策略的画布。',
     type: 'string',
+  },
+}
+
+const UNSCALED_BUILT_IN_LIBRARIES = BUILT_IN_LIBRARIES.filter(
+  (name) => resolveLibrary(name).designWidth === false,
+)
+
+const LIBRARY_SCHEMA = {
+  type: 'object',
+  properties: LIBRARY,
+  additionalProperties: false,
+  anyOf: [{ required: ['extends'] }, { required: ['name', 'designWidth'] }],
+  allOf: [
+    {
+      // A standalone entry has no registry matchers to inherit.
+      if: { not: { required: ['extends'] } },
+      then: {
+        anyOf: [
+          requiresNonEmpty('prefix'),
+          requiresNonEmpty('tokenPrefix'),
+          requiresNonEmpty('file'),
+        ],
+      },
+    },
+    {
+      // `scoped` means the other matchers are conditional on a file path.
+      if: {
+        required: ['scoped'],
+        properties: { scoped: { const: true } },
+        not: { required: ['extends'] },
+      },
+      then: requiresNonEmpty('file'),
+    },
+    {
+      // An inherited file matcher may be omitted, but explicitly clearing it
+      // cannot coexist with scoped mode.
+      if: {
+        required: ['scoped', 'extends'],
+        properties: { scoped: { const: true } },
+      },
+      then: { properties: { file: { not: { type: 'array', maxItems: 0 } } } },
+    },
+  ],
+  not: {
+    anyOf: [
+      {
+        required: ['designWidth', 'basedOn'],
+        properties: { designWidth: { const: false } },
+      },
+      {
+        required: ['extends', 'basedOn'],
+        properties: { extends: { enum: UNSCALED_BUILT_IN_LIBRARIES } },
+        not: { required: ['designWidth'] },
+      },
+    ],
   },
 }
 
@@ -350,7 +418,7 @@ const ROOT: Fields<RootFoundationOptions> = {
     type: 'boolean',
     default: true,
   },
-  injectTo: oneOrMany(FILE_MATCHER, {
+  injectTo: oneOrManyNonEmpty(FILE_MATCHER, {
     description:
       'Which files receive the foundation. Point it at the entry stylesheet in a per-component build.',
     'x-description-zh':
@@ -364,6 +432,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       'The design canvases, by name. Defaults to the app and desktop canvases of `appPcPreset()`.',
     'x-description-zh': '按名字组织的设计画布集合。默认为 `appPcPreset()` 的移动端与桌面端画布。',
     type: 'object',
+    minProperties: 1,
     additionalProperties: {
       oneOf: [{ type: 'number', exclusiveMinimum: 0 }, PROFILE_SCHEMA],
       'x-also': '(context: { file, profile }) => number',
@@ -402,24 +471,11 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       {
         type: 'array',
         items: {
-          oneOf: [
-            { type: 'string', enum: BUILT_IN_LIBRARIES },
-            {
-              type: 'object',
-              properties: LIBRARY,
-              additionalProperties: false,
-              anyOf: [{ required: ['extends'] }, { required: ['name', 'designWidth'] }],
-            },
-          ],
+          oneOf: [{ type: 'string', enum: BUILT_IN_LIBRARIES }, LIBRARY_SCHEMA],
         },
       },
       { type: 'string', enum: BUILT_IN_LIBRARIES },
-      {
-        type: 'object',
-        properties: LIBRARY,
-        additionalProperties: false,
-        anyOf: [{ required: ['extends'] }, { required: ['name', 'designWidth'] }],
-      },
+      LIBRARY_SCHEMA,
     ],
     default: 'auto',
   },
@@ -527,11 +583,11 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     'x-description-zh': '不做处理的声明值。',
     default: [],
   }),
-  include: oneOrMany(FILE_MATCHER, {
+  include: oneOrManyNonEmpty(FILE_MATCHER, {
     description: 'Restricts the plugin to matching files.',
     'x-description-zh': '把插件限制在匹配的文件上。',
   }),
-  exclude: oneOrMany(FILE_MATCHER, {
+  exclude: oneOrManyNonEmpty(FILE_MATCHER, {
     description: 'Skips matching files entirely.',
     'x-description-zh': '完全跳过匹配的文件。',
   }),

@@ -142,6 +142,7 @@ describe('the published options schema', () => {
     expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema')
     expect(schema.$id).toBe('https://example.test/schema/options.json')
     expect(schema.additionalProperties).toBe(false)
+    expect(schema.required).toBeUndefined()
     expect(schema['x-description-zh']).toContain('x-description-zh')
     // Only the canvas measurement is irreducible. Bounds are optional: no
     // bounds means a viewport expression, and either side can stand alone.
@@ -150,6 +151,7 @@ describe('the published options schema', () => {
     expect(profileInput.oneOf).toEqual(
       expect.arrayContaining([{ type: 'number', exclusiveMinimum: 0 }]),
     )
+    expect(options.profiles!.minProperties).toBe(1)
     expect(profile.required).toEqual(['designWidth'])
     expect(profile.properties!.fluid!.required).toBeUndefined()
     const rootObject = (options.root!.oneOf as Subschema[])[0]!
@@ -168,12 +170,42 @@ describe('the published options schema', () => {
       { required: ['property'] },
       { required: ['media'] },
     ])
+    for (const field of ['file', 'selector', 'property', 'media']) {
+      expect((route.properties![field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
+    }
     const libraryArray = (options.libraries!.oneOf as Subschema[])[2]!
     const libraryObject = ((libraryArray.items as Subschema).oneOf as Subschema[])[1]!
     expect(libraryObject.anyOf).toEqual([
       { required: ['extends'] },
       { required: ['name', 'designWidth'] },
     ])
+    for (const field of ['prefix', 'tokenPrefix', 'file']) {
+      expect((libraryObject.properties![field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
+    }
+    expect(libraryObject.not).toEqual(
+      expect.objectContaining({
+        anyOf: expect.arrayContaining([
+          {
+            required: ['designWidth', 'basedOn'],
+            properties: { designWidth: { const: false } },
+          },
+        ]),
+      }),
+    )
+    expect(libraryObject.allOf).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          then: expect.objectContaining({
+            anyOf: expect.arrayContaining([
+              {
+                required: ['prefix'],
+                properties: { prefix: { not: { type: 'array', maxItems: 0 } } },
+              },
+            ]),
+          }),
+        }),
+      ]),
+    )
     expect(libraryObject.properties!.extends!.enum).toEqual(expect.arrayContaining(['vant']))
     expect(((libraryArray.items as Subschema).oneOf as Subschema[])[0]!.enum).toEqual(
       expect.arrayContaining(['vant', 'element-plus']),
@@ -198,6 +230,13 @@ describe('the published options schema', () => {
     for (const field of ['textProperties', 'selectorExclude', 'valueExclude']) {
       expect(options[field]!.oneOf).toEqual(expect.arrayContaining([expect.any(Object)]))
     }
+    for (const field of ['include', 'exclude']) {
+      expect((options[field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
+    }
+    expect(
+      ((options.root!.oneOf as Subschema[])[0]!.properties!.injectTo!.oneOf as Subschema[])[1]!
+        .minItems,
+    ).toBe(1)
     expect(options.propList!.oneOf).toEqual(expect.arrayContaining([{ type: 'string' }]))
   })
 })

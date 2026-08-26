@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- The published JSON Schema now agrees with runtime validation on empty profile maps and matcher arrays, standalone libraries that match nothing, scoped standalone libraries without a file path, and unscaled libraries whose `basedOn` would be ignored. These constraints apply only after the corresponding option/object is supplied; optional fields remain optional.
 - The optional viewport runtime now rejects a malformed options container, unknown keys and explicit invalid `target` / `window` / `document` values at their exact paths. All fields remain optional and omission still selects browser defaults; `null` no longer masquerades as omission or leaks a native property-access error.
 - `root.fixedContainingBlock: true` now requires at least one profile with `rootMaxWidth`; otherwise there is no centred-column offset to correct and the option only rewrites declarations into equivalent, permanently zero-gutter forms. Likewise, a library with `designWidth: false` now rejects `basedOn`, which an unconverted library never reads.
 - String `include` / `exclude`, file routes, library paths and `root.injectTo` now match across Windows `\\` and POSIX `/` separators. Regular expressions and predicate functions still receive the original host path, preserving explicit platform-sensitive behaviour.
