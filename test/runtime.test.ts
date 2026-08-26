@@ -298,9 +298,13 @@ describe('observeAdaptiveViewport', () => {
   it('rejects a prefix that cannot form valid custom-property names', () => {
     const target = stubTarget()
     const host = stubWindow(undefined)
-    for (const prefix of ['', '--', 'two words', '9app']) {
+    for (const prefix of ['', '--', 'two words', '9app', null]) {
       expect(() =>
-        observeAdaptiveViewport({ window: host.window, target: target.element, prefix }),
+        observeAdaptiveViewport({
+          window: host.window,
+          target: target.element,
+          prefix: prefix as never,
+        }),
       ).toThrow(/viewport prefix must be a non-empty CSS identifier/)
     }
     expect(host.listeners.add).not.toHaveBeenCalled()

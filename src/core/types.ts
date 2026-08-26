@@ -351,7 +351,7 @@ export interface AppPcPresetOptions {
    */
   fixedContainingBlock?: boolean
   /** Restricts the root foundation to matching files. See `RootFoundationOptions.injectTo`. */
-  rootInjectTo?: FileMatcher | FileMatcher[]
+  rootInjectTo?: FileMatcher | readonly FileMatcher[]
   /**
    * Cascade layer the foundation is written into, or false for no layer.
    * Defaults to `'adaptive-matrix'`. See `RootFoundationOptions.layer`.

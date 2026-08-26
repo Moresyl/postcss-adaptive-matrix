@@ -27,8 +27,9 @@ function positiveFinite(value: number | undefined, fallback: number): number {
   return fallback
 }
 
-function variablePrefix(value: string | undefined): string {
-  const prefix = (value ?? 'adaptive').replace(/^--/, '')
+function variablePrefix(value: unknown): string {
+  const selected = value === undefined ? 'adaptive' : value
+  const prefix = typeof selected === 'string' ? selected.replace(/^--/, '') : ''
   if (
     !/^(?:--|-[A-Za-z_\u0080-\uFFFF]|[A-Za-z_\u0080-\uFFFF])[-A-Za-z0-9_\u0080-\uFFFF]*$/.test(
       prefix,

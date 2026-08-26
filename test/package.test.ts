@@ -87,6 +87,7 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain('propList?: string | readonly string[]')
       expect(declarations).toContain('routes?: AdaptiveRoute | readonly AdaptiveRoute[]')
       expect(declarations).toContain('tokenPrefixes?: string | readonly string[]')
+      expect(declarations).toContain('rootInjectTo?: FileMatcher | readonly FileMatcher[]')
       expect(declarations).toContain("Omit<T, 'unitToConvert' | 'routes' | 'textProperties'>")
     }
   })
