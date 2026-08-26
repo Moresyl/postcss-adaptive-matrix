@@ -101,7 +101,7 @@ Sass and Less are not part of this discussion: a preprocessor finishes before Po
 
 ### 2. `from` is required only for file-sensitive options
 
-Ordinary conversion plus selector, property and media routing work without a source path. Only file-sensitive features depend on PostCSS's `from`: the `file` channel in `routes`, `include` / `exclude`, `root.injectTo`, explicit component-library path matching, and function-valued `designWidth`, `textAnchorWidth`, or `rootValue` resolvers that inspect the file.
+Ordinary conversion plus selector, property and media routing work without a source path. Only file-sensitive features depend on PostCSS's `from`: the `file` channel in `routes`, `include` / `exclude`, `root.injectTo`, explicit component-library path matching (whether the library is passed alone or in an array), and function-valued `designWidth`, `textAnchorWidth`, or `rootValue` resolvers that inspect the file.
 
 Vite, Webpack, Nuxt and Taro all pass it. If you hand-write `postcss(...).process(css)` without `from` while explicitly configuring one of those features, the compiler warns once: a matcher cannot match or a resolver cannot make a file-specific choice. No file-sensitive option means no warning and no requirement.
 

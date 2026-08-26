@@ -120,6 +120,9 @@ describe('adaptiveMatrix', () => {
       })
       const automatic = await withoutFrom('.page { width: 16px }')
       const named = await withoutFrom('.van-cell { width: 16px }', { libraries: ['vant'] })
+      const scopedNamed = await withoutFrom('.adm-cell { width: 16px }', {
+        libraries: 'antd-mobile-2x',
+      })
       const single = await withoutFrom('.vendor { width: 16px }', {
         libraries: { name: 'single-vendor', designWidth: 375, file: 'vendor/' },
       })
@@ -132,6 +135,10 @@ describe('adaptiveMatrix', () => {
       expect(single.warnings()).toHaveLength(1)
       expect(automatic.warnings()).toHaveLength(0)
       expect(named.warnings()).toHaveLength(0)
+      expect(scopedNamed.warnings()).toHaveLength(1)
+      expect(scopedNamed.warnings()[0]!.text).toContain(
+        'libraries["antd-mobile-2x"].file has no real path to match',
+      )
     })
 
     it('warns once per build across a Document, and again for a later build', async () => {

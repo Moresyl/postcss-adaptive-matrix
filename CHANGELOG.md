@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- A single explicitly named path-scoped library now receives the same missing-`from` warning as that library inside an array. In particular, scalar `libraries: 'antd-mobile-2x'` can no longer silently lose the path that distinguishes its 750 canvas from the 375 build; ordinary selector-addressable single libraries remain path-independent and quiet.
 - Main `routes.property` entries now reject ordinary property names and malformed custom-property prefixes that its custom-property-only execution path could never visit. Valid unescaped `--...` prefixes remain case-sensitive, and bare `--` deliberately remains available to claim every custom property.
 - `withAtomicCss` now applies the same CSS custom-property identifier grammar as the main compiler to caller-supplied `tokenPrefixes`; punctuation that could never match a custom property is rejected before the wrapper returns instead of surviving as a dead route.
 - The published JSON Schema now agrees with runtime validation on empty profile maps and matcher arrays, standalone libraries that match nothing, scoped standalone libraries without a file path, and unscaled libraries whose `basedOn` would be ignored. These constraints apply only after the corresponding option/object is supplied; optional fields remain optional.

@@ -101,7 +101,7 @@ Sass / Less 不属于这个话题：预处理器在 PostCSS 之前跑完，PostC
 
 ### 2. 只有文件相关配置才需要 `from`
 
-普通转换以及 selector、property、media 路由都不依赖源文件路径。只有文件相关功能才依赖 PostCSS 的 `from`：`routes` 的 `file` 通道、`include` / `exclude`、`root.injectTo`、显式组件库路径匹配，以及会读取文件名的函数型 `designWidth`、`textAnchorWidth` 或 `rootValue` 解析器。
+普通转换以及 selector、property、media 路由都不依赖源文件路径。只有文件相关功能才依赖 PostCSS 的 `from`：`routes` 的 `file` 通道、`include` / `exclude`、`root.injectTo`、显式组件库路径匹配（无论组件库单独传入还是放在数组中），以及会读取文件名的函数型 `designWidth`、`textAnchorWidth` 或 `rootValue` 解析器。
 
 Vite、Webpack、Nuxt、Taro 都会传。如果你手写 `postcss(...).process(css)`，又显式配置了上述功能却没有传 `from`，编译器会给出一次告警：matcher 无法命中，或 resolver 无法按文件做选择。没有任何文件相关配置时，则既不告警也不要求 `from`。
 
