@@ -118,6 +118,8 @@ At this point component-library adaptation, safe-area variables, the centred roo
 
 Plain `vw` grows without limit on a large screen and collapses without limit on a small one. The default strategy puts a floor and a ceiling on every size: inside the fluid range it tracks the viewport, outside it stops. A 600px tablet therefore does not get a phone UI blown up to fit.
 
+`fluid` is optional, and so are both `minWidth` and `maxWidth`: omit `fluid` altogether (or use `{}`) for an unbounded fluid expression, provide either side for a one-sided bound, and provide both only when you want `clamp()`. The only irreducible profile field is the `designWidth` used for conversion; when no other behaviour needs overriding, it can be shortened to `profiles: { app: 375 }`.
+
 ## Component libraries, out of the box
 
 ```js
