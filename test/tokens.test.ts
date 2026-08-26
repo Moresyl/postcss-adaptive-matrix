@@ -82,6 +82,24 @@ describe('theme token resolution', () => {
     expect(scoped.resolve('var(--gap, 16px)', 900)).toBe('32px')
   })
 
+  it('does not mistake a registered custom property for an unset token', () => {
+    const tokens = table(`
+      @PROPERTY --gap {
+        syntax: '<length>';
+        inherits: false;
+        initial-value: 24px;
+      }
+    `)
+    expect(tokens.resolve('var(--gap, 16px)', 400)).toBeNull()
+    expect(tokens.size).toBe(0)
+
+    // Escaped and literal spellings identify the same registered property.
+    const escaped = table(
+      String.raw`@property --\67 ap { syntax: '<length>'; initial-value: 24px }`,
+    )
+    expect(escaped.resolve('var(--gap, 16px)', 400)).toBeNull()
+  })
+
   it('gives no answer for an undeclared token without a fallback', () => {
     expect(table('.a { color: red }').resolve('var(--gap)', 400)).toBeNull()
   })

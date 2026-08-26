@@ -98,6 +98,17 @@ export function collectTokens(root: Root): TokenTable {
   const rejected = new Set<string>()
   let order = 0
 
+  // A registered property has a computed initial value even when no ordinary
+  // declaration sets it, and `inherits: false` can make that value differ per
+  // element. Treating it as absent would incorrectly select var()'s fallback.
+  // Modelling registration syntax and inheritance is outside this width-only
+  // table, so the honest answer is unknown.
+  root.walkAtRules((atRule: AtRule) => {
+    if (atRule.name.toLowerCase() !== 'property') return
+    const parsed = referenceName(atRule.params)
+    if (parsed !== null) rejected.add(decodeCssIdentifier(parsed))
+  })
+
   root.walkDecls((declaration: Declaration) => {
     if (!declaration.prop.startsWith('--')) return
     const name = decodeCssIdentifier(declaration.prop.trim())
