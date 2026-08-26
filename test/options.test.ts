@@ -131,6 +131,14 @@ describe('configuration validation', () => {
     expect(() =>
       resolveOptions({ routes: { profile: 'app', property: /token/ as never } }),
     ).toThrow(/routes\.property received the regular expression/)
+    for (const property of ['spacing', '--bad:']) {
+      expect(() => resolveOptions({ routes: { profile: 'app', property } })).toThrow(
+        /routes\.property must be an unescaped custom-property prefix starting with "--"/,
+      )
+    }
+    expect(resolveOptions({ routes: { profile: 'app', property: '--' } }).routes[0]).toMatchObject({
+      property: '--',
+    })
     expect(() =>
       resolveOptions({ routes: { profile: 'app', media: { maxWidht: 480 } } as never }),
     ).toThrow(/routes\.media\.maxWidht.*Did you mean "maxWidth"/)

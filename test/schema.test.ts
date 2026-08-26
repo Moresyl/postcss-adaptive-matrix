@@ -173,6 +173,7 @@ describe('the published options schema', () => {
     for (const field of ['file', 'selector', 'property', 'media']) {
       expect((route.properties![field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
     }
+    expect((route.properties!.property!.oneOf as Subschema[])[0]!.pattern).toBeTypeOf('string')
     const libraryArray = (options.libraries!.oneOf as Subschema[])[2]!
     const libraryObject = ((libraryArray.items as Subschema).oneOf as Subschema[])[1]!
     expect(libraryObject.anyOf).toEqual([

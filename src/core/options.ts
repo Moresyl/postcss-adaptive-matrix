@@ -237,6 +237,12 @@ function validateRouteShape(route: unknown, path: string): void {
       if (!prefix.trim()) {
         throw new TypeError(`[postcss-adaptive-matrix] ${propertyPath} cannot be empty.`)
       }
+      if (!prefix.startsWith('--') || !isCssIdentifier(prefix)) {
+        throw new TypeError(
+          `[postcss-adaptive-matrix] ${propertyPath} must be an unescaped custom-property prefix starting with "--". ` +
+            'Property routes are only evaluated for custom-property declarations.',
+        )
+      }
     }
   }
   if (route.media !== undefined) {

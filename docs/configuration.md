@@ -139,7 +139,7 @@ interface MediaMatcher {
 }
 ```
 
-Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` matches custom property names by prefix and is case-sensitive, exactly like the names themselves; `media` matches the widths an enclosing `@media` confines the rule to — see [Breakpoints](#breakpoints).
+Reassigns matching CSS to another canvas; `profile: false` keeps the pixels unconverted. Strings match by "contains" and regular expressions by `test`; `property` accepts unescaped custom-property prefixes beginning with `--`, matches them case-sensitively, and may use bare `--` to claim every custom property; `media` matches the widths an enclosing `@media` confines the rule to — see [Breakpoints](#breakpoints).
 
 Standard declaration names and `propList` patterns are ASCII case-insensitive, as CSS requires: `FONT-SIZE` is still text and keeps the zoomable `rem + vw` formula. Custom properties are the opposite: `--Theme-gap` and `--theme-gap` are different variables, so filters and routes preserve their spelling.
 

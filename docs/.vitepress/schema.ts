@@ -236,7 +236,7 @@ const ROUTE: Fields<AdaptiveRoute> = {
     'x-description-zh': '该路由认领的选择器；即使被打包内联、路径丢失也仍能命中。',
   }),
   property: oneOrManyNonEmpty(
-    { type: 'string' },
+    { type: 'string', pattern: String.raw`^--[-A-Za-z0-9_\u0080-\uFFFF]*$` },
     {
       description: 'Custom-property prefixes, e.g. `--van-`. Routes tokens declared on `:root`.',
       'x-description-zh': '自定义属性前缀，例如 `--van-`；用于路由声明在 `:root` 上的变量。',
