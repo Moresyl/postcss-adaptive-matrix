@@ -1183,6 +1183,21 @@ describe('selectors that mention a library without being one', () => {
     expect(result.warnings()).toHaveLength(0)
   })
 
+  it('does not route a rule by class-looking text stored in an attribute', async () => {
+    const result = await process('[data-icon=".van-cell"] { padding: 16px }', options)
+
+    expect(result.css).toContain(onPage)
+    expect(result.css).not.toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
+  it('routes an escaped spelling of a real library class', async () => {
+    const result = await process(String.raw`.v\61 n-cell { padding: 16px }`, options)
+
+    expect(result.css).toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
   it('does not route a rule by an escaped spelling of :not()', async () => {
     const result = await process(String.raw`.page-hero:n\6ft(.van-cell) { padding: 16px }`, options)
 

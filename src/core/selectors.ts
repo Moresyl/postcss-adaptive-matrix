@@ -239,7 +239,14 @@ export function routingSelector(selector: string): string {
   // Nothing to exclude without a pseudo-class, and most selectors in a
   // stylesheet have none. This runs on every rule of every file, so the check
   // that skips the rewrite entirely is worth more than anything inside it.
-  if (!selector.includes(':') && !selector.includes('/*')) return selector
+  if (
+    !selector.includes(':') &&
+    !selector.includes('/*') &&
+    !selector.includes('[') &&
+    !selector.includes('\\')
+  ) {
+    return selector
+  }
   let output = ''
   let index = 0
   while (index < selector.length) {
@@ -259,9 +266,23 @@ export function routingSelector(selector: string): string {
     }
     if (character === '[') {
       const end = skipAttribute(selector, index)
-      output += selector.slice(index, end)
+      // A dot inside an attribute value is data, not a class selector. Keep the
+      // attribute available to authored routes while making that distinction
+      // visible to dot-prefixed library routes. The full-width marker is only
+      // used in this private routing subject; emitted CSS remains untouched.
+      output += selector.slice(index, end).replaceAll('.', '\uFF0E')
       index = end
       continue
+    }
+    if (character === '.') {
+      const end = identifierEnd(selector, index + 1)
+      if (end > index + 1) {
+        // CSS escapes are spelling, not identity: `.v\61 n-cell` and
+        // `.van-cell` select the same class and must choose the same canvas.
+        output += `.${decodeCssIdentifier(selector.slice(index + 1, end))}`
+        index = end
+        continue
+      }
     }
     if (character === ':') {
       const pseudo = readPseudo(selector, index)

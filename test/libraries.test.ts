@@ -456,6 +456,13 @@ describe('library routing', () => {
     )
   })
 
+  it('matches escaped classes but ignores class-like text in attribute data', () => {
+    expect(resolver.forSelector(base, String.raw`.v\61 n-cell`, '/src/app.css').name).toBe(
+      'library:vant',
+    )
+    expect(resolver.forSelector(base, '[data-icon=".van-cell"]', '/src/app.css').name).toBe('app')
+  })
+
   it('requires a real class boundary', () => {
     expect(resolver.forSelector(base, '.caravan-slot', '/src/app.css').name).toBe('app')
   })

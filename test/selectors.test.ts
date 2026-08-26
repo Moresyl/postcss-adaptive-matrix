@@ -58,6 +58,13 @@ describe('routingSelector', () => {
     expect(specificity(String.raw`:n\6f t(#main, .item)`)).toEqual([1, 0, 0])
   })
 
+  it('canonicalises real class escapes without treating attribute data as a class', () => {
+    expect(routingSelector(String.raw`.v\61 n-cell`)).toBe('.van-cell')
+    expect(routingSelector(String.raw`.van\2d cell`)).toBe('.van-cell')
+    expect(routingSelector('[data-icon=".van-cell"]')).not.toContain('.van-')
+    expect(routingSelector('[data-layout="desktop"]')).toContain('[data-layout="desktop"]')
+  })
+
   it('does not consume non-CSS whitespace after a hexadecimal escape', () => {
     const selector = ':n\\6f\u00a0t(.van-cell)'
     expect(routingSelector(selector)).toBe(selector)
