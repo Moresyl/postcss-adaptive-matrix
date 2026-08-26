@@ -273,6 +273,8 @@ interface AdaptiveProfile {
 
 Only `designWidth` is required in a profile. Omit `fluid` (or use `fluid: {}`) for an unbounded viewport expression, provide `minWidth` or `maxWidth` for a one-sided `max()`/`min()` limit, and provide both for `clamp()`. Supplied bounds must be positive finite numbers; when both exist, `maxWidth` must be greater than `minWidth`. The explicit `strategy: 'viewport'` compatibility mode remains unbounded regardless of `fluid`.
 
+Function-valued widths receive `{ file, profile }`. A missing `textAnchorWidth` reuses the already-resolved `designWidth` exactly once rather than calling a dynamic resolver again. File-sensitive resolvers need a real PostCSS `from` path; an invalid return reports both profile and file.
+
 `query: false` removes the `@adaptive` wrapper but keeps the rules inside it, which suits building separate artifacts with the profile chosen by environment.
 
 Query conditions may use current or future CSS media/container-query syntax, but their structural boundary must be complete: strings, comments and `()` / `[]` component-value blocks must close, while an unescaped brace or top-level `;` is rejected. This prevents a JavaScript configuration typo from ending the generated at-rule early or swallowing the rules that follow it without artificially freezing the query grammar.

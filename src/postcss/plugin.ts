@@ -665,6 +665,13 @@ function sourcePathDependency(
   if (input.routes?.some((route) => route.file !== undefined)) return 'routes[].file'
   if (typeof input.root === 'object' && input.root.injectTo !== undefined) return 'root.injectTo'
   if (typeof input.rootValue === 'function') return 'rootValue'
+  for (const [name, profile] of Object.entries(input.profiles ?? {})) {
+    if (typeof profile.designWidth === 'function')
+      return `profiles[${JSON.stringify(name)}].designWidth`
+    if (typeof profile.textAnchorWidth === 'function') {
+      return `profiles[${JSON.stringify(name)}].textAnchorWidth`
+    }
+  }
 
   // Omitted / `auto` libraries are defaults, not a caller assertion that a
   // particular path must match. An explicit list can contain a scoped library
@@ -734,8 +741,9 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOption
       const file = root.source?.input.file ?? result.opts.from?.toString() ?? ''
       if (!file && needsSourcePath && !sourcePathWarnings.has(result)) {
         sourcePathWarnings.add(result)
-        const reason =
-          needsSourcePath === 'rootValue'
+        const reason = needsSourcePath.startsWith('profiles[')
+          ? `${needsSourcePath} cannot choose a file-specific width for this stylesheet`
+          : needsSourcePath === 'rootValue'
             ? 'rootValue cannot choose a file-specific value for this stylesheet'
             : `${needsSourcePath} has no real path to match for this stylesheet`
         result.warn(

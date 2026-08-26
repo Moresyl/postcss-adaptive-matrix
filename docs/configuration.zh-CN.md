@@ -273,6 +273,8 @@ interface AdaptiveProfile {
 
 Profile 中只有 `designWidth` 必填。省略 `fluid`（或写 `fluid: {}`）会输出无边界视口表达式；只给 `minWidth` 或 `maxWidth` 会用 `max()` / `min()` 限制单侧；两端都给才输出 `clamp()`。传入的边界必须是正有限数，同时存在时 `maxWidth` 必须大于 `minWidth`。显式使用兼容模式 `strategy: 'viewport'` 时，无论 `fluid` 如何配置都保持无边界输出。
 
+函数型宽度收到 `{ file, profile }`。省略 `textAnchorWidth` 时会精确复用已经解析一次的 `designWidth`，不会再次调用动态 resolver。按文件选择的 resolver 需要真实 PostCSS `from` 路径；返回非法值时错误会同时指出 profile 与文件。
+
 `query: false` 会移除 `@adaptive` 外壳但保留内部规则，适合构建不同产物时由环境选择 profile。
 
 查询条件仍可使用当前或未来的 CSS 媒体/容器查询语法，但结构边界必须完整：字符串、注释及 `()` / `[]` component-value 块必须闭合，未转义花括号或顶层 `;` 会被拒绝。这样既不会把查询语法锁死，又能防止 JavaScript 配置拼写错误提前结束生成的 at-rule，或吞掉后续规则。

@@ -341,6 +341,20 @@ describe('configuration validation', () => {
     ).not.toThrow()
   })
 
+  it('resolves a dynamic design width once when the text anchor is omitted', () => {
+    let calls = 0
+    const options = resolveOptions({
+      libraries: false,
+      profiles: { app: { designWidth: () => (++calls === 1 ? 375 : 750) } },
+    })
+    const profile = options.profiles.app!
+
+    const result = convertLength(16, 'font-size', 'app', profile, options, '/app.css')
+
+    expect(calls).toBe(1)
+    expect(result).toContain('1.49333vw')
+  })
+
   it('rejects a unit that is not a scaling unit', () => {
     // The one option where a typo yields *invalid* CSS rather than wrong CSS:
     // `4.267vm` is not a length, so the browser drops the declaration and the

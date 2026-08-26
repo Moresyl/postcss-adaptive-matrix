@@ -99,11 +99,11 @@ Putting it **after** a nesting plugin such as `postcss-nesting` is fine too — 
 
 Sass and Less are not part of this discussion: a preprocessor finishes before PostCSS starts, so PostCSS already receives expanded CSS.
 
-### 2. `from` is required only for path matching
+### 2. `from` is required only for file-sensitive options
 
-Ordinary conversion plus selector, property and media routing work without a source path. Only features that decide by file path — the `file` channel in `routes`, `include` / `exclude`, `root.injectTo`, and component-library path matching — depend on PostCSS's `from`.
+Ordinary conversion plus selector, property and media routing work without a source path. Only file-sensitive features depend on PostCSS's `from`: the `file` channel in `routes`, `include` / `exclude`, `root.injectTo`, explicit component-library path matching, and function-valued `designWidth`, `textAnchorWidth`, or `rootValue` resolvers that inspect the file.
 
-Vite, Webpack, Nuxt and Taro all pass it. If you hand-write `postcss(...).process(css)` without `from` while explicitly configuring one of those path features, the compiler warns once: the file path has degraded to an empty string and that match cannot work. No path-based option means no warning and no requirement.
+Vite, Webpack, Nuxt and Taro all pass it. If you hand-write `postcss(...).process(css)` without `from` while explicitly configuring one of those features, the compiler warns once: a matcher cannot match or a resolver cannot make a file-specific choice. No file-sensitive option means no warning and no requirement.
 
 ```js
 // wrong when path-based matching is configured

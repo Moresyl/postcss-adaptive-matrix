@@ -137,8 +137,8 @@ function resolveWidth(
   const context: ProfileContext = { file, profile: profileName }
   const width = typeof source === 'function' ? source(context) : source
   if (!Number.isFinite(width) || width <= 0) {
-    throw new Error(
-      `[postcss-adaptive-matrix] Profile "${profileName}" returned an invalid ${field}. Expected a positive finite number.`,
+    throw new RangeError(
+      `[postcss-adaptive-matrix] Profile "${profileName}" returned an invalid ${field} for "${file || '<unknown>'}". Expected a positive finite number.`,
     )
   }
   return width
@@ -157,11 +157,19 @@ export function resolveTextAnchorWidth(
   profileName: string,
   profile: AdaptiveProfile,
   file: string,
+  designWidth: number = resolveDesignWidth(profileName, profile, file),
 ): number {
-  if (profile.textAnchorWidth === undefined) {
-    return resolveDesignWidth(profileName, profile, file)
-  }
+  if (profile.textAnchorWidth === undefined) return designWidth
   return resolveWidth(profile.textAnchorWidth, profileName, file, 'textAnchorWidth')
+}
+
+function resolveProfileWidths(
+  profileName: string,
+  profile: AdaptiveProfile,
+  file: string,
+): [design: number, anchor: number] {
+  const designWidth = resolveDesignWidth(profileName, profile, file)
+  return [designWidth, resolveTextAnchorWidth(profileName, profile, file, designWidth)]
 }
 
 /**
@@ -327,10 +335,11 @@ export function convertLength(
   options: ResolvedAdaptiveMatrixOptions,
   file: string,
 ): string {
+  const [designWidth, anchorWidth] = resolveProfileWidths(profileName, profile, file)
   return convertResolvedLength(
     pixels,
-    resolveDesignWidth(profileName, profile, file),
-    resolveTextAnchorWidth(profileName, profile, file),
+    designWidth,
+    anchorWidth,
     isAccessibleTextProperty(property, options),
     profile,
     options,
@@ -486,10 +495,11 @@ export function convertValue(
   options: ResolvedAdaptiveMatrixOptions,
   file: string,
 ): string {
+  const [designWidth, anchorWidth] = resolveProfileWidths(profileName, profile, file)
   return convertResolvedValue(
     value,
-    resolveDesignWidth(profileName, profile, file),
-    resolveTextAnchorWidth(profileName, profile, file),
+    designWidth,
+    anchorWidth,
     isAccessibleTextProperty(property, options),
     profile,
     options,
@@ -525,10 +535,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     const widthKey = JSON.stringify([profileName, file])
     let resolvedWidths = widths.get(widthKey)
     if (resolvedWidths === undefined) {
-      resolvedWidths = [
-        resolveDesignWidth(profileName, profile, file),
-        resolveTextAnchorWidth(profileName, profile, file),
-      ]
+      resolvedWidths = resolveProfileWidths(profileName, profile, file)
       widths.set(widthKey, resolvedWidths)
     }
     const [designWidth, anchorWidth] = resolvedWidths

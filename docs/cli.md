@@ -96,7 +96,7 @@ A missing `default` (`export const options = {...}`) or an uncalled preset (`exp
 
 ## Rehearsing file routing
 
-Deciding a canvas by path is the easiest thing to misconfigure and the hardest to notice — a wrong pattern is not an error, the route just silently fails to match (see [Build tool integration](./integration.md#2-from-is-required-only-for-path-matching)). `--from` exists to rehearse routing before you ship:
+Deciding a canvas by path is the easiest thing to misconfigure and the hardest to notice — a wrong pattern is not an error, the route just silently fails to match (see [Build tool integration](./integration.md#2-from-is-required-only-for-file-sensitive-options)). `--from` exists to rehearse routing before you ship:
 
 ```bash
 # The same CSS, pretending it lives under desktop/

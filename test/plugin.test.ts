@@ -64,6 +64,34 @@ describe('adaptiveMatrix', () => {
       )
     })
 
+    it.each([
+      [
+        'designWidth',
+        { profiles: { app: { designWidth: ({ file }: { file: string }) => (file ? 375 : 750) } } },
+      ],
+      [
+        'textAnchorWidth',
+        {
+          profiles: {
+            app: {
+              designWidth: 375,
+              textAnchorWidth: ({ file }: { file: string }) => (file ? 375 : 750),
+            },
+          },
+        },
+      ],
+    ] satisfies [string, AdaptiveMatrixOptions][])(
+      'warns when a functional profile %s has no file to inspect',
+      async (field, options) => {
+        const result = await withoutFrom('.card { font-size: 16px }', options)
+
+        expect(result.warnings()).toHaveLength(1)
+        expect(result.warnings()[0]!.text).toContain(
+          `profiles["app"].${field} cannot choose a file-specific width`,
+        )
+      },
+    )
+
     it('warns for a path-only custom library but not auto or selector-addressable libraries', async () => {
       const pathOnly = await withoutFrom('.vendor { width: 16px }', {
         libraries: [{ name: 'vendor', designWidth: 375, file: 'vendor/' }],

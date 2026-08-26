@@ -99,11 +99,11 @@ const config = {
 
 Sass / Less 不属于这个话题：预处理器在 PostCSS 之前跑完，PostCSS 拿到的已经是展开后的 CSS。
 
-### 2. 只有按路径匹配时才需要 `from`
+### 2. 只有文件相关配置才需要 `from`
 
-普通转换以及 selector、property、media 路由都不依赖源文件路径。只有按文件路径判定的功能——`routes` 的 `file` 通道、`include` / `exclude`、`root.injectTo`、组件库的路径匹配——才依赖 PostCSS 的 `from`。
+普通转换以及 selector、property、media 路由都不依赖源文件路径。只有文件相关功能才依赖 PostCSS 的 `from`：`routes` 的 `file` 通道、`include` / `exclude`、`root.injectTo`、显式组件库路径匹配，以及会读取文件名的函数型 `designWidth`、`textAnchorWidth` 或 `rootValue` 解析器。
 
-Vite、Webpack、Nuxt、Taro 都会传。如果你手写 `postcss(...).process(css)`，又显式配置了上述路径功能却没有传 `from`，编译器会给出一次告警：路径已经退化成空串，该匹配不可能生效。没有配置任何路径功能时，则既不告警也不要求 `from`。
+Vite、Webpack、Nuxt、Taro 都会传。如果你手写 `postcss(...).process(css)`，又显式配置了上述功能却没有传 `from`，编译器会给出一次告警：matcher 无法命中，或 resolver 无法按文件做选择。没有任何文件相关配置时，则既不告警也不要求 `from`。
 
 ```js
 // 配置了按路径匹配时错误
