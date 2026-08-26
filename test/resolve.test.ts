@@ -48,9 +48,10 @@ describe('profile resolution', () => {
 
   it('never overrides a profile the author named explicitly', () => {
     const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'] }])
+    const resolvedBase = resolveOptions({ ...base, libraries: false })
     const explicit = {
       name: 'app',
-      profile: base.profiles!.app!,
+      profile: resolvedBase.profiles.app!,
       explicit: true,
       convert: true,
     }

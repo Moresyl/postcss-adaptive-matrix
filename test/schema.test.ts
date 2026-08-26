@@ -145,7 +145,11 @@ describe('the published options schema', () => {
     expect(schema['x-description-zh']).toContain('x-description-zh')
     // Only the canvas measurement is irreducible. Bounds are optional: no
     // bounds means a viewport expression, and either side can stand alone.
-    const profile = options.profiles!.additionalProperties as Subschema
+    const profileInput = options.profiles!.additionalProperties as Subschema
+    const profile = (profileInput.oneOf as Subschema[])[1]!
+    expect(profileInput.oneOf).toEqual(
+      expect.arrayContaining([{ type: 'number', exclusiveMinimum: 0 }]),
+    )
     expect(profile.required).toEqual(['designWidth'])
     expect(profile.properties!.fluid!.required).toBeUndefined()
     const rootObject = (options.root!.oneOf as Subschema[])[0]!

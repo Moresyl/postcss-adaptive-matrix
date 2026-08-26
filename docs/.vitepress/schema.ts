@@ -169,6 +169,13 @@ const PROFILE: Fields<AdaptiveProfile> = {
   },
 }
 
+const PROFILE_SCHEMA = {
+  type: 'object',
+  properties: PROFILE,
+  required: ['designWidth'],
+  additionalProperties: false,
+}
+
 const MEDIA: Fields<MediaMatcher> = {
   minWidth: {
     description: 'The rule must not apply below this width.',
@@ -348,10 +355,8 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     'x-description-zh': '按名字组织的设计画布集合。默认为 `appPcPreset()` 的移动端与桌面端画布。',
     type: 'object',
     additionalProperties: {
-      type: 'object',
-      properties: PROFILE,
-      required: ['designWidth'],
-      additionalProperties: false,
+      oneOf: [{ type: 'number', exclusiveMinimum: 0 }, PROFILE_SCHEMA],
+      'x-also': '(context: { file, profile }) => number',
     },
     propertyNames: {
       // `library:` is the registry's own namespace; a profile named into it

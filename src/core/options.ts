@@ -11,6 +11,7 @@ import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './v
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
+  AdaptiveProfileInput,
   AdaptiveRoute,
   MediaMatcher,
   ResolvedAdaptiveMatrixOptions,
@@ -130,6 +131,19 @@ const PROFILE_KEYS = [
 ] as const
 const FLUID_KEYS = ['minWidth', 'maxWidth'] as const
 const QUERY_KEYS = ['type', 'condition', 'name'] as const
+
+function normaliseProfiles(
+  profiles: Record<string, AdaptiveProfileInput>,
+): Record<string, AdaptiveProfile> {
+  const normalised: Record<string, AdaptiveProfile> = {}
+  for (const [name, profile] of Object.entries(profiles)) {
+    normalised[name] =
+      typeof profile === 'number' || typeof profile === 'function'
+        ? { designWidth: profile }
+        : profile
+  }
+  return normalised
+}
 
 function requireStrings(name: string, value: unknown): void {
   const entries = Array.isArray(value) ? value : [value]
@@ -527,7 +541,7 @@ function normaliseUnits(input: string | readonly string[]): string[] {
 export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdaptiveMatrixOptions {
   validateInputShape(input)
   const preset = appPcPreset()
-  const authored = input.profiles ?? preset.profiles!
+  const authored = normaliseProfiles(input.profiles ?? preset.profiles!)
   const libraries = resolveLibraries(input.libraries)
   const authoredNames = Object.keys(authored)
   const defaultProfile =

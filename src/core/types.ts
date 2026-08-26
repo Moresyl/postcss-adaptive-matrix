@@ -67,6 +67,9 @@ export interface AdaptiveProfile {
   rootMaxWidth?: number
 }
 
+/** A canvas may use its width directly when it needs no per-profile overrides. */
+export type AdaptiveProfileInput = AdaptiveProfile | AdaptiveProfile['designWidth']
+
 /**
  * Sends matching stylesheets or selectors to a profile other than the default.
  *
@@ -247,7 +250,7 @@ export interface ResolvedRootFoundationOptions extends RootFoundationOptions {
 }
 
 export interface AdaptiveMatrixOptions {
-  profiles?: Record<string, AdaptiveProfile>
+  profiles?: Record<string, AdaptiveProfileInput>
   defaultProfile?: string
   /** Evaluated in order; the first match wins. `@adaptive` always outranks these. */
   routes?: AdaptiveRoute | readonly AdaptiveRoute[]
@@ -307,6 +310,7 @@ export interface AdaptiveMatrixOptions {
 export interface ResolvedAdaptiveMatrixOptions extends Omit<
   Required<AdaptiveMatrixOptions>,
   | 'root'
+  | 'profiles'
   | 'include'
   | 'exclude'
   | 'libraries'
@@ -317,6 +321,7 @@ export interface ResolvedAdaptiveMatrixOptions extends Omit<
   | 'selectorExclude'
   | 'valueExclude'
 > {
+  profiles: Record<string, AdaptiveProfile>
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
   routes: AdaptiveRoute[]

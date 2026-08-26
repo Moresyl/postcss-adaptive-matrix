@@ -64,6 +64,16 @@ describe('adaptiveMatrix', () => {
       )
     })
 
+    it('warns when a shorthand profile resolver has no file to inspect', async () => {
+      const result = await withoutFrom('.card { width: 16px }', {
+        profiles: { app: ({ file }) => (file ? 375 : 750) },
+      })
+
+      expect(result.warnings()).toHaveLength(1)
+      expect(result.warnings()[0]!.text).toContain('profiles["app"] cannot choose a file-specific')
+      expect(result.css).toContain('width: calc(2.13333vw)')
+    })
+
     it.each([
       [
         'designWidth',
@@ -1012,7 +1022,7 @@ describe('withAtomicCss', () => {
       libraries: false,
       strategy: 'viewport',
       hairline: 0,
-      profiles: { app: { designWidth: 375 }, pc: { designWidth: 1440 } },
+      profiles: { app: 375, pc: 1440 },
       routes: { profile: 'pc', selector: '.desktop' },
     })
 

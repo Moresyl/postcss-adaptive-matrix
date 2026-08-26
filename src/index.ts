@@ -50,6 +50,7 @@ export type {
   ActiveProfile,
   AdaptiveMatrixOptions,
   AdaptiveProfile,
+  AdaptiveProfileInput,
   AdaptiveQuery,
   AdaptiveRoute,
   AppPcPresetOptions,

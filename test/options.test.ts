@@ -55,6 +55,18 @@ describe('configuration validation', () => {
     ).toThrow(/defaultProfile "app" does not exist/)
   })
 
+  it('accepts a design width directly when a profile needs no overrides', () => {
+    const scalar = resolveOptions({ profiles: { mobile: 375 } })
+    expect(scalar.defaultProfile).toBe('mobile')
+    expect(scalar.profiles.mobile).toEqual({ designWidth: 375 })
+
+    const dynamic = resolveOptions({ profiles: { mobile: () => 390 } })
+    expect(dynamic.profiles.mobile!.designWidth).toBeTypeOf('function')
+    expect(() => resolveOptions({ profiles: { mobile: 0 } })).toThrow(
+      /Profile "mobile" requires a positive designWidth/,
+    )
+  })
+
   it('rejects non-finite thresholds before they can leak into generated CSS', () => {
     expect(() => resolveOptions({ fontFluidity: Number.NaN })).toThrow(/fontFluidity/)
     expect(() => resolveOptions({ minPixelValue: Number.NaN })).toThrow(/minPixelValue/)
@@ -221,7 +233,7 @@ describe('configuration validation', () => {
     // than a fix. Each of these is a separate check in `validateProfile`, and
     // each one has to carry the name through.
     const fluid = { minWidth: 320, maxWidth: 480 }
-    expect(() => resolveOptions({ profiles: { app: 375 as never } })).toThrow(
+    expect(() => resolveOptions({ profiles: { app: '375' as never } })).toThrow(
       'Profile "app" must be an object',
     )
     expect(() => resolveOptions({ profiles: { app: { designWidth: -375, fluid } } })).toThrow(

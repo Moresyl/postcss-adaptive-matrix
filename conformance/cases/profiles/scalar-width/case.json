@@ -1,0 +1,11 @@
+{
+  "description": "A width-only profile accepts its design width directly",
+  "options": {
+    "profiles": {
+      "mobile": 375
+    },
+    "libraries": false,
+    "strategy": "viewport",
+    "hairline": 0
+  }
+}

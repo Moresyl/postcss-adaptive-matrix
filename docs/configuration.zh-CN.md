@@ -31,7 +31,7 @@
 | `root` | `false` | 可选根布局基础样式 |
 | `unknownProfile` | `warn` | `warn`、`error`、`ignore` |
 
-内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段。只有主动写出某类嵌套对象时，决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
+内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段。不需要覆盖项的 profile 可只写宽度：`profiles: { mobile: 375 }`；只有还需 `fluid`、`query`、`unit` 等设置时才写 `{ designWidth: 375, ... }`。主动写出嵌套对象后，也只有决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
 
 字符串文件匹配不受路径分隔符影响：`src/components/` 同样匹配 `C:\\repo\\src\\components\\card.css`，反斜杠写法也能匹配 POSIX 路径。正则与谓词函数仍收到未经修改的原始路径，已有的宿主平台逻辑不会被偷偷改写。
 
@@ -257,6 +257,16 @@ libraries?: LibraryEntry | readonly LibraryEntry[] | false // 字符串 'auto' �
 内置清单、匹配通道、覆盖与扩展方式见 [组件库适配](./libraries.zh-CN.md)。
 
 ## Profile
+
+只有宽度的 profile 可直接写数字；按文件选择设计宽度的函数也可直接作为值。只有需要 profile 级覆盖项时才使用对象：
+
+```js
+profiles: {
+  mobile: 375,
+  desktop: { designWidth: 1440, unit: 'vi' },
+  embedded: ({ file }) => file.includes('/compact/') ? 320 : 375,
+}
+```
 
 ```ts
 interface AdaptiveProfile {

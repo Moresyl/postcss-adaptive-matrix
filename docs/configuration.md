@@ -31,7 +31,7 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `root` | `false` | The optional root layout foundation |
 | `unknownProfile` | `warn` | `warn`, `error`, `ignore` |
 
-Most configurations require no user-supplied fields because the built-in preset fills the top level. Once you explicitly author a nested object, only values that define its identity or calculation are required: `profile.designWidth`, an object-form `query.condition`, a route's `profile` plus at least one matching channel, and a standalone custom library's `name` plus `designWidth` (an `extends` entry inherits them). `fluid` and `root` have no required members. A sole custom profile also becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
+Most configurations require no user-supplied fields because the built-in preset fills the top level. A profile with no overrides can be just its width — `profiles: { mobile: 375 }`; use `{ designWidth: 375, ... }` only when it also needs `fluid`, `query`, `unit`, or another override. Once you explicitly author a nested object, only values that define its identity or calculation are required: `profile.designWidth`, an object-form `query.condition`, a route's `profile` plus at least one matching channel, and a standalone custom library's `name` plus `designWidth` (an `extends` entry inherits them). `fluid` and `root` have no required members. A sole custom profile also becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
 
 String file matchers are separator-portable: `src/components/` also matches `C:\\repo\\src\\components\\card.css`, and a backslash spelling also matches a POSIX path. Regular expressions and predicate functions receive the original path unchanged, so existing host-specific logic keeps its exact contract.
 
@@ -257,6 +257,16 @@ Entries expand into routes appended after `routes` — explicit routes always wi
 For the built-in list, the matching channels and how to override or extend, see [Component libraries](./libraries.md).
 
 ## Profile
+
+Use a number directly for a width-only profile. A file-sensitive design width resolver can also be the direct value. The object form is needed only for per-profile overrides:
+
+```js
+profiles: {
+  mobile: 375,
+  desktop: { designWidth: 1440, unit: 'vi' },
+  embedded: ({ file }) => file.includes('/compact/') ? 320 : 375,
+}
+```
 
 ```ts
 interface AdaptiveProfile {
