@@ -76,6 +76,7 @@ describeBuilt('the built package', () => {
     for (const name of ['index.d.ts', 'index.d.cts']) {
       const declarations = readFileSync(new URL(`../dist/${name}`, import.meta.url), 'utf8')
       expect(declarations).toContain('function defineConfig(): AdaptiveMatrixOptions')
+      expect(declarations).toMatch(/function defineLibraries\(libraries\?:/)
       expect(declarations).toContain('function withAtomicCss(): AtomicCssConfiguration')
       expect(declarations).toContain('function withAtomicCss(options: AtomicCssOptions)')
       expect(declarations).toContain('interface RootValueContext')

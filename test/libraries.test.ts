@@ -90,6 +90,9 @@ describe('resolveLibrary', () => {
   })
 
   it('exposes the typed library-list convenience API', () => {
+    expect(defineLibraries().map((library) => library.name)).toEqual(
+      expect.arrayContaining(['vant', 'element-plus']),
+    )
     expect(defineLibraries(['vant']).map((library) => library.name)).toEqual(['vant'])
   })
 

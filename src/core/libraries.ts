@@ -466,9 +466,9 @@ export function expandLibraries(
   return { profiles: derived, routes: [...scoped, ...routes] }
 }
 
-/** Convenience for configs: `libraries: [...]` without repeating the type. */
+/** Convenience for configs; omission follows the main option's automatic default. */
 export function defineLibraries(
-  libraries: NonNullable<AdaptiveMatrixOptions['libraries']>,
+  libraries: NonNullable<AdaptiveMatrixOptions['libraries']> = 'auto',
 ): ResolvedLibraryAdaptation[] {
   return resolveLibraries(libraries)
 }
