@@ -359,7 +359,7 @@ describe('adaptiveMatrix', () => {
   })
 
   it('recognises escaped CSS function names before deciding whether to convert', async () => {
-    const css = String.raw`.a { width: cl\61mp(10px, 5vw, 20px); src: u\72l(16px) }`
+    const css = String.raw`.a { width: cl\61mp(10px, 5vw, 20px); max-width: cl\61 mp(10px, 5vw, 20px); src: u\72l(16px); mask: u\72 l(16px) }`
     const result = await process(css, { hairline: 0 })
 
     expect(result.css).toBe(css)

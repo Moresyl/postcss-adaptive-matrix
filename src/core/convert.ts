@@ -10,6 +10,7 @@ import {
   CSS_NUMBER_SOURCE,
   canonicalCssIdentifierName,
   canonicalCssPropertyName,
+  canonicalizeCssIdentifierEscapes,
   isCssWhitespace,
 } from './syntax.js'
 
@@ -426,6 +427,29 @@ function continuesHexEscape(value: string, index: number): boolean {
   return digits > 0 && value[cursor] === '\\'
 }
 
+/** Original-source ranges of escaped functions whose contents stay opaque. */
+function escapedProtectedRanges(
+  value: string,
+  accessibleText: boolean,
+  staticText: boolean,
+): Array<readonly [number, number]> {
+  if (!value.includes('\\')) return []
+  const canonical = canonicalizeCssIdentifierEscapes(value)
+  const parsed = valueParser(canonical.text)
+  const ranges: Array<readonly [number, number]> = []
+  parsed.walk((node) => {
+    if (!shouldSkipFunction(node) && !isAlreadyFluid(node, accessibleText, staticText)) {
+      return undefined
+    }
+    ranges.push([
+      canonical.positions[node.sourceIndex] ?? node.sourceIndex,
+      canonical.positions[node.sourceEndIndex] ?? value.length,
+    ])
+    return false
+  })
+  return ranges
+}
+
 function convertResolvedValue(
   value: string,
   designWidth: number,
@@ -439,10 +463,18 @@ function convertResolvedValue(
   const parsed = valueParser(value)
   const outputUnit = (profile.unit ?? options.unit).toLowerCase()
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
+  const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
   let generatedBounds = false
   parsed.walk((node) => {
     if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText, staticText)) return false
     if (node.type !== 'word') return undefined
+    if (
+      protectedRanges.some(
+        ([start, end]) => node.sourceIndex >= start && node.sourceEndIndex <= end,
+      )
+    ) {
+      return undefined
+    }
     if (continuesHexEscape(value, node.sourceIndex)) return undefined
     node.value = node.value.replace(
       pattern,
