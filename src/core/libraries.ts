@@ -5,6 +5,7 @@ import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
   AdaptiveRoute,
+  FileMatcher,
   LibraryAdaptation,
   LibraryEntry,
   ResolvedLibraryAdaptation,
@@ -306,7 +307,30 @@ function assertUniqueLibraryNames(
 /** Drops `autoPrefix`, which is a registry concern and not part of the model. */
 function withoutRegistryFields(entry: RegistryEntry): ResolvedLibraryAdaptation {
   const { autoPrefix: _autoPrefix, ...library } = entry
-  return library
+  const cloneStrings = (
+    value: string | readonly string[] | undefined,
+  ): string | readonly string[] | undefined => {
+    if (Array.isArray(value)) return [...(value as readonly string[])]
+    return value
+  }
+  const cloneFiles = (
+    value: ResolvedLibraryAdaptation['file'],
+  ): ResolvedLibraryAdaptation['file'] => {
+    if (!Array.isArray(value)) return value
+    const matchers = value as readonly FileMatcher[]
+    return matchers.map((matcher) =>
+      matcher instanceof RegExp ? new RegExp(matcher.source, matcher.flags) : matcher,
+    )
+  }
+  // The registry is process-global. Every lookup must receive fresh collection
+  // values or a caller that customises one resolved entry can silently rewrite
+  // the defaults seen by every later plugin instance in the same build.
+  return {
+    ...library,
+    prefix: cloneStrings(library.prefix),
+    tokenPrefix: cloneStrings(library.tokenPrefix),
+    file: cloneFiles(library.file),
+  }
 }
 
 /**

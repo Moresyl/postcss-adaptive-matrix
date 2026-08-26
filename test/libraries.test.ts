@@ -25,6 +25,17 @@ describe('resolveLibrary', () => {
     expect(resolveLibrary('vant').designWidth).toBe(375)
   })
 
+  it('returns fresh built-in collections instead of exposing the registry', () => {
+    const first = resolveLibrary('vant')
+    const files = first.file as RegExp[]
+    files[0]!.compile('mutated')
+    files.push(/extra/)
+
+    const second = resolveLibrary('vant')
+    expect(second.file).toHaveLength(1)
+    expect((second.file as RegExp[])[0]!.source).toContain('vant')
+  })
+
   it('lets the public adaptation type inherit fields it does not need to repeat', () => {
     const inherited: LibraryAdaptation = { extends: 'vant' }
 
