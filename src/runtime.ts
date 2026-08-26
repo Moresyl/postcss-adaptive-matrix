@@ -1,3 +1,5 @@
+import { isObject, rejectUnknownKeys, valueKind } from './core/validation.js'
+
 export interface AdaptiveViewportObserverOptions {
   prefix?: string
   target?: HTMLElement
@@ -16,6 +18,24 @@ export interface AdaptiveViewportSnapshot {
 export interface AdaptiveViewportObserver {
   update(): AdaptiveViewportSnapshot | null
   destroy(): void
+}
+
+const VIEWPORT_OPTION_KEYS = ['prefix', 'target', 'window', 'document'] as const
+
+function validateObserverOptions(value: unknown): asserts value is AdaptiveViewportObserverOptions {
+  if (!isObject(value)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] viewport options must be an object, not ${valueKind(value)}.`,
+    )
+  }
+  rejectUnknownKeys('viewport options', value, VIEWPORT_OPTION_KEYS)
+  for (const field of ['target', 'window', 'document'] as const) {
+    if (value[field] !== undefined && !isObject(value[field])) {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] viewport options.${field} must be a browser object, not ${valueKind(value[field])}.`,
+      )
+    }
+  }
 }
 
 function finite(value: number | undefined, fallback: number): number {
@@ -49,10 +69,20 @@ function variablePrefix(value: unknown): string {
 export function observeAdaptiveViewport(
   options: AdaptiveViewportObserverOptions = {},
 ): AdaptiveViewportObserver {
-  const browserWindow = options.window ?? (typeof window === 'undefined' ? undefined : window)
+  validateObserverOptions(options)
+  const browserWindow =
+    options.window === undefined
+      ? typeof window === 'undefined'
+        ? undefined
+        : window
+      : options.window
   const browserDocument =
-    options.document ?? (typeof document === 'undefined' ? undefined : document)
-  const target = options.target ?? browserDocument?.documentElement
+    options.document === undefined
+      ? typeof document === 'undefined'
+        ? undefined
+        : document
+      : options.document
+  const target = options.target === undefined ? browserDocument?.documentElement : options.target
   const prefix = variablePrefix(options.prefix)
   let frame = 0
   const published = new Map<string, string>()

@@ -309,4 +309,20 @@ describe('observeAdaptiveViewport', () => {
     }
     expect(host.listeners.add).not.toHaveBeenCalled()
   })
+
+  it('distinguishes omitted runtime options from malformed explicit values', () => {
+    for (const options of [null, [], 'adaptive']) {
+      expect(() => observeAdaptiveViewport(options as never)).toThrow(
+        /viewport options must be an object/,
+      )
+    }
+    for (const field of ['target', 'window', 'document'] as const) {
+      expect(() => observeAdaptiveViewport({ [field]: null })).toThrow(
+        new RegExp(`viewport options\\.${field} must be a browser object`),
+      )
+    }
+    expect(() => observeAdaptiveViewport({ windw: {} } as never)).toThrow(
+      /viewport options\.windw.*Did you mean "window"/,
+    )
+  })
 })

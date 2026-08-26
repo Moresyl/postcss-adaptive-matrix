@@ -77,6 +77,8 @@ observeAdaptiveViewport({
 
 `prefix` must be a non-empty CSS identifier. A leading `--` is optional and removed; whitespace, an empty string, or a leading digit is rejected before any listener is registered, rather than producing unusable custom-property names.
 
+Every option is optional. Omit `window`, `document` or `target` to use the matching browser global/default element; an explicit `null` is treated as malformed configuration rather than as another spelling of omission.
+
 Returns:
 
 ```ts
