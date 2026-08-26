@@ -68,6 +68,13 @@ describe('routingSelector', () => {
     expect(routingSelector('[data-layout="desktop"]')).toContain('[data-layout="desktop"]')
   })
 
+  it('does not turn escaped class punctuation into selector structure', () => {
+    expect(routingSelector(String.raw`.foo\3a hover`)).not.toContain(':hover')
+    expect(routingSelector(String.raw`.foo\23 hero`)).not.toContain('#hero')
+    expect(routingSelector(String.raw`.foo\20 bar`)).not.toContain(' bar')
+    expect(routingSelector(String.raw`.v\61 n-cell`)).toContain('.van-cell')
+  })
+
   it('does not consume non-CSS whitespace after a hexadecimal escape', () => {
     const selector = ':n\\6f\u00a0t(.van-cell)'
     expect(routingSelector(selector)).toBe(selector)
@@ -151,6 +158,10 @@ describe('specificity', () => {
     [':nth-child(2n of .item)', [0, 2, 0]],
     [':nth-last-child(1 of #main)', [1, 1, 0]],
     [':is(.van-cell, .page-hero)', [0, 1, 0]],
+    ['svg|a', [0, 0, 1]],
+    ['svg|*', [0, 0, 0]],
+    ['*|a', [0, 0, 1]],
+    ['|a', [0, 0, 1]],
   ]
 
   for (const [selector, expected] of cases) {

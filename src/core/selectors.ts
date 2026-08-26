@@ -279,7 +279,20 @@ function rewriteRoutingSelector(selector: string, maskAttributeClassText: boolea
       if (end > index + 1) {
         // CSS escapes are spelling, not identity: `.v\61 n-cell` and
         // `.van-cell` select the same class and must choose the same canvas.
-        output += `.${decodeCssIdentifier(selector.slice(index + 1, end)).replaceAll('.', '\uFF0E')}`
+        // Keep punctuation escaped in the private routing subject. Decoding
+        // `.foo\3a hover` to `.foo:hover` would let a `:hover` route mistake a
+        // class-name character for a pseudo-class. Six hex digits need no
+        // terminator, so decoded whitespace cannot become a combinator either.
+        const decoded = decodeCssIdentifier(selector.slice(index + 1, end))
+        const identity = [...decoded]
+          .map((entry) => {
+            const point = entry.codePointAt(0)!
+            return point >= 0x80 || /[-_a-z0-9]/i.test(entry)
+              ? entry
+              : `\\${point.toString(16).padStart(6, '0')}`
+          })
+          .join('')
+        output += `.${identity}`
         index = end
         continue
       }
@@ -439,6 +452,12 @@ export function specificity(selector: string): Specificity {
     }
     if (isIdentifierStart(character)) {
       const end = identifierEnd(selector, index)
+      // A namespace prefix is not a type selector and contributes no
+      // specificity. `svg|a` has one type component, while `svg|*` has none.
+      if (selector[end] === '|') {
+        index = end + 1
+        continue
+      }
       // `*` and the combinators contribute nothing; a bare identifier is a type.
       types += 1
       index = end

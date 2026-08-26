@@ -39,6 +39,16 @@ describe('profile resolution', () => {
     expect(resolver.forSelector(inherited, '.app-button', '/src/bundle.css').name).toBe('app')
   })
 
+  it('does not promote escaped class punctuation into a route selector', () => {
+    const resolver = resolverFor([{ profile: 'vendor', selector: ':hover' }])
+    const inherited = resolver.forFile('/src/bundle.css')
+
+    expect(resolver.forSelector(inherited, String.raw`.foo\3a hover`, '/src/bundle.css').name).toBe(
+      'app',
+    )
+    expect(resolver.forSelector(inherited, '.foo:hover', '/src/bundle.css').name).toBe('vendor')
+  })
+
   it('requires both to match when a route names a file and a selector', () => {
     const resolver = resolverFor([{ profile: 'vendor', selector: ['.vd-'], file: /bundle/ }])
     const inherited = resolver.forFile('/src/page.css')
