@@ -108,6 +108,29 @@ describe('a second pass over compiled output', () => {
     expect(await compile(once, options)).toBe(once)
   })
 
+  it('does not reinterpret a bare compatibility output unit as design input', async () => {
+    const options = {
+      ...base,
+      profiles: { app: { designWidth: 750 } },
+      strategy: 'viewport',
+      unitToConvert: ['px', 'vw'],
+    } satisfies AdaptiveMatrixOptions
+    const once = await compile('.a { width: 75px }', options)
+
+    expect(once).toContain('10vw')
+    expect(await compile(once, options)).toBe(once)
+  })
+
+  it('still converts between distinct explicitly configured units', async () => {
+    const options = {
+      ...base,
+      profiles: { app: { designWidth: 100, unit: 'cqi' } },
+      unitToConvert: ['vw'],
+    } satisfies AdaptiveMatrixOptions
+
+    expect(await compile('.a { width: 10vw }', options)).toContain('calc(10cqi)')
+  })
+
   it('continues after a precompiled foundation concatenated before app CSS', async () => {
     const options = { ...base, root: { selector: '#app' } }
     const dependency = await compile('.dependency { width: 16px }', options)

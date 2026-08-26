@@ -91,6 +91,8 @@ By default only `px` is read. An array reads several units at once, which atomic
 unitToConvert: ['px', 'rem']
 ```
 
+The current profile's output unit is always treated as already converted, even if it also appears in `unitToConvert`. This lets compatibility-mode bare `vw` survive another build. Other pairs remain meaningful: a profile emitting `cqi` may still read authored `vw` when explicitly configured to do so.
+
 There is exactly one conversion rule between units: **`rem` becomes pixels via `rootValue`; every other unit is read at face value.**
 
 Every listed unit must be an unescaped CSS identifier (`px`, `rem`, `rpx`, `dp`, etc.). A percentage is not a unit token, and punctuation or whitespace cannot occur inside one; values such as `%`, `px|rem`, or `two words` are rejected instead of being compiled into a misleading regular expression.

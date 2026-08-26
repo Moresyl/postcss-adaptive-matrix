@@ -91,6 +91,8 @@ rootValue?: number                           // 默认 16
 unitToConvert: ['px', 'rem']
 ```
 
+当前 profile 的输出单位始终视为已经转换，即使它也出现在 `unitToConvert` 中。这样兼容模式输出的裸 `vw` 才能安全经过下一次构建。其他单位组合仍有意义：显式配置后，输出 `cqi` 的 profile 仍可读取作者写下的 `vw`。
+
 单位之间的换算规则只有一条：**`rem` 按 `rootValue` 折成像素，其它单位按面值读。**
 
 列表中的每个单位都必须是未转义 CSS 标识符（如 `px`、`rem`、`rpx`、`dp`）。百分比不是单位 token，单位内部也不能有标点或空白；`%`、`px|rem`、`two words` 这类值会直接被拒绝，不会被编成含义误导的正则。

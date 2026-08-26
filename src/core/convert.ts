@@ -407,6 +407,7 @@ function convertResolvedValue(
 ): { value: string; generatedBounds: boolean } {
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
+  const outputUnit = (profile.unit ?? options.unit).toLowerCase()
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
   let generatedBounds = false
   parsed.walk((node) => {
@@ -416,6 +417,12 @@ function convertResolvedValue(
     node.value = node.value.replace(
       pattern,
       (match, prefix: string, number: string, unit: string) => {
+        // The unit this profile emits is already in its target coordinate
+        // system. Reading it back as an authored design measurement breaks a
+        // second pass in bare viewport mode (`10vw` becomes `1.333vw`) and is
+        // conceptually wrong on the first pass too. A different configured
+        // output unit still permits an intentional `vw` -> `cqi` conversion.
+        if (unit.toLowerCase() === outputUnit) return match
         // Guarded in pixels, not in authored numbers: `minPixelValue` and
         // `hairline` describe how small a thing is on screen, and `0.0625rem`
         // is the same hairline as `1px` however it was written.

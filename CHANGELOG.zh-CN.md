@@ -6,6 +6,7 @@
 
 ### 正确性与诊断
 
+- 当前 profile 的输出单位不再被同一 profile 重新当作设计稿输入单位读取。即使 `unitToConvert` 同时列出 `vw`/`vi`/`cqw`/`cqi`，裸值 `strategy: 'viewport'` 产物也保持幂等；配置成不同目标单位时，显式的单位间转换仍然有效。
 - `LibraryAdaptation` 现在直接表达两种合法形状：继承条目只要求 `extends`，独立自定义库仍要求 `name` 与 `designWidth`。显式把 `{ extends: 'vant' }` 标成该类型时，TypeScript 不再强迫填写运行时、Schema 与文档本就会继承的字段。
 - 死区间诊断现在要求转换确实新增了 `clamp()`/`min()`/`max()` 边界。用 `calc(<rem>)` 标记的静态文字和用 `calc(<视口长度>)` 标记的无边界输出，并不是被 profile 流体区间钉死的表达式，因此不再给出误导性的画布路由告警。
 - 经不同倍率组件库画布路由的静态文字，在 `rem` 同时作为输入单位时现在仍保持幂等。生成结果携带结构化的 `calc(<rem>)` 标记，消费端第二次构建不会再把 `2rem` 静默重复锚定成 `4rem`。
