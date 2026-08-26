@@ -3,6 +3,7 @@
 // development, which does not need one.
 import { readFile } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
+import { StringDecoder } from 'node:string_decoder'
 import { pathToFileURL } from 'node:url'
 import postcss, {
   type AtRule,
@@ -319,17 +320,21 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
 }
 
 async function readStdin(): Promise<string> {
-  const chunks: (Buffer | string)[] = []
+  let output = ''
+  let decoder = new StringDecoder('utf8')
   for await (const chunk of process.stdin) {
     // Node streams yield Buffers by default, but a host may have called
     // setEncoding('utf8') before invoking the exported runCli(). Supporting
     // both avoids making the otherwise optional stdin path depend on stream
     // ownership details.
-    chunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk as Uint8Array))
+    if (typeof chunk === 'string') {
+      output += decoder.end() + chunk
+      decoder = new StringDecoder('utf8')
+    } else {
+      output += decoder.write(Buffer.from(chunk as Uint8Array))
+    }
   }
-  return chunks
-    .map((chunk) => (typeof chunk === 'string' ? chunk : chunk.toString('utf8')))
-    .join('')
+  return output + decoder.end()
 }
 
 /**
