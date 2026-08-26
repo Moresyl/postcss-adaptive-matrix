@@ -664,7 +664,9 @@ function sourcePathDependency(
   if (input.include !== undefined) return 'include'
   if (input.exclude !== undefined) return 'exclude'
   const routes = toArray<AdaptiveRoute>(input.routes)
-  if (routes.some((route) => route.file !== undefined)) return 'routes[].file'
+  if (routes.some((route) => route.file !== undefined)) {
+    return Array.isArray(input.routes) ? 'routes[].file' : 'routes.file'
+  }
   if (typeof input.root === 'object' && input.root.injectTo !== undefined) return 'root.injectTo'
   if (typeof input.rootValue === 'function') return 'rootValue'
   for (const [name, profile] of Object.entries(input.profiles ?? {})) {

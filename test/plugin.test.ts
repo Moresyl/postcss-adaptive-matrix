@@ -39,7 +39,7 @@ describe('adaptiveMatrix', () => {
     it.each([
       ['include', { include: 'src/' }],
       ['exclude', { exclude: 'vendor/' }],
-      ['routes[].file', { routes: { profile: 'pc', file: 'desktop/' } }],
+      ['routes.file', { routes: { profile: 'pc', file: 'desktop/' } }],
       ['root.injectTo', { root: { injectTo: 'styles/main' } }],
     ] satisfies [string, AdaptiveMatrixOptions][])(
       'warns when %s actually needs from',

@@ -104,7 +104,7 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ unitToConvert: null } as never)).toThrow(
       /unitToConvert must be a unit string or an array/,
     )
-    expect(() => resolveOptions({ routes: 16 as never })).toThrow(/routes\[0\] must be an object/)
+    expect(() => resolveOptions({ routes: 16 as never })).toThrow(/routes must be an object/)
     expect(resolveOptions({ propList: 'width' }).propList).toEqual(['width'])
     expect(resolveOptions({ textProperties: 'font-size' }).textProperties).toEqual(['font-size'])
     expect(resolveOptions({ selectorExclude: '.fixed' }).selectorExclude).toEqual(['.fixed'])
@@ -112,10 +112,16 @@ describe('configuration validation', () => {
     expect(
       resolveOptions({ libraries: false, routes: { profile: 'app', selector: '.a' } }).routes,
     ).toEqual([{ profile: 'app', selector: '.a' }])
+    expect(() =>
+      resolveOptions({ routes: { profile: 'app', property: /token/ as never } }),
+    ).toThrow(/routes\.property received the regular expression/)
+    expect(() =>
+      resolveOptions({ routes: { profile: 'app', media: { maxWidht: 480 } } as never }),
+    ).toThrow(/routes\.media\.maxWidht.*Did you mean "maxWidth"/)
     expect(() => resolveOptions({ routes: [{}] as never })).toThrow(/routes\[0\]\.profile/)
     expect(() =>
       resolveOptions({ routes: [{ profile: 'app', media: { width: 320 } }] as never }),
-    ).toThrow(/routes\[0\]\.media\[0\]\.width/)
+    ).toThrow(/routes\[0\]\.media\.width/)
   })
 
   it.each([
@@ -158,7 +164,7 @@ describe('configuration validation', () => {
     ],
     [
       { routes: [{ profile: 'app', media: { minWidth: 320, maxWidht: 480 } }] },
-      /routes\[0\]\.media\[0\]\.maxWidht.*Did you mean "maxWidth"/,
+      /routes\[0\]\.media\.maxWidht.*Did you mean "maxWidth"/,
     ],
     [
       { root: { selector: '#app', containerNme: 'page' } },

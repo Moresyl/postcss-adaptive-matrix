@@ -24,6 +24,7 @@
 - 只有宽度的 profile 现在可直接写 `designWidth`（`profiles: { mobile: 375 }`），也支持按文件解析的函数；只有确实存在覆盖项时才需要对象形式。
 - `root.containerName` 现在会自行启用容器模式，不再要求重复填写 `container: true`；若显式冲突为 `container: false`，会在生成 CSS 前直接报错。
 - profile 的 `query.name` 现在同样会推断 `type: 'container'`；命名容器查询只需名称和条件，显式冲突的媒体类型会被拒绝。
+- 单条路由的诊断现在使用真实书写路径（`routes.media`、`routes.property`、`routes.file`），不再虚构 `[0]`；真正的路由数组仍保留下标定位。
 - `from` 不再被写成无条件必填项：普通转换以及 selector/property/media 路由无需它；只有显式配置路径匹配却缺少源路径时，才会给出一次精准告警。Taro 指引也改为仅在构建确实使用 `@adaptive` 时要求 `query: false`，`minPixelValue` 的公开说明则统一为实现中的严格“小于”边界。
 - 死区间发现现在归属到实际完成转换的声明，并携带真实的 selector/property 路由画布与媒体区间。嵌套子规则不再让未转换的父规则按错误画布告警；经 property 路由的 token 会按自己的 profile 判断并给出 property 路由建议；写在规则内部嵌套媒体查询中的声明也不再漏诊。显式 `@adaptive` 选中的画布不会再收到根本无法覆盖它的 route 建议。
 - 性质测试现在覆盖省略边界、仅最小边界、仅最大边界在多种画布、正负布局长度、可缩放文字、边界两侧及完整二次编译下的行为。

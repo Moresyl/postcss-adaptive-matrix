@@ -195,8 +195,7 @@ function requireBoolean(name: string, value: unknown): void {
   }
 }
 
-function validateRouteShape(route: unknown, index: number): void {
-  const path = `routes[${index}]`
+function validateRouteShape(route: unknown, path: string): void {
   if (!isObject(route)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] ${path} must be an object, not ${valueKind(route)}.`,
@@ -213,44 +212,47 @@ function validateRouteShape(route: unknown, index: number): void {
   }
   if (route.file !== undefined) requireFileMatchers(`${path}.file`, route.file)
   if (route.selector !== undefined) {
-    const selectors = Array.isArray(route.selector) ? route.selector : [route.selector]
-    requirePatterns(`${path}.selector`, selectors)
-    if (!selectors.length) {
+    requirePatterns(`${path}.selector`, route.selector)
+    if (Array.isArray(route.selector) && !route.selector.length) {
       throw new TypeError(`[postcss-adaptive-matrix] ${path}.selector cannot be an empty array.`)
     }
   }
   if (route.property !== undefined) {
-    const properties = Array.isArray(route.property) ? route.property : [route.property]
+    const propertyArray = Array.isArray(route.property)
+    const properties: readonly unknown[] = Array.isArray(route.property)
+      ? route.property
+      : [route.property]
     if (!properties.length) {
       throw new TypeError(`[postcss-adaptive-matrix] ${path}.property cannot be an empty array.`)
     }
     for (const [propertyIndex, prefix] of properties.entries()) {
+      const propertyPath = propertyArray ? `${path}.property[${propertyIndex}]` : `${path}.property`
       if (typeof prefix !== 'string') {
         throw new TypeError(
           `[postcss-adaptive-matrix] Route property takes custom-property prefixes as strings, ` +
-            `such as '--van-'. ${path}.property[${propertyIndex}] received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : valueKind(prefix)}. ` +
+            `such as '--van-'. ${propertyPath} received ${prefix instanceof RegExp ? `the regular expression ${String(prefix)}` : valueKind(prefix)}. ` +
             `Matching is by prefix and case-sensitive, like custom-property names in CSS; list several prefixes to cover several token families.`,
         )
       }
       if (!prefix.trim()) {
-        throw new TypeError(
-          `[postcss-adaptive-matrix] ${path}.property[${propertyIndex}] cannot be empty.`,
-        )
+        throw new TypeError(`[postcss-adaptive-matrix] ${propertyPath} cannot be empty.`)
       }
     }
   }
   if (route.media !== undefined) {
-    const matchers = Array.isArray(route.media) ? route.media : [route.media]
+    const mediaArray = Array.isArray(route.media)
+    const matchers: readonly unknown[] = Array.isArray(route.media) ? route.media : [route.media]
     if (!matchers.length) {
       throw new TypeError(`[postcss-adaptive-matrix] ${path}.media cannot be an empty array.`)
     }
     for (const [matcherIndex, matcher] of matchers.entries()) {
+      const mediaPath = mediaArray ? `${path}.media[${matcherIndex}]` : `${path}.media`
       if (!isObject(matcher)) {
         throw new TypeError(
-          `[postcss-adaptive-matrix] ${path}.media[${matcherIndex}] must be an object, not ${valueKind(matcher)}.`,
+          `[postcss-adaptive-matrix] ${mediaPath} must be an object, not ${valueKind(matcher)}.`,
         )
       }
-      rejectUnknownKeys(`${path}.media[${matcherIndex}]`, matcher, MEDIA_KEYS)
+      rejectUnknownKeys(mediaPath, matcher, MEDIA_KEYS)
     }
   }
   if (
@@ -346,8 +348,11 @@ function validateInputShape(input: unknown): void {
     throw new TypeError('[postcss-adaptive-matrix] defaultProfile must be a non-empty string.')
   }
   if (input.routes !== undefined) {
-    const routes = Array.isArray(input.routes) ? input.routes : [input.routes]
-    routes.forEach(validateRouteShape)
+    if (Array.isArray(input.routes)) {
+      input.routes.forEach((route, index) => validateRouteShape(route, `routes[${index}]`))
+    } else {
+      validateRouteShape(input.routes, 'routes')
+    }
   }
   for (const field of ['textProperties', 'propList'] as const) {
     if (input[field] !== undefined) requireStrings(field, input[field])
