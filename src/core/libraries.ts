@@ -1,6 +1,6 @@
 import { toArray } from './matchers.js'
 import { isCssIdentifier } from './syntax.js'
-import { rejectUnknownKeys } from './validation.js'
+import { isPlainObject, rejectUnknownKeys } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -320,7 +320,7 @@ export function resolveLibrary(entry: LibraryEntry): ResolvedLibraryAdaptation {
     return withoutRegistryFields(found)
   }
 
-  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+  if (!isPlainObject(entry)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] A library entry must be a built-in name or options object, not ${libraryValueKind(entry)}.`,
     )

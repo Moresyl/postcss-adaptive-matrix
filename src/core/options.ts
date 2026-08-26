@@ -7,7 +7,7 @@ import {
   isCssIdentifier,
   isCssLayerName,
 } from './syntax.js'
-import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
+import { isPlainObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
 import type {
   AdaptiveMatrixOptions,
   AdaptiveProfile,
@@ -196,7 +196,7 @@ function requireBoolean(name: string, value: unknown): void {
 }
 
 function validateRouteShape(route: unknown, path: string): void {
-  if (!isObject(route)) {
+  if (!isPlainObject(route)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] ${path} must be an object, not ${valueKind(route)}.`,
     )
@@ -258,7 +258,7 @@ function validateRouteShape(route: unknown, path: string): void {
     }
     for (const [matcherIndex, matcher] of matchers.entries()) {
       const mediaPath = mediaArray ? `${path}.media[${matcherIndex}]` : `${path}.media`
-      if (!isObject(matcher)) {
+      if (!isPlainObject(matcher)) {
         throw new TypeError(
           `[postcss-adaptive-matrix] ${mediaPath} must be an object, not ${valueKind(matcher)}.`,
         )
@@ -280,7 +280,7 @@ function validateRouteShape(route: unknown, path: string): void {
 
 function validateRootShape(root: unknown): void {
   if (root === undefined || typeof root === 'boolean') return
-  if (!isObject(root)) {
+  if (!isPlainObject(root)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] root must be true, false or an options object, not ${valueKind(root)}.`,
     )
@@ -341,13 +341,13 @@ function validateRootShape(root: unknown): void {
 }
 
 function validateInputShape(input: unknown): void {
-  if (!isObject(input)) {
+  if (!isPlainObject(input)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] Options must be an object, not ${valueKind(input)}.`,
     )
   }
   rejectUnknownKeys('options', input, OPTION_KEYS)
-  if (input.profiles !== undefined && !isObject(input.profiles)) {
+  if (input.profiles !== undefined && !isPlainObject(input.profiles)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] profiles must be an object keyed by profile name, not ${valueKind(input.profiles)}.`,
     )
@@ -417,13 +417,13 @@ function validateUnitAndStrategy(
 }
 
 function validateProfile(name: string, profile: AdaptiveProfile): void {
-  if (!isObject(profile)) {
+  if (!isPlainObject(profile)) {
     throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" must be an object.`)
   }
   const path = `profiles[${JSON.stringify(name)}]`
   rejectUnknownKeys(path, profile, PROFILE_KEYS)
   if (profile.fluid !== undefined) {
-    if (!isObject(profile.fluid)) {
+    if (!isPlainObject(profile.fluid)) {
       throw new TypeError(`[postcss-adaptive-matrix] Profile "${name}" fluid must be an object.`)
     }
     rejectUnknownKeys(`${path}.fluid`, profile.fluid, FLUID_KEYS)
@@ -489,7 +489,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
       queryCondition = profile.query
       queryPath = 'query'
     } else {
-      if (!isObject(profile.query)) {
+      if (!isPlainObject(profile.query)) {
         throw new TypeError(
           `[postcss-adaptive-matrix] Profile "${name}" query must be a string, query object or false.`,
         )

@@ -6,7 +6,13 @@ import type {
 } from './types.js'
 import { toArray } from './matchers.js'
 import { isCssIdentifier, isCssLayerName } from './syntax.js'
-import { isObject, rejectUnknownKeys, requireFileMatchers, valueKind } from './validation.js'
+import {
+  isObject,
+  isPlainObject,
+  rejectUnknownKeys,
+  requireFileMatchers,
+  valueKind,
+} from './validation.js'
 
 const APP_PC_PRESET_KEYS = [
   'appDesignWidth',
@@ -54,7 +60,7 @@ function requireOptionsObject(
   name: string,
   value: unknown,
 ): asserts value is Record<string, unknown> {
-  if (!isObject(value)) {
+  if (!isPlainObject(value)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] ${name} must be an options object, not ${valueKind(value)}.`,
     )

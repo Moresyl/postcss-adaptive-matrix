@@ -168,6 +168,25 @@ describe('configuration validation', () => {
       /unitToConvert must be a unit string or an array/,
     )
     expect(() => resolveOptions({ routes: 16 as never })).toThrow(/routes must be an object/)
+    for (const input of [new Date(), new Map(), Promise.resolve()]) {
+      expect(() => resolveOptions(input as never), input.constructor.name).toThrow(
+        /Options must be an object/,
+      )
+    }
+    expect(() => resolveOptions({ profiles: new Map() as never })).toThrow(
+      /profiles must be an object/,
+    )
+    expect(() => resolveOptions({ root: new Date() as never })).toThrow(
+      /root must be true, false or an options object/,
+    )
+    expect(() =>
+      resolveOptions({ routes: { profile: 'app', media: new Date() as never } }),
+    ).toThrow(/routes\.media must be an object/)
+
+    const nullPrototype = Object.assign(Object.create(null) as Record<string, unknown>, {
+      precision: 4,
+    })
+    expect(resolveOptions(nullPrototype).precision).toBe(4)
     expect(resolveOptions({ propList: 'width' }).propList).toEqual(['width'])
     expect(resolveOptions({ textProperties: 'font-size' }).textProperties).toEqual(['font-size'])
     expect(resolveOptions({ selectorExclude: '.fixed' }).selectorExclude).toEqual(['.fixed'])

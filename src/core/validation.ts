@@ -14,6 +14,16 @@ export function isObject(value: unknown): value is Record<string, unknown> {
   )
 }
 
+/** A configuration record, excluding Date/Map/Promise/class instances. */
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!isObject(value)) return false
+  const prototype = Object.getPrototypeOf(value) as { constructor?: { name?: unknown } } | null
+  // Constructor-name comparison keeps ordinary records from another realm
+  // usable while rejecting host/exotic objects whose enumerable surface would
+  // otherwise look exactly like an empty configuration.
+  return prototype === null || prototype.constructor?.name === 'Object'
+}
+
 export function requireFileMatchers(name: string, value: unknown): void {
   const entries = Array.isArray(value) ? value : [value]
   if (!entries.length) {
