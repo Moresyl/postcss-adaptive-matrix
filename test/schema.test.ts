@@ -155,6 +155,10 @@ describe('the published options schema', () => {
     const rootObject = (options.root!.oneOf as Subschema[])[0]!
     expect(rootObject.required).toBeUndefined()
     expect(rootObject.properties!.selector!.default).toBe(':root')
+    expect(rootObject.not).toEqual({
+      required: ['containerName', 'container'],
+      properties: { container: { const: false } },
+    })
     expect(options.root!.oneOf).toEqual(expect.arrayContaining([{ const: true }, { const: false }]))
     const route = (options.routes!.oneOf as Subschema[])[0]!
     expect(route.required).toEqual(['profile'])

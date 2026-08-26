@@ -271,7 +271,6 @@ export function appPcPreset(options: AppPcPresetOptions = {}): AdaptiveMatrixOpt
           selector: options.rootSelector ?? ':root',
           center: true,
           container: options.container ?? false,
-          containerName: 'adaptive-root',
           safeAreaVariables: true,
           layer: options.rootLayer ?? 'adaptive-matrix',
           ...(options.rootLogical === undefined ? {} : { logical: options.rootLogical }),

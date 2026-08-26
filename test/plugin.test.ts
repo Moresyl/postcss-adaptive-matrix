@@ -696,6 +696,18 @@ describe('presets and foundation', () => {
     expect(shorthand.css).toContain(':where(:root)')
   })
 
+  it('lets a container name enable the container without a redundant flag', async () => {
+    const result = await process('.a { width: 10px }', {
+      libraries: false,
+      root: { containerName: 'page' },
+    })
+
+    expect(result.css).toContain('container: page / inline-size')
+    expect(() => adaptiveMatrix({ root: { container: false, containerName: 'page' } })).toThrow(
+      /containerName cannot be used with container: false/,
+    )
+  })
+
   it('injects an opt-in centered root, safe-area variables, and profile caps', async () => {
     const result = await process('.a { width: 10px }', appPcPreset({ rootSelector: '#app' }))
     expect(result.css).toContain('@layer adaptive-matrix')

@@ -315,7 +315,7 @@ interface RootFoundationOptions {
 
 `root` 内没有必填成员。没有需要定制的信息时优先写 `root: true`，`root: {}` 仍完全等价；只有布局实际由 `#app` 等其他元素承载时才需要填写 `selector`。
 
-`containerName` 必须是非保留 CSS custom-ident；`layer` 必须是 `adaptive-matrix`、`framework.layout` 这类单个点分层名。空格、逗号、空片段或 CSS-wide 关键字都会在生成非法 `container-name` / `@layer` 前被拒绝。命名容器 profile 的 `query.name` 遵守同一 custom-ident 规则。
+`containerName` 必须是非保留 CSS custom-ident；只要提供名称就会自动启用 `container`，命名容器无需重复写 `container: true`，若同时显式写 `container: false` 则会报配置冲突。`layer` 必须是 `adaptive-matrix`、`framework.layout` 这类单个点分层名。空格、逗号、空片段或 CSS-wide 关键字都会在生成非法 `container-name` / `@layer` 前被拒绝。命名容器 profile 的 `query.name` 遵守同一 custom-ident 规则。
 
 `selector` 会被放进 `:where(...)`；因此显式传入时也遵守同一结构守卫：字符串、注释、括号及属性方括号必须闭合，未转义花括号或顶层分号会在生成 foundation 前被拒绝。
 

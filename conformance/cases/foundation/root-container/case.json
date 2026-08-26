@@ -3,7 +3,6 @@
   "options": {
     "root": {
       "selector": "#app",
-      "container": true,
       "containerName": "shell"
     }
   }

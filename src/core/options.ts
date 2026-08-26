@@ -294,6 +294,11 @@ function validateRootShape(root: unknown): void {
       `[postcss-adaptive-matrix] root.containerName "${root.containerName}" is not a valid non-reserved unescaped CSS custom identifier.`,
     )
   }
+  if (root.containerName !== undefined && root.container === false) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] root.containerName cannot be used with container: false; the name itself enables the container.',
+    )
+  }
   if (root.layer !== undefined && root.layer !== false && typeof root.layer !== 'string') {
     throw new TypeError(
       `[postcss-adaptive-matrix] root.layer must be a string or false, not ${valueKind(root.layer)}.`,
@@ -556,7 +561,13 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       ? false
       : input.root === true
         ? { selector: ':root' }
-        : { ...input.root, selector: input.root.selector ?? ':root' }
+        : {
+            ...input.root,
+            selector: input.root.selector ?? ':root',
+            ...(input.root.containerName !== undefined && input.root.container === undefined
+              ? { container: true }
+              : {}),
+          }
   const options: ResolvedAdaptiveMatrixOptions = {
     ...DEFAULTS,
     ...input,

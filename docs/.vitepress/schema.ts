@@ -545,6 +545,10 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
       {
         type: 'object',
         properties: ROOT,
+        not: {
+          required: ['containerName', 'container'],
+          properties: { container: { const: false } },
+        },
         additionalProperties: false,
       },
       { const: true },

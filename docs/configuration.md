@@ -315,7 +315,7 @@ No global styles are injected by default. `root: true` enables the main plugin's
 
 `root` itself has no required members. Prefer `root: true` when there is nothing to customise; `root: {}` remains equivalent. Set `selector` only when the layout is carried by another element such as `#app`.
 
-`containerName` must be a non-reserved CSS custom identifier. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
+`containerName` must be a non-reserved CSS custom identifier. Providing it automatically enables `container`, so a named container needs no redundant `container: true`; pairing it with an explicit `container: false` is a configuration error. `layer` is one dot-separated layer name such as `adaptive-matrix` or `framework.layout`; a space, comma, empty segment or CSS-wide keyword is rejected before it can produce an invalid `container-name` / `@layer` rule. A named container profile's `query.name` follows the same custom-identifier rule.
 
 `selector` is inserted inside `:where(...)`, so an explicitly supplied selector uses the same structural guard: strings, comments, parentheses and attribute brackets must close, and unescaped braces or a top-level semicolon are rejected before the foundation is generated.
 
