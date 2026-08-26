@@ -89,15 +89,10 @@ describe('configuration validation', () => {
     expect(() => resolveOptions({ routes: {} as never })).toThrow(
       /routes must be an array, not object/,
     )
-    expect(() => resolveOptions({ propList: 'width' as never })).toThrow(
-      /propList must be an array, not string/,
-    )
-    expect(() => resolveOptions({ textProperties: 'font-size' as never })).toThrow(
-      /textProperties must be an array, not string/,
-    )
-    expect(() => resolveOptions({ selectorExclude: '.fixed' as never })).toThrow(
-      /selectorExclude must be an array, not string/,
-    )
+    expect(resolveOptions({ propList: 'width' }).propList).toEqual(['width'])
+    expect(resolveOptions({ textProperties: 'font-size' }).textProperties).toEqual(['font-size'])
+    expect(resolveOptions({ selectorExclude: '.fixed' }).selectorExclude).toEqual(['.fixed'])
+    expect(resolveOptions({ valueExclude: /fixed/ }).valueExclude).toEqual([/fixed/])
     expect(() => resolveOptions({ routes: [{}] as never })).toThrow(/routes\[0\]\.profile/)
     expect(() =>
       resolveOptions({ routes: [{ profile: 'app', media: { width: 320 } }] as never }),

@@ -480,36 +480,31 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     maximum: 1,
     default: DEFAULTS.fontFluidity,
   },
-  textProperties: {
-    description: 'Properties written with the text formula. Entries may end in `*`.',
-    'x-description-zh': '按文字公式书写的属性。条目末尾可用 `*` 通配。',
-    type: 'array',
-    items: { type: 'string' },
-    default: DEFAULTS.textProperties,
-  },
+  textProperties: oneOrMany(
+    { type: 'string' },
+    {
+      description: 'Properties written with the text formula. Entries may end in `*`.',
+      'x-description-zh': '按文字公式书写的属性。条目末尾可用 `*` 通配。',
+      default: DEFAULTS.textProperties,
+    },
+  ),
   propList: {
     description:
       'Properties to convert. `*` matches everything, a leading `!` excludes, and a list of nothing but exclusions is rejected.',
     'x-description-zh': '要转换的属性。`*` 匹配全部，前置 `!` 表示排除；全是排除项的列表会被拒绝。',
-    type: 'array',
-    items: { type: 'string' },
-    minItems: 1,
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' }, minItems: 1 }],
     default: DEFAULTS.propList,
   },
-  selectorExclude: {
+  selectorExclude: oneOrMany(PATTERN, {
     description: 'Selectors left untouched.',
     'x-description-zh': '不做处理的选择器。',
-    type: 'array',
-    items: PATTERN,
     default: [],
-  },
-  valueExclude: {
+  }),
+  valueExclude: oneOrMany(PATTERN, {
     description: 'Declaration values left untouched.',
     'x-description-zh': '不做处理的声明值。',
-    type: 'array',
-    items: PATTERN,
     default: [],
-  },
+  }),
   include: oneOrMany(FILE_MATCHER, {
     description: 'Restricts the plugin to matching files.',
     'x-description-zh': '把插件限制在匹配的文件上。',

@@ -35,6 +35,8 @@ Most configurations require no user-supplied fields because the built-in preset 
 
 String file matchers are separator-portable: `src/components/` also matches `C:\\repo\\src\\components\\card.css`, and a backslash spelling also matches a POSIX path. Regular expressions and predicate functions receive the original path unchanged, so existing host-specific logic keeps its exact contract.
 
+List-shaped filters accept one item directly. `propList: 'width'`, `textProperties: 'font-size'`, `selectorExclude: '.legacy'`, and `valueExclude: /fixed/` are equivalent to one-element arrays; arrays are needed only for multiple entries.
+
 `propList` example:
 
 ```js
@@ -57,7 +59,7 @@ A configuration usually lives in a `.mjs` file with no type checking behind it, 
 | `atRuleName: ' canvas '` | Normalised to `canvas`; otherwise validation would pass while no `@canvas` block ever matched |
 | `fontFluidity: NaN` / `rootMaxWidth: Infinity` | Writes `NaNrem` or `Infinitypx`; the declaration is invalid and the browser drops it |
 | `query: { type: 'media' }` | Writes `@media undefined`, an invalid wrapper around otherwise valid rules |
-| `propList: 'width'` | A JavaScript/JSON shape error that would otherwise escape later as an internal `.every is not a function` |
+| `propList: 16` | A JavaScript/JSON shape error that would otherwise escape later as an internal `.every is not a function` |
 | `minPixeValue: 2` | An unknown field that would otherwise be spread into the options and ignored; the error suggests `minPixelValue` |
 | `root.selector: ''` | Compiles to `:where()`, which is a parse error — the whole foundation, safe-area variables included, is discarded |
 | `textAnchorWidth: 0` | Division by zero, turning every text length into `Infinity` |

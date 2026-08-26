@@ -1,4 +1,5 @@
 import { LIBRARY_PROFILE_PREFIX, expandLibraries, resolveLibraries } from './libraries.js'
+import { toArray } from './matchers.js'
 import { appPcPreset } from './presets.js'
 import {
   cssComponentValueStructureIssue,
@@ -137,30 +138,32 @@ function requireArray(name: string, value: unknown): asserts value is readonly u
   }
 }
 
-function requireStringArray(name: string, value: unknown): void {
-  requireArray(name, value)
-  for (const [index, entry] of value.entries()) {
+function requireStrings(name: string, value: unknown): void {
+  const entries = Array.isArray(value) ? value : [value]
+  for (const [index, entry] of entries.entries()) {
+    const path = Array.isArray(value) ? `${name}[${index}]` : name
     if (typeof entry !== 'string') {
       throw new TypeError(
-        `[postcss-adaptive-matrix] ${name}[${index}] must be a string, not ${valueKind(entry)}.`,
+        `[postcss-adaptive-matrix] ${path} must be a string, not ${valueKind(entry)}.`,
       )
     }
     if (!entry.trim()) {
-      throw new TypeError(`[postcss-adaptive-matrix] ${name}[${index}] cannot be empty.`)
+      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
     }
   }
 }
 
 function requirePatterns(name: string, value: unknown): void {
-  requireArray(name, value)
-  for (const [index, entry] of value.entries()) {
+  const entries = Array.isArray(value) ? value : [value]
+  for (const [index, entry] of entries.entries()) {
+    const path = Array.isArray(value) ? `${name}[${index}]` : name
     if (typeof entry !== 'string' && !(entry instanceof RegExp)) {
       throw new TypeError(
-        `[postcss-adaptive-matrix] ${name}[${index}] must be a string or regular expression, not ${valueKind(entry)}.`,
+        `[postcss-adaptive-matrix] ${path} must be a string or regular expression, not ${valueKind(entry)}.`,
       )
     }
     if (typeof entry === 'string' && !entry.trim()) {
-      throw new TypeError(`[postcss-adaptive-matrix] ${name}[${index}] cannot be empty.`)
+      throw new TypeError(`[postcss-adaptive-matrix] ${path} cannot be empty.`)
     }
   }
 }
@@ -317,7 +320,7 @@ function validateInputShape(input: unknown): void {
     input.routes.forEach(validateRouteShape)
   }
   for (const field of ['textProperties', 'propList'] as const) {
-    if (input[field] !== undefined) requireStringArray(field, input[field])
+    if (input[field] !== undefined) requireStrings(field, input[field])
   }
   for (const field of ['selectorExclude', 'valueExclude'] as const) {
     if (input[field] !== undefined) requirePatterns(field, input[field])
@@ -546,6 +549,10 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     ...input,
     defaultProfile,
     unitToConvert: normaliseUnits(input.unitToConvert ?? DEFAULTS.unitToConvert),
+    textProperties: toArray(input.textProperties ?? DEFAULTS.textProperties),
+    propList: toArray(input.propList ?? DEFAULTS.propList),
+    selectorExclude: toArray(input.selectorExclude ?? DEFAULTS.selectorExclude),
+    valueExclude: toArray(input.valueExclude ?? DEFAULTS.valueExclude),
     libraries,
     profiles: authored,
     root,

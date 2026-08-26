@@ -372,6 +372,21 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain('margin: 99px')
   })
 
+  it('accepts one property or exclusion without a wrapper array', async () => {
+    const property = await process('.a { width: 16px; height: 16px }', { propList: 'width' })
+    const selector = await process('.skip { width: 16px } .keep { width: 16px }', {
+      selectorExclude: '.skip',
+    })
+    const value = await process('.a { width: 16px; height: 32px }', { valueExclude: /32px/ })
+
+    expect(property.css).toContain('width: clamp(')
+    expect(property.css).toContain('height: 16px')
+    expect(selector.css).toContain('.skip { width: 16px }')
+    expect(selector.css).toContain('.keep { width: clamp(')
+    expect(value.css).toContain('width: clamp(')
+    expect(value.css).toContain('height: 32px')
+  })
+
   it('keeps ignore directives, so they still apply on a second pass', async () => {
     const source = [
       '/* adaptive-ignore-rule */ .legacy { width: 50px }',
@@ -977,6 +992,9 @@ describe('withAtomicCss', () => {
     expect(narrowed.textProperties).toEqual(['font-size', '--text-*', '--leading-*'])
     // Idempotent, so wrapping an already-wrapped configuration is harmless.
     expect(withAtomicCss(narrowed).textProperties).toEqual(narrowed.textProperties)
+    const single = withAtomicCss({ textProperties: 'font-size' })
+    const normalised: string[] | undefined = single.textProperties
+    expect(normalised).toEqual(['font-size', '--text-*', '--leading-*'])
   })
 
   it('accepts extra token families and an explicit canvas', () => {

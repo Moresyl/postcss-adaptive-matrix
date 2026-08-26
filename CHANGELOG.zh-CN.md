@@ -13,6 +13,7 @@
 - `withAtomicCss()` 与 `defineConfig()` 不再要求传一个不承载任何信息的 `{}`；零参数形式直接使用既有默认值，原子 CSS 专属设置可直接写成 `withAtomicCss({ tokenPrefixes: [...] })`，包装真实配置时仍保留调用方的精确泛型类型。
 - `defineLibraries()` 在零参数调用时也会遵循主 `libraries` 配置的自动默认；只有显式列表、`'auto'` 或 `false` 真正表达选择时才需要传入。
 - `libraries` 与 `defineLibraries` 现在可直接接收一个内置名称或自定义条目，多个条目时仍用数组；默认 `'auto'` 与显式 `false` 含义不变，单库配置不再需要包一层数组。
+- `propList`、`textProperties`、`selectorExclude` 与 `valueExclude` 现在同样支持直接传一个条目或只读数组；解析后仍统一为可变数组，编译器热路径无需增加分支。
 - `from` 不再被写成无条件必填项：普通转换以及 selector/property/media 路由无需它；只有显式配置路径匹配却缺少源路径时，才会给出一次精准告警。Taro 指引也改为仅在构建确实使用 `@adaptive` 时要求 `query: false`，`minPixelValue` 的公开说明则统一为实现中的严格“小于”边界。
 - 死区间发现现在归属到实际完成转换的声明，并携带真实的 selector/property 路由画布与媒体区间。嵌套子规则不再让未转换的父规则按错误画布告警；经 property 路由的 token 会按自己的 profile 判断并给出 property 路由建议；写在规则内部嵌套媒体查询中的声明也不再漏诊。显式 `@adaptive` 选中的画布不会再收到根本无法覆盖它的 route 建议。
 - 性质测试现在覆盖省略边界、仅最小边界、仅最大边界在多种画布、正负布局长度、可缩放文字、边界两侧及完整二次编译下的行为。

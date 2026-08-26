@@ -291,10 +291,10 @@ export interface AdaptiveMatrixOptions {
   /** Values with an absolute size at or below this number stay in px. */
   hairline?: number
   fontFluidity?: number
-  textProperties?: readonly string[]
-  propList?: readonly string[]
-  selectorExclude?: readonly Pattern[]
-  valueExclude?: readonly Pattern[]
+  textProperties?: string | readonly string[]
+  propList?: string | readonly string[]
+  selectorExclude?: Pattern | readonly Pattern[]
+  valueExclude?: Pattern | readonly Pattern[]
   include?: FileMatcher | readonly FileMatcher[]
   exclude?: FileMatcher | readonly FileMatcher[]
   transformCustomProperties?: boolean
@@ -306,10 +306,22 @@ export interface AdaptiveMatrixOptions {
 
 export interface ResolvedAdaptiveMatrixOptions extends Omit<
   Required<AdaptiveMatrixOptions>,
-  'root' | 'include' | 'exclude' | 'libraries' | 'unitToConvert'
+  | 'root'
+  | 'include'
+  | 'exclude'
+  | 'libraries'
+  | 'unitToConvert'
+  | 'textProperties'
+  | 'propList'
+  | 'selectorExclude'
+  | 'valueExclude'
 > {
   /** Normalised to a list; a single unit resolves to a one-element array. */
   unitToConvert: string[]
+  textProperties: string[]
+  propList: string[]
+  selectorExclude: Pattern[]
+  valueExclude: Pattern[]
   root: ResolvedRootFoundationOptions | false
   include?: FileMatcher | readonly FileMatcher[]
   exclude?: FileMatcher | readonly FileMatcher[]

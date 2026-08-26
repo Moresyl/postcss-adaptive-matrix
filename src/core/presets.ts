@@ -189,12 +189,21 @@ function validateAtomicCssBase(value: unknown): asserts value is AdaptiveMatrixO
       `[postcss-adaptive-matrix] withAtomicCss base.unitToConvert "${value.unitToConvert.trim()}" is not a valid unescaped CSS unit identifier.`,
     )
   }
-  for (const field of ['routes', 'textProperties'] as const) {
+  for (const field of ['routes'] as const) {
     if (value[field] !== undefined && !Array.isArray(value[field])) {
       throw new TypeError(
         `[postcss-adaptive-matrix] withAtomicCss base.${field} must be an array, not ${valueKind(value[field])}.`,
       )
     }
+  }
+  if (
+    value.textProperties !== undefined &&
+    typeof value.textProperties !== 'string' &&
+    !Array.isArray(value.textProperties)
+  ) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] withAtomicCss base.textProperties must be a string or array, not ${valueKind(value.textProperties)}.`,
+    )
   }
 }
 
@@ -319,9 +328,13 @@ const THEME_TEXT_PROPERTIES = ['--text-*', '--leading-*']
  * adaptiveMatrix(withAtomicCss(appPcPreset({ rootSelector: '#app' })))
  * ```
  */
-type AtomicCssConfiguration<T extends AdaptiveMatrixOptions> = T & {
+type AtomicCssConfiguration<T extends AdaptiveMatrixOptions> = Omit<
+  T,
+  'unitToConvert' | 'routes' | 'textProperties'
+> & {
   unitToConvert: string[]
   routes: AdaptiveRoute[]
+  textProperties?: string[]
 }
 
 /** Zero-config atomic CSS adaptation, using the compiler's built-in canvases. */
@@ -366,6 +379,12 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
   if (!units.some((unit) => unit.toLowerCase() === 'rem')) units.push('rem')
 
   const prefixes = [...new Set([...THEME_TOKEN_PREFIXES, ...(options.tokenPrefixes ?? [])])]
+  const inheritedTextProperties =
+    base.textProperties === undefined
+      ? undefined
+      : typeof base.textProperties === 'string'
+        ? [base.textProperties]
+        : [...base.textProperties]
 
   return {
     ...base,
@@ -380,11 +399,11 @@ export function withAtomicCss<T extends AdaptiveMatrixOptions>(
       },
     ],
     // Only when the caller took the list over; the defaults already carry these.
-    ...(base.textProperties
+    ...(inheritedTextProperties
       ? {
           textProperties: [
-            ...base.textProperties,
-            ...THEME_TEXT_PROPERTIES.filter((entry) => !base.textProperties!.includes(entry)),
+            ...inheritedTextProperties,
+            ...THEME_TEXT_PROPERTIES.filter((entry) => !inheritedTextProperties.includes(entry)),
           ],
         }
       : {}),

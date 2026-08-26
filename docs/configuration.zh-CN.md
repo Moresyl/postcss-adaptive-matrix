@@ -35,6 +35,8 @@
 
 字符串文件匹配不受路径分隔符影响：`src/components/` 同样匹配 `C:\\repo\\src\\components\\card.css`，反斜杠写法也能匹配 POSIX 路径。正则与谓词函数仍收到未经修改的原始路径，已有的宿主平台逻辑不会被偷偷改写。
 
+列表型过滤器都可直接传单项：`propList: 'width'`、`textProperties: 'font-size'`、`selectorExclude: '.legacy'`、`valueExclude: /fixed/` 与单元素数组完全等价；只有多个条目才需要数组。
+
 `propList` 示例：
 
 ```js
@@ -57,7 +59,7 @@ propList: ['*', '!border*', '!box-shadow']
 | `atRuleName: ' canvas '` | 规范化为 `canvas`；否则校验虽然通过，却永远匹配不到任何 `@canvas` 块 |
 | `fontFluidity: NaN` / `rootMaxWidth: Infinity` | 输出 `NaNrem` 或 `Infinitypx`；声明无效并被浏览器丢弃 |
 | `query: { type: 'media' }` | 输出 `@media undefined`，把原本有效的规则包进无效查询 |
-| `propList: 'width'` | JavaScript/JSON 结构错误；不前置校验就会在深处泄漏 `.every is not a function` |
+| `propList: 16` | JavaScript/JSON 结构错误；不前置校验就会在深处泄漏 `.every is not a function` |
 | `minPixeValue: 2` | 未知字段；不拦截就会被混入选项后静默忽略，错误会建议 `minPixelValue` |
 | `root.selector: ''` | 编译成 `:where()`，这是解析错误——整段基础样式连同安全区变量一起被丢弃 |
 | `textAnchorWidth: 0` | 除零，文字长度整列变成 `Infinity` |

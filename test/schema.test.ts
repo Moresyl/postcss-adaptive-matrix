@@ -181,5 +181,9 @@ describe('the published options schema', () => {
     expect(options.minPixelValue!['x-description-zh']).toContain('小于')
     expect(options.minPixelValue!['x-description-zh']).not.toContain('等于')
     expect(options.rootValue!['x-also']).toBe('(context: { file: string }) => number')
+    for (const field of ['textProperties', 'selectorExclude', 'valueExclude']) {
+      expect(options[field]!.oneOf).toEqual(expect.arrayContaining([expect.any(Object)]))
+    }
+    expect(options.propList!.oneOf).toEqual(expect.arrayContaining([{ type: 'string' }]))
   })
 })
