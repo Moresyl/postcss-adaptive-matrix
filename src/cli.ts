@@ -20,6 +20,7 @@ import {
   resolveBrowser,
 } from './core/compat.js'
 import { type ContinuityIssue, findContinuityIssues } from './core/continuity.js'
+import { resolveRootValue } from './core/convert.js'
 import { LIBRARY_PROFILE_PREFIX } from './core/libraries.js'
 import { resolveOptions } from './core/options.js'
 import {
@@ -352,6 +353,7 @@ async function compile(
   source: string,
   from: string,
   options: AdaptiveMatrixOptions,
+  rootValue: number,
   targets?: Record<string, string>,
 ): Promise<{
   root: Root
@@ -387,7 +389,7 @@ async function compile(
     // canvases have been applied.
     // The seam check compares `rem` against `px`, so it has to measure them
     // with the same ruler the compiler wrote them with.
-    issues: findContinuityIssues(result.root, options.rootValue),
+    issues: findContinuityIssues(result.root, rootValue),
     // Audited from the compiled text rather than from the options, so that a
     // feature arriving through a preset, a library route or the authored CSS
     // itself is caught the same as one this compiler chose to emit. The
@@ -629,10 +631,15 @@ export async function runCli(argv: string[]): Promise<number> {
       // Read only the file being compiled. Large batches retain reports, not a
       // second in-memory copy of every source file at once.
       const source = input.source ?? (await readFile(input.from, 'utf8'))
+      // Resolve a functional ruler exactly once for this file. Passing the
+      // scalar into the plugin also guarantees conversion and the continuity
+      // gate measure rem values with the identical number.
+      const rootValue = resolveRootValue(resolved, from)
       const { root, changes, warnings, issues, audit } = await compile(
         source,
         from,
-        options,
+        { ...options, rootValue },
+        rootValue,
         args.targets,
       )
       totalWarnings += warnings.length

@@ -594,7 +594,10 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   }
   // Zero would read every `rem` as zero and divide by zero on the way out;
   // a negative root font size would flip the sign of every text length.
-  if (!Number.isFinite(options.rootValue) || options.rootValue <= 0) {
+  if (
+    typeof options.rootValue !== 'function' &&
+    (!Number.isFinite(options.rootValue) || options.rootValue <= 0)
+  ) {
     throw new RangeError(
       '[postcss-adaptive-matrix] rootValue must be a positive number of pixels, such as 16.',
     )

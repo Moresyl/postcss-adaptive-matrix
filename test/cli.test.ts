@@ -387,6 +387,31 @@ describe('runCli', () => {
     expect(out).toContain('10vw')
   })
 
+  it('resolves a functional rootValue independently for every input file', async () => {
+    const config = join(directory, 'root-value.config.mjs')
+    await writeFile(
+      config,
+      `export default {
+        libraries: false,
+        strategy: 'viewport',
+        hairline: 0,
+        unitToConvert: ['rem'],
+        profiles: { app: { designWidth: 100 } },
+        rootValue: ({ file }) => file.endsWith('ten.css') ? 10 : 16
+      }`,
+      'utf8',
+    )
+    const ten = await file('ten.css', '.ten { width: 1rem }')
+    const sixteen = await file('sixteen.css', '.sixteen { width: 1rem }')
+
+    expect(await runCli([ten, sixteen, '--json', '-c', config])).toBe(0)
+    const report = JSON.parse(out) as {
+      files: Array<{ changes: Array<{ after: string }> }>
+    }
+    expect(report.files[0]!.changes[0]!.after).toBe('10vw')
+    expect(report.files[1]!.changes[0]!.after).toBe('16vw')
+  })
+
   it('reads options from a --config JSON file', async () => {
     // A JSON config is what the published schema is for: an editor that knows
     // the schema completes the option names and flags the out-of-range ones.

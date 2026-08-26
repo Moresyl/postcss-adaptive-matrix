@@ -70,8 +70,20 @@ function unitPattern(units: string[]): RegExp {
  * fact no build-time constant can stand in for, and quietly treating it as
  * `rem` would be wrong wherever the two differ — which is most of a stylesheet.
  */
-function unitScale(unit: string, options: ResolvedAdaptiveMatrixOptions): number {
-  return unit.length === 3 && unit.toLowerCase() === 'rem' ? options.rootValue : 1
+function unitScale(unit: string, rootValue: number): number {
+  return unit.length === 3 && unit.toLowerCase() === 'rem' ? rootValue : 1
+}
+
+/** Resolves the shared rem ruler for one input file. */
+export function resolveRootValue(options: ResolvedAdaptiveMatrixOptions, file: string): number {
+  const source = options.rootValue
+  const value = typeof source === 'function' ? source({ file }) : source
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new RangeError(
+      `[postcss-adaptive-matrix] rootValue for "${file || '<unknown>'}" returned an invalid value. Expected a positive finite number.`,
+    )
+  }
+  return value
 }
 
 /**
@@ -233,6 +245,7 @@ function convertResolvedLength(
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
+  rootValue: number,
   sourceUnit: string = options.unitToConvert[0]!,
 ): string {
   if (!Number.isFinite(pixels)) {
@@ -264,7 +277,7 @@ function convertResolvedLength(
   const canvas = anchored ? anchorWidth : designWidth
 
   const boundaryUnit = accessibleText ? 'rem' : 'px'
-  const divisor = accessibleText ? options.rootValue : 1
+  const divisor = accessibleText ? rootValue : 1
   const preferred = preferredValue(
     scaled,
     canvas,
@@ -272,7 +285,7 @@ function convertResolvedLength(
     unit,
     accessibleText,
     options.precision,
-    options.rootValue,
+    rootValue,
   )
   // A function is the structural trace that distinguishes generated output
   // from authored lengths on a later pass and in continuity diagnostics.
@@ -321,6 +334,7 @@ export function convertLength(
     isAccessibleTextProperty(property, options),
     profile,
     options,
+    resolveRootValue(options, file),
   )
 }
 
@@ -404,6 +418,7 @@ function convertResolvedValue(
   accessibleText: boolean,
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
+  rootValue: number,
 ): { value: string; generatedBounds: boolean } {
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
@@ -426,7 +441,7 @@ function convertResolvedValue(
         // Guarded in pixels, not in authored numbers: `minPixelValue` and
         // `hairline` describe how small a thing is on screen, and `0.0625rem`
         // is the same hairline as `1px` however it was written.
-        const pixels = Number.parseFloat(number) * unitScale(unit, options)
+        const pixels = Number.parseFloat(number) * unitScale(unit, rootValue)
         // The CSS token is still a number even when its magnitude overflows a
         // JavaScript double. Keeping the authored token is safer than replacing
         // it with `Infinitypx`, which is not CSS syntax and drops the declaration.
@@ -445,6 +460,7 @@ function convertResolvedValue(
           accessibleText,
           profile,
           options,
+          rootValue,
           unit,
         )
         if (
@@ -477,6 +493,7 @@ export function convertValue(
     isAccessibleTextProperty(property, options),
     profile,
     options,
+    resolveRootValue(options, file),
   ).value
 }
 
@@ -494,6 +511,7 @@ const MAX_CACHE_ENTRIES = 20_000
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
   const widths = new Map<string, [design: number, anchor: number]>()
+  const rootValues = new Map<string, number>()
   const textProperties = new Map<string, boolean>()
   const values = new Map<string, { value: string; generatedBounds: boolean }>()
 
@@ -514,6 +532,11 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       widths.set(widthKey, resolvedWidths)
     }
     const [designWidth, anchorWidth] = resolvedWidths
+    let rootValue = rootValues.get(file)
+    if (rootValue === undefined) {
+      rootValue = resolveRootValue(options, file)
+      rootValues.set(file, rootValue)
+    }
 
     let accessibleText = textProperties.get(property)
     if (accessibleText === undefined) {
@@ -521,9 +544,16 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       textProperties.set(property, accessibleText)
     }
 
-    // The anchor belongs in the key alongside the design width: two canvases
-    // can agree on the latter and still write text differently.
-    const key = JSON.stringify([profileName, designWidth, anchorWidth, accessibleText, value])
+    // The anchor and resolved root ruler belong in the key alongside the design
+    // width: two canvases or files can agree on one and still write differently.
+    const key = JSON.stringify([
+      profileName,
+      designWidth,
+      anchorWidth,
+      rootValue,
+      accessibleText,
+      value,
+    ])
     const cached = values.get(key)
     if (cached !== undefined) return cached
 
@@ -534,6 +564,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       accessibleText,
       profile,
       options,
+      rootValue,
     )
     if (values.size >= MAX_CACHE_ENTRIES) values.clear()
     values.set(key, converted)
@@ -544,12 +575,13 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     /**
      * Drops per-file memoisation before a stylesheet is processed.
      *
-     * A functional `designWidth` may legitimately return something new for the
-     * same path on a rebuild, so its result must not outlive one pass. The
-     * value cache is keyed on the resolved width, so it stays correct either way.
+     * Functional widths and `rootValue` may legitimately return something new
+     * for the same path on a rebuild, so their results must not outlive one
+     * pass. The value cache is keyed on every resolved scalar and stays correct.
      */
     beginFile(): void {
       widths.clear()
+      rootValues.clear()
     },
 
     /** Cheap rejection for declarations that cannot contain a convertible length. */

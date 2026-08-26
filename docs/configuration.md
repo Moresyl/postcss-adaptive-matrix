@@ -17,7 +17,7 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `unit` | `vw` | `vw`, `vi`, `cqw`, `cqi` |
 | `precision` | `5` | 0–12 decimal places |
 | `unitToConvert` | `['px']` | The input unit(s) to read; a single string is accepted too |
-| `rootValue` | `16` | How many pixels one `rem` is worth |
+| `rootValue` | `16` | How many pixels one `rem` is worth; a function may choose it per file |
 | `minPixelValue` | `0` | Absolute values below this are not converted |
 | `hairline` | `1` | Hairline threshold that is never converted |
 | `fontFluidity` | `0.35` | Text fluidity ratio, 0–1 |
@@ -82,7 +82,7 @@ A block-less `@adaptive pc;` warns separately: with no block, nothing is compile
 
 ```ts
 unitToConvert?: string | readonly string[]   // default 'px'
-rootValue?: number                           // default 16
+rootValue?: number | ((context: { file: string }) => number) // default 16
 ```
 
 By default only `px` is read. An array reads several units at once, which atomic CSS projects need — see [Build tool integration](./integration.md#atomic-css-tailwind-and-unocss):
@@ -105,6 +105,14 @@ Every listed unit must be an unescaped CSS identifier (`px`, `rem`, `rpx`, `dp`,
 - when writing, what the static part of a text size is divided by to become `rem`.
 
 So a page with `html { font-size: 62.5% }` sets `rootValue: 10`, and `3.2rem` and `32px` produce exactly the same output, both correct. Configuring only one end would be wrong at the other, which is why there is no second option here.
+
+`rootValue` is optional. When different sub-apps in one repository set different root font sizes, use a function and let the source path choose the ruler once for that file:
+
+```js
+rootValue: ({ file }) => file.includes('/legacy/') ? 10 : 16
+```
+
+The callback receives `{ file }` and must return a positive finite number. A real PostCSS `from` path is required for a file-sensitive choice; without one the stylesheet still compiles, but emits one warning because the callback cannot distinguish files.
 
 The `minPixelValue` and `hairline` thresholds are in **pixels**, not face value. A framework writing a hairline as `0.0625rem` and you writing `1px` are the same line, and `hairline` stops both.
 

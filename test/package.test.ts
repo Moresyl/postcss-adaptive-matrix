@@ -78,6 +78,9 @@ describeBuilt('the built package', () => {
       expect(declarations).toContain('function defineConfig(): AdaptiveMatrixOptions')
       expect(declarations).toContain('function withAtomicCss(): AtomicCssConfiguration')
       expect(declarations).toContain('function withAtomicCss(options: AtomicCssOptions)')
+      expect(declarations).toContain('interface RootValueContext')
+      expect(declarations).toContain('type RootValueResolver')
+      expect(declarations).toContain('rootValue?: number | RootValueResolver')
     }
   })
 

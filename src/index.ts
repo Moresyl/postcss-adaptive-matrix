@@ -66,6 +66,8 @@ export type {
   ResolvedAdaptiveMatrixOptions,
   ResolvedLibraryAdaptation,
   ResolvedRootFoundationOptions,
+  RootValueContext,
+  RootValueResolver,
   RootFoundationOptions,
   ScaleUnit,
 } from './core/types.js'

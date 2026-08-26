@@ -17,7 +17,7 @@
 | `unit` | `vw` | `vw`、`vi`、`cqw`、`cqi` |
 | `precision` | `5` | 0~12 位小数 |
 | `unitToConvert` | `['px']` | 读取的输入单位，也可以只传一个字符串 |
-| `rootValue` | `16` | 一个 `rem` 折合多少像素 |
+| `rootValue` | `16` | 一个 `rem` 折合多少像素；也可按文件用函数选择 |
 | `minPixelValue` | `0` | 小于该绝对值不转换 |
 | `hairline` | `1` | 不转换的细线阈值 |
 | `fontFluidity` | `0.35` | 文字流体比例，0~1 |
@@ -82,7 +82,7 @@ propList: ['*', '!border*', '!box-shadow']
 
 ```ts
 unitToConvert?: string | readonly string[]   // 默认 'px'
-rootValue?: number                           // 默认 16
+rootValue?: number | ((context: { file: string }) => number) // 默认 16
 ```
 
 默认只读 `px`。传数组可以一次读多种单位——原子化 CSS 项目需要这个，见[构建工具集成](./integration.zh-CN.md#原子化-csstailwind-与-unocss)：
@@ -105,6 +105,14 @@ unitToConvert: ['px', 'rem']
 - 写的时候，文字的静态部分除以多少变成 `rem`。
 
 所以页面写了 `html { font-size: 62.5% }` 就配 `rootValue: 10`，`3.2rem` 与 `32px` 会得到完全一样的产物，两边都对。只配一头会错一头，因此这里没有第二个选项可配。
+
+`rootValue` 本身是可选的。如果同一个仓库里的不同子应用使用不同根字号，可以传函数，让源文件路径在每个文件上选择一次标尺：
+
+```js
+rootValue: ({ file }) => file.includes('/legacy/') ? 10 : 16
+```
+
+回调收到 `{ file }`，必须返回大于 0 且有限的数字。按文件选择时需要真实的 PostCSS `from` 路径；没有路径时样式仍会编译，但因为回调无法区分文件，会给出一次告警。
 
 `minPixelValue` 与 `hairline` 的阈值是**像素**，不是面值。框架把发丝线写成 `0.0625rem`、你手写成 `1px`，是同一根线，都会被 `hairline` 拦下。
 

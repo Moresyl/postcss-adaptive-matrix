@@ -52,6 +52,18 @@ describe('adaptiveMatrix', () => {
       },
     )
 
+    it('warns only when a functional rootValue has no file to inspect', async () => {
+      const result = await withoutFrom('.card { width: 1rem }', {
+        unitToConvert: ['rem'],
+        rootValue: ({ file }) => (file.includes('legacy') ? 10 : 16),
+      })
+
+      expect(result.warnings()).toHaveLength(1)
+      expect(result.warnings()[0]!.text).toContain(
+        'rootValue cannot choose a file-specific value for this stylesheet',
+      )
+    })
+
     it('warns for a path-only custom library but not auto or selector-addressable libraries', async () => {
       const pathOnly = await withoutFrom('.vendor { width: 16px }', {
         libraries: [{ name: 'vendor', designWidth: 375, file: 'vendor/' }],
@@ -788,6 +800,38 @@ describe('reading more than one source unit', () => {
     const standard = await process('.a { font-size: 32px }', atomic)
     const scaled = (css: string) => Number(/clamp\(([\d.]+)rem/.exec(css)![1])
     expect(scaled(pixels.css) * 10).toBeCloseTo(scaled(standard.css) * 16, 4)
+  })
+
+  it('resolves an optional rootValue once per file and shares it across profiles', async () => {
+    const files: string[] = []
+    const options = {
+      ...atomic,
+      rootValue: ({ file }: { file: string }) => {
+        files.push(file)
+        return file.includes('legacy') ? 10 : 16
+      },
+    }
+    const source = '.a { padding: 2rem; font-size: 2rem } @adaptive pc { .b { margin: 1rem } }'
+
+    const legacy = await process(source, options, '/repo/legacy/app.css')
+    const legacyScalar = await process(source, { ...atomic, rootValue: 10 }, '/repo/legacy/app.css')
+    const modern = await process(source, options, '/repo/modern/app.css')
+    const modernScalar = await process(source, { ...atomic, rootValue: 16 }, '/repo/modern/app.css')
+
+    expect(legacy.css).toBe(legacyScalar.css)
+    expect(modern.css).toBe(modernScalar.css)
+    expect(legacy.css).not.toBe(modern.css)
+    expect(files).toEqual(['/repo/legacy/app.css', '/repo/modern/app.css'])
+  })
+
+  it('names the input file when a rootValue resolver returns an invalid ruler', async () => {
+    await expect(
+      process(
+        '.a { width: 1rem }',
+        { ...atomic, rootValue: () => Number.NaN },
+        '/repo/broken/app.css',
+      ),
+    ).rejects.toThrow(/rootValue for "\/repo\/broken\/app\.css" returned an invalid value/)
   })
 
   it('rejects a regular expression where a token prefix belongs', () => {

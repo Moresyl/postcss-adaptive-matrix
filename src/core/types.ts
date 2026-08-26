@@ -9,6 +9,13 @@ export interface ProfileContext {
   profile: string
 }
 
+export interface RootValueContext {
+  file: string
+}
+
+/** Resolves a file's authored root font size before `rem` lengths are read/written. */
+export type RootValueResolver = (context: RootValueContext) => number
+
 export interface AdaptiveQuery {
   type?: QueryType
   condition: string
@@ -274,10 +281,11 @@ export interface AdaptiveMatrixOptions {
   unitToConvert?: string | readonly string[]
   /**
    * Pixels per `rem`, used both when reading `rem` input and when writing the
-   * static half of a text length. Defaults to 16, the initial value browsers
-   * ship; change it only if the page actually sets a different root font size.
+   * static half of a text length. A resolver can choose that ruler per input
+   * file. Defaults to 16, the initial value browsers ship; change it only if
+   * the page actually sets a different root font size.
    */
-  rootValue?: number
+  rootValue?: number | RootValueResolver
   /** Values with an absolute size below this number stay in their authored unit. */
   minPixelValue?: number
   /** Values with an absolute size at or below this number stay in px. */

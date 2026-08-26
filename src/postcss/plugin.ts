@@ -664,6 +664,7 @@ function sourcePathDependency(
   if (input.exclude !== undefined) return 'exclude'
   if (input.routes?.some((route) => route.file !== undefined)) return 'routes[].file'
   if (input.root && input.root.injectTo !== undefined) return 'root.injectTo'
+  if (typeof input.rootValue === 'function') return 'rootValue'
 
   // Omitted / `auto` libraries are defaults, not a caller assertion that a
   // particular path must match. An explicit list can contain a scoped library
@@ -733,8 +734,12 @@ export const adaptiveMatrix: PluginCreator<AdaptiveMatrixOptions> = (inputOption
       const file = root.source?.input.file ?? result.opts.from?.toString() ?? ''
       if (!file && needsSourcePath && !sourcePathWarnings.has(result)) {
         sourcePathWarnings.add(result)
+        const reason =
+          needsSourcePath === 'rootValue'
+            ? 'rootValue cannot choose a file-specific value for this stylesheet'
+            : `${needsSourcePath} has no real path to match for this stylesheet`
         result.warn(
-          `No source path was provided, so ${needsSourcePath} has no real path to match for this stylesheet. ` +
+          `No source path was provided, so ${reason}. ` +
             `Pass { from: '/absolute/path/file.css' } to PostCSS when using path-based matching; ` +
             'ordinary conversion and non-file routes do not require from.',
           { plugin: PLUGIN_NAME },

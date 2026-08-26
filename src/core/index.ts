@@ -5,7 +5,7 @@
  * function over strings, numbers and plain options, which is what makes the
  * transform reusable outside PostCSS and testable without a host.
  */
-export { convertLength, convertValue, round } from './convert.js'
+export { convertLength, convertValue, resolveRootValue, round } from './convert.js'
 export { adaptiveQueryParams, buildFoundationCss } from './foundation.js'
 export {
   createPropertyMatcher,
@@ -42,6 +42,8 @@ export type {
   ResolvedAdaptiveMatrixOptions,
   ResolvedLibraryAdaptation,
   ResolvedRootFoundationOptions,
+  RootValueContext,
+  RootValueResolver,
   RootFoundationOptions,
   ScaleUnit,
 } from './types.js'

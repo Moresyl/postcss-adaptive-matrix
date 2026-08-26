@@ -444,6 +444,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     type: 'number',
     exclusiveMinimum: 0,
     default: DEFAULTS.rootValue,
+    'x-also': '(context: { file: string }) => number',
   },
   minPixelValue: {
     description: 'Values below this stay in their authored unit.',

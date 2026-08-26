@@ -175,5 +175,6 @@ describe('the published options schema', () => {
     expect(options.minPixelValue!.description).toContain('below')
     expect(options.minPixelValue!['x-description-zh']).toContain('小于')
     expect(options.minPixelValue!['x-description-zh']).not.toContain('等于')
+    expect(options.rootValue!['x-also']).toBe('(context: { file: string }) => number')
   })
 })

@@ -403,6 +403,47 @@ describe('configuration validation', () => {
       /rootValue must be a positive number/,
     )
     expect(() => resolveOptions({ rootValue: 10 })).not.toThrow()
+    const resolver = () => 10
+    expect(resolveOptions({ rootValue: resolver }).rootValue).toBe(resolver)
+  })
+
+  it('does not reuse a conversion cached under another file rootValue', () => {
+    let legacyRoot = 10
+    const options = resolveOptions({
+      unitToConvert: ['rem'],
+      rootValue: ({ file }) => (file.includes('legacy') ? legacyRoot : 16),
+    })
+    const converter = createConverter(options)
+    const profile = options.profiles[options.defaultProfile]!
+
+    converter.beginFile()
+    const modern = converter.convert(
+      '2rem',
+      'width',
+      options.defaultProfile,
+      profile,
+      '/modern.css',
+    )
+    converter.beginFile()
+    const legacy = converter.convert(
+      '2rem',
+      'width',
+      options.defaultProfile,
+      profile,
+      '/legacy.css',
+    )
+    legacyRoot = 20
+    converter.beginFile()
+    const rebuilt = converter.convert(
+      '2rem',
+      'width',
+      options.defaultProfile,
+      profile,
+      '/legacy.css',
+    )
+
+    expect(modern).not.toBe(legacy)
+    expect(rebuilt).not.toBe(legacy)
   })
 
   it('rejects an atRuleName that CSS already defines', () => {
