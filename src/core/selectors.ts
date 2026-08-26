@@ -279,7 +279,7 @@ export function routingSelector(selector: string): string {
       if (end > index + 1) {
         // CSS escapes are spelling, not identity: `.v\61 n-cell` and
         // `.van-cell` select the same class and must choose the same canvas.
-        output += `.${decodeCssIdentifier(selector.slice(index + 1, end))}`
+        output += `.${decodeCssIdentifier(selector.slice(index + 1, end)).replaceAll('.', '\uFF0E')}`
         index = end
         continue
       }

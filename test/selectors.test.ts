@@ -61,6 +61,7 @@ describe('routingSelector', () => {
   it('canonicalises real class escapes without treating attribute data as a class', () => {
     expect(routingSelector(String.raw`.v\61 n-cell`)).toBe('.van-cell')
     expect(routingSelector(String.raw`.van\2d cell`)).toBe('.van-cell')
+    expect(routingSelector(String.raw`.\2e van-cell`)).not.toContain('.van-')
     expect(routingSelector('[data-icon=".van-cell"]')).not.toContain('.van-')
     expect(routingSelector('[data-layout="desktop"]')).toContain('[data-layout="desktop"]')
   })

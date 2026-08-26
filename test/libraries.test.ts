@@ -460,6 +460,7 @@ describe('library routing', () => {
     expect(resolver.forSelector(base, String.raw`.v\61 n-cell`, '/src/app.css').name).toBe(
       'library:vant',
     )
+    expect(resolver.forSelector(base, String.raw`.\2e van-cell`, '/src/app.css').name).toBe('app')
     expect(resolver.forSelector(base, '[data-icon=".van-cell"]', '/src/app.css').name).toBe('app')
   })
 

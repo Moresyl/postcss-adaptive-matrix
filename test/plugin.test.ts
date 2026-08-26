@@ -1198,6 +1198,14 @@ describe('selectors that mention a library without being one', () => {
     expect(result.warnings()).toHaveLength(0)
   })
 
+  it('does not turn an escaped dot inside a class name into a new class boundary', async () => {
+    const result = await process(String.raw`.\2e van-cell { padding: 16px }`, options)
+
+    expect(result.css).toContain(onPage)
+    expect(result.css).not.toContain(onVant)
+    expect(result.warnings()).toHaveLength(0)
+  })
+
   it('does not route a rule by an escaped spelling of :not()', async () => {
     const result = await process(String.raw`.page-hero:n\6ft(.van-cell) { padding: 16px }`, options)
 
