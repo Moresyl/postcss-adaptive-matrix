@@ -347,5 +347,46 @@ describe('observeAdaptiveViewport', () => {
     expect(() => observeAdaptiveViewport({ windw: {} } as never)).toThrow(
       /viewport options\.windw.*Did you mean "window"/,
     )
+    expect(() => observeAdaptiveViewport({ signal: {} as never })).toThrow(
+      /viewport options\.signal must be an AbortSignal/,
+    )
+  })
+
+  it('tears down automatically when an optional abort signal fires', () => {
+    const target = stubTarget()
+    const host = stubWindow(undefined)
+    const controller = new AbortController()
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+      signal: controller.signal,
+    })
+    host.fire('resize')
+    expect(host.pending()).toBe(1)
+
+    controller.abort()
+    expect(host.window.cancelAnimationFrame).toHaveBeenCalledWith(1)
+    expect(host.pending()).toBe(0)
+    expect(observer.update()).toBeNull()
+
+    const writes = target.setProperty.mock.calls.length
+    host.flush()
+    expect(target.setProperty).toHaveBeenCalledTimes(writes)
+  })
+
+  it('does not publish or register listeners for an already-aborted signal', () => {
+    const target = stubTarget()
+    const host = stubWindow(undefined)
+    const controller = new AbortController()
+    controller.abort()
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+      signal: controller.signal,
+    })
+
+    expect(observer.update()).toBeNull()
+    expect(target.setProperty).not.toHaveBeenCalled()
+    expect(host.listeners.add).not.toHaveBeenCalled()
   })
 })

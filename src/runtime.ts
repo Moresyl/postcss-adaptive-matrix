@@ -5,6 +5,8 @@ export interface AdaptiveViewportObserverOptions {
   target?: HTMLElement
   window?: Window
   document?: Document
+  /** Abort signal that permanently tears down the observer when aborted. */
+  signal?: AbortSignal
 }
 
 export interface AdaptiveViewportSnapshot {
@@ -20,7 +22,7 @@ export interface AdaptiveViewportObserver {
   destroy(): void
 }
 
-const VIEWPORT_OPTION_KEYS = ['prefix', 'target', 'window', 'document'] as const
+const VIEWPORT_OPTION_KEYS = ['prefix', 'target', 'window', 'document', 'signal'] as const
 
 function validateObserverOptions(value: unknown): asserts value is AdaptiveViewportObserverOptions {
   if (!isObject(value)) {
@@ -29,12 +31,22 @@ function validateObserverOptions(value: unknown): asserts value is AdaptiveViewp
     )
   }
   rejectUnknownKeys('viewport options', value, VIEWPORT_OPTION_KEYS)
-  for (const field of ['target', 'window', 'document'] as const) {
+  for (const field of ['target', 'window', 'document', 'signal'] as const) {
     if (value[field] !== undefined && !isObject(value[field])) {
       throw new TypeError(
         `[postcss-adaptive-matrix] viewport options.${field} must be a browser object, not ${valueKind(value[field])}.`,
       )
     }
+  }
+  const signal = value.signal
+  if (
+    signal !== undefined &&
+    (!isObject(signal) ||
+      typeof signal.aborted !== 'boolean' ||
+      typeof signal.addEventListener !== 'function' ||
+      typeof signal.removeEventListener !== 'function')
+  ) {
+    throw new TypeError('[postcss-adaptive-matrix] viewport options.signal must be an AbortSignal.')
   }
 }
 
@@ -139,6 +151,11 @@ export function observeAdaptiveViewport(
     return { update, destroy() {} }
   }
 
+  if (options.signal?.aborted) {
+    destroyed = true
+    return { update, destroy() {} }
+  }
+
   browserWindow.addEventListener('resize', schedule, { passive: true })
   browserWindow.addEventListener('orientationchange', schedule, { passive: true })
   browserWindow.visualViewport?.addEventListener('resize', schedule, {
@@ -147,9 +164,13 @@ export function observeAdaptiveViewport(
   browserWindow.visualViewport?.addEventListener('scroll', schedule, {
     passive: true,
   })
+  const abort = () => {
+    observer.destroy()
+  }
+  options.signal?.addEventListener('abort', abort, { once: true })
   update()
 
-  return {
+  const observer: AdaptiveViewportObserver = {
     update,
     destroy() {
       if (destroyed) return
@@ -162,6 +183,8 @@ export function observeAdaptiveViewport(
       browserWindow.removeEventListener('orientationchange', schedule)
       browserWindow.visualViewport?.removeEventListener('resize', schedule)
       browserWindow.visualViewport?.removeEventListener('scroll', schedule)
+      options.signal?.removeEventListener('abort', abort)
     },
   }
+  return observer
 }

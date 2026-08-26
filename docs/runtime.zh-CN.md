@@ -72,12 +72,13 @@ observeAdaptiveViewport({
   target: document.documentElement,
   window: globalThis.window, // 多窗口 / 测试时注入
   document: globalThis.document,
+  signal: abortController.signal, // 可选，自动解绑
 })
 ```
 
 `prefix` 必须是非空 CSS 标识符。开头的 `--` 可写可不写，传入后会被移除；空串、空白或数字开头会在注册任何监听前被拒绝，不会生成无法使用的自定义属性名。
 
-所有选项都不是必填。省略 `window`、`document` 或 `target` 时会使用对应的浏览器全局对象/默认元素；显式传 `null` 属于错误配置，不会被当成“省略”的另一种写法。
+所有选项都不是必填。省略 `window`、`document` 或 `target` 时会使用对应的浏览器全局对象/默认元素；显式传 `null` 属于错误配置，不会被当成“省略”的另一种写法。只有需要让宿主生命周期接管清理时才传 `AbortSignal`；触发 abort 等同于调用 `destroy()`，已经 abort 的 signal 会得到不写入、不注册监听的惰性观察器。
 
 返回：
 
