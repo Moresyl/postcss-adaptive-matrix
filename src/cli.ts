@@ -63,6 +63,8 @@ Options
       --               treat every remaining argument as a file path
   -h, --help
 
+Long options that take a value also accept --option=value.
+
 Without --config the built-in defaults are used, and the header says which
 profiles those are.
 
@@ -190,16 +192,22 @@ function parseArgs(argv: string[]): CliArgs {
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]!
+    const inline = /^(--(?:config|from|profile|targets|fail-on))=(.*)$/s.exec(arg)
+    const option = inline?.[1] ?? arg
     const value = (): string => {
+      if (inline) {
+        if (!inline[2]) throw new CliError(`${option} needs a value.`)
+        return inline[2]
+      }
       const next = argv[index + 1]
       if (next === undefined || next.startsWith('-')) {
-        throw new CliError(`${arg} needs a value.`)
+        throw new CliError(`${option} needs a value.`)
       }
       index += 1
       return next
     }
 
-    switch (arg) {
+    switch (option) {
       case '--':
         args.files.push(...argv.slice(index + 1))
         index = argv.length
@@ -240,10 +248,10 @@ function parseArgs(argv: string[]): CliArgs {
         args.color = false
         break
       default:
-        if (arg.startsWith('-') && arg !== '-') {
-          throw new CliError(`Unknown option ${arg}.`)
+        if (option.startsWith('-') && option !== '-') {
+          throw new CliError(`Unknown option ${option}.`)
         }
-        args.files.push(arg)
+        args.files.push(option)
     }
   }
   return args

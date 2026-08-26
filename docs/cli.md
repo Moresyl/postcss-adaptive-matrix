@@ -45,6 +45,8 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--` | Stop option parsing; every remaining argument is a file path, including names beginning with `-` |
 | `-h, --help` | Help |
 
+Long options that take a value accept either spelling: `--profile app` or `--profile=app`.
+
 Exit codes: `0` when compilation and every requested quality gate pass; `1` for a failed gate, bad argument, unreadable file, or invalid configuration. So it drops straight into a shell condition.
 
 ## Reading a configuration

@@ -631,6 +631,26 @@ describe('runCli', () => {
   it('fails when an option is missing its value', async () => {
     expect(await runCli(['--profile'])).toBe(1)
     expect(err).toContain('--profile needs a value')
+
+    err = ''
+    expect(await runCli(['--profile='])).toBe(1)
+    expect(err).toContain('--profile needs a value')
+  })
+
+  it('accepts long option values in equals form', async () => {
+    const path = await file('inline-options.css', '.page { width: 16px }')
+
+    expect(
+      await runCli([
+        path,
+        '--profile=app',
+        '--targets=safari 14',
+        '--fail-on=warnings',
+        '--no-color',
+      ]),
+    ).toBe(0)
+    expect(out).toContain('.page')
+    expect(err).toBe('')
   })
 
   it('fails on an unreadable file without a stack trace', async () => {
