@@ -135,8 +135,17 @@ export function canonicalizeCssIdentifierEscapes(value: string): {
     }
 
     const decoded = decodeCssIdentifier(value.slice(index, end))
-    output += /^[-_a-z0-9\u0080-\uFFFF]$/i.test(decoded) ? decoded : '\uFFFD'
-    positions.push(index)
+    const point = decoded.codePointAt(0)
+    const oneCodePoint = point !== undefined && decoded.length === (point > 0xffff ? 2 : 1)
+    const safe =
+      point !== undefined && oneCodePoint && (point >= 0x80 || /^[-_a-z0-9]$/i.test(decoded))
+        ? decoded
+        : '\uFFFD'
+    output += safe
+    // `String.fromCodePoint()` may produce two UTF-16 code units for an
+    // astral escape. Keep one source position per output unit so consumers
+    // slicing a canonical match never drift after such an identifier.
+    for (let offset = 0; offset < safe.length; offset += 1) positions.push(index)
     index = end - 1
   }
   return { text: output, positions }

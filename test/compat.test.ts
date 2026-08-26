@@ -220,6 +220,13 @@ describe('detection', () => {
     ).toContain(String.raw`cl\61mp`)
   })
 
+  it('keeps source positions aligned after an escaped astral identifier', () => {
+    const css = String.raw`.\1f680 x { width: cl\61mp(1px, 2vw, 3px) }`
+    const finding = detectFeatures(css).find(({ feature }) => feature.id === 'math-functions')
+
+    expect(finding?.sample).toContain(String.raw`cl\61mp`)
+  })
+
   it('does not turn escaped identifier punctuation into feature syntax', () => {
     const found = ids(String.raw`.a { x: x\2e clamp(1px,2px,3px); y: x\28 var(--x) }`)
     expect(found).not.toContain('math-functions')
