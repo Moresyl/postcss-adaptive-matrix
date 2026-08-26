@@ -600,6 +600,14 @@ describe('runCli', () => {
     expect(err).toContain('must default-export an options object')
   })
 
+  it('rejects an array exported from a config module just like an array in JSON', async () => {
+    const config = join(directory, 'array.config.mjs')
+    await writeFile(config, 'export default []', 'utf8')
+
+    expect(await runCli(['-c', config, '--css'])).toBe(1)
+    expect(err).toContain('must default-export an options object')
+  })
+
   it('fails on a config that forgot the default keyword', async () => {
     // The failure this guards is silence: a module namespace object is still an
     // object, so falling back to it once passed every check and ran with the

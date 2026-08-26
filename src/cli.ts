@@ -302,7 +302,7 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
         'export default appPcPreset({ ... }).',
     )
   }
-  if (!options || typeof options !== 'object') {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
     const named = Object.keys(loaded as object).filter((key) => key !== 'default')
     throw new CliError(
       `Config ${path} must default-export an options object` +
