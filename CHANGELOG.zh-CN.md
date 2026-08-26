@@ -7,6 +7,7 @@
 ### 正确性与诊断
 
 - 死区间发现现在归属到实际完成转换的声明，并携带真实的 selector/property 路由画布与媒体区间。嵌套子规则不再让未转换的父规则按错误画布告警；经 property 路由的 token 会按自己的 profile 判断并给出 property 路由建议；写在规则内部嵌套媒体查询中的声明也不再漏诊。显式 `@adaptive` 选中的画布不会再收到根本无法覆盖它的 route 建议。
+- 性质测试现在覆盖省略边界、仅最小边界、仅最大边界在多种画布、正负布局长度、可缩放文字、边界两侧及完整二次编译下的行为。
 - 当前 profile 的输出单位不再被同一 profile 重新当作设计稿输入单位读取。即使 `unitToConvert` 同时列出 `vw`/`vi`/`cqw`/`cqi`，裸值 `strategy: 'viewport'` 产物也保持幂等；配置成不同目标单位时，显式的单位间转换仍然有效。
 - `LibraryAdaptation` 现在直接表达两种合法形状：继承条目只要求 `extends`，独立自定义库仍要求 `name` 与 `designWidth`。显式把 `{ extends: 'vant' }` 标成该类型时，TypeScript 不再强迫填写运行时、Schema 与文档本就会继承的字段。
 - 死区间诊断现在要求转换确实新增了 `clamp()`/`min()`/`max()` 边界。用 `calc(<rem>)` 标记的静态文字和用 `calc(<视口长度>)` 标记的无边界输出，并不是被 profile 流体区间钉死的表达式，因此不再给出误导性的画布路由告警。

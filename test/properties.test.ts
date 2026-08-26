@@ -96,6 +96,49 @@ async function sample(seed: number, count: number): Promise<Generated[]> {
 }
 
 describe('properties that hold for every canvas', () => {
+  it('honours omitted and one-sided fluid bounds across canvases and signs', async () => {
+    const widths = [160, 280, 320, 480, 600, 1024, 1600, 2560]
+    const shapes = [
+      { label: 'unbounded', fluid: undefined, bound: undefined },
+      { label: 'minimum only', fluid: { minWidth: 480 }, bound: 480 },
+      { label: 'maximum only', fluid: { maxWidth: 1024 }, bound: 1024 },
+    ] as const
+
+    for (const designWidth of [320, 375, 750, 1440, 2560]) {
+      for (const value of [-187.5, -16, 4, 32, 375]) {
+        for (const property of ['width', 'font-size']) {
+          const fluidity = property === 'font-size' ? 0.35 : 1
+          const valueAt = (width: number) =>
+            value * (1 - fluidity) + (value * fluidity * width) / designWidth
+          for (const shape of shapes) {
+            const profile = {
+              designWidth,
+              ...(shape.fluid === undefined ? {} : { fluid: shape.fluid }),
+            }
+            const source = `.a { ${property}: ${value}px }`
+            const once = await compile(source, profile)
+            const formula = new RegExp(`\\.a \\{ ${property}: (.*) \\}`).exec(once)?.[1]
+            const label = `${shape.label}: ${property} ${value}px on ${designWidth} -> ${formula}`
+
+            expect(formula, label).toBeTypeOf('string')
+            expect(await compile(once, profile), label).toBe(once)
+            for (const width of widths) {
+              const actual = evaluateLength(formula!, { ...CONTEXT, width })
+              const expected =
+                shape.label === 'minimum only' && width < shape.bound
+                  ? valueAt(shape.bound)
+                  : shape.label === 'maximum only' && width > shape.bound
+                    ? valueAt(shape.bound)
+                    : valueAt(width)
+              expect(actual, `${label} at ${width}px`).not.toBeNull()
+              expect(Math.abs(actual! - expected), `${label} at ${width}px`).toBeLessThan(TOLERANCE)
+            }
+          }
+        }
+      }
+    }
+  })
+
   it('renders an authored pixel as that same pixel at the design width', async () => {
     // The whole premise: measure 16px in the design file, write 16px, and at the
     // width that design file was drawn for the browser lays out 16px. Everything
