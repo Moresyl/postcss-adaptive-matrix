@@ -17,6 +17,7 @@
  */
 import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
 import { CSS_NUMBER_SOURCE, canonicalizeCssIdentifierEscapes } from './syntax.js'
+import { isPlainObject, valueKind } from './validation.js'
 
 export type CompatFeatureId =
   | 'math-functions'
@@ -447,8 +448,10 @@ export function auditCompatibility(
   css: string,
   targets: Readonly<Record<string, string | number>>,
 ): CompatAudit {
-  if (!targets || typeof targets !== 'object' || Array.isArray(targets)) {
-    throw new TypeError('[postcss-adaptive-matrix] Compatibility targets must be an object.')
+  if (!isPlainObject(targets)) {
+    throw new TypeError(
+      `[postcss-adaptive-matrix] Compatibility targets must be an object, not ${valueKind(targets)}.`,
+    )
   }
   if (!Object.keys(targets).length) {
     throw new TypeError(

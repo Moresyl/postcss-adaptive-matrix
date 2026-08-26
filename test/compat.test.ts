@@ -400,6 +400,11 @@ describe('auditCompatibility', () => {
     expect(() => auditCompatibility('.a { color: red }', null as never)).toThrow(
       /targets must be an object/i,
     )
+    for (const targets of [new Date(), new Map(), []]) {
+      expect(() => auditCompatibility('.a { color: red }', targets as never)).toThrow(
+        /targets must be an object/i,
+      )
+    }
   })
 
   it('deduplicates browser aliases conservatively and independently of order', () => {
