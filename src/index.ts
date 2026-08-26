@@ -38,7 +38,11 @@ export type {
   CliSuccessReport,
 } from './core/report.js'
 
-export function defineConfig<T extends AdaptiveMatrixOptions>(config: T): T {
+/** Returns the default configuration shape when no overrides are needed. */
+export function defineConfig(): AdaptiveMatrixOptions
+/** Preserves literal types while checking an authored configuration. */
+export function defineConfig<T extends AdaptiveMatrixOptions>(config: T): T
+export function defineConfig(config: AdaptiveMatrixOptions = {}): AdaptiveMatrixOptions {
   return config
 }
 

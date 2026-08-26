@@ -319,10 +319,42 @@ const THEME_TEXT_PROPERTIES = ['--text-*', '--leading-*']
  * adaptiveMatrix(withAtomicCss(appPcPreset({ rootSelector: '#app' })))
  * ```
  */
+type AtomicCssConfiguration<T extends AdaptiveMatrixOptions> = T & {
+  unitToConvert: string[]
+  routes: AdaptiveRoute[]
+}
+
+/** Zero-config atomic CSS adaptation, using the compiler's built-in canvases. */
+export function withAtomicCss(): AtomicCssConfiguration<AdaptiveMatrixOptions>
+/** Customises atomic CSS defaults without requiring an empty base object. */
+export function withAtomicCss(
+  options: AtomicCssOptions,
+): AtomicCssConfiguration<AdaptiveMatrixOptions>
+/** Adds atomic CSS support without losing the caller's precise configuration type. */
 export function withAtomicCss<T extends AdaptiveMatrixOptions>(
   base: T,
-  options: AtomicCssOptions = {},
-): T & { unitToConvert: string[]; routes: AdaptiveRoute[] } {
+  options?: AtomicCssOptions,
+): AtomicCssConfiguration<T>
+export function withAtomicCss<T extends AdaptiveMatrixOptions>(
+  baseOrOptions: T | AtomicCssOptions = {},
+  explicitOptions?: AtomicCssOptions,
+): AtomicCssConfiguration<T> {
+  // `profile` and `tokenPrefixes` are not AdaptiveMatrixOptions fields, so a
+  // one-argument call carrying either is unambiguous. `{}` remains a base, but
+  // the result is identical either way. Two arguments always use the original
+  // base/options form, even if a caller-owned base has extra runtime fields.
+  // An explicitly passed `undefined` followed the old default-parameter path
+  // and therefore means "use defaults"; `null` remains an authored invalid
+  // value and must still reach validation.
+  const hasExplicitOptions = explicitOptions !== undefined
+  const optionsOnly =
+    !hasExplicitOptions &&
+    isObject(baseOrOptions) &&
+    ('profile' in baseOrOptions || 'tokenPrefixes' in baseOrOptions)
+  const base = (optionsOnly ? {} : baseOrOptions) as T
+  const options = (
+    optionsOnly ? baseOrOptions : hasExplicitOptions ? explicitOptions : {}
+  ) as AtomicCssOptions
   validateAtomicCssBase(base)
   validateAtomicCssOptions(options)
   const units =

@@ -791,6 +791,30 @@ describe('reading more than one source unit', () => {
 })
 
 describe('withAtomicCss', () => {
+  it('does not require an information-free base configuration', async () => {
+    const empty = defineConfig()
+    const options = withAtomicCss()
+    const result = await process(':root { --spacing: 0.25rem }', options)
+
+    expect(empty).toEqual({})
+    expect(options.unitToConvert).toEqual(['px', 'rem'])
+    expect(options.routes).toEqual([
+      expect.objectContaining({ profile: 'app', property: expect.arrayContaining(['--spacing']) }),
+    ])
+    expect(result.css).toContain('--spacing: clamp(')
+  })
+
+  it('accepts atomic-only options without an empty first argument', () => {
+    const wrapped = withAtomicCss({
+      profile: 'pc',
+      tokenPrefixes: ['--gutter-'],
+    })
+
+    expect(wrapped.routes.at(-1)).toMatchObject({ profile: 'pc' })
+    expect(wrapped.routes.at(-1)!.property).toContain('--gutter-')
+    expect(() => withAtomicCss({ profile: '' })).toThrow(/profile must be a non-empty string/)
+  })
+
   it('adds rem and a theme-token route without discarding what it wraps', () => {
     const base = defineConfig({
       defaultProfile: 'mobile',
@@ -862,6 +886,7 @@ describe('withAtomicCss', () => {
     expect(() => withAtomicCss({}, null as never)).toThrow(
       /options must be an options object, not null/,
     )
+    expect(withAtomicCss({}, undefined).unitToConvert).toEqual(['px', 'rem'])
     expect(() => withAtomicCss({}, { tokenPrefxies: ['--size-'] } as never)).toThrow(
       /tokenPrefxies.*Did you mean "tokenPrefixes"/,
     )
