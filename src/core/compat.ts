@@ -279,7 +279,7 @@ export function resolveBrowser(name: string): string | null {
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, '_')
-  return BROWSER_ALIASES[key] ?? null
+  return Object.hasOwn(BROWSER_ALIASES, key) ? BROWSER_ALIASES[key]! : null
 }
 
 const BROWSER_VERSION = /^\d+(?:\.\d+)*(?:-\d+(?:\.\d+)*)?$/
@@ -322,7 +322,7 @@ export function compareVersions(a: string, b: string): number {
 /** The first version of `browser` supporting `feature`, or null if none does. */
 export function supportedSince(feature: CompatFeature, browser: string): string | null {
   const table = FEATURE_SUPPORT[feature.source] as Record<string, string>
-  return table[browser] ?? null
+  return Object.hasOwn(table, browser) ? table[browser]! : null
 }
 
 export interface CompatShortfall {
@@ -493,7 +493,7 @@ export function auditCompatibility(
       if (since !== null && compareVersions(target, since) >= 0) continue
       shortfalls.push({
         browser,
-        name: BROWSER_NAMES[browser] ?? browser,
+        name: Object.hasOwn(BROWSER_NAMES, browser) ? BROWSER_NAMES[browser]! : browser,
         target,
         since,
       })

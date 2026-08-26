@@ -340,7 +340,7 @@ function withoutRegistryFields(entry: RegistryEntry): ResolvedLibraryAdaptation 
  */
 export function resolveLibrary(entry: LibraryEntry): ResolvedLibraryAdaptation {
   if (typeof entry === 'string') {
-    const found = REGISTRY[entry]
+    const found = Object.hasOwn(REGISTRY, entry) ? REGISTRY[entry] : undefined
     if (!found) throw unknownLibrary(entry)
     return withoutRegistryFields(found)
   }
@@ -361,7 +361,7 @@ export function resolveLibrary(entry: LibraryEntry): ResolvedLibraryAdaptation {
         '[postcss-adaptive-matrix] Library extends cannot have surrounding whitespace.',
       )
     }
-    const base = REGISTRY[entry.extends]
+    const base = Object.hasOwn(REGISTRY, entry.extends) ? REGISTRY[entry.extends] : undefined
     if (!base) throw unknownLibrary(entry.extends)
     const overrides = Object.fromEntries(
       Object.entries(entry).filter(([key, value]) => key !== 'extends' && value !== undefined),

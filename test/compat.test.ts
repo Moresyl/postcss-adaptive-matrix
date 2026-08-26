@@ -327,6 +327,7 @@ describe('version comparison', () => {
     expect(resolveBrowser('android')).toBe('chrome')
     expect(resolveBrowser('webview')).toBe('chrome')
     expect(resolveBrowser('netscape')).toBeNull()
+    expect(resolveBrowser('toString')).toBeNull()
   })
 })
 

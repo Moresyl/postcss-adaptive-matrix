@@ -77,6 +77,10 @@ describe('resolveLibrary', () => {
 
   it('names the built-ins when given something unknown', () => {
     expect(() => resolveLibrary('vant-4')).toThrow(/Built-in libraries: .*vant/)
+    expect(() => resolveLibrary('toString')).toThrow(/Unknown library "toString"/)
+    expect(() => resolveLibrary({ extends: 'constructor' })).toThrow(
+      /Unknown library "constructor"/,
+    )
   })
 
   it('exposes the registry so tooling can list it', () => {
