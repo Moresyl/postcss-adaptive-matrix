@@ -444,16 +444,39 @@ export function auditCompatibility(
   css: string,
   targets: Readonly<Record<string, string | number>>,
 ): CompatAudit {
+  if (!targets || typeof targets !== 'object' || Array.isArray(targets)) {
+    throw new TypeError('[postcss-adaptive-matrix] Compatibility targets must be an object.')
+  }
+  if (!Object.keys(targets).length) {
+    throw new TypeError(
+      '[postcss-adaptive-matrix] Compatibility audit needs at least one browser target.',
+    )
+  }
   const unknownBrowsers: string[] = []
-  const resolved: { browser: string; target: string }[] = []
+  const resolvedTargets = new Map<string, string>()
   for (const [name, version] of Object.entries(targets)) {
+    const target = String(version)
+    // Validate even for an unknown browser and when the stylesheet happens to
+    // contain no recognised feature. A malformed target cannot become valid
+    // merely because this particular file had nothing to compare it against.
+    if (!isBrowserVersion(target)) {
+      throw new RangeError(
+        `[postcss-adaptive-matrix] Browser version "${target}" must be dotted numbers such as "14" or "13.4".`,
+      )
+    }
     const browser = resolveBrowser(name)
     if (!browser) {
       unknownBrowsers.push(name)
       continue
     }
-    resolved.push({ browser, target: String(version) })
+    const existing = resolvedTargets.get(browser)
+    if (existing === undefined || compareVersions(target, existing) < 0) {
+      // Aliases such as android/webview/chrome share one support history. Keep
+      // the oldest request so the result is conservative and order-invariant.
+      resolvedTargets.set(browser, target)
+    }
   }
+  const resolved = [...resolvedTargets].map(([browser, target]) => ({ browser, target }))
 
   const findings: CompatFinding[] = []
   const satisfied: CompatFeatureId[] = []
@@ -470,7 +493,7 @@ export function auditCompatibility(
       })
     }
     if (shortfalls.length) findings.push({ feature, sample, shortfalls })
-    else satisfied.push(feature.id)
+    else if (resolved.length) satisfied.push(feature.id)
   }
   return { findings, satisfied, unknownBrowsers }
 }

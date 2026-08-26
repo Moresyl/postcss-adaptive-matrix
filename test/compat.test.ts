@@ -362,6 +362,40 @@ describe('auditCompatibility', () => {
     expect(() =>
       auditCompatibility('.a { width: clamp(1px, 2vw, 3px) }', { safari: '17..1' }),
     ).toThrow(/Browser version "17\.\.1"/)
+    expect(() => auditCompatibility('.a { color: red }', { safari: '17..1' })).toThrow(
+      /Browser version "17\.\.1"/,
+    )
+    expect(() => auditCompatibility('.a { color: red }', { netscape: 'latest' })).toThrow(
+      /Browser version "latest"/,
+    )
+    expect(() => auditCompatibility('.a { color: red }', {})).toThrow(
+      /needs at least one browser target/,
+    )
+    expect(() => auditCompatibility('.a { color: red }', null as never)).toThrow(
+      /targets must be an object/i,
+    )
+  })
+
+  it('deduplicates browser aliases conservatively and independently of order', () => {
+    const css = '.a { width: clamp(1px, 2vw, 3px) }'
+    const first = auditCompatibility(css, { chrome: '120', android: '70', webview: '80' })
+    const second = auditCompatibility(css, { webview: '80', android: '70', chrome: '120' })
+
+    for (const audit of [first, second]) {
+      const math = audit.findings.find((finding) => finding.feature.id === 'math-functions')
+      expect(math?.shortfalls).toEqual([
+        { browser: 'chrome', name: 'Chrome', target: '70', since: '79' },
+      ])
+    }
+  })
+
+  it('does not call a feature satisfied when every target name is unknown', () => {
+    const audit = auditCompatibility('.a { width: clamp(1px, 2vw, 3px) }', {
+      netscape: '4',
+    })
+    expect(audit.unknownBrowsers).toEqual(['netscape'])
+    expect(audit.satisfied).toEqual([])
+    expect(audit.findings).toEqual([])
   })
 
   it('audits authored CSS the compiler never touched', async () => {
