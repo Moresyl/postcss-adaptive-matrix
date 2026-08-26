@@ -377,6 +377,19 @@ describe('adaptiveMatrix', () => {
     expect(result.css).toContain(String.raw`right: 1\36 px`)
   })
 
+  it('keeps escaped unit boundaries and guarded values exact', async () => {
+    const result = await process(
+      String.raw`.a { width: 16\70x; height: 16p\000078; inset: 1p\78; left: 16p\78foo; right: id\31 6p\78 }`,
+      { unitToConvert: 'px' },
+    )
+
+    expect(result.css).toContain('width: clamp(13.65333px, 4.26667vw, 20.48px)')
+    expect(result.css).toContain('height: clamp(13.65333px, 4.26667vw, 20.48px)')
+    expect(result.css).toContain(String.raw`inset: 1p\78`)
+    expect(result.css).toContain(String.raw`left: 16p\78foo`)
+    expect(result.css).toContain(String.raw`right: id\31 6p\78`)
+  })
+
   it('does not convert a dimension-looking substring inside a CSS identifier', async () => {
     const result = await process(
       String.raw`.a { width: 宽16px; height: 16px宽; margin: \31 6px; padding: 16px }`,
