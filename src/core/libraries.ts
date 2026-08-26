@@ -455,7 +455,7 @@ export function expandLibraries(
     let profile: string | false = false
     if (library.designWidth !== false) {
       const baseName = library.basedOn ?? defaultProfile
-      const base = profiles[baseName]
+      const base = Object.hasOwn(profiles, baseName) ? profiles[baseName] : undefined
       if (!base) {
         throw new Error(
           `[postcss-adaptive-matrix] Library "${library.name}" is based on unknown profile "${baseName}".`,

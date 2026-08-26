@@ -135,7 +135,11 @@ const QUERY_KEYS = ['type', 'condition', 'name'] as const
 function normaliseProfiles(
   profiles: Record<string, AdaptiveProfileInput>,
 ): Record<string, AdaptiveProfile> {
-  const normalised: Record<string, AdaptiveProfile> = {}
+  // Profile names are authored keys, not JavaScript object members. A normal
+  // object's inherited `constructor` / `toString` entries can otherwise look
+  // like configured profiles, while assigning `__proto__` changes the map's
+  // prototype instead of registering that perfectly usable profile name.
+  const normalised = Object.create(null) as Record<string, AdaptiveProfile>
   for (const [name, profile] of Object.entries(profiles)) {
     if (typeof profile === 'number' || typeof profile === 'function') {
       normalised[name] = { designWidth: profile }
@@ -595,7 +599,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   const authoredNames = Object.keys(authored)
   const defaultProfile =
     input.defaultProfile ??
-    (authored[DEFAULTS.defaultProfile]
+    (Object.hasOwn(authored, DEFAULTS.defaultProfile)
       ? DEFAULTS.defaultProfile
       : authoredNames.length === 1
         ? authoredNames[0]!
@@ -629,7 +633,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     root,
   }
 
-  if (!authored[options.defaultProfile]) {
+  if (!Object.hasOwn(authored, options.defaultProfile)) {
     throw new Error(
       `[postcss-adaptive-matrix] defaultProfile "${options.defaultProfile}" does not exist.`,
     )
@@ -796,11 +800,15 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   // explicit route is a decision, while a library entry is a default.
   if (libraries.length) {
     const expansion = expandLibraries(libraries, authored, options.defaultProfile)
-    options.profiles = { ...authored, ...expansion.profiles }
+    options.profiles = Object.assign(
+      Object.create(null) as Record<string, AdaptiveProfile>,
+      authored,
+      expansion.profiles,
+    )
     options.routes = [...options.routes, ...expansion.routes]
   }
   for (const [index, route] of options.routes.entries()) {
-    if (route.profile !== false && !options.profiles[route.profile]) {
+    if (route.profile !== false && !Object.hasOwn(options.profiles, route.profile)) {
       throw new Error(
         `[postcss-adaptive-matrix] routes[${index}].profile targets unknown profile "${route.profile}".`,
       )

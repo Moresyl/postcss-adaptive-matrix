@@ -381,6 +381,16 @@ describe('expandLibraries', () => {
     expect(derived.unit).toBe('vw')
   })
 
+  it('does not borrow a canvas from the object prototype', () => {
+    expect(() =>
+      expandLibraries(
+        [{ name: 'kit', designWidth: 375, prefix: 'kit-', basedOn: 'toString' }],
+        PROFILES,
+        'app',
+      ),
+    ).toThrow(/based on unknown profile "toString"/)
+  })
+
   it('anchors library text to the base canvas rather than its own', () => {
     // Vant's 375 and a page's 750 describe one design in two unit systems, so
     // the fixed `rem` half of a text size has to be measured against a width

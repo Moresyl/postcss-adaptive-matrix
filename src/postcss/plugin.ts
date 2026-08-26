@@ -536,7 +536,9 @@ function transformAdaptiveAtRule(
   }
 
   const profileName = atRule.params.trim() || context.options.defaultProfile
-  const profile = context.options.profiles[profileName]
+  const profile = Object.hasOwn(context.options.profiles, profileName)
+    ? context.options.profiles[profileName]
+    : undefined
   if (!profile) {
     unknownProfile(atRule, profileName, context)
     return

@@ -118,6 +118,19 @@ describe('configuration validation', () => {
     ).toThrow(/defaultProfile "app" does not exist/)
   })
 
+  it('treats profile names as own keys rather than object prototype members', () => {
+    for (const name of ['constructor', 'toString', '__proto__']) {
+      const options = resolveOptions({ profiles: { [name]: 375 }, libraries: false })
+      expect(options.defaultProfile).toBe(name)
+      expect(Object.hasOwn(options.profiles, name)).toBe(true)
+      expect(options.profiles[name]).toEqual({ designWidth: 375 })
+    }
+
+    expect(() => resolveOptions({ routes: { profile: 'valueOf', selector: '.legacy' } })).toThrow(
+      /targets unknown profile "valueOf"/,
+    )
+  })
+
   it('accepts a design width directly when a profile needs no overrides', () => {
     const scalar = resolveOptions({ profiles: { mobile: 375 } })
     expect(scalar.defaultProfile).toBe('mobile')

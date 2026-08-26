@@ -56,7 +56,7 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
 
   const routes = options.routes
     .filter((route) => {
-      if (route.profile === false || options.profiles[route.profile]) return true
+      if (route.profile === false || Object.hasOwn(options.profiles, route.profile)) return true
       throw new Error(`[postcss-adaptive-matrix] Route targets unknown profile "${route.profile}".`)
     })
     .map((route) => ({
