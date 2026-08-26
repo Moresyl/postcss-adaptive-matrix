@@ -101,6 +101,13 @@ describeBuilt('the built package', () => {
 
     expect(typeof runtime.observeAdaptiveViewport).toBe('function')
     expect(runtime.default).toBeUndefined()
+    for (const name of ['runtime.d.ts', 'runtime.d.cts']) {
+      const declarations = readFileSync(new URL(`../dist/${name}`, import.meta.url), 'utf8')
+      expect(declarations).toContain('signal?: AbortSignal')
+      expect(declarations).toContain(
+        'observeAdaptiveViewport(options?: AdaptiveViewportObserverOptions)',
+      )
+    }
   })
 
   it('declares the CJS entry as callable, matching what it ships', () => {
