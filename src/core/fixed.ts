@@ -40,6 +40,17 @@ const CSS_LENGTH_UNIT =
   String.raw`v(?:w|h|i|b|min|max)|[sld]v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max))`
 const ZERO = new RegExp(`^(${CSS_NUMBER_SOURCE})(?:${CSS_LENGTH_UNIT}|%)?$`, 'i')
 const FULL_WIDTH = new RegExp(`^(${CSS_NUMBER_SOURCE})%$`, 'i')
+const CSS_WIDE_KEYWORDS = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
+
+/** Reads a single CSS keyword while treating comments as whitespace. */
+function singleKeyword(value: string): string | null {
+  const withoutComments = value.replace(/\/\*[\s\S]*?\*\//g, ' ')
+  // An unclosed comment makes the rest of the declaration ambiguous. Refuse to
+  // reinterpret it as a keyword; malformed authored CSS is not ours to repair.
+  if (withoutComments.includes('/*')) return null
+  const keyword = withoutComments.trim().toLowerCase()
+  return /^[a-z-]+$/.test(keyword) ? keyword : null
+}
 
 function equalsNumber(value: string, pattern: RegExp, expected: number): boolean {
   const match = pattern.exec(value)
@@ -47,7 +58,7 @@ function equalsNumber(value: string, pattern: RegExp, expected: number): boolean
 }
 
 export function isFixedPositionValue(value: string): boolean {
-  return value.trim().toLowerCase() === 'fixed'
+  return singleKeyword(value) === 'fixed'
 }
 
 /**
@@ -69,8 +80,10 @@ export function correctFixedDeclaration(property: string, value: string): string
     const trimmed = value.trim()
     // A bare `0` is the overwhelmingly common case and deserves the short form.
     if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
-    // `auto` has no length to offset, and offsetting it would break the layout.
-    if (trimmed.toLowerCase() === 'auto') return null
+    // `auto` and CSS-wide keywords have no computable length. Putting one into
+    // calc() makes the declaration invalid and changes its fallback behaviour.
+    const keyword = singleKeyword(trimmed)
+    if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return null
     return `calc(${trimmed} + ${GUTTER})`
   }
 

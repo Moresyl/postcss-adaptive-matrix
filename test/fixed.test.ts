@@ -49,6 +49,14 @@ describe('correctFixedDeclaration', () => {
 
   it('leaves auto alone, having no length to offset', () => {
     expect(correctFixedDeclaration('left', 'auto')).toBeNull()
+    expect(correctFixedDeclaration('left', 'auto/**/')).toBeNull()
+  })
+
+  it('does not put CSS-wide keywords into an invalid calc expression', () => {
+    for (const keyword of ['inherit', 'initial', 'unset', 'revert', 'revert-layer']) {
+      expect(correctFixedDeclaration('left', keyword), keyword).toBeNull()
+      expect(correctFixedDeclaration('inset-inline-end', `${keyword}/**/`), keyword).toBeNull()
+    }
   })
 
   it('ignores the block axis, which the column does not constrain', () => {
@@ -74,7 +82,10 @@ describe('correctFixedDeclaration', () => {
 
   it('recognises only the fixed keyword', () => {
     expect(isFixedPositionValue(' Fixed ')).toBe(true)
+    expect(isFixedPositionValue('fixed/**/')).toBe(true)
+    expect(isFixedPositionValue('/**/ FIXED /**/')).toBe(true)
     expect(isFixedPositionValue('sticky')).toBe(false)
+    expect(isFixedPositionValue('fixed /* open')).toBe(false)
   })
 })
 
@@ -106,6 +117,18 @@ describe('fixed containing block', () => {
     const css = await run('.bar { position: absolute; left: 0 }')
     expect(css).toContain('left: 0')
     expect(css).not.toContain('--adaptive-root-gutter)')
+  })
+
+  it('preserves CSS-wide insets on a fixed rule instead of emitting invalid calc()', async () => {
+    const css = await run(
+      '.bar { position: fixed/**/; left: inherit; right: revert-layer; inset-inline-start: unset }',
+    )
+    expect(css).toContain('left: inherit')
+    expect(css).toContain('right: revert-layer')
+    expect(css).toContain('inset-inline-start: unset')
+    expect(css).not.toContain('calc(inherit')
+    expect(css).not.toContain('calc(revert-layer')
+    expect(css).not.toContain('calc(unset')
   })
 
   it('uses the winning position declaration instead of any earlier fixed fallback', async () => {
