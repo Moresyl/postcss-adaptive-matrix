@@ -463,4 +463,16 @@ describe('the fixed-position gutter', () => {
     expect(issues).toHaveLength(1)
     expect(issues[0]!.prop).toBe('left')
   })
+
+  it('does not hide a similarly named authored variable', () => {
+    const css = `
+      :root { --adaptive-root-gutter-extra: ${fluid(0)} }
+      .tabbar { left: calc(${fluid(40)} + var(--adaptive-root-gutter-extra)) }
+      @media (min-width: 768px) {
+        .tabbar { left: calc(${fluid(20)} + var(--adaptive-root-gutter-extra)) }
+      }
+    `
+
+    expect(check(css)).toHaveLength(1)
+  })
 })

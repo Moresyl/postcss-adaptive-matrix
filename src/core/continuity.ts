@@ -1,7 +1,7 @@
 import type { AtRule, Container, Declaration, Document, Root, Rule } from 'postcss'
 
 import { evaluateLength, splitComponents } from './evaluate.js'
-import { ROOT_GUTTER_VARIABLE } from './fixed.js'
+import { rootGutterReferenceRanges } from './fixed.js'
 import { allMatch, boundaryOf, widthConditions } from './media.js'
 import { collectTokens } from './tokens.js'
 import { canonicalCssPropertyName } from './syntax.js'
@@ -63,8 +63,6 @@ const EPSILON = 0.01
  */
 const COMPILED = /\b(?:clamp|min|max|calc)\s*\(/i
 
-const GUTTER_REFERENCE = new RegExp(`var\\(\\s*${ROOT_GUTTER_VARIABLE}\\s*\\)`, 'gi')
-
 /**
  * Drops the fixed-position gutter out of a value before it is compared.
  *
@@ -87,7 +85,12 @@ const GUTTER_REFERENCE = new RegExp(`var\\(\\s*${ROOT_GUTTER_VARIABLE}\\s*\\)`, 
  * default configuration is a check people learn to skip.
  */
 function withoutGutter(value: string): string {
-  return value.replace(GUTTER_REFERENCE, '0px')
+  const ranges = rootGutterReferenceRanges(value)
+  let output = value
+  for (const [start, end] of ranges.reverse()) {
+    output = `${output.slice(0, start)}0px${output.slice(end)}`
+  }
+  return output
 }
 
 /**

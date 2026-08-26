@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import postcss from 'postcss'
 import { adaptiveMatrix } from '../src/postcss/plugin.js'
-import { correctFixedDeclaration, isFixedPositionValue } from '../src/core/fixed.js'
+import {
+  correctFixedDeclaration,
+  isFixedPositionValue,
+  rootGutterReferenceRanges,
+} from '../src/core/fixed.js'
 import { appPcPreset } from '../src/core/presets.js'
 import type { AdaptiveMatrixOptions } from '../src/core/types.js'
 
@@ -121,6 +125,7 @@ describe('correctFixedDeclaration', () => {
     expect(correctFixedDeclaration('left', 'fn("var(--adaptive-root-gutter)")')).toBe(
       'calc(fn("var(--adaptive-root-gutter)") + var(--adaptive-root-gutter))',
     )
+    expect(rootGutterReferenceRanges('"var(--adaptive-root-gutter)"')).toEqual([])
   })
 
   it('recognises only the fixed keyword', () => {

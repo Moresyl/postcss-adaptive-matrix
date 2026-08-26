@@ -32,21 +32,24 @@ export const ROOT_GUTTER_VARIABLE = '--adaptive-root-gutter'
 const GUTTER = `var(${ROOT_GUTTER_VARIABLE})`
 const ROOT_WIDTH = `var(${ROOT_WIDTH_VARIABLE})`
 
-/** True only for a real var() reference to this exact, case-sensitive name. */
-function referencesGutter(value: string): boolean {
-  const canonical = canonicalizeCssIdentifierEscapes(value).text
-  let found = false
-  valueParser(canonical).walk((node) => {
+/** Source ranges of real var() references to this exact, case-sensitive name. */
+export function rootGutterReferenceRanges(value: string): Array<readonly [number, number]> {
+  const ranges: Array<readonly [number, number]> = []
+  const canonical = canonicalizeCssIdentifierEscapes(value)
+  valueParser(canonical.text).walk((node) => {
     if (node.type !== 'function' || canonicalCssIdentifierName(node.value) !== 'var') {
       return undefined
     }
     const first = node.nodes.find((entry) => entry.type !== 'space' && entry.type !== 'comment')
     if (first?.type === 'word' && canonicalCssPropertyName(first.value) === ROOT_GUTTER_VARIABLE) {
-      found = true
+      ranges.push([
+        canonical.positions[node.sourceIndex] ?? node.sourceIndex,
+        canonical.positions[node.sourceEndIndex] ?? value.length,
+      ])
     }
     return false
   })
-  return found
+  return ranges
 }
 
 /**
@@ -84,7 +87,7 @@ function equalsNumber(value: string, pattern: RegExp, expected: number): boolean
 
 function correctInlineInset(value: string): string {
   const trimmed = value.trim()
-  if (referencesGutter(trimmed)) return trimmed
+  if (rootGutterReferenceRanges(trimmed).length) return trimmed
   if (equalsNumber(trimmed, ZERO, 0)) return GUTTER
   const keyword = singleKeyword(trimmed)
   if (keyword === 'auto' || (keyword !== null && CSS_WIDE_KEYWORDS.has(keyword))) return trimmed
