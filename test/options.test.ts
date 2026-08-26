@@ -227,6 +227,17 @@ describe('configuration validation', () => {
     expect(() =>
       resolveOptions({ profiles: { app: { designWidth: 375, fluid, fontFluidity: 1.5 } } }),
     ).toThrow('Profile "app" fontFluidity must be between 0 and 1')
+    expect(() =>
+      resolveOptions({
+        profiles: { app: { designWidth: 375, textAnchorWidth: null } as never },
+      }),
+    ).toThrow('Profile "app" requires a positive textAnchorWidth')
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, fontFluidity: null } as never } }),
+    ).toThrow('Profile "app" fontFluidity must be between 0 and 1')
+    expect(() =>
+      resolveOptions({ profiles: { app: { designWidth: 375, rootMaxWidth: null } as never } }),
+    ).toThrow('Profile "app" requires a positive rootMaxWidth')
   })
 
   it('rejects query shapes that would emit undefined or invalid at-rules', () => {

@@ -392,7 +392,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
     )
   }
   if (
-    profile.textAnchorWidth != null &&
+    profile.textAnchorWidth !== undefined &&
     typeof profile.textAnchorWidth !== 'function' &&
     (!Number.isFinite(profile.textAnchorWidth) || profile.textAnchorWidth <= 0)
   ) {
@@ -401,7 +401,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
     )
   }
   if (
-    profile.fontFluidity != null &&
+    profile.fontFluidity !== undefined &&
     (!Number.isFinite(profile.fontFluidity) || profile.fontFluidity < 0 || profile.fontFluidity > 1)
   ) {
     throw new RangeError(
@@ -409,7 +409,7 @@ function validateProfile(name: string, profile: AdaptiveProfile): void {
     )
   }
   if (
-    profile.rootMaxWidth != null &&
+    profile.rootMaxWidth !== undefined &&
     (!Number.isFinite(profile.rootMaxWidth) || profile.rootMaxWidth <= 0)
   ) {
     throw new RangeError(
