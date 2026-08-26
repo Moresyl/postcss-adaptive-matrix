@@ -6,6 +6,7 @@
 
 ### 正确性与诊断
 
+- 字符串形式的 `include` / `exclude`、文件路由、组件库路径及 `root.injectTo` 现在可跨 Windows `\\` 与 POSIX `/` 分隔符匹配；正则与谓词函数仍收到原始宿主路径，保留显式的平台相关逻辑。
 - 现有 `px-to-viewport-ignore(-next)` 与 postcss-mobile-forever 的 `mobile-ignore(-next)` 指令无需兼容开关即可继续生效，替换旧编译器时不会静默转换作者明确要求固定的长度；注释仍保留在产物中，并与原生指令一样保证二次编译。
 - 宽度路由与死区间诊断现在会从媒体查询中安全投影掉合法的 `orientation: landscape` / `portrait`，不再连同可证明的宽度区间一起丢弃。仅含方向的规则保留继承画布，`orientation + min-width` 可选择正确设计稿；连续性/token 级联检查仍会拒绝猜测具体设备方向。
 - `withAtomicCss()` 与 `defineConfig()` 不再要求传一个不承载任何信息的 `{}`；零参数形式直接使用既有默认值，原子 CSS 专属设置可直接写成 `withAtomicCss({ tokenPrefixes: [...] })`，包装真实配置时仍保留调用方的精确泛型类型。

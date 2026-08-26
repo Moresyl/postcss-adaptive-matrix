@@ -33,6 +33,8 @@
 
 内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段。只有主动写出某类嵌套对象时，决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
 
+字符串文件匹配不受路径分隔符影响：`src/components/` 同样匹配 `C:\\repo\\src\\components\\card.css`，反斜杠写法也能匹配 POSIX 路径。正则与谓词函数仍收到未经修改的原始路径，已有的宿主平台逻辑不会被偷偷改写。
+
 `propList` 示例：
 
 ```js
@@ -109,10 +111,10 @@ unitToConvert: ['px', 'rem']
 `rootValue` 本身是可选的。如果同一个仓库里的不同子应用使用不同根字号，可以传函数，让源文件路径在每个文件上选择一次标尺：
 
 ```js
-rootValue: ({ file }) => file.includes('/legacy/') ? 10 : 16
+rootValue: ({ file }) => file.replaceAll('\\', '/').includes('/legacy/') ? 10 : 16
 ```
 
-回调收到 `{ file }`，必须返回大于 0 且有限的数字。按文件选择时需要真实的 PostCSS `from` 路径；没有路径时样式仍会编译，但因为回调无法区分文件，会给出一次告警。
+回调收到带宿主平台原始分隔符的 `{ file }`，必须返回大于 0 且有限的数字。按文件选择时需要真实的 PostCSS `from` 路径；没有路径时样式仍会编译，但因为回调无法区分文件，会给出一次告警。
 
 `minPixelValue` 与 `hairline` 的阈值是**像素**，不是面值。框架把发丝线写成 `0.0625rem`、你手写成 `1px`，是同一根线，都会被 `hairline` 拦下。
 

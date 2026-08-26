@@ -26,6 +26,13 @@ export function matchesPattern(pattern: Pattern, value: string): boolean {
   return typeof pattern === 'string' ? value.includes(pattern) : resettableTest(pattern, value)
 }
 
+/** String path filters are portable; predicates and regexes retain the host spelling. */
+function matchesPathString(pattern: string, file: string): boolean {
+  if (file.includes(pattern)) return true
+  if (!file.includes('\\') && !pattern.includes('\\')) return false
+  return file.replaceAll('\\', '/').includes(pattern.replaceAll('\\', '/'))
+}
+
 export function matchesAnyPattern(
   patterns: readonly Pattern[] | undefined,
   value: string,
@@ -52,7 +59,11 @@ export function matchesFile(
       if (matcher(file)) return true
       continue
     }
-    if (matchesPattern(matcher, file)) return true
+    if (
+      typeof matcher === 'string' ? matchesPathString(matcher, file) : resettableTest(matcher, file)
+    ) {
+      return true
+    }
   }
   return false
 }

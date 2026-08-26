@@ -446,6 +446,22 @@ describe('adaptiveMatrix', () => {
     expect(excluded.css).toContain('width: 32px')
   })
 
+  it('applies portable string file routes to Windows source paths', async () => {
+    const result = await process(
+      '.desktop { width: 144px }',
+      {
+        libraries: false,
+        strategy: 'viewport',
+        hairline: 0,
+        profiles: { app: { designWidth: 375 }, pc: { designWidth: 1440 } },
+        routes: [{ profile: 'pc', file: 'desktop/' }],
+      },
+      String.raw`C:\repo\desktop\app.css`,
+    )
+
+    expect(result.css).toContain('width: 10vw')
+  })
+
   it('warns and preserves unknown profiles by default', async () => {
     const result = await process('@adaptive watch { .a { width: 20px } }')
     expect(result.warnings()).toHaveLength(1)

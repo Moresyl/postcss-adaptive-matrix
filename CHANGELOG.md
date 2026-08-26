@@ -6,6 +6,7 @@
 
 ### Correctness and diagnostics
 
+- String `include` / `exclude`, file routes, library paths and `root.injectTo` now match across Windows `\\` and POSIX `/` separators. Regular expressions and predicate functions still receive the original host path, preserving explicit platform-sensitive behaviour.
 - Existing `px-to-viewport-ignore(-next)` and postcss-mobile-forever `mobile-ignore(-next)` directives are now honoured without a compatibility option, so replacing either compiler does not silently convert lengths their authors marked as fixed. The comments remain in output and survive the same second compilation guarantee as native directives.
 - Width routing and dead-band diagnostics now project valid `orientation: landscape` / `portrait` conditions out of a media query instead of discarding its provable width band. Orientation-only rules keep their inherited canvas; `orientation + min-width` can select the correct design canvas. Continuity/token cascade checks still decline the query because they cannot guess a concrete device orientation.
 - `withAtomicCss()` and `defineConfig()` no longer require an information-free `{}` argument. Their zero-argument forms use the existing defaults; atomic-only settings can be passed directly as `withAtomicCss({ tokenPrefixes: [...] })`; calls that wrap a real configuration retain the caller's precise generic type.

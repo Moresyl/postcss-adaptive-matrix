@@ -33,6 +33,8 @@ Every option, its type and its default. If you are just starting, read [Getting 
 
 Most configurations require no user-supplied fields because the built-in preset fills the top level. Once you explicitly author a nested object, only values that define its identity or calculation are required: `profile.designWidth`, an object-form `query.condition`, a route's `profile` plus at least one matching channel, and a standalone custom library's `name` plus `designWidth` (an `extends` entry inherits them). `fluid` and `root` have no required members. A sole custom profile also becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
 
+String file matchers are separator-portable: `src/components/` also matches `C:\\repo\\src\\components\\card.css`, and a backslash spelling also matches a POSIX path. Regular expressions and predicate functions receive the original path unchanged, so existing host-specific logic keeps its exact contract.
+
 `propList` example:
 
 ```js
@@ -109,10 +111,10 @@ So a page with `html { font-size: 62.5% }` sets `rootValue: 10`, and `3.2rem` an
 `rootValue` is optional. When different sub-apps in one repository set different root font sizes, use a function and let the source path choose the ruler once for that file:
 
 ```js
-rootValue: ({ file }) => file.includes('/legacy/') ? 10 : 16
+rootValue: ({ file }) => file.replaceAll('\\', '/').includes('/legacy/') ? 10 : 16
 ```
 
-The callback receives `{ file }` and must return a positive finite number. A real PostCSS `from` path is required for a file-sensitive choice; without one the stylesheet still compiles, but emits one warning because the callback cannot distinguish files.
+The callback receives `{ file }` with the host's original path separators and must return a positive finite number. A real PostCSS `from` path is required for a file-sensitive choice; without one the stylesheet still compiles, but emits one warning because the callback cannot distinguish files.
 
 The `minPixelValue` and `hairline` thresholds are in **pixels**, not face value. A framework writing a hairline as `0.0625rem` and you writing `1px` are the same line, and `hairline` stops both.
 

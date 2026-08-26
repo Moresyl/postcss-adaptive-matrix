@@ -567,6 +567,21 @@ describe('matchers and math helpers', () => {
     expect(matchesFile(undefined, '/src/a.css')).toBe(false)
   })
 
+  it('matches string paths across Windows and POSIX separators without rewriting predicates', () => {
+    const windows = String.raw`C:\repo\src\components\card.css`
+    let observed = ''
+
+    expect(matchesFile('src/components/', windows)).toBe(true)
+    expect(matchesFile('src\\components\\', '/repo/src/components/card.css')).toBe(true)
+    expect(
+      matchesFile((file) => {
+        observed = file
+        return false
+      }, windows),
+    ).toBe(false)
+    expect(observed).toBe(windows)
+  })
+
   it('rounds without negative zero and leaves zero/small values alone', () => {
     expect(round(-0.00001, 2)).toBe(0)
     const options = resolveOptions({ minPixelValue: 2, hairline: 0 })
