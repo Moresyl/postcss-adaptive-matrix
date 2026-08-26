@@ -194,6 +194,7 @@ Matching is by **implication, not by text**. `{ minWidth: 1024 }` claims any rul
 | `screen and (min-width: 1200px)` | 1200px and up | yes |
 | `(min-width: 64rem)` | 1024px and up | yes |
 | `(min-width: 1024px) and (max-width: 1600px)` | 1024–1600px | yes |
+| `(min-width: 1024px) and (orientation: landscape)` | 1024px and up (landscape only) | yes |
 | `(min-width: 768px)` | 768px and up | no — it reaches below 1024 |
 
 Nesting is conjunction, so `@media (min-width: 900px) { @media (min-width: 1100px) { … } }` is live from 1100px up and is claimed.
@@ -202,7 +203,7 @@ Nesting is conjunction, so `@media (min-width: 900px) { @media (min-width: 1100p
 
 Width numbers use the same complete CSS grammar as declarations: signs, fractions and exponents are accepted, so `(MIN-WIDTH: 1.024e3PX)` is the same 1024px boundary. Feature names and units are ASCII case-insensitive. Unitless `0` is valid; any other unitless width, a malformed decimal, or a non-finite exponent makes the query unreadable rather than leaking `NaN` into routing and diagnostics.
 
-A query the compiler cannot read — a comma, `not`, `only`, or any non-width feature — is claimed by **nothing**. That is a refusal, not a "matches everything": routing a rule on a condition nobody checked is how a canvas mistake gets made rather than caught. `@container` never counts either; it bounds an element, and `vw` has never been about the element.
+A query the compiler cannot read — a comma, `not`, `only`, or an unsupported non-width feature — is claimed by **nothing**. Orientation is the deliberate exception: `(orientation: landscape)` / `portrait` is projected out while deriving the width band, because it can narrow which devices apply but can never make a 1024px minimum reach below 1024px. An orientation-only query therefore keeps the inherited canvas, while `orientation + min-width` can still prove a width route. Continuity analysis remains conservative and skips the group because it cannot guess the device's current orientation. `@container` never counts either; it bounds an element, and `vw` has never been about the element.
 
 Contradictory readable bounds are different from an unreadable query. They form an empty interval, so no media route claims it and a converted rule gets one explicit `unreachable` warning (`min-width: 1100px` together with `max-width: 900px`). This is not reported as a pinned clamp: there is no viewport at which the rule exists. `--fail-on warnings` can enforce it in CI.
 

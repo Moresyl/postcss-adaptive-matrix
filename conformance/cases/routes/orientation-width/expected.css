@@ -1,0 +1,5 @@
+@media (min-width: 1024px) and (orientation: landscape) {
+  .hero {
+    padding: clamp(28.44444px, 2.77778vw, 53.33333px);
+  }
+}

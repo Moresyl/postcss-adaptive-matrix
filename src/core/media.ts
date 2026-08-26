@@ -2,9 +2,12 @@
  * The sliver of media-query syntax the diagnostics can reason about: plain
  * width bounds joined by `and`.
  *
- * Anything richer — a comma, `not`, `only`, a non-width feature — is reported
- * as unreadable rather than approximated. A diagnostic that treats a condition
- * it cannot parse as "always true" invents cascades that never happen.
+ * Anything richer — a comma, `not`, `only`, or an unsupported non-width
+ * feature — is reported as unreadable rather than approximated. Orientation is
+ * the one projection-safe exception for width-band routing: it changes which
+ * devices apply, not which widths a min/max condition implies. A diagnostic
+ * that treats any other unknown condition as "always true" invents cascades
+ * that never happen.
  */
 
 import { CSS_NUMBER_SOURCE } from './syntax.js'
@@ -26,6 +29,8 @@ const CHAINED_RANGE = new RegExp(
   `^\\([ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*(<=|>=|<|>)[ \\t\\r\\n\\f]*width[ \\t\\r\\n\\f]*(<=|>=|<|>)[ \\t\\r\\n\\f]*${LENGTH_SOURCE}[ \\t\\r\\n\\f]*\\)$`,
   'i',
 )
+const ORIENTATION_FEATURE =
+  /^\([ \t\r\n\f]*orientation[ \t\r\n\f]*:[ \t\r\n\f]*(?:landscape|portrait)[ \t\r\n\f]*\)$/i
 /** Media types that describe a screen; anything else is not our business. */
 const SCREEN_TYPES = new Set(['screen', 'all'])
 
@@ -142,18 +147,29 @@ function trimCssWhitespace(value: string): string {
  * Splits a media query's params on `and`, returning `null` for anything the
  * rules above exclude.
  */
-export function widthConditions(params: string): string[] | null {
+function conditionsIn(params: string, projectOrientation: boolean): string[] | null {
   const clean = withoutComments(params)
   if (clean === null || /[,]|\bnot\b|\bonly\b/i.test(clean)) return null
   const parts = clean.split(/[ \t\r\n\f]+and[ \t\r\n\f]+/i).map((part) => trimCssWhitespace(part))
   const conditions: string[] = []
   for (const part of parts) {
     if (SCREEN_TYPES.has(part.toLowerCase())) continue
+    // Orientation narrows *which devices* match, never the set of viewport
+    // widths at which a width condition can hold. Routing and dead-band checks
+    // can therefore project it away safely. Continuity cannot: it compares the
+    // winning cascade at one concrete state, and guessing portrait/landscape
+    // could compare declarations that never coexist. Its public parser keeps
+    // passing `false` and remains deliberately conservative.
+    if (projectOrientation && ORIENTATION_FEATURE.test(part)) continue
     const parsed = parseFeature(part)
     if (!parsed) return null
     for (const entry of parsed) conditions.push(`(${entry.side}-width: ${entry.px}px)`)
   }
   return conditions
+}
+
+export function widthConditions(params: string): string[] | null {
+  return conditionsIn(params, false)
 }
 
 export function matches(condition: string, width: number): boolean {
@@ -195,7 +211,7 @@ export const EVERY_WIDTH: WidthBand = { lo: 0, hi: Infinity }
  * rules on a condition nobody verified.
  */
 export function bandOf(params: string): WidthBand | null {
-  const conditions = widthConditions(params)
+  const conditions = conditionsIn(params, true)
   if (!conditions) return null
   let { lo, hi } = EVERY_WIDTH
   for (const condition of conditions) {

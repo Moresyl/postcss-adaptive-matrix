@@ -1,0 +1,5 @@
+@media (min-width: 1024px) and (orientation: landscape) {
+  .hero {
+    padding: 40px;
+  }
+}

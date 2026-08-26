@@ -1,6 +1,13 @@
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import { EVERY_WIDTH, allMatch, bandOf, boundaryOf, narrow } from '../src/core/media.js'
+import {
+  EVERY_WIDTH,
+  allMatch,
+  bandOf,
+  boundaryOf,
+  narrow,
+  widthConditions,
+} from '../src/core/media.js'
 import adaptiveMatrix from '../src/index.js'
 import type { AdaptiveMatrixOptions } from '../src/index.js'
 
@@ -82,6 +89,23 @@ describe('bandOf', () => {
     })
   })
 
+  it('projects valid orientation conditions out of width bands only', () => {
+    expect(bandOf('(min-width: 1024px) and (orientation: landscape)')).toEqual({
+      lo: 1024,
+      hi: Infinity,
+    })
+    expect(bandOf('(orientation: PORTRAIT) and (max-width: 800px)')).toEqual({
+      lo: 0,
+      hi: 800,
+    })
+    expect(bandOf('(orientation: landscape)')).toEqual(EVERY_WIDTH)
+    expect(bandOf('(orientation: sideways) and (min-width: 1024px)')).toBeNull()
+
+    // Continuity and token-cascade evaluation need a concrete orientation,
+    // so their parser remains conservative instead of guessing one.
+    expect(widthConditions('(min-width: 1024px) and (orientation: landscape)')).toBeNull()
+  })
+
   it('rejects malformed, non-finite and non-zero unitless media lengths', () => {
     for (const condition of [
       '(min-width: 1..2px)',
@@ -105,7 +129,6 @@ describe('bandOf', () => {
     expect(bandOf('print')).toBeNull()
     expect(bandOf('(min-width: 1024px), print')).toBeNull()
     expect(bandOf('not all and (min-width: 1024px)')).toBeNull()
-    expect(bandOf('(orientation: landscape)')).toBeNull()
     expect(bandOf('(min-width: 40vw)')).toBeNull()
   })
 
@@ -157,10 +180,17 @@ describe('a media route', () => {
       '(MIN-WIDTH: 1.024e3PX)',
       '(width >= 1024px)',
       '(1024px <= width < 1600px)',
+      '(orientation: landscape) and (min-width: 1024px)',
     ]) {
       const { css } = await run(`@media ${params} { .a { padding: 40px } }`, routed)
       expect(css, params).toContain('2.77778vw')
     }
+  })
+
+  it('keeps an orientation-only query on the inherited canvas', async () => {
+    const { css } = await run('@media (orientation: landscape) { .a { padding: 40px } }', routed)
+    expect(css).toContain('5.33333vw')
+    expect(css).not.toContain('2.77778vw')
   })
 
   it('applies through nested queries', async () => {

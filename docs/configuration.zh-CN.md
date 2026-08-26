@@ -194,6 +194,7 @@ adaptiveMatrix({
 | `screen and (min-width: 1200px)` | 1200px 及以上 | 是 |
 | `(min-width: 64rem)` | 1024px 及以上 | 是 |
 | `(min-width: 1024px) and (max-width: 1600px)` | 1024–1600px | 是 |
+| `(min-width: 1024px) and (orientation: landscape)` | 1024px 及以上（仅横屏） | 是 |
 | `(min-width: 768px)` | 768px 及以上 | 否——它够得到 1024 以下 |
 
 嵌套是「且」的关系，所以 `@media (min-width: 900px) { @media (min-width: 1100px) { … } }` 的生效区间是 1100px 及以上，会被认领。
@@ -202,7 +203,7 @@ adaptiveMatrix({
 
 宽度数字与声明共用完整 CSS number 语法：支持正负号、小数和指数，因此 `(MIN-WIDTH: 1.024e3PX)` 仍是 1024px 边界；特性名与单位按 CSS 规则不区分 ASCII 大小写。无单位 `0` 合法，其它无单位宽度、错误小数及非有限指数一律让查询变成不可读，不会把 `NaN` 泄漏进路由与诊断。
 
-编译器读不懂的查询——带逗号、带 `not`、带 `only`，或者任何非宽度特性——**谁都不认领**。这是「拒绝作答」，不是「全都匹配」：按一个没人核对过的条件去改派规则，正是画布错误产生的方式，而不是被抓住的方式。`@container` 同样从不参与计数；它约束的是元素，而 `vw` 从来就与元素无关。
+编译器读不懂的查询——带逗号、带 `not`、带 `only`，或者不受支持的非宽度特性——**谁都不认领**。横竖屏是刻意保留的例外：推导宽度区间时会投影掉 `(orientation: landscape)` / `portrait`，因为它只能缩小适用设备集合，不可能让 1024px 的下界延伸到 1024 以下。因此仅含 orientation 的查询继续使用继承画布，`orientation + min-width` 则仍可证明宽度路由。连续性分析依然保守跳过整组，因为它不能猜设备此刻的方向。`@container` 同样从不参与计数；它约束的是元素，而 `vw` 从来就与元素无关。
 
 能读懂但彼此矛盾的边界与此不同：它们组成空区间，因此没有媒体路由会认领，已转换规则只产生一次明确的 `unreachable` 告警（例如同时写 `min-width: 1100px` 与 `max-width: 900px`）。它不会被误报成 clamp 顶死——这条规则在任何视口都不存在。CI 可用 `--fail-on warnings` 强制拦截。
 
