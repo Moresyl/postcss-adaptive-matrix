@@ -132,6 +132,7 @@ describe('configuration validation', () => {
       expect(options.defaultProfile).toBe(name)
       expect(Object.hasOwn(options.profiles, name)).toBe(true)
       expect(options.profiles[name]).toEqual({ designWidth: 375 })
+      expect(Object.getPrototypeOf(options.profiles)).toBe(Object.prototype)
     }
 
     expect(() => resolveOptions({ routes: { profile: 'valueOf', selector: '.legacy' } })).toThrow(

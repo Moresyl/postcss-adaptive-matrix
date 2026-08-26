@@ -137,12 +137,14 @@ function normaliseProfiles(
 ): Record<string, AdaptiveProfile> {
   // Profile names are authored keys, not JavaScript object members. A normal
   // object's inherited `constructor` / `toString` entries can otherwise look
-  // like configured profiles, while assigning `__proto__` changes the map's
-  // prototype instead of registering that perfectly usable profile name.
-  const normalised = Object.create(null) as Record<string, AdaptiveProfile>
+  // like configured profiles, while assignment to `__proto__` changes the
+  // map's prototype instead of registering that perfectly usable profile name.
+  // `Object.fromEntries` uses data-property creation, which safely owns that
+  // key while retaining the ordinary-object shape this public API has shipped.
+  const normalised: Array<[string, AdaptiveProfile]> = []
   for (const [name, profile] of Object.entries(profiles)) {
     if (typeof profile === 'number' || typeof profile === 'function') {
-      normalised[name] = { designWidth: profile }
+      normalised.push([name, { designWidth: profile }])
       continue
     }
     if (
@@ -153,12 +155,12 @@ function normaliseProfiles(
       profile.query.name !== undefined &&
       profile.query.type === undefined
     ) {
-      normalised[name] = { ...profile, query: { ...profile.query, type: 'container' } }
+      normalised.push([name, { ...profile, query: { ...profile.query, type: 'container' } }])
       continue
     }
-    normalised[name] = profile
+    normalised.push([name, profile])
   }
-  return normalised
+  return Object.fromEntries(normalised)
 }
 
 function requireStrings(name: string, value: unknown): void {
@@ -808,11 +810,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   // explicit route is a decision, while a library entry is a default.
   if (libraries.length) {
     const expansion = expandLibraries(libraries, authored, options.defaultProfile)
-    options.profiles = Object.assign(
-      Object.create(null) as Record<string, AdaptiveProfile>,
-      authored,
-      expansion.profiles,
-    )
+    options.profiles = { ...authored, ...expansion.profiles }
     options.routes = [...options.routes, ...expansion.routes]
   }
   for (const [index, route] of options.routes.entries()) {
