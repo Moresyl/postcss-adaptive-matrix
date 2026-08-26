@@ -4,6 +4,53 @@ import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/
 import { resolveOptions } from '../src/core/options.js'
 
 describe('configuration validation', () => {
+  it('treats undefined optional top-level fields as omitted', () => {
+    const options = resolveOptions({
+      profiles: undefined,
+      defaultProfile: undefined,
+      routes: undefined,
+      libraries: undefined,
+      atRuleName: undefined,
+      strategy: undefined,
+      unit: undefined,
+      precision: undefined,
+      unitToConvert: undefined,
+      rootValue: undefined,
+      minPixelValue: undefined,
+      hairline: undefined,
+      fontFluidity: undefined,
+      textProperties: undefined,
+      propList: undefined,
+      selectorExclude: undefined,
+      valueExclude: undefined,
+      include: undefined,
+      exclude: undefined,
+      transformCustomProperties: undefined,
+      preserveOriginal: undefined,
+      root: undefined,
+      unknownProfile: undefined,
+    })
+
+    expect(options).toMatchObject({
+      defaultProfile: 'app',
+      atRuleName: 'adaptive',
+      strategy: 'clamp',
+      unit: 'vw',
+      precision: 5,
+      unitToConvert: ['px'],
+      rootValue: 16,
+      minPixelValue: 0,
+      hairline: 1,
+      fontFluidity: 0.35,
+      transformCustomProperties: false,
+      preserveOriginal: false,
+      root: false,
+      unknownProfile: 'warn',
+    })
+    expect(options.profiles).toHaveProperty('app')
+    expect(options.libraries.length).toBeGreaterThan(0)
+  })
+
   it('rejects missing profiles and invalid numeric ranges', () => {
     expect(() => resolveOptions({ defaultProfile: 'missing' })).toThrow(
       'defaultProfile "missing" does not exist',

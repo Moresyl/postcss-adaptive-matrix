@@ -581,6 +581,14 @@ function normaliseUnits(input: string | readonly string[]): string[] {
 
 export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdaptiveMatrixOptions {
   validateInputShape(input)
+  // Optional properties frequently arrive through object composition as
+  // `value: condition ? configured : undefined`. At runtime that must mean the
+  // same as omission; spreading it over DEFAULTS would otherwise erase a valid
+  // default and turn an optional field into a surprising validation failure.
+  // `null` is deliberately retained so malformed explicit input still fails.
+  const definedInput = Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  ) as AdaptiveMatrixOptions
   const preset = appPcPreset()
   const authored = normaliseProfiles(input.profiles ?? preset.profiles!)
   const libraries = resolveLibraries(input.libraries)
@@ -606,7 +614,7 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
           }
   const options: ResolvedAdaptiveMatrixOptions = {
     ...DEFAULTS,
-    ...input,
+    ...definedInput,
     defaultProfile,
     unitToConvert: normaliseUnits(
       input.unitToConvert === undefined ? DEFAULTS.unitToConvert : input.unitToConvert,
