@@ -308,6 +308,12 @@ function validateInputShape(input: unknown): void {
       `[postcss-adaptive-matrix] profiles must be an object keyed by profile name, not ${valueKind(input.profiles)}.`,
     )
   }
+  if (
+    input.defaultProfile !== undefined &&
+    (typeof input.defaultProfile !== 'string' || !input.defaultProfile.trim())
+  ) {
+    throw new TypeError('[postcss-adaptive-matrix] defaultProfile must be a non-empty string.')
+  }
   if (input.routes !== undefined) {
     const routes = Array.isArray(input.routes) ? input.routes : [input.routes]
     routes.forEach(validateRouteShape)
@@ -541,7 +547,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     ...DEFAULTS,
     ...input,
     defaultProfile,
-    unitToConvert: normaliseUnits(input.unitToConvert ?? DEFAULTS.unitToConvert),
+    unitToConvert: normaliseUnits(
+      input.unitToConvert === undefined ? DEFAULTS.unitToConvert : input.unitToConvert,
+    ),
     routes: toArray<AdaptiveRoute>(input.routes),
     textProperties: toArray(input.textProperties ?? DEFAULTS.textProperties),
     propList: toArray(input.propList ?? DEFAULTS.propList),
@@ -552,9 +560,6 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     root,
   }
 
-  if (typeof options.defaultProfile !== 'string' || !options.defaultProfile.trim()) {
-    throw new TypeError('[postcss-adaptive-matrix] defaultProfile must be a non-empty string.')
-  }
   if (!authored[options.defaultProfile]) {
     throw new Error(
       `[postcss-adaptive-matrix] defaultProfile "${options.defaultProfile}" does not exist.`,

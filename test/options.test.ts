@@ -86,6 +86,12 @@ describe('configuration validation', () => {
   it('reports malformed JavaScript and JSON shapes at the option that owns them', () => {
     expect(() => resolveOptions(null as never)).toThrow(/Options must be an object, not null/)
     expect(() => resolveOptions({ profiles: [] as never })).toThrow(/profiles must be an object/)
+    expect(() => resolveOptions({ defaultProfile: null } as never)).toThrow(
+      /defaultProfile must be a non-empty string/,
+    )
+    expect(() => resolveOptions({ unitToConvert: null } as never)).toThrow(
+      /unitToConvert must be a unit string or an array/,
+    )
     expect(() => resolveOptions({ routes: 16 as never })).toThrow(/routes\[0\] must be an object/)
     expect(resolveOptions({ propList: 'width' }).propList).toEqual(['width'])
     expect(resolveOptions({ textProperties: 'font-size' }).textProperties).toEqual(['font-size'])
