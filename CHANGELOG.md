@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 0.8.0 — 2026-08-27
+
 ### Correctness and diagnostics
 
 - Profile maps, component-library names and browser aliases now use own-key lookup semantics. Names such as `constructor`, `toString` and `__proto__` can no longer resolve through JavaScript's object prototype as phantom profiles or built-ins; explicitly configured profile names retain their exact identity, including through the public resolver API.

@@ -4,6 +4,8 @@
 
 ## 尚未发布
 
+## 0.8.0 — 2026-08-27
+
 ### 正确性与诊断
 
 - Profile 映射、组件库名称与浏览器别名现统一按对象自有键查找；`constructor`、`toString`、`__proto__` 等名字不会再借 JavaScript 对象原型伪装成不存在的 profile 或内置项。明确配置的 profile 名会在公开 resolver API 等全部路径中保持其精确身份。
