@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+- Compiler creation now captures nested profile settings, media route bands and root injection filter arrays. Later caller edits no longer change those settings in an existing compiler; dynamic width and root-value callbacks still run per file.
+- Large finite lengths no longer overflow solely while rounding to the configured decimal precision.
+- Schema hints and bilingual configuration guidance clarify that retaining a rem text component is not a guarantee of accessible page zoom.
 - Overflowing dimensions now produce one located warning per declaration, including cache hits, so warning gates can reject preserved-but-unconverted output.
 - CSS conversion retains an authored dimension when intermediate arithmetic overflows, instead of emitting invalid `Infinity` or `NaN` values; other dimensions in the declaration still convert.
 - Migration guidance now documents verified edge-case differences from `postcss-px-to-viewport`, including protected mixed-unit bounds and uppercase units.
