@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Viewport-length evaluation avoids intermediate multiplication overflow when the final pixel result is finite; genuinely overflowing results remain unknown.
+
 - Merged continuity findings now update both sampled pixel values when moving to the final reported breakpoint, keeping diagnostics numerically reproducible.
 
 - Token resolution now respects exclusive media-range endpoints, including fallback values exactly at an excluded boundary.

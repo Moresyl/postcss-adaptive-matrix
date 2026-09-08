@@ -8,6 +8,17 @@ const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
 describe('evaluateLength', () => {
+  it.each(['vw', 'vh', 'vi', 'vb', 'vmin', 'vmax'])(
+    'avoids intermediate overflow when evaluating a representable %s length',
+    (unit) => {
+      const context = { width: 100, height: 100, rootFontSize: 16 }
+      const result = evaluateLength(`1e308${unit}`, context)
+      expect(result).not.toBeNull()
+      expect(result! / 1e308).toBeCloseTo(1, 12)
+      expect(evaluateLength(`1e308${unit}`, { ...context, width: 1000, height: 1000 })).toBeNull()
+    },
+  )
+
   it('resolves the units the compiler emits', () => {
     expect(px('16px')).toBe(16)
     expect(px('1rem')).toBe(16)

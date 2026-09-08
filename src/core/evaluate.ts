@@ -115,6 +115,11 @@ function tokenize(input: string): Token[] | null {
   return tokens
 }
 
+function viewportPixels(value: number, size: number): number {
+  const product = value * size
+  return Number.isFinite(product) ? product / 100 : (value / 100) * size
+}
+
 function toPixels(value: number, unit: string, context: EvaluationContext): Quantity | null {
   let pixels: number
   switch (unit) {
@@ -133,17 +138,17 @@ function toPixels(value: number, unit: string, context: EvaluationContext): Quan
       return null
     case 'vw':
     case 'vi':
-      pixels = (value * context.width) / 100
+      pixels = viewportPixels(value, context.width)
       break
     case 'vh':
     case 'vb':
-      pixels = (value * context.height) / 100
+      pixels = viewportPixels(value, context.height)
       break
     case 'vmin':
-      pixels = (value * Math.min(context.width, context.height)) / 100
+      pixels = viewportPixels(value, Math.min(context.width, context.height))
       break
     case 'vmax':
-      pixels = (value * Math.max(context.width, context.height)) / 100
+      pixels = viewportPixels(value, Math.max(context.width, context.height))
       break
     default:
       // Container units are the notable absentee: `cqi` depends on an ancestor
