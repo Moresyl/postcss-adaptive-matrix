@@ -3,6 +3,27 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each(['media', 'container'] as const)(
+    'captures %s query settings while keeping dynamic rulers live',
+    async (type) => {
+      let width = 400
+      const query = { type, condition: '(min-width: 800px)' }
+      const compile = createAdaptiveCompiler({
+        profiles: { app: { designWidth: () => width, query } },
+        strategy: 'viewport',
+        libraries: false,
+      })
+      query.condition = '(min-width: 1600px)'
+      const first = await compile('@adaptive app { .a { width: 40px } }')
+      width = 800
+      const second = await compile('@adaptive app { .a { width: 40px } }')
+      expect(first.css).toContain(`@${type} (min-width: 800px)`)
+      expect(second.css).toContain(`@${type} (min-width: 800px)`)
+      expect(first.css).toContain('width: 10vw')
+      expect(second.css).toContain('width: 5vw')
+    },
+  )
+
   it('captures root injection file filters before the first compilation', async () => {
     const injectTo = ['entry.css']
     const compile = createAdaptiveCompiler({ root: { injectTo }, libraries: false })
