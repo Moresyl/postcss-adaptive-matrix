@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Playground Worker responses are now schema-checked before reaching the UI; malformed structured-clone payloads fail and clean up instead of corrupting the result panel.
 - Fixed the playground app/desktop sample's outdated preset parameter names; all page samples now run through the real Worker compilation path in tests.
 - Viewport initialization now honors cancellation triggered during host listener registration, cleaning up before publishing CSS variables.
 - Playground Worker message decoding failures now terminate immediately and clear their deadline instead of waiting for a timeout.

@@ -19,6 +19,36 @@ const input = { css: '.a {}', options: '{}' }
 const event = { data: { css: '.a {}' } } as MessageEvent
 
 describe('disposable compiler task', () => {
+  it.each([
+    null,
+    [],
+    'unexpected',
+    {},
+    { css: 123 },
+    { css: '', duration: 'fast' },
+    { css: '', duration: Number.NaN },
+    { css: '', duration: Infinity },
+    { css: '', duration: -1 },
+    { css: '', warnings: [null] },
+    { css: '', warnings: [{ text: 1 }] },
+    { css: '', warnings: {} },
+    { error: 123 },
+  ])('rejects malformed Worker payloads without publishing: %j', (data) => {
+    const { task, workers, receive, fail } = fixture()
+    task.run(input)
+    const old = workers[0]!
+    expect(() => old.onmessage!.call(old, { data } as MessageEvent)).not.toThrow()
+    expect(receive).not.toHaveBeenCalled()
+    expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+    expect(old.terminate).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
+    task.run(input)
+    old.onmessage!.call(old, event)
+    expect(receive).not.toHaveBeenCalled()
+    workers[1]!.onmessage!.call(workers[1]!, event)
+    expect(receive).toHaveBeenCalledExactlyOnceWith(event.data)
+  })
+
   it('fails immediately on message decoding errors and ignores stale ones', () => {
     const { task, workers, receive, fail } = fixture()
     task.run(input)
