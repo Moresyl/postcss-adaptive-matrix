@@ -273,3 +273,23 @@ Every claim on this page about Vite is verified by a **real Vite build** in `tes
 - conversely, an end-anchored pattern like `/\.mobile\.css$/` really does leave the SFC block silently on the default canvas — point 3 above, turned from something remembered into something verified.
 
 There is no real Webpack build. All `postcss-loader` does is call `postcss.process` with a `from`, and what has actually broken in a Webpack setting is whether the CommonJS entry can be called directly (fixed in 0.4.0), which `test/package.test.ts` verifies against the built artifact itself. Pulling in a whole Webpack toolchain for a path with almost no independent risk is not worth it.
+## Programmatic compilation
+
+Use the named helpers when a build script, editor or service needs the compiled output directly:
+
+```ts
+import { compileAdaptiveCss, createAdaptiveCompiler } from 'postcss-adaptive-matrix'
+
+const output = await compileAdaptiveCss('.card { padding: 24px }')
+console.log(output.css)
+
+const compile = createAdaptiveCompiler({ profiles: { app: 375 } })
+const result = await compile('.card { padding: 24px }', {
+  process: { from: 'src/card.css', to: 'dist/card.css', map: { inline: false } },
+  targets: { safari: 12 },
+})
+```
+
+Only the CSS string is required. Compiler configuration and request options are optional. `process` accepts PostCSS processing options; `targets` enables the existing feature-support audit. Results expose `css`, `map`, `warnings`, `compatibility` (null without targets), and the full PostCSS `result`. Parse and configuration failures reject the promise. Compatibility findings are data, not exceptions; inspect `findings` and `unknownBrowsers` before deciding whether to fail your build. The audit is limited to its documented feature table, not all CSS behavior.
+
+Reuse a compiler for several files to retain conversion caches. Dynamic canvas and root rulers refresh for every compilation, including rebuilds of the same path.

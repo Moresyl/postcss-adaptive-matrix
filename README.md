@@ -36,6 +36,16 @@ Giving each design file its own **canvas** is the answer. **And it is the defaul
 
 ## Install
 
+For build scripts and editor tooling, the package also exposes a direct compilation API:
+
+```ts
+import { compileAdaptiveCss } from 'postcss-adaptive-matrix'
+
+const { css, warnings } = await compileAdaptiveCss('.card { padding: 24px }')
+```
+
+Only the CSS input is required. Use `createAdaptiveCompiler()` to reuse configuration across files, or supply optional PostCSS source-map settings and browser targets. See [programmatic compilation](./docs/integration.md#programmatic-compilation) for result fields and error handling.
+
 ```bash
 npm i -D postcss postcss-adaptive-matrix
 ```

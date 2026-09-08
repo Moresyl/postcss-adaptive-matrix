@@ -25,6 +25,21 @@ const cjs = require('../dist/index.cjs')
 assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
+for (const api of [esm, cjs]) {
+  const compile = api.createAdaptiveCompiler({ profiles: { app: 375 } })
+  const output = await compile('.card { padding: 24px }', {
+    process: {
+      from: 'src/card.css',
+      to: 'dist/card.css',
+      map: { inline: false, annotation: false },
+    },
+  })
+  assert.match(output.css, /6\.4vw/)
+  assert.equal(output.map.toJSON().sourcesContent[0], '.card { padding: 24px }')
+  assert.equal(output.compatibility, null)
+  const single = await api.compileAdaptiveCss('.card { padding: 24px }')
+  assert.match(single.css, /6\.4vw/)
+}
 
 const runtime = await import('../dist/runtime.js')
 assert.equal(typeof runtime.observeAdaptiveViewport, 'function')

@@ -610,7 +610,18 @@ const MAX_CACHE_ENTRIES = 20_000
  */
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
-  const widths = new Map<string, [design: number, anchor: number]>()
+  const widths = new Map<
+    string,
+    Map<
+      string,
+      {
+        designWidth: number
+        anchorWidth: number
+        rootValue: number
+        cachePrefix: string
+      }
+    >
+  >()
   const rootValues = new Map<string, number>()
   const textProperties = new Map<string, boolean>()
   const values = new Map<string, { value: string; generatedBounds: boolean }>()
@@ -622,18 +633,28 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     profile: AdaptiveProfile,
     file: string,
   ): { value: string; generatedBounds: boolean } => {
-    const widthKey = JSON.stringify([profileName, file])
-    let resolvedWidths = widths.get(widthKey)
-    if (resolvedWidths === undefined) {
-      resolvedWidths = resolveProfileWidths(profileName, profile, file)
-      widths.set(widthKey, resolvedWidths)
+    let fileWidths = widths.get(file)
+    if (!fileWidths) {
+      fileWidths = new Map()
+      widths.set(file, fileWidths)
     }
-    const [designWidth, anchorWidth] = resolvedWidths
-    let rootValue = rootValues.get(file)
-    if (rootValue === undefined) {
-      rootValue = resolveRootValue(options, file)
-      rootValues.set(file, rootValue)
+    let resolved = fileWidths.get(profileName)
+    if (!resolved) {
+      const [designWidth, anchorWidth] = resolveProfileWidths(profileName, profile, file)
+      let rootValue = rootValues.get(file)
+      if (rootValue === undefined) {
+        rootValue = resolveRootValue(options, file)
+        rootValues.set(file, rootValue)
+      }
+      resolved = {
+        designWidth,
+        anchorWidth,
+        rootValue,
+        cachePrefix: JSON.stringify([profileName, designWidth, anchorWidth, rootValue]),
+      }
+      fileWidths.set(profileName, resolved)
     }
+    const { designWidth, anchorWidth, rootValue, cachePrefix } = resolved
 
     let accessibleText = textProperties.get(property)
     if (accessibleText === undefined) {
@@ -643,14 +664,10 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
 
     // The anchor and resolved root ruler belong in the key alongside the design
     // width: two canvases or files can agree on one and still write differently.
-    const key = JSON.stringify([
-      profileName,
-      designWidth,
-      anchorWidth,
-      rootValue,
-      accessibleText,
-      value,
-    ])
+    // The JSON array is an unambiguous prefix; the one-character text flag
+    // separates the raw value. Serialize the resolved scalars once per canvas
+    // and file, rather than re-escaping every declaration on cache hits.
+    const key = cachePrefix + (accessibleText ? '1' : '0') + value
     const cached = values.get(key)
     if (cached !== undefined) return cached
 

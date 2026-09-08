@@ -36,6 +36,16 @@
 
 ## 安装
 
+构建脚本与编辑器工具也可以直接调用编译接口：
+
+```ts
+import { compileAdaptiveCss } from 'postcss-adaptive-matrix'
+
+const { css, warnings } = await compileAdaptiveCss('.card { padding: 24px }')
+```
+
+只有 CSS 输入必填。多文件可使用 `createAdaptiveCompiler()` 复用配置，也可按需传入 PostCSS 源码映射选项和浏览器目标。结果字段和错误处理见[程序化编译](./docs/integration.zh-CN.md#程序化编译)。
+
 ```bash
 npm i -D postcss postcss-adaptive-matrix
 ```

@@ -56,6 +56,29 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('removes listeners from the original viewport when a host replaces it', () => {
+    const original = {
+      width: 390,
+      height: 700,
+      scale: 1,
+      offsetTop: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const replacement = { ...original, removeEventListener: vi.fn(), width: 420 }
+    const host = stubWindow(original)
+    const target = stubTarget()
+    const observer = observeAdaptiveViewport({ window: host.window, target: target.element })
+    Object.defineProperty(host.window, 'visualViewport', { value: replacement })
+    expect(observer.update()?.width).toBe(420)
+    observer.destroy()
+    for (const [event, listener] of original.addEventListener.mock.calls) {
+      expect(original.removeEventListener).toHaveBeenCalledWith(event, listener)
+    }
+    expect(replacement.removeEventListener).not.toHaveBeenCalled()
+    expect(observer.update()).toBeNull()
+  })
+
   it('is an SSR-safe no-op', () => {
     const observer = observeAdaptiveViewport({
       window: undefined,

@@ -139,6 +139,9 @@ export function observeAdaptiveViewport(
       : options.document
   const target = options.target === undefined ? browserDocument?.documentElement : options.target
   const prefix = variablePrefix(options.prefix)
+  // Teardown must address the same event source used during registration,
+  // even if an embedded host replaces its VisualViewport object later.
+  const eventViewport = browserWindow?.visualViewport
   // A requestAnimationFrame handle is an unsigned counter and may eventually
   // wrap to zero. `null`, rather than a valid handle value, means idle.
   let frame: number | null = null
@@ -220,8 +223,8 @@ export function observeAdaptiveViewport(
       frame = null
       browserWindow.removeEventListener('resize', schedule)
       browserWindow.removeEventListener('orientationchange', schedule)
-      browserWindow.visualViewport?.removeEventListener('resize', schedule)
-      browserWindow.visualViewport?.removeEventListener('scroll', schedule)
+      eventViewport?.removeEventListener('resize', schedule)
+      eventViewport?.removeEventListener('scroll', schedule)
       options.signal?.removeEventListener('abort', abort)
     },
   }
@@ -229,10 +232,10 @@ export function observeAdaptiveViewport(
   try {
     browserWindow.addEventListener('resize', schedule, { passive: true })
     browserWindow.addEventListener('orientationchange', schedule, { passive: true })
-    browserWindow.visualViewport?.addEventListener('resize', schedule, {
+    eventViewport?.addEventListener('resize', schedule, {
       passive: true,
     })
-    browserWindow.visualViewport?.addEventListener('scroll', schedule, {
+    eventViewport?.addEventListener('scroll', schedule, {
       passive: true,
     })
     options.signal?.addEventListener('abort', abort, { once: true })

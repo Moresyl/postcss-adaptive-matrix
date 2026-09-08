@@ -273,3 +273,23 @@ npx adaptive-matrix src/styles/app.css -c postcss.config.mjs
 - 反过来，用 `/\.mobile\.css$/` 这种锚定结尾的写法，SFC 块确实静默留在默认画布上——上面第 3 条说的就是这件事，这条测试让它成为验证过的事实而不是记忆。
 
 Webpack 侧没有起真实构建。`postcss-loader` 做的事就是带着 `from` 调 `postcss.process`，而 Webpack 场景真正出过问题的是 CommonJS 入口能不能直接调用（0.4.0 修复），那一条由 `test/package.test.ts` 针对构建产物本身验证。为一条几乎没有独立风险的路径引入整套 Webpack 依赖，不划算。
+## 程序化编译
+
+构建脚本、编辑器或服务需要直接取得编译结果时，可以使用具名导出的辅助函数：
+
+```ts
+import { compileAdaptiveCss, createAdaptiveCompiler } from 'postcss-adaptive-matrix'
+
+const output = await compileAdaptiveCss('.card { padding: 24px }')
+console.log(output.css)
+
+const compile = createAdaptiveCompiler({ profiles: { app: 375 } })
+const result = await compile('.card { padding: 24px }', {
+  process: { from: 'src/card.css', to: 'dist/card.css', map: { inline: false } },
+  targets: { safari: 12 },
+})
+```
+
+只有 CSS 字符串必填，编译配置和请求选项均可省略。`process` 接受 PostCSS 处理选项，`targets` 开启已有的特性支持审计。结果包含 `css`、`map`、`warnings`、`compatibility`（未传 targets 时为 null）和完整的 PostCSS `result`。语法或配置错误会拒绝 Promise。兼容性问题以数据返回，不会自动抛错；请检查 `findings` 与 `unknownBrowsers` 决定是否阻止构建。审计只覆盖文档列出的特性，并非全部 CSS 行为。
+
+多文件可复用同一个编译函数以保留转换缓存。动态画布宽度与根字号会在每次编译时重新求值，同一路径的重新构建也不会使用过时的值。
