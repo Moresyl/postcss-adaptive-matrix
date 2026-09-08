@@ -828,6 +828,16 @@ describe('matchers and math helpers', () => {
     expect(matchesFile(undefined, '/src/a.css')).toBe(false)
   })
 
+  it.each(['', 'g', 'y'])('supports frozen %s regex configuration without mutation', (flags) => {
+    const pattern = new RegExp('src', flags)
+    pattern.lastIndex = 2
+    Object.freeze(pattern)
+    expect(matchesPattern(pattern, 'src/card.css')).toBe(true)
+    expect(matchesFile(pattern, 'src/card.css')).toBe(true)
+    expect(matchesPattern(pattern, 'other/card.css')).toBe(false)
+    expect(pattern.lastIndex).toBe(2)
+  })
+
   it('matches string paths across Windows and POSIX separators without rewriting predicates', () => {
     const windows = String.raw`C:\repo\src\components\card.css`
     let observed = ''
