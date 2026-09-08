@@ -65,6 +65,15 @@ describe('splitComponents', () => {
 
 const check = (css: string) => findContinuityIssues(postcss.parse(css))
 
+it.each([0, -1, Number.NaN, Infinity, -Infinity, '16', null])(
+  'rejects an invalid continuity root font size even for empty CSS: %s',
+  (rootFontSize) => {
+    expect(() => findContinuityIssues(postcss.parse(''), rootFontSize as number)).toThrow(
+      'rootFontSize must be a positive finite number',
+    )
+  },
+)
+
 /**
  * A fixed pixel value written the way the compiler writes one.
  *

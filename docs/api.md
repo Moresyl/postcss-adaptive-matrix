@@ -50,7 +50,7 @@ const seams = findContinuityIssues(root, rootValue)
 const accepted = output.gate?.passed !== false && seams.length === 0
 ```
 
-This is a static check for backwards length steps at resolvable viewport breakpoints, not a layout or visual test. Unresolvable values and conditions are skipped; an empty report does not certify every responsive layout.
+This is a static check for backwards length steps at resolvable viewport breakpoints, not a layout or visual test. Unresolvable values and conditions are skipped; an empty report does not certify every responsive layout. The optional root font size defaults to 16; an explicitly supplied value must be a positive finite number or the analyzer throws a `RangeError`.
 
 The package includes ESM and CommonJS type declarations. Import `AdaptiveCompileOptions`, `AdaptiveCompileResult`, `AdaptiveCompileGate` and `AdaptiveCompileGateCategory` instead of restating the result contract.
 

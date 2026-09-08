@@ -50,7 +50,7 @@ const seams = findContinuityIssues(root, rootValue)
 const accepted = output.gate?.passed !== false && seams.length === 0
 ```
 
-这是一项静态检查，用于发现可计算的视口断点处长度反向缩小，不是布局或视觉测试。无法解析的值和条件会被跳过；报告为空不能证明所有响应式布局都正确。
+这是一项静态检查，用于发现可计算的视口断点处长度反向缩小，不是布局或视觉测试。无法解析的值和条件会被跳过；报告为空不能证明所有响应式布局都正确。根字号可省略，默认值为 16；显式传入时必须是正有限数，否则分析器抛出 `RangeError`。
 
 包内包含 ESM 与 CommonJS 类型声明。可直接导入 `AdaptiveCompileOptions`、`AdaptiveCompileResult`、`AdaptiveCompileGate` 和 `AdaptiveCompileGateCategory`，无需重复声明结果契约。
 

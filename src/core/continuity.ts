@@ -211,6 +211,9 @@ export function findContinuityIssues(
   root: Root,
   rootFontSize: number = ROOT_FONT_SIZE,
 ): ContinuityIssue[] {
+  if (!Number.isFinite(rootFontSize) || rootFontSize <= 0) {
+    throw new RangeError('rootFontSize must be a positive finite number')
+  }
   const { entries, poisoned } = collect(root)
   const tokens = collectTokens(root)
 

@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Continuity analysis now rejects invalid root font sizes instead of producing misleading pixel comparisons.
 - Bounded the property classification cache for reusable compilers handling generated custom-property names, preserving text conversion semantics after eviction.
 - Fixed URL paths containing comment-like text hiding later compatibility findings; URL token handling preserves following declarations and escaped/quoted closing parentheses.
 - Compatibility audits now ignore viewport/container-looking text inside `url()` resources, including escaped `url` spellings, while continuing to inspect following declarations.
