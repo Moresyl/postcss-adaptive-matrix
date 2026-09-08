@@ -3,6 +3,16 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('captures root injection file filters before the first compilation', async () => {
+    const injectTo = ['entry.css']
+    const compile = createAdaptiveCompiler({ root: { injectTo }, libraries: false })
+    injectTo[0] = 'other.css'
+    const entry = await compile('.a { width: 24px }', { process: { from: '/src/entry.css' } })
+    const other = await compile('.a { width: 24px }', { process: { from: '/src/other.css' } })
+    expect(entry.css).toContain('postcss-adaptive-matrix foundation')
+    expect(other.css).not.toContain('postcss-adaptive-matrix foundation')
+  })
+
   it('captures media route bands before the first compilation', async () => {
     const band = { minWidth: 800 }
     const compile = createAdaptiveCompiler({

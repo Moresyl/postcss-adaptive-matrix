@@ -635,6 +635,9 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
         ? { selector: ':root' }
         : {
             ...input.root,
+            ...(input.root.injectTo !== undefined
+              ? { injectTo: toArray(input.root.injectTo) }
+              : {}),
             selector: input.root.selector ?? ':root',
             ...(input.root.containerName !== undefined && input.root.container === undefined
               ? { container: true }
