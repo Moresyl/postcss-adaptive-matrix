@@ -40,6 +40,23 @@ async function run(css: string, options: AdaptiveMatrixOptions) {
 }
 
 describe('bandOf', () => {
+  it.each([
+    '(min-width: 1e308rem)',
+    '(max-width: -1e308em)',
+    '(width >= 1e308rem)',
+    '(1e308em <= width)',
+    '(0px <= width <= 1e308rem)',
+  ])('treats relative-unit overflow as unknown: %s', (query) => {
+    expect(bandOf(query)).toBeNull()
+    expect(widthConditions(query)).toBeNull()
+    expect(boundaryOf(query)).toBeNull()
+  })
+
+  it('retains representable extreme pixel and relative boundaries', () => {
+    expect(boundaryOf('(min-width: 1e308px)')).toBe(1e308)
+    expect(boundaryOf('(min-width: 1e306rem)')).toBe(1.6e307)
+  })
+
   it('reads the widths a query is live in', () => {
     expect(bandOf('(min-width: 1024px)')).toEqual({ lo: 1024, hi: Infinity })
     expect(bandOf('(max-width: 767px)')).toEqual({ lo: 0, hi: 767 })

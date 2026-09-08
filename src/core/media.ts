@@ -57,7 +57,8 @@ function lengthInPixels(numberText: string, unitText: string | undefined): numbe
   const number = Number(numberText)
   if (!Number.isFinite(number) || (unitText === undefined && number !== 0)) return null
   const unit = unitText?.toLowerCase()
-  return number * (unit === undefined || unit === 'px' ? 1 : INITIAL_FONT_SIZE)
+  const pixels = number * (unit === undefined || unit === 'px' ? 1 : INITIAL_FONT_SIZE)
+  return Number.isFinite(pixels) ? pixels : null
 }
 
 function constraint(side: 'min' | 'max', px: number | null): WidthConstraint[] | null {

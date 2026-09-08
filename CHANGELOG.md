@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Media-width analysis rejects `em`/`rem` bounds whose pixel conversion overflows, rather than passing non-finite boundaries into diagnostics. Representable extreme widths remain supported.
+
 - The playground adds an explicit retry action and distinguishes a failed first compilation from an active one. Manual retries clear queued debounce work; previous successful output remains visible after later failures.
 - Documentation gates now check Vue scripts and strict templates, and verify that search/playground code stays outside eager page dependency graphs. Configuration guidance clarifies that explicit property allowlists do not require `*`.
 
