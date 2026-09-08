@@ -263,7 +263,9 @@ export function findContinuityIssues(
     // that the stylesheet redefines at a breakpoint, which is the same
     // disagreement one level down and shows up as two different resolved
     // values below.
-    if (group.length < 2 && !/var\(/i.test(group[0]!.value)) continue
+    // Include escaped function names such as `v\\61 r(...)`, which CSS treats
+    // as `var(...)` and the token resolver can therefore evaluate.
+    if (group.length < 2 && !/var\(|\\/i.test(group[0]!.value)) continue
     for (const breakpoint of sortedBoundaries) {
       // There is no viewport below zero. Probing the synthetic negative side
       // of `(max-width: 0px)` can invent a cascade transition no browser can

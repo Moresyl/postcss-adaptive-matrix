@@ -7,6 +7,24 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it('checks a single declaration using an escaped var function across token breakpoints', () => {
+  const css = String.raw`:root { --gap: 10vw }
+    @media (min-width: 768px) { :root { --gap: 5vw } }
+    .card { width: v\61 r(--gap) }`
+  const expected = findContinuityIssues(postcss.parse(css.replace(String.raw`v\61 r`, 'var')))
+  expect(expected).toHaveLength(1)
+  for (const name of [
+    String.raw`v\61 r`,
+    String.raw`\76 ar`,
+    String.raw`va\72`,
+    String.raw`\76\61\72`,
+  ]) {
+    expect(findContinuityIssues(postcss.parse(css.replace(String.raw`v\61 r`, name)))).toEqual(
+      expected,
+    )
+  }
+})
+
 it('does not reuse gutter-stripped values across analyses of a mutated root', () => {
   const root = postcss.parse('.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }')
   expect(findContinuityIssues(root)).toHaveLength(1)
