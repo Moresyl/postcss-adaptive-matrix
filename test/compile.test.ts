@@ -3,6 +3,28 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('reuses frozen file and selector regex routes across compilations', async () => {
+    const file = Object.freeze(/desktop/g)
+    const selector = Object.freeze(/\.card/g)
+    const compile = createAdaptiveCompiler({
+      defaultProfile: 'app',
+      profiles: { app: 375, pc: 750 },
+      routes: [{ file, selector, profile: 'pc' }],
+    })
+    for (let index = 0; index < 2; index++) {
+      const output = await compile('.card { padding: 24px }', {
+        process: { from: '/src/desktop.css' },
+      })
+      expect(output.css).toContain('3.2vw')
+    }
+    const mobile = await compile('.card { padding: 24px }', {
+      process: { from: '/src/mobile.css' },
+    })
+    expect(mobile.css).toContain('6.4vw')
+    expect(file.lastIndex).toBe(0)
+    expect(selector.lastIndex).toBe(0)
+  })
+
   it('supports custom parsers returning independent source roots', async () => {
     const files: string[] = []
     const compile = createAdaptiveCompiler({

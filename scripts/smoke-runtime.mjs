@@ -26,6 +26,18 @@ assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
 for (const api of [esm, cjs]) {
+  const frozen = Object.freeze(/desktop/g)
+  const routed = await api.compileAdaptiveCss(
+    '.card { padding: 24px }',
+    {
+      defaultProfile: 'app',
+      profiles: { app: 375, pc: 750 },
+      routes: [{ file: frozen, profile: 'pc' }],
+    },
+    { process: { from: 'desktop.css' } },
+  )
+  assert.match(routed.css, /3\.2vw/)
+  assert.equal(frozen.lastIndex, 0)
   const document = postcss.document()
   document.append(postcss.parse('.a { width: min(40px, 100vw) }'))
   document.append(postcss.parse('@media (min-width: 768px) { .a { width: min(20px, 100vw) } }'))
