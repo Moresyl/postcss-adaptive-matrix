@@ -165,6 +165,8 @@ if (unknown.length) {
 }
 const rows: string[][] = []
 let problems = 0
+let staticChecked = 0
+let runtimeSkipped = 0
 
 for (const target of TARGETS) {
   if (only.length && !only.includes(target.library)) continue
@@ -215,6 +217,7 @@ for (const target of TARGETS) {
       '—',
     ])
     if (target.stylesheet || !target.runtimeStyles) problems += 1
+    else runtimeSkipped += 1
     continue
   }
 
@@ -263,6 +266,7 @@ for (const target of TARGETS) {
   const idempotent = first.css === second.css
   const seams = findContinuityIssues(first.root).length
   const warnings = first.warnings().length
+  staticChecked += 1
 
   const missing = prefixed === 0 || (target.tokenPrefix ? tokens === 0 : false)
   if (missing || !idempotent || seams > 0 || warnings > 0 || !canvasOk) problems += 1
@@ -296,7 +300,10 @@ const line = (cells: string[]): string =>
 console.log(line(headers))
 console.log(widths.map((width) => '-'.repeat(width)).join('  '))
 for (const row of rows) console.log(line(row))
-console.log(`\n${rows.length} checked, ${problems} needing attention`)
+console.log(`\n${rows.length} reviewed, ${problems} needing attention`)
+console.log(
+  `${staticChecked} static stylesheet checks completed, ${runtimeSkipped} runtime-only libraries skipped`,
+)
 console.log(`scratch downloads left in ${SCRATCH}/ — delete when done`)
 if (problems > 0) process.exitCode = 1
 

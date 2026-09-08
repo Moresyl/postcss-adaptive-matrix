@@ -8,6 +8,30 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('reports runtime-only libraries as skipped rather than statically verified', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-runtime-'))
+  try {
+    await mkdir(join(directory, '.libcheck', 'naive-ui', 'package'), { recursive: true })
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'naive-ui',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain(
+      '0 static stylesheet checks completed, 1 runtime-only libraries skipped',
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('continues after malformed CSS and reports the remaining valid library', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-invalid-'))
   try {
@@ -35,7 +59,10 @@ it('continues after malformed CSS and reports the remaining valid library', asyn
     expect(result.stdout).toContain('STYLESHEET FAILED:')
     expect(result.stdout).toContain('Unclosed block')
     expect(result.stdout).toContain('library:antd-mobile-2x')
-    expect(result.stdout).toContain('2 checked, 1 needing attention')
+    expect(result.stdout).toContain('2 reviewed, 1 needing attention')
+    expect(result.stdout).toContain(
+      '1 static stylesheet checks completed, 0 runtime-only libraries skipped',
+    )
   } finally {
     await rm(directory, { recursive: true, force: true })
   }
@@ -61,7 +88,7 @@ it('reports a missing pinned stylesheet and continues checking remaining targets
     expect(result.status, result.stderr).toBe(1)
     expect(result.stdout).toContain('MISSING STYLESHEET: bundle/style.css')
     expect(result.stdout).toContain('MISSING STYLESHEET: 2x/bundle/style.css')
-    expect(result.stdout).toContain('2 checked, 2 needing attention')
+    expect(result.stdout).toContain('2 reviewed, 2 needing attention')
     expect(result.stderr).not.toContain('ENOENT')
   } finally {
     await rm(directory, { recursive: true, force: true })
@@ -106,7 +133,7 @@ it.each([
       )
       expect(result.error).toBeUndefined()
       expect(result.status, result.stderr).toBe(status)
-      expect(result.stdout).toContain(`1 checked, ${problems} needing attention`)
+      expect(result.stdout).toContain(`1 reviewed, ${problems} needing attention`)
       expect(result.stdout).toContain('vant: vant@1.2.3-fixture (cached)')
       if (css.includes('1e309px')) expect(result.stdout).toContain('0 seams, 1 warns')
     } finally {
