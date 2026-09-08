@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Overflowing dimensions now produce one located warning per declaration, including cache hits, so warning gates can reject preserved-but-unconverted output.
 - CSS conversion retains an authored dimension when intermediate arithmetic overflows, instead of emitting invalid `Infinity` or `NaN` values; other dimensions in the declaration still convert.
 - Migration guidance now documents verified edge-case differences from `postcss-px-to-viewport`, including protected mixed-unit bounds and uppercase units.
 - CLI configuration errors now explain when a PostCSS `plugins` wrapper was supplied instead of compiler options, before attempting to read CSS input.

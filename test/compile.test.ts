@@ -3,6 +3,25 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('gates overflowing dimensions with located warnings, including cached conversions', async () => {
+    const compile = createAdaptiveCompiler({ profiles: { app: 375 }, strategy: 'viewport' })
+    for (const from of ['first.css', 'second.css']) {
+      const result = await compile('.a { margin: 1e308px 1e309px 24px }', {
+        process: { from },
+        failOn: ['warnings'],
+      })
+      expect(result.css).toContain('1e308px 1e309px 6.4vw')
+      expect(result.warnings).toHaveLength(1)
+      expect(result.warnings[0]?.text).toContain('finite numeric range')
+      expect(result.warnings[0]?.line).toBe(1)
+      expect(result.warnings[0]?.node?.source?.input.file).toContain(from)
+      expect(result.gate?.passed).toBe(false)
+    }
+    const clean = await compile('.a { width: 24px }', { failOn: ['warnings'] })
+    expect(clean.warnings).toEqual([])
+    expect(clean.gate?.passed).toBe(true)
+  })
+
   it('isolates mixed concurrent requests, failures, maps and file-specific rulers', async () => {
     const options = {
       profiles: {

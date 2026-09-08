@@ -209,6 +209,12 @@ function transformDeclaration(
     file,
   )
   const converted = conversion.value
+  if (conversion.overflow) {
+    context.result.warn(
+      'A length exceeds the finite numeric range during conversion; the original dimension was preserved. Reduce the authored value or adjust its design canvas.',
+      { node: declaration, plugin: PLUGIN_NAME },
+    )
+  }
   if (converted === declaration.value || isFollowedByEquivalent(declaration, converted)) {
     return
   }

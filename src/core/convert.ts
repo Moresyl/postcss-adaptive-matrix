@@ -456,6 +456,12 @@ function escapedProtectedRanges(
   return ranges
 }
 
+interface ValueConversion {
+  value: string
+  generatedBounds: boolean
+  overflow?: boolean
+}
+
 function convertResolvedValue(
   value: string,
   designWidth: number,
@@ -464,13 +470,14 @@ function convertResolvedValue(
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
   rootValue: number,
-): { value: string; generatedBounds: boolean } {
+): ValueConversion {
   const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
   const outputUnit = (profile.unit ?? options.unit).toLowerCase()
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
   const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
   let generatedBounds = false
+  let overflow = false
   const replaceDimension = (
     match: string,
     prefix: string,
@@ -492,7 +499,10 @@ function convertResolvedValue(
     // The CSS token is still a number even when its magnitude overflows a
     // JavaScript double. Keeping the authored token is safer than replacing
     // it with `Infinitypx`, which is not CSS syntax and drops the declaration.
-    if (!Number.isFinite(pixels)) return authoredMatch
+    if (!Number.isFinite(pixels)) {
+      overflow = true
+      return authoredMatch
+    }
     if (
       pixels === 0 ||
       Math.abs(pixels) < options.minPixelValue ||
@@ -512,7 +522,10 @@ function convertResolvedValue(
     )
     // A finite authored dimension can overflow intermediate multiplication or
     // rounding. Keep that token instead of emitting an invalid CSS number.
-    if (converted.includes('Infinity') || converted.includes('NaN')) return authoredMatch
+    if (converted.includes('Infinity') || converted.includes('NaN')) {
+      overflow = true
+      return authoredMatch
+    }
     if (
       converted.startsWith('clamp(') ||
       converted.startsWith('min(') ||
@@ -583,7 +596,11 @@ function convertResolvedValue(
     node.value = rebuilt + authored.slice(cursor)
     return undefined
   })
-  return { value: valueParser.stringify(parsed.nodes), generatedBounds }
+  return {
+    value: valueParser.stringify(parsed.nodes),
+    generatedBounds,
+    ...(overflow ? { overflow } : {}),
+  }
 }
 
 export function convertValue(
@@ -633,7 +650,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   >()
   const rootValues = new Map<string, number>()
   const textProperties = new Map<string, boolean>()
-  const values = new Map<string, { value: string; generatedBounds: boolean }>()
+  const values = new Map<string, ValueConversion>()
 
   const convertWithMetadata = (
     value: string,
@@ -641,7 +658,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     profileName: string,
     profile: AdaptiveProfile,
     file: string,
-  ): { value: string; generatedBounds: boolean } => {
+  ): ValueConversion => {
     let fileWidths = widths.get(file)
     if (!fileWidths) {
       fileWidths = new Map()
