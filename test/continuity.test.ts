@@ -393,6 +393,13 @@ describe('findContinuityIssues', () => {
     expect(issues[0]!.breakpoint).toBe(768)
   })
 
+  it('detects shrinking unbounded viewport output without a math wrapper', () => {
+    const issues = check('.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.below.value).toBe('10vw')
+    expect(issues[0]!.above.value).toBe('5vw')
+  })
+
   it('reports a breakpoint once, not once per boundary that straddles it', () => {
     // `(max-width: 767.98px)` and `(min-width: 768px)` are two boundaries
     // describing one transition. Probing each would report the same step twice.
