@@ -363,6 +363,25 @@ export function convertLength(
   return converted
 }
 
+/** Serialize nested functions without recursion; delegate leaf formatting. */
+function stringifyValueNodes(nodes: Node[]): string {
+  const pending: Array<Node | string> = [...nodes].reverse()
+  const parts: string[] = []
+  while (pending.length) {
+    const node = pending.pop()!
+    if (typeof node === 'string') {
+      parts.push(node)
+    } else if (node.type === 'function') {
+      parts.push(node.value, '(', node.before || '')
+      pending.push((node.after || '') + (node.unclosed ? '' : ')'))
+      for (let index = node.nodes.length - 1; index >= 0; index--) pending.push(node.nodes[index]!)
+    } else {
+      parts.push(valueParser.stringify(node))
+    }
+  }
+  return parts.join('')
+}
+
 /** Pre-order traversal with the same subtree-pruning contract as value-parser. */
 function walkValueNodes(nodes: Node[], visit: (node: Node) => false | undefined): void {
   const pending = [...nodes].reverse()
@@ -628,7 +647,7 @@ function convertResolvedValue(
     return undefined
   })
   return {
-    value: valueParser.stringify(parsed.nodes),
+    value: stringifyValueNodes(parsed.nodes),
     generatedBounds,
     ...(overflow ? { overflow } : {}),
   }

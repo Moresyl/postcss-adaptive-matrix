@@ -13,6 +13,16 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  it('converts a value nested in ten thousand functions without stack overflow', async () => {
+    const prefix = 'custom('.repeat(10_000)
+    const suffix = ')'.repeat(10_000)
+    const result = await process(`.a { width: ${prefix}24px${suffix} }`, {
+      profiles: { app: 375 },
+      libraries: false,
+    })
+    expect(result.css).toBe(`.a { width: ${prefix}calc(6.4vw)${suffix} }`)
+    expect(result.warnings()).toEqual([])
+  })
   it.each(['viewport', 'clamp'] as const)(
     'preserves authored dimensions when %s arithmetic overflows',
     async (strategy) => {
