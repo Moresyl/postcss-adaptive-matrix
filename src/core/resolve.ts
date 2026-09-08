@@ -74,7 +74,9 @@ export function createProfileResolver(options: ResolvedAdaptiveMatrixOptions) {
       // Custom property names are case-sensitive in CSS. Route prefixes have
       // to preserve that distinction or `--Theme-*` can claim `--theme-*`.
       property: toArray(route.property),
-      media: toArray(route.media),
+      // The array copy alone still aliases authored band objects. Capture the
+      // validated bounds so later caller edits cannot silently reroute CSS.
+      media: toArray(route.media).map((band) => ({ ...band })),
       active: activation(route.profile),
     }))
 

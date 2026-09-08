@@ -3,6 +3,19 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('captures media route bands before the first compilation', async () => {
+    const band = { minWidth: 800 }
+    const compile = createAdaptiveCompiler({
+      profiles: { app: 375, desktop: 1200 },
+      routes: { media: band, profile: 'desktop' },
+      strategy: 'viewport',
+      libraries: false,
+    })
+    band.minWidth = 1600
+    const result = await compile('@media (min-width: 1000px) { .a { width: 120px } }')
+    expect(result.css).toContain('width: 10vw')
+  })
+
   it('captures nested profile and route settings when the compiler is created', async () => {
     const profile = { designWidth: 375, fluid: { maxWidth: 600 } }
     const route = { selector: ['.fixed'], profile: false as const }
