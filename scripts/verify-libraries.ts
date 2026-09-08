@@ -278,14 +278,18 @@ for (const target of TARGETS) {
   let seams: number
   let warnings: number
   try {
+    const originalFindings = new Set(
+      findContinuityIssues(root).map((issue) => JSON.stringify(issue)),
+    )
     const first = await postcss([adaptiveMatrix({})]).process(css, { from })
     const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
     idempotent = first.css === second.css
     const findings = findContinuityIssues(first.root)
     seams = findings.length
     for (const finding of findings) {
+      const origin = originalFindings.has(JSON.stringify(finding)) ? 'pre-existing' : 'new/changed'
       console.log(
-        `${target.library} ${relative(packaged, stylesheet)}: ${finding.selector} ${finding.prop} ` +
+        `${target.library} ${relative(packaged, stylesheet)} [${origin}]: ${finding.selector} ${finding.prop} ` +
           `at ${finding.breakpoint}px: ${finding.below.value} (${finding.below.px}px) -> ` +
           `${finding.above.value} (${finding.above.px}px)`,
       )
