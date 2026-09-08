@@ -7,6 +7,26 @@ function table(css: string): ReturnType<typeof collectTokens> {
 }
 
 describe('theme token resolution', () => {
+  it('selects the correct token at exclusive and inclusive range endpoints', () => {
+    const tokens = table(`
+      :root { --gap: 8px }
+      @media (width < 768px) { :root { --gap: 16px } }
+      @media (768px < width <= 1024px) { :root { --gap: 32px } }
+    `)
+    expect(tokens.resolve('var(--gap)', 767.99)).toBe('16px')
+    expect(tokens.resolve('var(--gap)', 768)).toBe('8px')
+    expect(tokens.resolve('var(--gap)', 768.01)).toBe('32px')
+    expect(tokens.resolve('var(--gap)', 1024)).toBe('32px')
+    expect(tokens.resolve('var(--gap)', 1024.01)).toBe('8px')
+    expect(tokens.boundaries).toEqual([768, 1024])
+  })
+
+  it('uses a fallback at the excluded boundary of an otherwise unset token', () => {
+    const tokens = table('@media (width > 768px) { :root { --gap: 32px } }')
+    expect(tokens.resolve('var(--gap, 16px)', 768)).toBe('16px')
+    expect(tokens.resolve('var(--gap, 16px)', 768.01)).toBe('32px')
+  })
+
   it('substitutes a token declared on :root', () => {
     const tokens = table(':root { --gap: 16px } .a { padding: var(--gap) }')
     expect(tokens.resolve('var(--gap)', 400)).toBe('16px')

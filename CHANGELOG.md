@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Token resolution now respects exclusive media-range endpoints, including fallback values exactly at an excluded boundary.
+
 - Media-condition normalization preserves strict `<`/`>` endpoints for concrete width matching; route bands remain conservative numeric envelopes.
 
 - Media-width analysis rejects `em`/`rem` bounds whose pixel conversion overflows, rather than passing non-finite boundaries into diagnostics. Representable extreme widths remain supported.
