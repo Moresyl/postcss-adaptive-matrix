@@ -23,6 +23,15 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it.each([0, 5, 12])('preserves large finite values when rounding to %i places', (precision) => {
+    expect(round(1e307, precision)).toBe(1e307)
+    expect(round(-1e307, precision)).toBe(-1e307)
+    const options = resolveOptions({ profiles: { app: 400 }, strategy: 'viewport', precision })
+    expect(convertLength(1e302, 'width', 'app', options.profiles.app!, options, '')).toBe(
+      '2.5e+301vw',
+    )
+  })
+
   it('rejects overflow in the numeric core helper while preserving authored CSS values', () => {
     const options = resolveOptions({ profiles: { app: 375 }, strategy: 'viewport' })
     const profile = options.profiles.app!

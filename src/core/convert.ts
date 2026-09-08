@@ -125,6 +125,9 @@ export function containsIgnoreCase(haystack: string, needleLower: string): boole
 }
 
 export function round(value: number, precision: number): number {
+  // At this magnitude binary64 has no fractional digits left to round.
+  // Scaling by the decimal factor can overflow an otherwise finite value.
+  if (Math.abs(value) >= Number.MAX_SAFE_INTEGER) return value
   const factor = 10 ** precision
   const rounded = Math.round((value + Number.EPSILON) * factor) / factor
   return Object.is(rounded, -0) ? 0 : rounded
