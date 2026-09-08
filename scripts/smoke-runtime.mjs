@@ -29,6 +29,22 @@ assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
 for (const api of [esm, cjs]) {
+  const seam = api.findContinuityIssues(
+    postcss.parse('.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }'),
+  )
+  assert.equal(seam.length, 1)
+  assert.equal(seam[0].breakpoint, 768)
+  for (const invalid of ['10vw / 2', 'calc((16px()']) {
+    assert.deepEqual(
+      api.findContinuityIssues(
+        postcss.parse(`.a { width: 10vw } @media (min-width: 768px) { .a { width: 2px } }`),
+      ).length,
+      1,
+    )
+    const root = postcss.parse('.a { width: 10vw } @media (min-width: 768px) { .a { width: 2px } }')
+    root.nodes[1].nodes[0].nodes[0].value = invalid
+    assert.deepEqual(api.findContinuityIssues(root), [])
+  }
   const frozen = Object.freeze(/desktop/g)
   const routed = await api.compileAdaptiveCss(
     '.card { padding: 24px }',
