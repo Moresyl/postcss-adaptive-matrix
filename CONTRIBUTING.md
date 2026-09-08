@@ -35,6 +35,8 @@ Code expectations:
 
 `DOCS_BASE` controls page paths, whereas `SITE_URL` controls absolute links in the AI indexes and the schema `$id`. For a custom domain, set both before building; `SITE_URL` must include the matching deployment path and a trailing `/`. For example, in PowerShell: `$env:DOCS_BASE='/'; $env:SITE_URL='https://docs.example.com/'; npm run docs:build`. These values describe deployment configuration; a successful local build does not verify that the domain serves the files. The build also compares generated Markdown, AI indexes, schema and favicon against source content.
 
+Omitting the trailing `/` is accepted and normalized automatically. `SITE_URL` remains optional; explicit values must be HTTP(S) URLs without credentials, query strings or fragments.
+
 ## Performance measurements
 
 Run `npm run bench:continuity -- a3025cc` for a source-level analyzer comparison, replacing the hash with an available trusted baseline commit. The script executes that revision's analyzer with current dependencies, verifies identical findings, and alternates timing against the working tree on synthetic 2- and 40-breakpoint corpora. This is not a whole-release comparison or CI gate. Output differences fail before timing; the same iteration and warmup environment variables apply.

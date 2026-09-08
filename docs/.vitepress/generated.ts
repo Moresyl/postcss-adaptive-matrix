@@ -26,9 +26,10 @@ import type { Plugin } from 'vitepress'
 import { llmsFullTxt, llmsTxt } from './llms'
 import { isPublished, rewrite, SRC_DIR } from './paths'
 import { optionsSchema } from './schema'
+import { siteUrl } from './site-url'
 
 /** Where the site is deployed. Agents need an absolute URL; readers do not. */
-export const SITE_URL = process.env.SITE_URL ?? 'https://moresyl.github.io/postcss-adaptive-matrix/'
+export const SITE_URL = siteUrl(process.env.SITE_URL)
 
 /** Directories with no publishable Markdown in them. */
 const SKIP = new Set([

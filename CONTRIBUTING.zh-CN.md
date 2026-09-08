@@ -35,6 +35,8 @@ npm run check
 
 `DOCS_BASE` 控制页面路径，`SITE_URL` 控制 AI 索引中的绝对链接和 schema 的 `$id`。自定义域名部署前须同时设置；`SITE_URL` 应包含相同的部署子路径，并以 `/` 结尾。例如 PowerShell：`$env:DOCS_BASE='/'; $env:SITE_URL='https://docs.example.com/'; npm run docs:build`。这些值只是部署配置，本地构建成功不证明该域名已提供文件。构建也会把生成的 Markdown、AI 索引、schema 和图标与源内容逐项比对。
 
+末尾 `/` 可以省略，构建会自动补齐。`SITE_URL` 仍为可选配置；显式值必须是 HTTP(S) 地址，且不能包含凭据、查询字符串或片段。
+
 ## 性能测量
 
 运行 `npm run bench:continuity -- a3025cc` 可进行分析器源码级对比，将哈希替换为本地可用且可信的基线提交。脚本使用当前依赖执行该提交的分析器，先验证诊断一致，再与工作区实现交替计时，覆盖 2 和 40 个断点的合成语料。这不是整版发布对比或 CI 门禁；结果不一致会在计时前失败。同样支持预热和计时轮数环境变量。
