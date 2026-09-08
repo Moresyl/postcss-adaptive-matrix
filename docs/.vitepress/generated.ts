@@ -103,7 +103,14 @@ export function generatedAssets(): Plugin {
     name: 'adaptive-matrix:generated',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        const url = decodeURIComponent((request.url ?? '').split('?')[0] ?? '')
+        let url: string
+        try {
+          url = decodeURIComponent((request.url ?? '').split('?')[0] ?? '')
+        } catch {
+          // Malformed external URLs are not generated asset paths. Let the
+          // host server apply its normal invalid-request handling.
+          return next()
+        }
         const base = server.config.base
         const wanted = url.startsWith(base) ? url.slice(base.length) : url.replace(/^\//, '')
         // Regenerated per request: these are cheap, and a stale llms.txt in a
