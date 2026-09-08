@@ -43,12 +43,11 @@ import { compileAdaptiveCss, findContinuityIssues } from 'postcss-adaptive-matri
 
 const rootValue = 20
 const output = await compileAdaptiveCss(source, { rootValue })
-const root = output.result.root
-// A custom PostCSS parser can return a Document instead of one stylesheet.
-if (root.type !== 'root') throw new Error('Analyze Document roots separately')
-const seams = findContinuityIssues(root, rootValue)
+const seams = findContinuityIssues(output.result.root, rootValue)
 const accepted = output.gate?.passed !== false && seams.length === 0
 ```
+
+The analyzer accepts a `Root` or a PostCSS `Document`. Document roots are analyzed independently and findings are concatenated in root order; rules and custom properties never leak across roots. To associate findings with individual files or use a different root font size per file, analyze each root separately.
 
 This is a static check for backwards length steps at resolvable viewport breakpoints, not a layout or visual test. Unresolvable values and conditions are skipped; an empty report does not certify every responsive layout. The optional root font size defaults to 16; an explicitly supplied value must be a positive finite number or the analyzer throws a `RangeError`.
 

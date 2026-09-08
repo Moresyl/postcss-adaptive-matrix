@@ -1,6 +1,7 @@
 import adaptiveMatrix, {
   compileAdaptiveCss,
   createAdaptiveCompiler,
+  findContinuityIssues,
   type AdaptiveCompileOptions,
   type AdaptiveCompileResult,
   type AdaptiveCompileGate,
@@ -19,6 +20,7 @@ const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: ['com
 const compile = createAdaptiveCompiler()
 const output: AdaptiveCompileResult = await compile('.a { width: 24px }', request)
 const gate: AdaptiveCompileGate | null = output.gate
+findContinuityIssues(output.result.root)
 void gate
 await compileAdaptiveCss('')
 // @ts-expect-error unknown gate categories must not be accepted

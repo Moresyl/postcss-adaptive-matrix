@@ -208,11 +208,16 @@ function effective(group: Entry[], width: number): Entry | undefined {
  * outside what can be resolved to a number.
  */
 export function findContinuityIssues(
-  root: Root,
+  root: Root | Document,
   rootFontSize: number = ROOT_FONT_SIZE,
 ): ContinuityIssue[] {
   if (!Number.isFinite(rootFontSize) || rootFontSize <= 0) {
     throw new RangeError('rootFontSize must be a positive finite number')
+  }
+  // Document roots may represent independent embedded stylesheets. Never
+  // synthesize a cascade or share custom-property values across those roots.
+  if (root.type === 'document') {
+    return root.nodes.flatMap((child) => findContinuityIssues(child, rootFontSize))
   }
   const { entries, poisoned } = collect(root)
   const tokens = collectTokens(root)

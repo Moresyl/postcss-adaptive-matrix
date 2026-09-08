@@ -86,6 +86,28 @@ it.each([0, -1, Number.NaN, Infinity, -Infinity, '16', null])(
 const fluid = (value: number) => `min(${value}px, 100vw)`
 
 describe('findContinuityIssues', () => {
+  it('analyzes Document roots independently without cross-root false seams', () => {
+    const document = postcss.document()
+    document.append(postcss.parse('.a { width: min(40px, 100vw) }'))
+    document.append(postcss.parse('@media (min-width: 768px) { .a { width: min(20px, 100vw) } }'))
+    expect(findContinuityIssues(document)).toEqual([])
+  })
+
+  it('combines real Document findings without sharing tokens between roots', () => {
+    const document = postcss.document()
+    for (const size of [40, 60]) {
+      document.append(
+        postcss.parse(`:root { --size: ${size}px }
+          .a { width: min(var(--size), 100vw) }
+          @media (min-width: 768px) { .a { width: min(20px, 100vw) } }`),
+      )
+    }
+    const issues = findContinuityIssues(document)
+    expect(issues.map((issue) => issue.below.px)).toEqual([40, 60])
+    expect(issues.map((issue) => issue.above.px)).toEqual([20, 20])
+    expect(findContinuityIssues(postcss.document())).toEqual([])
+  })
+
   it('tracks unbounded compiler output across a profile breakpoint', async () => {
     const result = await postcss([
       adaptiveMatrix({

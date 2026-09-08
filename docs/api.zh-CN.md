@@ -43,12 +43,11 @@ import { compileAdaptiveCss, findContinuityIssues } from 'postcss-adaptive-matri
 
 const rootValue = 20
 const output = await compileAdaptiveCss(source, { rootValue })
-const root = output.result.root
-// 自定义 PostCSS 解析器可能返回 Document，而不是一份样式表。
-if (root.type !== 'root') throw new Error('请分别分析 Document 内的各个 Root')
-const seams = findContinuityIssues(root, rootValue)
+const seams = findContinuityIssues(output.result.root, rootValue)
 const accepted = output.gate?.passed !== false && seams.length === 0
 ```
+
+分析器接受 `Root` 或 PostCSS `Document`。Document 内各份样式表独立分析，再按 Root 顺序汇总；规则和自定义属性不会跨 Root 混用。如果需要把结果对应到具体文件，或为不同文件使用不同根字号，请逐个 Root 调用。
 
 这是一项静态检查，用于发现可计算的视口断点处长度反向缩小，不是布局或视觉测试。无法解析的值和条件会被跳过；报告为空不能证明所有响应式布局都正确。根字号可省略，默认值为 16；显式传入时必须是正有限数，否则分析器抛出 `RangeError`。
 
