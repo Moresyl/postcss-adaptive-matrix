@@ -170,6 +170,7 @@ for (const target of TARGETS) {
   if (only.length && !only.includes(target.library)) continue
 
   let packaged: string
+  const cached = existsSync(join(SCRATCH, target.npm.replace(/[@/]/g, '_'), 'package'))
   try {
     packaged = download(target.npm)
   } catch (error) {
@@ -184,6 +185,17 @@ for (const target of TARGETS) {
     problems += 1
     continue
   }
+
+  const manifestPath = join(packaged, 'package.json')
+  let version = 'unknown'
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown }
+    if (typeof manifest.version === 'string' && manifest.version.trim()) version = manifest.version
+  } catch {
+    // Verification still runs on incomplete local fixtures, but provenance
+    // must remain explicitly unknown rather than implying the latest version.
+  }
+  console.log(`${target.library}: ${target.npm}@${version} (${cached ? 'cached' : 'downloaded'})`)
 
   const stylesheet = target.stylesheet
     ? join(packaged, target.stylesheet)

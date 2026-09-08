@@ -76,7 +76,7 @@ npx tsx scripts/verify-libraries.ts          # all of them
 npx tsx scripts/verify-libraries.ts vant     # one
 ```
 
-It downloads each library's published artifact (reusing existing `.libcheck` packages), compiles it with a realistic `node_modules` path, and checks prefixes, routing, idempotence and static seam findings. Warnings are reported separately and do not fail this script. Unknown library names, download failures, missing required styles/prefixes, wrong routes, non-idempotent output or seam findings cause a nonzero exit code. Inspect the report rather than interpreting an exit code as browser or design-width certification; cached packages do not automatically track newer releases.
+It downloads each library's published artifact (reusing existing `.libcheck` packages), prints the exact package version and whether it was cached, compiles it with a realistic `node_modules` path, and checks prefixes, routing, idempotence and static seam findings. Warnings are reported separately and do not fail this script. Unknown library names, download failures, missing required styles/prefixes, wrong routes, non-idempotent output or seam findings cause a nonzero exit code. Inspect the report rather than interpreting an exit code as browser or design-width certification; cached packages do not automatically track newer releases.
 
 **One column it does not cover: design width.** A stylesheet does not reveal how wide the file it was drawn on was; that column comes from each library's own documentation and the script cannot check it.
 

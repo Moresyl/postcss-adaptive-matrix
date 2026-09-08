@@ -23,6 +23,7 @@ it.each([
       const packaged = join(directory, '.libcheck', 'vant', 'package')
       await mkdir(packaged, { recursive: true })
       await writeFile(join(packaged, 'index.css'), css)
+      await writeFile(join(packaged, 'package.json'), JSON.stringify({ version: '1.2.3-fixture' }))
       const result = spawnSync(
         process.execPath,
         [
@@ -41,6 +42,7 @@ it.each([
       expect(result.error).toBeUndefined()
       expect(result.status, result.stderr).toBe(status)
       expect(result.stdout).toContain(`1 checked, ${problems} needing attention`)
+      expect(result.stdout).toContain('vant: vant@1.2.3-fixture (cached)')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
