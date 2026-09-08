@@ -87,15 +87,19 @@ const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
 try {
   const config = join(configDirectory, 'broken.json')
-  writeFileSync(config, `{ "token": "${secret}" invalid }`)
-  const malformed = spawnSync(process.execPath, ['dist/cli.js', '--config', config, '--json'], {
-    cwd: new URL('..', import.meta.url),
-    encoding: 'utf8',
-  })
-  assert.equal(malformed.status, 1, malformed.stderr)
-  assert.match(malformed.stdout, /Invalid JSON syntax/)
-  assert.ok(!malformed.stdout.includes(secret))
-  assert.ok(!malformed.stdout.includes('"token"'))
+  for (const source of [`{ "token": "${secret}" invalid }`, secret]) {
+    writeFileSync(config, source)
+    const malformed = spawnSync(process.execPath, ['dist/cli.js', '--config', config, '--json'], {
+      cwd: new URL('..', import.meta.url),
+      encoding: 'utf8',
+      timeout: 15_000,
+    })
+    assert.equal(malformed.status, 1, malformed.stderr)
+    assert.equal(JSON.parse(malformed.stdout).ok, false)
+    assert.match(malformed.stdout, /Invalid JSON syntax/)
+    assert.ok(!(malformed.stdout + malformed.stderr).includes('smoke-private'))
+    assert.ok(!(malformed.stdout + malformed.stderr).includes('"token"'))
+  }
 } finally {
   rmSync(configDirectory, { recursive: true, force: true })
 }
