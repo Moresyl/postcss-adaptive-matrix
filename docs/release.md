@@ -9,27 +9,31 @@ npm ci
 npm run check
 npm run pack:check
 npm run smoke:runtime
+npm run audit:check
 ```
 
-`check` must pass TypeScript, coverage, the tests and the ESM/CJS build together. The coverage gate is 80% for lines/functions/statements and 75% for branches.
+`check` runs the ESM/CJS build, TypeScript, lint, formatting, documentation links, coverage tests and production documentation build. Coverage thresholds are 98% lines, 98% functions, 97% statements and 92% branches, as configured in `vitest.config.ts`. `prepublishOnly` repeats `check`, package inspection, runtime smoke and the dependency audit; none of the commands above publishes a version.
+
+Run `npm run bench:check` after building when conversion or routing performance changes. `npm run verify:libraries` is an explicit additional check that may download packages and reuse cached versions, not part of the default release gate. Inspect the report's package versions and runtime-only exclusions.
 
 ## Artifacts
 
-- `dist/index.js` / `dist/index.cjs`: the PostCSS plugin, the presets and the type helpers;
+- `dist/index.js` / `dist/index.cjs`: the PostCSS plugin, programmatic compiler, diagnostic APIs, presets and type helpers;
 - `dist/runtime.js` / `dist/runtime.cjs`: the optional VisualViewport observer;
-- matching `.d.ts` files and sourcemaps.
+- `dist/cli.js`: the command-line entrypoint;
+- matching `.d.ts` (ESM), `.d.cts` (CommonJS) declarations and sourcemaps.
 
 ## Browser policy
 
 The compiler runs on Node.js; browsers only ever receive CSS. The default output depends on `clamp()`, and container profiles additionally depend on container query units. Sacrificing modern capabilities for every user in the name of a hypothetical old environment is not recommended.
 
-Whether your real target browsers can read your output does not have to be estimated:
+Audit the tracked features in your output against explicit browser targets:
 
 ```bash
 npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
 ```
 
-Every piece of syntax in the output beyond your targets is listed, along with what is lost when it is unsupported and the switch that turns it off. For the full feature × version matrix see [Browser support and degradation](./compatibility.md).
+Detected unsupported features from the bundled table are listed with their impact and configuration alternatives. This is not exhaustive CSS validation or a rendering test. For the tracked feature × version matrix and limits see [Browser support and degradation](./compatibility.md).
 
 ## Versioning policy
 
