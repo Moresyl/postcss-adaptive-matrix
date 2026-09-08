@@ -3,6 +3,68 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each(['minWidth', 'maxWidth'] as const)(
+    'rejects null fluid.%s instead of silently treating it as an omitted bound',
+    async (bound) => {
+      await expect(
+        compileAdaptiveCss('.card { padding: 40px }', {
+          profiles: { app: { designWidth: 400, fluid: { [bound]: null } } },
+          libraries: false,
+        } as never),
+      ).rejects.toThrow(`fluid.${bound} must be a positive finite number`)
+    },
+  )
+
+  it('treats nested optional undefined values as omission in compiled output', async () => {
+    const css = '@adaptive app { .card { padding: 40px; font-size: 20px } }'
+    for (const fluid of [
+      {},
+      { minWidth: 320 },
+      { maxWidth: 600 },
+      { minWidth: 320, maxWidth: 600 },
+    ]) {
+      const baseline = await compileAdaptiveCss(css, {
+        profiles: { app: { designWidth: 400, fluid, query: { condition: '(min-width: 320px)' } } },
+        root: true,
+        libraries: false,
+      })
+      const composed = await compileAdaptiveCss(
+        css,
+        {
+          profiles: {
+            app: {
+              designWidth: 400,
+              fluid: { minWidth: undefined, maxWidth: undefined, ...fluid },
+              query: { condition: '(min-width: 320px)', type: undefined, name: undefined },
+              unit: undefined,
+              strategy: undefined,
+              fontFluidity: undefined,
+              textAnchorWidth: undefined,
+              rootMaxWidth: undefined,
+            },
+          },
+          root: {
+            selector: undefined,
+            center: undefined,
+            container: undefined,
+            containerName: undefined,
+            safeAreaVariables: undefined,
+            layer: undefined,
+            fixedContainingBlock: undefined,
+            logical: undefined,
+            injectTo: undefined,
+          },
+          libraries: false,
+        },
+        { process: undefined, targets: undefined, failOn: undefined },
+      )
+      expect(composed.css).toBe(baseline.css)
+      expect(composed.warnings).toEqual([])
+      expect(composed.compatibility).toBeNull()
+      expect(composed.gate).toBeNull()
+    }
+  })
+
   it('captures an object stringifier before deferred output', async () => {
     const stringifier = { stringify: postcss.stringify }
     const compile = createAdaptiveCompiler({
