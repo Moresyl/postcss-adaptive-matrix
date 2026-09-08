@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import type { Declaration } from 'postcss'
+import type { Declaration, Root } from 'postcss'
 import { verifyConversion } from '../bench/verify-conversion.js'
 
 const files = [{ css: '.a { --one: 12px; --two: 24px }', from: 'bench.css' }]
 
 describe('benchmark conversion preflight', () => {
+  it('rejects partial conversion and changes to deliberately inert properties', async () => {
+    const mixed = [{ css: '.a { padding: 12px; margin: 24px; color: red }', from: 'mixed.css' }]
+    for (const changed of [['padding'], ['padding', 'margin', 'color']]) {
+      const plugin = {
+        postcssPlugin: 'incorrect',
+        Once(root: Root) {
+          root.walkDecls((decl) => {
+            if (changed.includes(decl.prop)) decl.value = '1vw'
+          })
+        },
+      }
+      await expect(verifyConversion(plugin, mixed, 'some', ['padding', 'margin'])).rejects.toThrow(
+        'Unexpected conversion state',
+      )
+    }
+  })
+
   it('allows inert declarations but requires actual conversion in every mixed file', async () => {
     const plugin = {
       postcssPlugin: 'mixed',

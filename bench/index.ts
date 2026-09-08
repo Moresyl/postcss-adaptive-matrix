@@ -148,6 +148,7 @@ for (const corpus of corpora) {
         adaptiveMatrix({ ...corpusOptions, libraries }),
         files,
         'some',
+        corpus.convertedProperties,
       )
       console.log(
         `Preflight: ${count} declarations converted in ${corpus.name} (libraries: ${!!libraries}).`,

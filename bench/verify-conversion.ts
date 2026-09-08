@@ -6,6 +6,7 @@ export async function verifyConversion(
   plugin: AcceptedPlugin,
   files: readonly { css: string; from: string }[],
   mode: 'all' | 'some' = 'all',
+  convertedProperties?: readonly string[],
 ): Promise<number> {
   const processor = postcss([plugin])
   let count = 0
@@ -28,6 +29,13 @@ export async function verifyConversion(
       assert.ok(before, `Unexpected extra benchmark declaration in ${file.from}`)
       assert.equal(declaration.prop, before.prop, `Benchmark property changed in ${file.from}`)
       if (declaration.value !== before.value) converted++
+      if (convertedProperties !== undefined) {
+        assert.equal(
+          declaration.value !== before.value,
+          convertedProperties.includes(before.prop),
+          `Unexpected conversion state for ${before.prop} in ${file.from}`,
+        )
+      }
       if (mode === 'all')
         assert.notEqual(
           declaration.value,

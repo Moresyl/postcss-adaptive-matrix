@@ -97,7 +97,21 @@ export interface Corpus {
   name: string
   css: string
   transformCustomProperties?: boolean
+  /** Authored workload expectation, independent of compiler output. */
+  convertedProperties?: readonly string[]
 }
+
+// Each generated length block has seven scalable declarations; border and
+// letter-spacing intentionally remain 1px hairlines, and URLs stay opaque.
+const CONVERTED_PROPERTIES = [
+  'padding',
+  'margin-block',
+  'font-size',
+  'line-height',
+  'border-radius',
+  'width',
+  'box-shadow',
+] as const
 
 /** Opt-in cache-churn workload: unique names exceed property-cache capacity. */
 export const CUSTOM_PROPERTY_CORPUS: Corpus = {
@@ -110,7 +124,11 @@ export const CUSTOM_PROPERTY_CORPUS: Corpus = {
 }
 
 export const CORPORA: Corpus[] = [
-  { name: 'component-library', css: componentLibrary(600) },
-  { name: 'utility-framework', css: utilityFramework(4000) },
-  { name: 'application', css: application(400) },
+  {
+    name: 'component-library',
+    css: componentLibrary(600),
+    convertedProperties: CONVERTED_PROPERTIES,
+  },
+  { name: 'utility-framework', css: utilityFramework(4000), convertedProperties: ['padding'] },
+  { name: 'application', css: application(400), convertedProperties: CONVERTED_PROPERTIES },
 ]
