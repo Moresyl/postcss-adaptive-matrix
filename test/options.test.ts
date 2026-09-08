@@ -1,7 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { convertLength, convertValue, createConverter, round } from '../src/core/convert.js'
 import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
 import { resolveOptions } from '../src/core/options.js'
+
+it('bounds property classification caching and reclassifies evicted entries correctly', () => {
+  const options = resolveOptions({ profiles: { app: 375 } })
+  const converter = createConverter(options)
+  const profile = options.profiles.app!
+  const classifications = vi.spyOn(options.textProperties, 'some')
+  try {
+    const expected = converter.convert('24px', 'font-size', 'app', profile, '')
+    expect(converter.convert('24px', 'font-size', 'app', profile, '')).toBe(expected)
+    expect(classifications).toHaveBeenCalledTimes(1)
+    for (let index = 0; index < 20_000; index++) {
+      converter.convert('24px', `--generated-${index}`, 'app', profile, '')
+    }
+    expect(converter.convert('24px', 'font-size', 'app', profile, '')).toBe(expected)
+    expect(classifications).toHaveBeenCalledTimes(20_002)
+  } finally {
+    classifications.mockRestore()
+  }
+})
 
 describe('configuration validation', () => {
   it('treats undefined optional top-level fields as omitted', () => {

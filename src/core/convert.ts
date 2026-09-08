@@ -659,6 +659,9 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     let accessibleText = textProperties.get(property)
     if (accessibleText === undefined) {
       accessibleText = isAccessibleTextProperty(property, options)
+      // Generated custom-property names are unbounded across rebuilds, just
+      // like values. Eviction only costs a classification on the next use.
+      if (textProperties.size >= MAX_CACHE_ENTRIES) textProperties.clear()
       textProperties.set(property, accessibleText)
     }
 

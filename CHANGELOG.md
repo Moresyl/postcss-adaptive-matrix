@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Bounded the property classification cache for reusable compilers handling generated custom-property names, preserving text conversion semantics after eviction.
 - Fixed URL paths containing comment-like text hiding later compatibility findings; URL token handling preserves following declarations and escaped/quoted closing parentheses.
 - Compatibility audits now ignore viewport/container-looking text inside `url()` resources, including escaped `url` spellings, while continuing to inspect following declarations.
 - Programmatic compilation snapshots source-map option fields before yielding, preventing later caller mutations from changing pending output format or source content inclusion.
