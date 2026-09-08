@@ -40,13 +40,13 @@ export interface AdaptiveProfile {
   /** Width unit used by the preferred fluid expression. */
   unit?: ScaleUnit
   strategy?: OutputStrategy
-  /** 0 is static text, 1 is pure viewport text. Kept below 1 for zoom support. */
+  /** Preferred text fluidity, 0–1. Below 1 retains rem in adaptive mode; test page zoom separately. */
   fontFluidity?: number
   /**
    * Canvas the non-fluid half of a text size is measured against. Defaults to
    * `designWidth`.
    *
-   * Text keeps part of its size in `rem` so browser zoom still reaches it, and
+   * Adaptive text with fluidity below 1 keeps part of its size in `rem`, and
    * that part is a fixed length — it does not scale with the viewport, so it
    * has to be pinned to *some* width. Pinning it to the profile's own canvas is
    * right for a canvas that means what it says: 16px on a 1440 desktop design

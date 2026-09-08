@@ -21,7 +21,7 @@
 | `minPixelValue` | `0` | 小于该绝对值不转换 |
 | `hairline` | `1` | 不转换的细线阈值 |
 | `fontFluidity` | `0.35` | 文字流体比例，0~1 |
-| `textProperties` | 字体相关属性 | 使用可缩放混合公式的属性 |
+| `textProperties` | 字体相关属性 | 使用 rem 与流体混合文字公式的属性 |
 | `propList` | `['*']` | 支持 `*` 与 `!` 的属性表 |
 | `selectorExclude` | `[]` | 字符串包含或正则排除 |
 | `valueExclude` | `[]` | 属性值排除 |
@@ -288,6 +288,8 @@ interface AdaptiveProfile {
 ```
 
 Profile 中只有 `designWidth` 必填。省略 `fluid`（或写 `fluid: {}`）会输出无边界视口表达式；只给 `minWidth` 或 `maxWidth` 会用 `max()` / `min()` 限制单侧；两端都给才输出 `clamp()`。传入的边界必须是正有限数，同时存在时 `maxWidth` 必须大于 `minWidth`。显式使用兼容模式 `strategy: 'viewport'` 时，无论 `fluid` 如何配置都保持无边界输出。
+
+`fontFluidity` 接受 0 到 1 的完整范围。自适应模式下，小于 1 会在文字首选表达式中保留 `rem` 部分；视口兼容模式不使用该混合公式。无论比例如何设置、编译是否成功，都不能保证文字缩放满足无障碍要求：仍需在实际页面验证缩放、裁切和重排。
 
 函数型宽度收到 `{ file, profile }`。省略 `textAnchorWidth` 时会精确复用已经解析一次的 `designWidth`，不会再次调用动态 resolver。按文件选择的 resolver 需要真实 PostCSS `from` 路径；返回非法值时错误会同时指出 profile 与文件。
 

@@ -21,7 +21,7 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `minPixelValue` | `0` | Absolute values below this are not converted |
 | `hairline` | `1` | Hairline threshold that is never converted |
 | `fontFluidity` | `0.35` | Text fluidity ratio, 0–1 |
-| `textProperties` | font-related properties | Properties that use the zoomable hybrid formula |
+| `textProperties` | font-related properties | Properties that use the rem/fluid text formula |
 | `propList` | `['*']` | Property list supporting `*` and `!` |
 | `selectorExclude` | `[]` | Exclude by substring or regular expression |
 | `valueExclude` | `[]` | Exclude by value |
@@ -288,6 +288,8 @@ interface AdaptiveProfile {
 ```
 
 Only `designWidth` is required in a profile. Omit `fluid` (or use `fluid: {}`) for an unbounded viewport expression, provide `minWidth` or `maxWidth` for a one-sided `max()`/`min()` limit, and provide both for `clamp()`. Supplied bounds must be positive finite numbers; when both exist, `maxWidth` must be greater than `minWidth`. The explicit `strategy: 'viewport'` compatibility mode remains unbounded regardless of `fluid`.
+
+`fontFluidity` accepts the full range from 0 to 1. In adaptive mode, values below 1 retain a `rem` component in the preferred text expression; viewport compatibility mode bypasses this hybrid formula. Neither the ratio nor successful compilation guarantees accessible text resizing: verify zoom, clipping and reflow on the actual page.
 
 Function-valued widths receive `{ file, profile }`. A missing `textAnchorWidth` reuses the already-resolved `designWidth` exactly once rather than calling a dynamic resolver again. File-sensitive resolvers need a real PostCSS `from` path; an invalid return reports both profile and file.
 

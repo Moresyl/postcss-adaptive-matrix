@@ -553,9 +553,9 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
   },
   fontFluidity: {
     description:
-      'Share of a text size expressed fluidly. `0` is plain `rem`; kept below `1` so browser zoom still reaches text.',
+      'Share of the preferred text size expressed fluidly, from 0 to 1. Below 1 retains a rem component in adaptive mode; it does not guarantee accessible zoom behavior. Test the resulting page.',
     'x-description-zh':
-      '文字尺寸中流体部分的占比。`0` 表示纯 `rem`；保持小于 `1` 才能让浏览器缩放仍然生效。',
+      '文字首选尺寸中流体部分的占比，范围为 0 到 1。自适应模式下小于 1 会保留 rem 部分，但不保证缩放行为满足无障碍要求，仍需测试实际页面。',
     type: 'number',
     minimum: 0,
     maximum: 1,
