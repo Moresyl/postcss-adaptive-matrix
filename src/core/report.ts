@@ -57,6 +57,7 @@ export interface CliQualityGateReport {
 
 export interface CliSuccessReport {
   formatVersion: typeof CLI_REPORT_FORMAT_VERSION
+  /** Processing succeeded; a requested gate can still fail with exit code 1. */
   ok: true
   profiles: {
     default: string
