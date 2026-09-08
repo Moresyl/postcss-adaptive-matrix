@@ -8,6 +8,7 @@
 npm ci
 npm run check
 npm run pack:check
+npm run smoke:runtime
 ```
 
 `check` must pass TypeScript, coverage, the tests and the ESM/CJS build together. The coverage gate is 80% for lines/functions/statements and 75% for branches.

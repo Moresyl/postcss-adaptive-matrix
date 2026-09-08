@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+- Added `compileAdaptiveCss()` and reusable `createAdaptiveCompiler()` helpers with optional processing options, source maps, warnings and browser compatibility reports.
+- Moved playground compilation into disposable Workers with a five-second deadline and cleanup on edits/navigation. Added zero-config, maximum-only and container-unit examples, timing and status feedback.
+- Added a bilingual interactive homepage formula demonstration and refreshed documentation theme tokens, cards, reading layout and keyboard focus styles.
+- Reduced repeated cache-key serialization on the conversion hot path while retaining per-file dynamic ruler refreshes.
+- Fixed viewport observer teardown when a host replaces its VisualViewport object.
+- Package inspection now fails when declared exports, CLI, types or required documentation are missing, even if npm's dry run succeeds.
+- The npm publication preflight now runs package-entrypoint validation and runtime smoke checks after the full build/test gate, before the security audit.
+
 ## 0.8.0 — 2026-08-27
 
 ### Correctness and diagnostics

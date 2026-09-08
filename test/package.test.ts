@@ -20,6 +20,19 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const built = existsSync(new URL('../dist/index.cjs', import.meta.url))
 const describeBuilt = built ? describe : describe.skip
 
+describe('publication preflight', () => {
+  it('checks fresh artifacts and runtime behavior before publishing', () => {
+    const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+    const steps = manifest.scripts.prepublishOnly.split(' && ')
+    expect(steps).toEqual([
+      'npm run check',
+      'npm run pack:check',
+      'npm run smoke:runtime',
+      'npm run audit:check',
+    ])
+  })
+})
+
 describeBuilt('the built package', () => {
   it('is callable straight off require, the shape every postcss.config.js uses', async () => {
     // `plugins: [require('postcss-adaptive-matrix')({ ... })]` is the form in

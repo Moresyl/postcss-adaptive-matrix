@@ -8,6 +8,7 @@
 npm ci
 npm run check
 npm run pack:check
+npm run smoke:runtime
 ```
 
 `check` 必须同时通过 TypeScript、覆盖率、测试和 ESM/CJS 构建。覆盖率门禁为行/函数/语句 80%，分支 75%。

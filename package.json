@@ -94,7 +94,7 @@
     "audit:check": "npm audit --audit-level=moderate --registry=https://registry.npmjs.org/",
     "check": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm run test:coverage && npm run docs:build",
     "pack:check": "node scripts/check-package.mjs",
-    "prepublishOnly": "npm run check && npm run audit:check"
+    "prepublishOnly": "npm run check && npm run pack:check && npm run smoke:runtime && npm run audit:check"
   },
   "peerDependencies": {
     "postcss": "^8.4.0"
