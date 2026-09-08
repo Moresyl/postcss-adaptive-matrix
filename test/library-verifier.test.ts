@@ -8,6 +8,39 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('continues after malformed CSS and reports the remaining valid library', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-invalid-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'antd-mobile', 'package')
+    await mkdir(join(packaged, 'bundle'), { recursive: true })
+    await mkdir(join(packaged, '2x', 'bundle'), { recursive: true })
+    await writeFile(join(packaged, 'bundle', 'style.css'), '.adm-button {')
+    await writeFile(
+      join(packaged, '2x', 'bundle', 'style.css'),
+      ':root { --adm-size: 24px } .adm-button { width: 24px }',
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'antd-mobile',
+        'antd-mobile-2x',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('STYLESHEET FAILED:')
+    expect(result.stdout).toContain('Unclosed block')
+    expect(result.stdout).toContain('library:antd-mobile-2x')
+    expect(result.stdout).toContain('2 checked, 1 needing attention')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('reports a missing pinned stylesheet and continues checking remaining targets', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-missing-'))
   try {

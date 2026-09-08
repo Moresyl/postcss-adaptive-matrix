@@ -218,8 +218,17 @@ for (const target of TARGETS) {
     continue
   }
 
-  const css = readFileSync(stylesheet, 'utf8')
-  const root = postcss.parse(css, { from: stylesheet })
+  let css: string
+  let root: postcss.Root
+  try {
+    css = readFileSync(stylesheet, 'utf8')
+    root = postcss.parse(css, { from: stylesheet })
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0] : 'Unknown error'
+    rows.push([target.library, `STYLESHEET FAILED: ${reason}`, '—', '—', '—', '—', '—'])
+    problems += 1
+    continue
+  }
 
   let rules = 0
   let prefixed = 0
