@@ -326,6 +326,8 @@ export function findContinuityIssues(
         const already = byTransition.get(identity)
         if (already) {
           already.breakpoint = breakpoint
+          already.below.px = lowPx
+          already.above.px = highPx
           continue
         }
         const issue: ContinuityIssue = {

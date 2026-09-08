@@ -404,6 +404,18 @@ describe('findContinuityIssues', () => {
     expect(issues).toHaveLength(1)
   })
 
+  it('keeps merged report values aligned with the final reported breakpoint', () => {
+    const issues = check(`
+      @media (max-width: 767.98px) { .a { width: calc(10vw) } }
+      @media (min-width: 768px) { .a { width: calc(5vw) } }
+    `)
+    expect(issues).toHaveLength(1)
+    const issue = issues[0]!
+    expect(issue.breakpoint).toBe(768)
+    expect(issue.below.px).toBeCloseTo(px(issue.below.value, issue.breakpoint - 0.05)!, 10)
+    expect(issue.above.px).toBeCloseTo(px(issue.above.value, issue.breakpoint + 0.05)!, 10)
+  })
+
   it('says nothing about custom properties, whose consumer decides the sign', () => {
     // This is the compiler's own foundation. A narrower root width is how the
     // gutter gets wider, so shrinking here is the whole point.

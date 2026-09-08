@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Merged continuity findings now update both sampled pixel values when moving to the final reported breakpoint, keeping diagnostics numerically reproducible.
+
 - Token resolution now respects exclusive media-range endpoints, including fallback values exactly at an excluded boundary.
 
 - Media-condition normalization preserves strict `<`/`>` endpoints for concrete width matching; route bands remain conservative numeric envelopes.
