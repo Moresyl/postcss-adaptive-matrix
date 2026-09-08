@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import postcss from 'postcss'
 
@@ -79,5 +82,22 @@ const cli = spawnSync(process.execPath, ['dist/cli.js', '--help'], {
 assert.equal(cli.status, 0, cli.stderr)
 assert.match(cli.stdout, /adaptive-matrix/)
 assert.match(cli.stdout, /--option=value/)
+
+const secret = 'smoke-private-config-48392'
+const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
+try {
+  const config = join(configDirectory, 'broken.json')
+  writeFileSync(config, `{ "token": "${secret}" invalid }`)
+  const malformed = spawnSync(process.execPath, ['dist/cli.js', '--config', config, '--json'], {
+    cwd: new URL('..', import.meta.url),
+    encoding: 'utf8',
+  })
+  assert.equal(malformed.status, 1, malformed.stderr)
+  assert.match(malformed.stdout, /Invalid JSON syntax/)
+  assert.ok(!malformed.stdout.includes(secret))
+  assert.ok(!malformed.stdout.includes('"token"'))
+} finally {
+  rmSync(configDirectory, { recursive: true, force: true })
+}
 
 process.stdout.write(`OK: runtime smoke passed on ${process.version}\n`)
