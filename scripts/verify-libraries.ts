@@ -156,6 +156,13 @@ function share(count: number, total: number): string {
 }
 
 const only = process.argv.slice(2)
+const unknown = only.filter((name) => !TARGETS.some((target) => target.library === name))
+if (unknown.length) {
+  console.error(
+    `Unknown libraries: ${unknown.join(', ')}. Choose: ${TARGETS.map((target) => target.library).join(', ')}`,
+  )
+  process.exit(1)
+}
 const rows: string[][] = []
 let problems = 0
 
@@ -266,5 +273,6 @@ console.log(widths.map((width) => '-'.repeat(width)).join('  '))
 for (const row of rows) console.log(line(row))
 console.log(`\n${rows.length} checked, ${problems} needing attention`)
 console.log(`scratch downloads left in ${SCRATCH}/ — delete when done`)
+if (problems > 0) process.exitCode = 1
 
 if (process.env.CLEAN) rmSync(SCRATCH, { recursive: true, force: true })
