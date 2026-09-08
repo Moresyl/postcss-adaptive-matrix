@@ -19,6 +19,8 @@ Edit either pane and the output follows. The options pane is a JavaScript expres
 
 ## Reading the output
 
+Use **Compile again** to retry after a Worker startup failure or timeout without changing your input. The button is unavailable while a compilation is pending. Before the first successful run, a failed attempt displays “No successful compilation yet” instead of a misleading loading message; later failures retain the dimmed last successful result.
+
 Both `fluid.minWidth` and `fluid.maxWidth` are optional. Two bounds produce `clamp(min, fluid, max)`, one produces `min()` or `max()`, and no bounds leave the fluid expression unbounded. For example, 24px on a 375 canvas is `6.4vw` before bounds are applied. Try the maximum-only and container-unit samples to see these differences.
 
 Text combines rem and viewport units so part of its size follows the reader's root font setting. `fontFluidity` controls that balance; set it to `0` for plain rem. Verify text resizing and reflow in the actual page rather than treating a generated formula as proof of accessibility compliance.

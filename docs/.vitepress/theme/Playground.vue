@@ -66,6 +66,7 @@ function load(index: number): void {
  * and stale messages cannot overwrite a newer compilation.
  */
 function run(): void {
+  clearTimeout(timer)
   stop()
   compiling.value = true
   failure.value = null
@@ -100,6 +101,8 @@ const text = computed(() =>
         warnings: '告警',
         failed: '编译未完成',
         empty: '正在编译…',
+        noOutput: '尚无成功的编译结果。',
+        retry: '重新编译',
         timeout: '编译超过 5 秒，已停止。请简化输入或检查配置中的循环。',
         workerFailed: '编译 Worker 无法运行，请检查浏览器支持或刷新重试。',
         hint: '配置里可以直接用 appPcPreset、presets、withAtomicCss、defineLibraries——包导出的东西都在作用域里。',
@@ -112,6 +115,8 @@ const text = computed(() =>
         warnings: 'Warnings',
         failed: 'Compilation did not complete',
         empty: 'Compiling…',
+        noOutput: 'No successful compilation yet.',
+        retry: 'Compile again',
         timeout:
           'Compilation exceeded 5 seconds and was stopped. Simplify the input or check for loops.',
         workerFailed: 'The compiler worker could not run. Check browser support or reload.',
@@ -134,6 +139,9 @@ const text = computed(() =>
         @click="load(index)"
       >
         {{ chinese ? sample.labelZh : sample.label }}
+      </button>
+      <button type="button" class="playground-sample" :disabled="compiling" @click="run">
+        {{ text.retry }}
       </button>
     </div>
 
@@ -161,7 +169,7 @@ const text = computed(() =>
           class="playground-output"
           :aria-busy="compiling"
           :class="{ 'is-stale': failure || compiling }"
-          >{{ output ?? text.empty }}</pre>
+          >{{ output ?? (compiling ? text.empty : text.noOutput) }}</pre>
 
         <p v-if="failure" class="playground-failure" role="alert">
           <strong>{{ text.failed }}</strong
