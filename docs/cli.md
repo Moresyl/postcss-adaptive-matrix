@@ -126,11 +126,11 @@ Two design files can each be right and still disagree at the seam. This check lo
 
 It is worth a dedicated check because it **only appears at that one width**: each design file renders correctly on its own, and the 375 and 1440 you debug at every day are both fine.
 
-Every formula this compiler emits is non-decreasing in **absolute value** across viewport width, and never changes sign. So a size going backwards can only come from a canvas change across a breakpoint. That also makes the check complete: this class of problem cannot escape to some other width.
+The check samples supported lengths on either side of known width breakpoints and compares their **absolute values**. It is a diagnostic, not a proof of continuity across every width: unresolved expressions, unsupported conditions and layout-dependent values can remain unknown.
 
-### Only values the compiler produced
+### Which values are checked
 
-"Can only come from a canvas change" holds only for **formulas this compiler produced**. An unconverted stylesheet that shrinks at a breakpoint is usually doing so on purpose:
+An authored stylesheet can also shrink at a breakpoint. For example, this pair contains only pixel values:
 
 ```css
 /* Quasar 2.19's own stylesheet */
@@ -138,9 +138,9 @@ Every formula this compiler emits is non-decreasing in **absolute value** across
 @media (max-width: 599.98px) { .q-tooltip { padding: 8px 16px } }
 ```
 
-A bigger tap target on a phone, tightened up above 600px — both numbers were written by a person who compared them. Quasar is a "keep pixels" entry, neither side was converted, and reporting it would be noise.
+A pixel-only pair does not qualify for this diagnostic. The tool cannot determine the author's intent from those values.
 
-So a report requires **at least one side to be a compiler-produced formula**. Under the default math strategy every generated length has a function wrapper: two bounds use `clamp()`, one uses `min()` / `max()`, and an unbounded or static preferred value uses the equivalent `calc(value)` marker. That is how the check distinguishes generated output without mistaking deliberately authored breakpoint pixels for a seam. The explicit compatibility mode `strategy: 'viewport'` remains bare and therefore outside this diagnostic; its whole purpose is avoiding math functions. One side converted and the other not still reports — that is precisely a canvas change, and nobody compared those two numbers.
+At least one side must contain a math function (`calc`, `min`, `max` or `clamp`) or a viewport length. This syntax heuristic includes bare output from `strategy: 'viewport'`, but also qualifies authored formulas and viewport values. It is not provenance tracking: a finding may already exist in the source. Review the original declarations before attributing it to conversion. Both sampled values must still be evaluable before a shrink can be reported.
 
 Substitution happens before the decision, so "the declaration is just `var(--x)` and the formula is in the token" counts too.
 
