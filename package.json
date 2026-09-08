@@ -91,7 +91,7 @@
     "verify:libraries": "tsx scripts/verify-libraries.ts",
     "docs:check": "node scripts/check-docs.mjs",
     "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs && node scripts/check-docs-search.mjs",
+    "docs:build": "vitepress build docs && node scripts/check-docs-search.mjs && node scripts/check-docs-loading.mjs",
     "docs:preview": "vitepress preview docs",
     "audit:check": "npm audit --audit-level=moderate --registry=https://registry.npmjs.org/",
     "check": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm run test:coverage && npm run docs:build",
