@@ -8,6 +8,33 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('reports a missing pinned stylesheet and continues checking remaining targets', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-missing-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'antd-mobile', 'package')
+    await mkdir(packaged, { recursive: true })
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'antd-mobile',
+        'antd-mobile-2x',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('MISSING STYLESHEET: bundle/style.css')
+    expect(result.stdout).toContain('MISSING STYLESHEET: 2x/bundle/style.css')
+    expect(result.stdout).toContain('2 checked, 2 needing attention')
+    expect(result.stderr).not.toContain('ENOENT')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it.each([
   {
     css: ':root { --van-size: 24px } .van-button { width: 1e309px }',

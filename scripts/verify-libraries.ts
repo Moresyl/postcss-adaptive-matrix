@@ -200,17 +200,21 @@ for (const target of TARGETS) {
   const stylesheet = target.stylesheet
     ? join(packaged, target.stylesheet)
     : largestStylesheet(packaged)
-  if (!stylesheet) {
+  if (!stylesheet || !existsSync(stylesheet)) {
     rows.push([
       target.library,
-      target.runtimeStyles ? 'runtime styles, none on disk' : 'NO STYLESHEET SHIPPED',
+      target.stylesheet
+        ? `MISSING STYLESHEET: ${target.stylesheet}`
+        : target.runtimeStyles
+          ? 'runtime styles, none on disk'
+          : 'NO STYLESHEET SHIPPED',
       '—',
       '—',
       '—',
       '—',
       '—',
     ])
-    if (!target.runtimeStyles) problems += 1
+    if (target.stylesheet || !target.runtimeStyles) problems += 1
     continue
   }
 
