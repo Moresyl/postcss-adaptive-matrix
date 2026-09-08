@@ -2,6 +2,23 @@ import { describe, expect, it } from 'vitest'
 import { compileAdaptiveCss, createAdaptiveCompiler } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('snapshots source-map settings before yielding', async () => {
+    const map = { inline: false, annotation: false, sourcesContent: true }
+    const pending = compileAdaptiveCss(
+      '.a { padding: 24px }',
+      {},
+      {
+        process: { from: '/src/a.css', to: '/dist/a.css', map },
+      },
+    )
+    map.inline = true
+    map.sourcesContent = false
+    const output = await pending
+    expect(output.map).toBeDefined()
+    expect(output.map?.toJSON().sourcesContent).toEqual(['.a { padding: 24px }'])
+    expect(output.css).not.toContain('sourceMappingURL')
+  })
+
   it('works without optional parameters and retains the PostCSS result', async () => {
     const output = await compileAdaptiveCss('.card { padding: 24px }')
     expect(output.css).toContain('6.4vw')

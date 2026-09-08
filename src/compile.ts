@@ -66,7 +66,13 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
     if (failOn.includes('compatibility') && targets === undefined) {
       throw new TypeError('Compile options.failOn compatibility requires targets.')
     }
-    const result = await processor.process(css, { from: undefined, ...request.process })
+    const processOptions: ProcessOptions = { from: undefined, ...request.process }
+    // PostCSS consumes map settings during deferred stringification. Capture
+    // the option bag, while preserving parser and previous-map object identity.
+    if (processOptions.map && typeof processOptions.map === 'object') {
+      processOptions.map = { ...processOptions.map }
+    }
+    const result = await processor.process(css, processOptions)
     const warnings = result.warnings()
     const compatibility = targets === undefined ? null : auditCompatibility(result.css, targets)
     return {

@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Programmatic compilation snapshots source-map option fields before yielding, preventing later caller mutations from changing pending output format or source content inclusion.
 - Viewport observer teardown now retains the original AbortSignal, avoiding a leaked listener if callers later replace `options.signal`.
 - Fixed compatibility audit false negatives after escaped quotes or slashes in identifiers; escaped punctuation no longer starts a string or comment that hides subsequent features.
 - Compatibility detection skips character-position mapping when no identifier escapes require it, retaining original diagnostic excerpts and comment/string masking.
