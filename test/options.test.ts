@@ -23,6 +23,24 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it('keeps text classification in viewport mode to protect precompiled hybrid text', () => {
+    const options = resolveOptions({
+      profiles: { app: 375 },
+      strategy: 'viewport',
+      unitToConvert: ['px', 'rem'],
+      hairline: 0,
+    })
+    const converter = createConverter(options)
+    const profile = options.profiles.app!
+    const value = 'calc(1rem + 2vw)'
+    expect(converter.convert(value, 'font-size', 'app', profile, '/a.css')).toBe(value)
+    expect(converter.convert(value, 'width', 'app', profile, '/a.css')).toBe(
+      'calc(4.26667vw + 2vw)',
+    )
+    converter.beginFile()
+    expect(converter.convert(value, 'font-size', 'app', profile, '/b.css')).toBe(value)
+  })
+
   it('treats undefined optional top-level fields as omitted', () => {
     const options = resolveOptions({
       profiles: undefined,
