@@ -55,7 +55,7 @@ describe('documentation asset delivery', () => {
     },
   )
 
-  it('checks production assets and rejects stale content', async () => {
+  it('checks production assets and rejects stale or missing content', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-gate-'))
     try {
       await writeGeneratedAssets(directory)
@@ -73,6 +73,8 @@ describe('documentation asset delivery', () => {
       expect(check()).toContain('assets match their sources')
       await writeFile(join(directory, 'docs/configuration.md'), 'stale')
       expect(check).toThrow('Stale generated asset: docs/configuration.md')
+      await rm(join(directory, 'docs/configuration.md'))
+      expect(check).toThrow('ENOENT')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
