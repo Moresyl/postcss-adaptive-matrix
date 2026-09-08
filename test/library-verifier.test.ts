@@ -8,6 +8,47 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it.each(['both', 'ltr-only', 'rtl-only'])(
+  'requires both Quasar direction files: %s',
+  async (variant) => {
+    const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-quasar-'))
+    try {
+      const packaged = join(directory, '.libcheck', 'quasar', 'package', 'dist')
+      await mkdir(packaged, { recursive: true })
+      if (variant !== 'rtl-only') {
+        await writeFile(join(packaged, 'quasar.css'), '.q-button { margin-left: 24px }')
+      }
+      if (variant !== 'ltr-only') {
+        await writeFile(join(packaged, 'quasar.rtl.css'), '.q-button { margin-right: 24px }')
+      }
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--import',
+          pathToFileURL(require.resolve('tsx')).href,
+          fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+          'quasar',
+        ],
+        { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+      )
+      expect(result.error).toBeUndefined()
+      expect(result.status, result.stderr).toBe(variant === 'both' ? 0 : 1)
+      expect(result.stdout).toContain(`2 reviewed, ${variant === 'both' ? 0 : 1} needing attention`)
+      expect(result.stdout).toContain(
+        `${variant === 'both' ? 2 : 1} static stylesheet checks completed, 0 runtime-only libraries skipped`,
+      )
+      if (variant !== 'both') {
+        expect(result.stdout).toContain(
+          `MISSING STYLESHEET: dist/${variant === 'ltr-only' ? 'quasar.rtl.css' : 'quasar.css'}`,
+        )
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+  20_000,
+)
+
 it('reports runtime-only libraries as skipped rather than statically verified', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-runtime-'))
   try {
