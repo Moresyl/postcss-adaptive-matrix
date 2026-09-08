@@ -107,7 +107,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "caniuse-lite": "^1.0.30001809",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
@@ -120,7 +120,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
   },
   "overrides": {

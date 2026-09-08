@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Update development tooling to Vitest/coverage 4.1.11 and the locked js-yaml dependency to 4.3.2, clearing the reported mocker file-read and YAML merge CPU advisories. No runtime API change.
+
 - Conversion value caching now caps individual inputs/results at 16,384 characters and total key/result storage at 4 Mi UTF-16 code units, in addition to the entry-count cap. Larger values still convert normally without retention; these are cache budgets, not process heap limits.
 
 - Unit conversion preserves authored value comments when PostCSS raw text is current, without resurrecting stale values from earlier plugins. Comment-bearing fallback output remains idempotent, including fixed-offset gutter composition.
