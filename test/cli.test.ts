@@ -54,6 +54,38 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it('waits for stdout drain before writing the next CSS file', async () => {
+    const first = await file('first.css', '.first { width: 24px }')
+    const second = await file('second.css', '.second { width: 48px }')
+    const captureWrite = process.stdout.write
+    let writes = 0
+    let resume: () => void = () => {}
+    const written = new Promise<void>((resolve) => {
+      resume = resolve
+    })
+    process.stdout.write = (chunk: string) => {
+      captureWrite(chunk)
+      writes++
+      if (writes === 1) {
+        resume()
+        return false
+      }
+      return true
+    }
+    restore.push(() => {
+      process.stdout.write = captureWrite
+    })
+    const pending = runCli([first, second, '--css', '--no-color'])
+    await written
+    await new Promise<void>((resolve) => setImmediate(resolve))
+    expect(writes).toBe(1)
+    expect(out).not.toContain('.second')
+    process.stdout.emit('drain')
+    expect(await pending).toBe(0)
+    expect(out).toContain('.second')
+    expect(writes).toBe(2)
+  })
+
   it.each(['--css', '--json'])(
     'does not echo malformed JSON config contents in %s',
     async (mode) => {

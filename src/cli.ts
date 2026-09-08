@@ -2,6 +2,7 @@
 // source avoids emitting it twice, and this file is run through `tsx` in
 // development, which does not need one.
 import { readFile } from 'node:fs/promises'
+import { once } from 'node:events'
 import { relative, resolve } from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 import { pathToFileURL } from 'node:url'
@@ -695,7 +696,7 @@ export async function runCli(argv: string[]): Promise<number> {
         if (diagnostics.length) {
           process.stderr.write(`${c.bold(input.label)}\n${diagnostics.join('\n')}\n`)
         }
-        process.stdout.write(`${root.toString()}\n`)
+        if (!process.stdout.write(`${root.toString()}\n`)) await once(process.stdout, 'drain')
         continue
       }
       if (args.json) {
@@ -722,7 +723,7 @@ export async function runCli(argv: string[]): Promise<number> {
         profiles,
       )
       total += converted
-      process.stdout.write(`${lines.join('\n')}\n`)
+      if (!process.stdout.write(`${lines.join('\n')}\n`)) await once(process.stdout, 'drain')
     }
 
     const gateCounts: Record<CliQualityGateCategory, number> = {
