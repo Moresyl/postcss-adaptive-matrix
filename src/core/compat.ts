@@ -433,7 +433,15 @@ function compatibilitySyntax(css: string): { syntax: string; positions?: number[
 /** Which of the compiler's features appear in a stylesheet, in table order. */
 export function detectFeatures(css: string): { feature: CompatFeature; sample: string }[] {
   const found: { feature: CompatFeature; sample: string }[] = []
-  const { syntax, positions } = compatibilitySyntax(css)
+  const prepared = compatibilitySyntax(css)
+  const positions = prepared.positions
+  // URL tokens contain resource data, not declarations or dimensions. Work
+  // after identifier canonicalization so escaped spellings of url are covered.
+  // Escaped closing parentheses are inert identifier characters at this point.
+  const syntax = prepared.syntax.replace(
+    /(^|[^-_a-z0-9\\\u0080-\uFFFF])url\([^)]*\)/gi,
+    (match, before: string) => before + ' '.repeat(match.length - before.length),
+  )
   for (const feature of COMPAT_FEATURES) {
     if (!feature.detect) continue
     // Rebuilt per call rather than shared: a `g`-flagged literal would carry

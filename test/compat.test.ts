@@ -281,6 +281,20 @@ describe('detection', () => {
     expect(ids(css)).toEqual([])
   })
 
+  it.each([
+    '.a { background: url(/images/12cqi.svg) }',
+    '.a { background: URL(data:image/svg+xml,12vi) }',
+    String.raw`.a { background: u\72l(/images/12vw.svg) }`,
+  ])('ignores dimensions inside resource URLs: %s', (css) => {
+    expect(ids(css)).toEqual([])
+  })
+
+  it('still detects real dimensions after a resource URL', () => {
+    const found = ids('.a { background: url(/12cqi.svg); width: 12vw }')
+    expect(found).not.toContain('container-query-units')
+    expect(found).toContain('viewport-units')
+  })
+
   it('resumes detection after escaped strings and comments close', () => {
     const css = String.raw`.a { content: "escaped \" clamp(1px,2vw,3px)" } /* :has(.x) */
       .b { width: clamp(1px, 2vw, 3px) }`

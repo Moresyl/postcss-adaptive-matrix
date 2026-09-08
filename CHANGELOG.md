@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Compatibility audits now ignore viewport/container-looking text inside `url()` resources, including escaped `url` spellings, while continuing to inspect following declarations.
 - Programmatic compilation snapshots source-map option fields before yielding, preventing later caller mutations from changing pending output format or source content inclusion.
 - Viewport observer teardown now retains the original AbortSignal, avoiding a leaked listener if callers later replace `options.signal`.
 - Fixed compatibility audit false negatives after escaped quotes or slashes in identifiers; escaped punctuation no longer starts a string or comment that hides subsequent features.
