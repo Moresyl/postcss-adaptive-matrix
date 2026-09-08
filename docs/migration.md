@@ -43,11 +43,11 @@ adaptiveMatrix({
 
 Existing `/* px-to-viewport-ignore(-next) */` and `/* mobile-ignore(-next) */` directives keep working during migration; they remain in the output for the same second-pass guarantee as the native comments. No compatibility option is required. The old `postcss-pxtorem` uppercase-unit trick (`1PX`) is intentionally not an ignore signal here because CSS units are case-insensitive — use an explicit comment instead.
 
-Two things need a different idea rather than a different name:
-
 ### Check existing math expressions
 
 Conversion is not byte-compatible with every legacy plugin. In a local comparison with `postcss-px-to-viewport@1.1.1`, using a 375px canvas and viewport output, `min(24px, 50vw)` became `min(6.4vw, 50vw)` there but stayed unchanged here. Adaptive Matrix protects bounding expressions that already contain viewport/container units so precompiled output is not converted again. Audit authored `min()` / `max()` / `clamp()` expressions during migration: write the intended fluid expression explicitly when a pixel term must scale. Uppercase input units are also converted here; do not rely on `PX` as an ignore marker.
+
+### Separate layout decisions
 
 **Landscape is not a global switch.** Create a landscape profile with an explicit media query, and landscape gets its own design width and scaling range instead of a ratio derived from portrait.
 

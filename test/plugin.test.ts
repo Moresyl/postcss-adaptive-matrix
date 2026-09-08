@@ -13,6 +13,23 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  it('preserves documented viewport migration boundaries on repeated compilation', async () => {
+    const options: AdaptiveMatrixOptions = {
+      profiles: { app: 375 },
+      libraries: false,
+      strategy: 'viewport',
+      hairline: 1,
+    }
+    const input =
+      '.a { width: min(24px, 50vw); padding: 24PX; margin-left: -24px; border-width: 0.5px; content: "24px"; height: calc(100vw - 24px) }'
+    const expected =
+      '.a { width: min(24px, 50vw); padding: 6.4vw; margin-left: -6.4vw; border-width: 0.5px; content: "24px"; height: calc(100vw - 6.4vw) }'
+    const first = await process(input, options)
+    expect(first.css).toBe(expected)
+    expect(first.warnings()).toEqual([])
+    expect((await process(first.css, options)).css).toBe(expected)
+  })
+
   describe('optional PostCSS source paths', () => {
     const withoutFrom = (css: string, options: AdaptiveMatrixOptions = {}) =>
       postcss([adaptiveMatrix(options)]).process(css, { from: undefined })

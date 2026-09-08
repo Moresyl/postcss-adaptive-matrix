@@ -4,7 +4,7 @@
 
 ## Unreleased
 
-- Migration guidance now documents verified edge-case differences from `postcss-px-to-viewport`, including protected mixed-unit bounds, hairlines and uppercase units.
+- Migration guidance now documents verified edge-case differences from `postcss-px-to-viewport`, including protected mixed-unit bounds and uppercase units.
 - CLI configuration errors now explain when a PostCSS `plugins` wrapper was supplied instead of compiler options, before attempting to read CSS input.
 - Viewport height estimates now fall back to zero when finite host readings overflow during arithmetic, preventing infinite CSS offsets while allowing later valid readings to recover.
 - Playground Worker responses are now schema-checked before reaching the UI; malformed structured-clone payloads fail and clean up instead of corrupting the result panel.
