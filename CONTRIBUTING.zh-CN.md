@@ -37,6 +37,8 @@ npm run check
 
 ## Pull Request
 
+单独对比兼容性检测器可运行 `npx tsx bench/compat-compare.ts <commit-sha>`。只传入可信仓库提交：工具会在内存中打包并执行该版本检测器，依赖使用当前工作区版本。它先校验合成语料的输出一致，再交替计时新旧实现；不会切换提交，也不是完整历史包或整个构建流程的速度对比。
+
 PR 应保持聚焦，并说明：问题、方案、兼容性影响、验证方式。默认转换公式、输出顺序、公开类型和最低 Node/PostCSS 版本属于兼容性契约。
 
 提交消息建议采用 Conventional Commits，例如：

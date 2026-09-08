@@ -107,6 +107,7 @@
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.1.10",
     "caniuse-lite": "^1.0.30001809",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.9.0",

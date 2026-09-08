@@ -37,6 +37,8 @@ Use `npm run bench:api` to additionally compare the reusable programmatic compil
 
 ## Pull requests
 
+For an isolated compatibility-detector comparison, run `npx tsx bench/compat-compare.ts <commit-sha>`. Only use a trusted repository commit: the tool bundles and executes that revision's detector with current dependencies in memory. It checks output equality on the synthetic corpora before alternating old/new timed calls. It neither checks out that commit nor measures a complete historical package, and its ratios are not whole-build speedups.
+
 Keep a PR focused, and state: the problem, the approach, the compatibility impact, and how you verified it. The default conversion formula, the output order, the public types and the minimum Node/PostCSS versions are all part of the compatibility contract.
 
 Conventional Commits are preferred for commit messages, for example:
