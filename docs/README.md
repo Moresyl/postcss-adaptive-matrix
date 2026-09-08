@@ -9,6 +9,7 @@ Pick the page that matches what you are doing right now:
 | Install it and get a first page working | [Getting started](./getting-started.md) |
 | Try a configuration without installing anything | [Playground](./playground.md) |
 | Wire it into Vite / Nuxt / Webpack / Taro | [Build tool integration](./integration.md) |
+| Call the compiler from TypeScript or a service | [Programmatic API](./api.md) |
 | Check the output after changing configuration | [CLI preview](./cli.md) |
 | The project uses Vant / Element Plus / antd… | [Component libraries](./libraries.md) |
 | Look up an option name or its default | [Configuration reference](./configuration.md) |

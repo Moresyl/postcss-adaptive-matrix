@@ -275,6 +275,8 @@ Every claim on this page about Vite is verified by a **real Vite build** in `tes
 There is no real Webpack build. All `postcss-loader` does is call `postcss.process` with a `from`, and what has actually broken in a Webpack setting is whether the CommonJS entry can be called directly (fixed in 0.4.0), which `test/package.test.ts` verifies against the built artifact itself. Pulling in a whole Webpack toolchain for a path with almost no independent risk is not worth it.
 ## Programmatic compilation
 
+For a focused overview, see the [Programmatic API guide](./api.md). This section remains available for existing links.
+
 Use the named helpers when a build script, editor or service needs the compiled output directly:
 
 ```ts

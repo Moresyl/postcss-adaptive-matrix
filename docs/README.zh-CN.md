@@ -9,6 +9,7 @@
 | 装上去，跑通第一个页面 | [快速上手](./getting-started.zh-CN.md) |
 | 什么都不装，先试一份配置 | [在线试验场](./playground.zh-CN.md) |
 | 接进 Vite / Nuxt / Webpack / Taro | [构建工具集成](./integration.zh-CN.md) |
+| 从 TypeScript 或服务直接调用编译器 | [程序化 API](./api.zh-CN.md) |
 | 改完配置，先看看输出对不对 | [命令行预览](./cli.zh-CN.md) |
 | 项目里用了 Vant / Element Plus / antd… | [组件库适配](./libraries.zh-CN.md) |
 | 查某个选项叫什么、默认值是多少 | [配置参考](./configuration.zh-CN.md) |

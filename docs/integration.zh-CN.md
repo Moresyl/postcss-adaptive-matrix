@@ -275,6 +275,8 @@ npx adaptive-matrix src/styles/app.css -c postcss.config.mjs
 Webpack 侧没有起真实构建。`postcss-loader` 做的事就是带着 `from` 调 `postcss.process`，而 Webpack 场景真正出过问题的是 CommonJS 入口能不能直接调用（0.4.0 修复），那一条由 `test/package.test.ts` 针对构建产物本身验证。为一条几乎没有独立风险的路径引入整套 Webpack 依赖，不划算。
 ## 程序化编译
 
+集中说明见[程序化 API 指南](./api.zh-CN.md)。本节保留，已有链接继续有效。
+
 构建脚本、编辑器或服务需要直接取得编译结果时，可以使用具名导出的辅助函数：
 
 ```ts
