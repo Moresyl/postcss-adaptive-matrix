@@ -476,10 +476,8 @@ function convertResolvedValue(
   rootValue: number,
   pattern: RegExp = unitPattern(options.unitToConvert),
 ): ValueConversion {
-  const parsed = valueParser(value)
   const outputUnit = (profile.unit ?? options.unit).toLowerCase()
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
-  const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
   let generatedBounds = false
   let overflow = false
   const replaceDimension = (
@@ -539,6 +537,17 @@ function convertResolvedValue(
     }
     return `${authoredPrefix}${converted}`
   }
+  // A complete unescaped dimension has no functions, strings or token
+  // boundaries to inspect. Reuse the same conversion and diagnostic guards.
+  pattern.lastIndex = 0
+  const single = pattern.exec(value)
+  pattern.lastIndex = 0
+  if (single && single.index === 0 && single[1] === '' && single[0].length === value.length) {
+    const converted = replaceDimension(single[0], '', single[2]!, single[3]!)
+    return { value: converted, generatedBounds, ...(overflow ? { overflow } : {}) }
+  }
+  const parsed = valueParser(value)
+  const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
   parsed.walk((node) => {
     if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText, staticText)) return false
     if (node.type !== 'word') return undefined

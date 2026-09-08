@@ -23,6 +23,37 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it.each(['24px', '-24px', '1e2px', '1rem', '1px', '0px', '1e309px', '24PX'])(
+    'matches the parsed path for a single dimension %s',
+    (value) => {
+      for (const strategy of ['viewport', 'clamp'] as const) {
+        const options = resolveOptions({
+          profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 600 } } },
+          unitToConvert: ['px', 'rem'],
+          strategy,
+        })
+        for (const property of ['width', 'font-size']) {
+          const converter = createConverter(options)
+          const fast = converter.convertWithMetadata(
+            value,
+            property,
+            'app',
+            options.profiles.app!,
+            '',
+          )
+          const parsed = converter.convertWithMetadata(
+            `${value} `,
+            property,
+            'app',
+            options.profiles.app!,
+            '',
+          )
+          expect(fast).toEqual({ ...parsed, value: parsed.value.trimEnd() })
+        }
+      }
+    },
+  )
+
   it('retains converter unit patterns after the shared pattern cache is cleared', () => {
     const options = resolveOptions({ profiles: { app: 400 }, strategy: 'viewport' })
     const converter = createConverter(options)
