@@ -43,7 +43,7 @@ List-shaped filters accept one item directly. `propList: 'width'`, `textProperti
 propList: ['*', '!border*', '!box-shadow']
 ```
 
-The `*` is not optional. An exclude-only `['!border*']` matches no property at all, which means the entire stylesheet goes unconverted — that configuration is an error rather than a silent no-op.
+`*` is only needed when you want to include every property before applying exclusions. It is not required for an explicit allowlist: `propList: 'width'` or `propList: ['width', 'height']` converts just those properties. An exclude-only `['!border*']` matches no property at all and is rejected; use `['*', '!border*']` to convert everything except borders.
 
 ### Configuration is always validated first
 
