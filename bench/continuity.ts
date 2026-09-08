@@ -40,44 +40,48 @@ const baseline = await analyzer(oldSource)
 const current = await analyzer(currentSource)
 const { iterations, warmup } = benchmarkSettings(process.env)
 for (const count of [2, 40]) {
-  const css = Array.from(
-    { length: count },
-    (_, breakpoint) =>
-      `@media (min-width: ${320 + breakpoint * 20}px) {` +
-      Array.from(
-        { length: 30 },
-        (_, selector) =>
-          `.card-${selector} { left: calc(${count - breakpoint}vw + var(--adaptive-root-gutter))${breakpoint % 2 ? ' !important' : ''} }`,
-      ).join('\n') +
-      '}',
-  ).join('\n')
-  // This rule is inactive at the regular probes and adds its own distant seam.
-  const root = postcss.parse(
-    `${css}\n@media (min-width: 100000px) { .card-0 { left: 1px !important } }`,
-  )
-  const expected = baseline(root)
-  assert.ok(expected.length > 0, 'Corpus must exercise real findings')
-  assert.deepEqual(current(root), expected)
-  const times = await measureAlternating(
-    [() => Promise.resolve(baseline(root)), () => Promise.resolve(current(root))],
-    iterations,
-    warmup,
-  )
-  console.log(
-    JSON.stringify({
-      node: process.version,
-      baseline: revision,
-      breakpoints: count,
-      distantBreakpoint: 100000,
-      priority: 'alternating-important',
-      selectors: 30,
-      findings: expected.length,
+  for (const mixedPriority of [false, true]) {
+    const css = Array.from(
+      { length: count },
+      (_, breakpoint) =>
+        `@media (min-width: ${320 + breakpoint * 20}px) {` +
+        Array.from(
+          { length: 30 },
+          (_, selector) =>
+            `.card-${selector} { left: calc(${count - breakpoint}vw + var(--adaptive-root-gutter))${mixedPriority && breakpoint % 2 ? ' !important' : ''} }`,
+        ).join('\n') +
+        '}',
+    ).join('\n')
+    // This rule is inactive at the regular probes and adds its own distant seam.
+    const root = postcss.parse(
+      mixedPriority
+        ? `${css}\n@media (min-width: 100000px) { .card-0 { left: 1px !important } }`
+        : css,
+    )
+    const expected = baseline(root)
+    assert.ok(expected.length > 0, 'Corpus must exercise real findings')
+    assert.deepEqual(current(root), expected)
+    const times = await measureAlternating(
+      [() => Promise.resolve(baseline(root)), () => Promise.resolve(current(root))],
       iterations,
       warmup,
-      baselineMs: times[0],
-      currentMs: times[1],
-    }),
-  )
+    )
+    console.log(
+      JSON.stringify({
+        node: process.version,
+        baseline: revision,
+        breakpoints: count,
+        distantBreakpoint: mixedPriority ? 100000 : null,
+        priority: mixedPriority ? 'alternating-important' : 'normal',
+        selectors: 30,
+        findings: expected.length,
+        iterations,
+        warmup,
+        baselineMs: times[0],
+        currentMs: times[1],
+      }),
+    )
+  }
 }
 console.log(
   'Source-level analyzer comparison; dependencies are shared, not a whole-release benchmark.',
