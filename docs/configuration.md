@@ -47,6 +47,8 @@ The `*` is not optional. An exclude-only `['!border*']` matches no property at a
 
 ### Configuration is always validated first
 
+CSS dimensions use JavaScript's finite numeric range during conversion. If an authored dimension or an intermediate calculation overflows, the CSS conversion path preserves that original token instead of emitting `Infinity` or `NaN`; other dimensions in the same declaration can still convert. For example, `1e308px 24px` on a 375px canvas in viewport mode remains `1e308px 6.4vw`. Preservation is not successful adaptation and is not a browser-rendering guarantee. Correct extreme input values upstream; this fallback does not emit a dedicated warning, so a passing warnings gate alone cannot detect it.
+
 A configuration usually lives in a `.mjs` file with no type checking behind it, and getting these fields wrong fails **silently**. So all of the following are errors raised before the first stylesheet is read:
 
 | What you wrote | The consequence |
