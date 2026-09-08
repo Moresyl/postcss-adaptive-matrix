@@ -1,10 +1,42 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
+
+it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
+  'loads CSS and configuration from Unicode paths with spaces and URL-significant characters',
+  async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'adaptive 中文 #%-'))
+    try {
+      const css = join(directory, '样式 #100%.css')
+      const config = join(directory, '配置 #100%.mjs')
+      await writeFile(css, '.card { width: 24px }')
+      await writeFile(config, 'export default { profiles: { app: 375 }, libraries: false }')
+      const result = spawnSync(
+        process.execPath,
+        [
+          fileURLToPath(new URL('../dist/cli.js', import.meta.url)),
+          css,
+          '--config',
+          config,
+          '--css',
+          '--no-color',
+        ],
+        { encoding: 'utf8', timeout: 10_000 },
+      )
+      expect(result.error).toBeUndefined()
+      expect(result.status, result.stderr).toBe(0)
+      expect(result.stderr).toBe('')
+      expect(result.stdout.trim()).toBe('.card { width: calc(6.4vw) }')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+  15_000,
+)
 
 it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url))).each(['--css', '--json'])(
   'fails promptly when a real downstream pipe closes during %s output',
