@@ -3,6 +3,38 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('preserves prototype syntax hooks and explicit hook precedence', async () => {
+    class Syntax {
+      parse = postcss.parse
+      stringify(...args: Parameters<typeof postcss.stringify>) {
+        return postcss.stringify(...args)
+      }
+    }
+    const syntax = new Syntax()
+    const compile = createAdaptiveCompiler({
+      profiles: { app: 400 },
+      strategy: 'viewport',
+      libraries: false,
+    })
+    expect((await compile('.a { width: 40px }', { process: { syntax } })).css).toBe(
+      '.a { width: 10vw }',
+    )
+    const broken = () => {
+      throw new Error('syntax hook should be overridden')
+    }
+    expect(
+      (
+        await compile('.a { width: 40px }', {
+          process: {
+            syntax: { parse: broken, stringify: broken },
+            parser: postcss.parse,
+            stringifier: postcss.stringify,
+          },
+        })
+      ).css,
+    ).toBe('.a { width: 10vw }')
+  })
+
   it('captures syntax hooks before deferred stringification', async () => {
     const syntax = { parse: postcss.parse, stringify: postcss.stringify }
     const compile = createAdaptiveCompiler({
