@@ -102,8 +102,9 @@ export function createPropertyMatcher(propList: readonly string[]) {
   const excludes = patterns.filter((item) => item.startsWith('!')).map((item) => item.slice(1))
   const includeRegex = includes.map(globToRegExp)
   const excludeRegex = excludes.map(globToRegExp)
+  const cache = new Map<string, boolean>()
 
-  return (property: string): boolean => {
+  const match = (property: string): boolean => {
     const subject = canonicalCssPropertyName(property)
     let included = false
     for (const pattern of includeRegex) {
@@ -117,5 +118,14 @@ export function createPropertyMatcher(propList: readonly string[]) {
       if (pattern.test(subject)) return false
     }
     return true
+  }
+  return (property: string): boolean => {
+    const cached = cache.get(property)
+    if (cached !== undefined) return cached
+    const result = match(property)
+    // Custom-property names can be generated without bound during watch builds.
+    if (cache.size >= 1024) cache.clear()
+    cache.set(property, result)
+    return result
   }
 }
