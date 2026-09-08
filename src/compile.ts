@@ -67,6 +67,15 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
       throw new TypeError('Compile options.failOn compatibility requires targets.')
     }
     const processOptions: ProcessOptions = { from: undefined, ...request.process }
+    // Syntax hooks are read again during deferred stringification. Capture
+    // both hooks while retaining the function objects supplied by the caller.
+    if (processOptions.syntax && typeof processOptions.syntax === 'object') {
+      processOptions.syntax = {
+        ...processOptions.syntax,
+        parse: processOptions.syntax.parse,
+        stringify: processOptions.syntax.stringify,
+      }
+    }
     // PostCSS consumes map settings during deferred stringification. Capture
     // the option bag, while preserving parser and previous-map object identity.
     if (processOptions.map && typeof processOptions.map === 'object') {

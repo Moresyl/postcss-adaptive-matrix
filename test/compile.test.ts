@@ -3,6 +3,18 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('captures syntax hooks before deferred stringification', async () => {
+    const syntax = { parse: postcss.parse, stringify: postcss.stringify }
+    const compile = createAdaptiveCompiler({
+      profiles: { app: 400 },
+      strategy: 'viewport',
+      libraries: false,
+    })
+    const pending = compile('.a { width: 40px }', { process: { syntax } })
+    syntax.stringify = (_node, builder) => builder('changed by caller')
+    expect((await pending).css).toBe('.a { width: 10vw }')
+  })
+
   it.each(['parser', 'stringifier'] as const)(
     'recovers after a custom %s throws',
     async (phase) => {
