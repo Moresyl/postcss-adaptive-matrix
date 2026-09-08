@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- CLI value-taking options now reject an explicitly empty separate argument, matching `--option=` instead of silently ignoring empty config/from/profile values.
 - Benchmark preflights now verify expected property-level conversion states for the component, utility and application corpora, catching partial conversions or accidental rewrites of inert declarations before timing begins.
 - Performance-gate benchmarks now preflight every default corpus and require actual conversion while permitting intentionally inert declarations. This prevents a no-op or skipped workload from appearing faster; the application corpus's expected routing warnings remain observable rather than hidden.
 - Added documentation print styles to hide navigation and copy controls, expand the reading column, wrap long code/table content, and request that code blocks, tables, and quotes stay together. Printed pagination has not been browser-verified.

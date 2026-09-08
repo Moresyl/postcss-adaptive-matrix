@@ -200,7 +200,7 @@ function parseArgs(argv: string[]): CliArgs {
         return inline[2]
       }
       const next = argv[index + 1]
-      if (next === undefined || next.startsWith('-')) {
+      if (next === undefined || next === '' || next.startsWith('-')) {
         throw new CliError(`${option} needs a value.`)
       }
       index += 1

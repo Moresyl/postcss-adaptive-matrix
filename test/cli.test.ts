@@ -894,6 +894,16 @@ describe('runCli', () => {
     expect(err).toContain('Unknown option --unknown')
   })
 
+  it.each(['--config', '--from', '--profile', '--targets', '--fail-on'])(
+    'rejects an explicitly empty separate value for %s',
+    async (option) => {
+      expect(await runCli([option, '', '--json'])).toBe(1)
+      const report = JSON.parse(out) as { ok: boolean; error: { message: string } }
+      expect(report.ok).toBe(false)
+      expect(report.error.message).toContain(`${option} needs a value`)
+    },
+  )
+
   it('fails when an option is missing its value', async () => {
     expect(await runCli(['--profile'])).toBe(1)
     expect(err).toContain('--profile needs a value')
