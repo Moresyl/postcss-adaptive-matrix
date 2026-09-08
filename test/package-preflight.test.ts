@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { expect, it } from 'vitest'
 
-it.each(['valid', 'absolute', 'missing-content', 'extra-file'])(
+it.each(['valid', 'absolute', 'missing-content', 'extra-file', 'missing-map'])(
   'checks isolated package fixture: %s',
   async (variant) => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-pack-check-'))
@@ -28,6 +28,8 @@ it.each(['valid', 'absolute', 'missing-content', 'extra-file'])(
         'dist/index.js.map',
       ]
       if (variant === 'extra-file') files.push('dist/private.txt')
+      if (variant === 'missing-map') files.splice(files.indexOf('dist/index.js.map'), 1)
+      await writeFile(join(directory, 'dist/index.js'), '//# sourceMappingURL=index.js.map\n')
       // Mock only npm's inventory; execute the real package-check script and map reader.
       await writeFile(
         join(directory, 'npm-fixture.cjs'),
@@ -58,6 +60,7 @@ it.each(['valid', 'absolute', 'missing-content', 'extra-file'])(
       if (variant === 'absolute' || variant === 'missing-content') {
         expect(result.stderr).toContain('not self-contained and portable')
       }
+      if (variant === 'missing-map') expect(result.stderr).toContain('source map reference')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

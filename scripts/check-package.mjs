@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { posix } from 'node:path'
 
 const root = new URL('../', import.meta.url)
 const manifest = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'))
@@ -43,6 +44,14 @@ const unexpected = [...files].filter((file) => !allowed.has(file))
 if (unexpected.length) {
   console.error(`Package contains undeclared files: ${unexpected.join(', ')}.`)
   process.exit(1)
+}
+for (const file of files) {
+  if (!/\.(?:js|cjs)$/.test(file)) continue
+  const source = readFileSync(new URL(file, root), 'utf8')
+  const match = source.match(/\/\/#[ \t]*sourceMappingURL=([^\s]+)$/m)
+  if (match && !files.has(posix.join(posix.dirname(file), match[1]))) {
+    throw new Error(`Package source map reference has no matching file: ${file}`)
+  }
 }
 for (const file of files) {
   if (!file.endsWith('.map')) continue
