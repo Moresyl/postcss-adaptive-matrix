@@ -1,9 +1,29 @@
 import { describe, expect, it } from 'vitest'
+import type { Declaration } from 'postcss'
 import { verifyConversion } from '../bench/verify-conversion.js'
 
 const files = [{ css: '.a { --one: 12px; --two: 24px }', from: 'bench.css' }]
 
 describe('benchmark conversion preflight', () => {
+  it('allows inert declarations but requires actual conversion in every mixed file', async () => {
+    const plugin = {
+      postcssPlugin: 'mixed',
+      Declaration: {
+        padding(declaration: Declaration) {
+          declaration.value = '1vw'
+        },
+      },
+    }
+    const mixed = [{ css: '.a { padding: 12px; color: red }', from: 'mixed.css' }]
+    await expect(verifyConversion(plugin, mixed, 'some')).resolves.toBe(1)
+    await expect(
+      verifyConversion(plugin, [...mixed, { css: '.b { color: red }', from: 'inert.css' }], 'some'),
+    ).rejects.toThrow('No benchmark values converted in inert.css')
+    await expect(
+      verifyConversion({ postcssPlugin: 'noop', Once() {} }, mixed, 'some'),
+    ).rejects.toThrow('No benchmark values converted')
+  })
+
   it('rejects a no-op plugin instead of reporting skipped work as fast', async () => {
     await expect(verifyConversion({ postcssPlugin: 'noop', Once() {} }, files)).rejects.toThrow(
       'Unconverted benchmark value',

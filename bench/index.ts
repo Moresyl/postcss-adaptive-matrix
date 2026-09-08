@@ -142,6 +142,17 @@ for (const corpus of corpora) {
       const count = await verifyConversion(adaptiveMatrix({ ...corpusOptions, libraries }), files)
       console.log(`Preflight: ${count} custom properties converted (libraries: ${!!libraries}).`)
     }
+  } else {
+    for (const libraries of [false, ALL_LIBRARIES] as const) {
+      const count = await verifyConversion(
+        adaptiveMatrix({ ...corpusOptions, libraries }),
+        files,
+        'some',
+      )
+      console.log(
+        `Preflight: ${count} declarations converted in ${corpus.name} (libraries: ${!!libraries}).`,
+      )
+    }
   }
 
   // `libraries: false` isolates unit conversion; the next pass adds them back,
