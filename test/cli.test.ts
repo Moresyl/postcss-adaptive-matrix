@@ -54,6 +54,24 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['--json', '--css'])('reports a later parse failure in %s mode', async (mode) => {
+    const first = await file('first.css', '.a { width: 24px }')
+    const invalid = await file('invalid.css', '.b {')
+    expect(await runCli([first, invalid, mode, '--no-color'])).toBe(1)
+    if (mode === '--json') {
+      const report = JSON.parse(out)
+      expect(report.ok).toBe(false)
+      expect(report.files).toBeUndefined()
+      expect(out).toContain('Unclosed block')
+      expect(err).toBe('')
+    } else {
+      expect(out).toContain('.a { width:')
+      expect(out).not.toContain('.b')
+      expect(err).toContain('Unclosed block')
+      expect(out).not.toContain('Unclosed block')
+    }
+  })
+
   it.each([false, true])('reports overflow with warning gate enabled=%s', async (gated) => {
     const path = await file('overflow.css', '.a { margin: 1e308px 24px }')
     expect(await runCli([path, '--json', ...(gated ? ['--fail-on', 'warnings'] : [])])).toBe(
