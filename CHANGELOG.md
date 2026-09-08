@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Reusable converters resolve unit patterns once instead of serializing the unit list on each uncached value; the shared pattern cache is capped at 256 configurations, with existing converters remaining usable after eviction.
 - Compiler creation now captures nested profile settings, media route bands and root injection filter arrays. Later caller edits no longer change those settings in an existing compiler; dynamic width and root-value callbacks still run per file.
 - Large finite lengths no longer overflow solely while rounding to the configured decimal precision.
 - Schema hints and bilingual configuration guidance clarify that retaining a rem text component is not a guarantee of accessible page zoom.
