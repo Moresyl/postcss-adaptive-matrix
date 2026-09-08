@@ -54,6 +54,42 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['parse', 'config'])(
+    'handles a broken pipe while reporting a %s error as JSON',
+    async (phase) => {
+      const args =
+        phase === 'parse'
+          ? ['--unknown-option', '--json']
+          : ['--config', await file('broken.json', '{invalid'), '--json']
+      const captureWrite = process.stdout.write
+      const counts = ['drain', 'close', 'error'].map((name) => process.stdout.listenerCount(name))
+      let signal: () => void = () => {}
+      const written = new Promise<void>((resolve) => {
+        signal = resolve
+      })
+      let writes = 0
+      process.stdout.write = (chunk: string) => {
+        captureWrite(chunk)
+        writes++
+        signal()
+        return false
+      }
+      restore.push(() => {
+        process.stdout.write = captureWrite
+      })
+      const pending = runCli(args)
+      await written
+      process.stdout.emit('error', new Error('downstream failed'))
+      expect(await pending).toBe(1)
+      expect(JSON.parse(out).ok).toBe(false)
+      expect(writes).toBe(1)
+      expect(err).toBe('downstream failed\n')
+      expect(['drain', 'close', 'error'].map((name) => process.stdout.listenerCount(name))).toEqual(
+        counts,
+      )
+    },
+  )
+
   it.each([
     ['close', '--css'],
     ['error', '--css'],

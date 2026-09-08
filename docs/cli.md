@@ -314,9 +314,13 @@ This is shell redirection, not an atomic file-writing feature. The shell can tru
 
 In `--css` mode stdout contains stylesheet text only; compiler warnings, continuity findings and browser-compatibility evidence go to stderr, including the details behind a failed quality gate.
 
+Per-file CSS and comparison output respect stdout backpressure: when the downstream buffer fills, the CLI waits before processing the next input. A close or error while waiting fails the command and removes the temporary listeners. This is not constant-memory compilation: each stylesheet is still read and parsed in full, and JSON reports are accumulated before serialization. Bytes already delivered cannot be rolled back after a downstream failure.
+
 Multiple inputs are compiled independently and streamed in argument order, separated by newlines. This is not bundling: imports are not resolved or moved, relative URLs are not rebased, and per-file foundations are not deduplicated. Do not assume concatenated output preserves the behavior of separately loaded stylesheets. Use one input per output artifact or let your build tool perform bundling and asset resolution.
 
 ## Reading the output
+
+JSON reports, help text and the final batch summary also wait for stdout backpressure. If writing a JSON report fails, the CLI reports the output error on stderr instead of attempting to append another JSON object to the broken stream.
 
 - `16px → clamp(...)` — converted
 - a grey line with no arrow — left as authored (only shown with `--all`). Hairlines, lengths inside `@font-face`, and declarations marked by an ignore comment appear here

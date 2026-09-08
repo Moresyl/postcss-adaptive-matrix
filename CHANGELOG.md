@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- CLI CSS, comparison, JSON, help and batch-summary output wait for stdout backpressure. Close/error events during draining fail cleanly, and failed JSON writes fall back to stderr without retrying the broken stream. Coverage includes real paused/disconnected pipes and JSON error-report failures.
 - CLI JSON configuration syntax errors no longer echo parser-provided source excerpts. Diagnostics retain the config path and recognizable numeric error locations; errors from executable JavaScript configs are outside this sanitization.
 - Library verification records compilation or continuity-analysis exceptions as failed checks and continues with remaining stylesheets instead of aborting the entire report.
 - Identifier handling skips decoding for unescaped names and avoids case replacement for already-lowercase properties, while retaining ASCII-only folding, escaped spelling and case-sensitive custom-property identity.
