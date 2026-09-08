@@ -44,6 +44,23 @@ if (unexpected.length) {
   console.error(`Package contains undeclared files: ${unexpected.join(', ')}.`)
   process.exit(1)
 }
+for (const file of files) {
+  if (!file.endsWith('.map')) continue
+  const map = JSON.parse(readFileSync(new URL(file, root), 'utf8'))
+  const absolute = (value) => /^(?:[A-Za-z]:|\/|\\|[A-Za-z][A-Za-z\d+.-]*:)/.test(value)
+  if (
+    map.version !== 3 ||
+    !Array.isArray(map.sources) ||
+    map.sources.length === 0 ||
+    map.sources.some((source) => typeof source !== 'string' || absolute(source)) ||
+    (map.sourceRoot && absolute(map.sourceRoot)) ||
+    !Array.isArray(map.sourcesContent) ||
+    map.sourcesContent.length !== map.sources.length ||
+    map.sourcesContent.some((source) => typeof source !== 'string')
+  ) {
+    throw new Error(`Package source map is not self-contained and portable: ${file}`)
+  }
+}
 console.log(
   `OK: ${manifest.name}@${manifest.version}, ${files.size} files; all declared entrypoints included.`,
 )
