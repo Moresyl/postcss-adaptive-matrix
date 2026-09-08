@@ -866,6 +866,8 @@ describe('runCli', () => {
   it('prints help without doing any work', async () => {
     expect(await runCli(['--help'])).toBe(0)
     expect(out).toContain('adaptive-matrix')
+    expect(out).toContain('may already exist in the authored CSS')
+    expect(out).toContain('a clean report does not certify the layout')
     expect(err).toBe('')
   })
 

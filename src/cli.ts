@@ -71,10 +71,10 @@ profiles those are.
 Use exactly one '-' to name stdin explicitly. Stdin cannot be mixed with file
 paths, and --from applies to only one input because it names that input's path.
 
-The diff is followed by any "shrinks" findings: a length that gets smaller when
-the viewport gets wider. Every formula this compiler emits grows with the
-viewport, so that can only happen where two canvases disagree about the same
-element across a breakpoint.
+The diff is followed by any "shrinks" findings: sampled length decreases across
+resolvable viewport breakpoints. These may already exist in the authored CSS;
+they are diagnostics to investigate, not proof of a compiler regression.
+Unresolvable values are skipped; a clean report does not certify the layout.
 
 With --targets it also reports "needs": a CSS feature in the output that one of
 those browsers cannot read, what that browser discards as a result, and the

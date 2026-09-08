@@ -183,7 +183,7 @@ The custom-property declaration itself (the `--x: ...` line) is still not checke
 
 Measured (the complete Vant 4.10.0 stylesheet, 195 KB): evaluable value components rise from 622 (17.6%) to 1309 (36.9%), with 779 tokens collected. The rest are keywords, colours and percentages — never viewport-dependent lengths.
 
-On false positives: across the 69 conformance fixtures, this repository's example project, and the published stylesheets of 10 component libraries (Vant, NutUI, Varlet, antd-mobile 1x/2x, Taro UI, Element Plus, Ant Design, Arco Design, Quasar — about 3.2 MB of CSS), the `shrinks` count is 0 everywhere. See [Component libraries](./libraries.md#this-table-was-checked).
+Do not interpret a `shrinks` finding as proof that compilation introduced a regression: a breakpoint decrease can already exist in the authored stylesheet. Compare the source and compiled findings, then investigate the relevant rules. Likewise, zero findings do not prove zero false positives or certify layout continuity, because unresolvable values and conditions are skipped. Re-run the [component-library verifier](./libraries.md#this-table-was-checked) against the actual package versions instead of relying on historical aggregate counts.
 
 To fail a build on it, the same check is exported from the package:
 
