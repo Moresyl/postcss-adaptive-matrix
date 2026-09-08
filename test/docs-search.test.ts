@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { runInNewContext } from 'node:vm'
-import { rewrittenLocaleSearch } from '../docs/.vitepress/search.js'
+import { localeSearchIndex, rewrittenLocaleSearch } from '../docs/.vitepress/search.js'
+import MiniSearch from 'minisearch'
 
 const transform = rewrittenLocaleSearch().transform as (
   code: string,
@@ -14,6 +15,43 @@ function evaluate(expression: string): Record<string, () => string> {
 }
 
 describe('rewritten locale search compatibility', () => {
+  it('uses separate lazy imports only in production and preserves native locales', async () => {
+    const plugin = rewrittenLocaleSearch()
+    const configure = plugin.configResolved
+    if (typeof configure !== 'function') throw new Error('Expected config hook')
+    const rewrite = plugin.transform as typeof transform
+    await configure({ command: 'build', base: '/project/' } as Parameters<typeof configure>[0])
+    const result = rewrite(
+      `export default {root: () => import('@localSearchIndexroot'), zh: () => import('@localSearchIndexzh')}`,
+      '/@localSearchIndex',
+    )!
+    expect(result.code).toContain("import('virtual:adaptive-search-root')")
+    expect(result.code).toContain("import('virtual:adaptive-search-zh')")
+    expect(result.code).toContain("zh: () => import('@localSearchIndexzh')")
+    expect(result.code).not.toContain("import('@localSearchIndexroot')")
+  })
+
+  it('splits and vacuums indexes without losing stored titles or base-relative IDs', async () => {
+    const options = { fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'] }
+    for (const base of ['/', '/project/']) {
+      const index = new MiniSearch(options)
+      index.addAll([
+        { id: `${base}docs/api#api`, title: 'API', titles: [], text: 'englishonly common' },
+        { id: `${base}zh/docs/api#api`, title: '接口', titles: [], text: 'chineseonly common' },
+      ])
+      for (const locale of ['root', 'zh'] as const) {
+        const json = await localeSearchIndex(JSON.stringify(index), locale, base)
+        const split = MiniSearch.loadJSON(json, options)
+        expect(split.documentCount).toBe(1)
+        expect(split.search('common')[0]).toMatchObject({
+          id: `${base}${locale === 'zh' ? 'zh/' : ''}docs/api#api`,
+          title: locale === 'zh' ? '接口' : 'API',
+        })
+        expect(json).not.toContain(locale === 'zh' ? 'englishonly' : 'chineseonly')
+      }
+    }
+  })
+
   it('shares the root loader without eagerly loading its index', () => {
     const indexes = evaluate('{ root: () => "shared" }')
     expect(indexes.zh).toBe(indexes.root)

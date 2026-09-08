@@ -53,7 +53,7 @@ function check(directory) {
       seen.add(module)
       assert.doesNotMatch(
         relative(root, module),
-        /@localSearchIndex|VPLocalSearchBox|compiler\.worker|Playground\./,
+        /@localSearchIndex|adaptive-search-|VPLocalSearchBox|compiler\.worker|Playground\./,
         `Interactive-only code loaded eagerly by ${relative(root, file)}`,
       )
       queue.push(...imports(module))
