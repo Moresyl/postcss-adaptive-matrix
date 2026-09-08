@@ -172,7 +172,12 @@ export function observeAdaptiveViewport(
     // at scale 1 (the browser may pan an input above the keyboard), but at a
     // zoomed scale it is ordinary user panning and must not hide real shrinkage.
     const zoomed = Math.abs(scale - 1) > 0.01
-    const keyboardHeight = Math.max(0, layoutHeight / scale - height - (zoomed ? 0 : offsetTop))
+    // Individually finite host readings can still overflow during division.
+    // An unusable estimate must not publish Infinity as a CSS offset.
+    const keyboardHeight = Math.max(
+      0,
+      finite(layoutHeight / scale - height - (zoomed ? 0 : offsetTop), 0),
+    )
     const snapshot = { width, height, layoutHeight, keyboardHeight, scale }
     for (const [name, value] of Object.entries(snapshot)) {
       const cssName = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)

@@ -257,6 +257,26 @@ describe('observeAdaptiveViewport', () => {
     observer.destroy()
   })
 
+  it('does not publish an infinite estimate when finite host readings overflow', () => {
+    const target = stubTarget()
+    const visual = {
+      width: 390,
+      height: 800,
+      scale: Number.MIN_VALUE,
+      offsetTop: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    const host = stubWindow(visual)
+    const observer = observeAdaptiveViewport({ window: host.window, target: target.element })
+    expect(observer.update()!.keyboardHeight).toBe(0)
+    expect([...target.values.values()].every((value) => !/Infinity|NaN/.test(value))).toBe(true)
+    visual.scale = 1
+    visual.height = 500
+    expect(observer.update()!.keyboardHeight).toBe(300)
+    observer.destroy()
+  })
+
   it('coalesces a burst of events into one frame', () => {
     const target = stubTarget()
     const host = stubWindow(undefined)

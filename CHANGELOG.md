@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Viewport height estimates now fall back to zero when finite host readings overflow during arithmetic, preventing infinite CSS offsets while allowing later valid readings to recover.
 - Playground Worker responses are now schema-checked before reaching the UI; malformed structured-clone payloads fail and clean up instead of corrupting the result panel.
 - Fixed the playground app/desktop sample's outdated preset parameter names; all page samples now run through the real Worker compilation path in tests.
 - Viewport initialization now honors cancellation triggered during host listener registration, cleaning up before publishing CSS variables.
