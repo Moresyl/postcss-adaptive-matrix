@@ -19,6 +19,8 @@ Edit either pane and the output follows. The options pane is a JavaScript expres
 
 ## Reading the output
 
+A sample is marked active only when both input panes exactly match it. Editing either pane clears that marker unless the resulting content matches a sample; restoring the original content restores the marker.
+
 The options expression must synchronously return a configuration object (or `undefined` for defaults). Promises and function values are not invoked or awaited as configuration factories. For example, use `appPcPreset()` directly, not `() => appPcPreset()` or `Promise.resolve(appPcPreset())`. Callbacks inside a configuration object remain supported.
 
 Use **Compile again** to retry after a Worker startup failure or timeout without changing your input. The button is unavailable while a compilation is pending. Before the first successful run, a failed attempt displays “No successful compilation yet” instead of a misleading loading message; later failures retain the dimmed last successful result.

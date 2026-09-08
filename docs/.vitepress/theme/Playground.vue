@@ -24,7 +24,9 @@ const chinese = computed(() => lang.value.startsWith('zh'))
 
 const css = ref(SAMPLES[0]!.css)
 const options = ref(SAMPLES[0]!.options)
-const active = ref(0)
+const active = computed(() =>
+  SAMPLES.findIndex((sample) => sample.css === css.value && sample.options === options.value),
+)
 
 /** `null` until the first client-side run; SSR renders the input, not a result. */
 const output = shallowRef<string | null>(null)
@@ -56,7 +58,6 @@ const stop = task.stop
 function load(index: number): void {
   const sample = SAMPLES[index]
   if (!sample) return
-  active.value = index
   css.value = sample.css
   options.value = sample.options
 }
