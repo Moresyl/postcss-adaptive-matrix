@@ -54,6 +54,32 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['--css', '--json'])(
+    'reports interrupted stdin without publishing partial success in %s mode',
+    async (mode) => {
+      const stdin = process.stdin
+      Object.defineProperty(process, 'stdin', {
+        configurable: true,
+        value: (function* pipe() {
+          yield Buffer.from('.a { width: 24px }')
+          throw new Error('input stream interrupted')
+        })(),
+      })
+      restore.push(() =>
+        Object.defineProperty(process, 'stdin', { configurable: true, value: stdin }),
+      )
+      expect(await runCli(['-', mode, '--no-color'])).toBe(1)
+      if (mode === '--css') {
+        expect(out).toBe('')
+        expect(err).toContain('input stream interrupted')
+      } else {
+        expect(JSON.parse(out)).toMatchObject({ ok: false })
+        expect(out).toContain('input stream interrupted')
+        expect(out).not.toContain('"files"')
+      }
+    },
+  )
+
   it.each(['', '\uFEFF.标题 {\r\n  width: 24px;\r\n}\r\n'])(
     'keeps file and chunked stdin CSS output equivalent for %j',
     async (source) => {
