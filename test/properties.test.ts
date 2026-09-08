@@ -2,6 +2,8 @@ import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
 import { evaluateLength } from '../src/core/evaluate.js'
 import { adaptiveMatrix } from '../src/postcss/plugin.js'
+import { createConverter } from '../src/core/convert.js'
+import { resolveOptions } from '../src/core/options.js'
 
 /**
  * Properties that must hold for every canvas, not just the ones with fixtures.
@@ -54,6 +56,49 @@ const MIN_WIDTHS = [280, 320, 360, 768, 1024]
 const SPANS = [120, 200, 480, 896, 1536]
 const VALUES = [1, 2, 4, 12, 16, 20, 32, 48, 100, 187.5, 375, -4, -16, -48]
 const PROPERTIES = ['width', 'font-size', 'margin-top', 'letter-spacing', 'border-radius']
+
+it('single-dimension fast path agrees with full parsing across 600 seeded configurations', () => {
+  const pick = generator(529104)
+  for (let index = 0; index < 600; index++) {
+    const number = pick(VALUES) * pick([0.001, 1, 1000])
+    const value = `${pick([String(number), number.toExponential()])}${pick(['px', 'PX', 'rem', 'vw', 'cqi'])}`
+    const property = pick(PROPERTIES)
+    const options = resolveOptions({
+      profiles: {
+        app: {
+          designWidth: pick(DESIGN_WIDTHS),
+          fluid: pick([
+            {},
+            { minWidth: 320 },
+            { maxWidth: 1200 },
+            { minWidth: 320, maxWidth: 1200 },
+          ]),
+          fontFluidity: pick([0, 0.35, 1]),
+          unit: pick(['vw', 'cqi'] as const),
+        },
+      },
+      strategy: pick(['viewport', 'clamp'] as const),
+      unitToConvert: ['px', 'rem', 'vw', 'cqi'],
+      rootValue: pick([10, 16, 20]),
+      precision: pick([0, 5, 12]),
+    })
+    const converter = createConverter(options)
+    const fast = converter.convertWithMetadata(value, property, 'app', options.profiles.app!, '')
+    const parsed = converter.convertWithMetadata(
+      `${value} `,
+      property,
+      'app',
+      options.profiles.app!,
+      '',
+    )
+    expect(fast, JSON.stringify({ index, value, property, profile: options.profiles.app })).toEqual(
+      {
+        ...parsed,
+        value: parsed.value.trimEnd(),
+      },
+    )
+  }
+})
 
 interface Generated {
   designWidth: number
