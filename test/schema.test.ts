@@ -262,6 +262,16 @@ describe('the published options schema', () => {
     for (const field of ['include', 'exclude']) {
       expect((options[field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
     }
+    for (const field of ['include', 'exclude', 'selectorExclude', 'valueExclude']) {
+      const alternatives = options[field]!.oneOf as Subschema[]
+      const expression = new RegExp(alternatives[0]!.pattern as string)
+      for (const blank of ['', ' ', '\t\r\n', '\u00a0']) {
+        expect(expression.test(blank), `${field} must reject blank strings`).toBe(false)
+        expect(() => resolveOptions({ [field]: blank })).toThrow()
+      }
+      expect(expression.test(' src/ ')).toBe(true)
+      expect((alternatives[1]!.items as Subschema).pattern).toBe(alternatives[0]!.pattern)
+    }
     expect(
       ((options.root!.oneOf as Subschema[])[0]!.properties!.injectTo!.oneOf as Subschema[])[1]!
         .minItems,

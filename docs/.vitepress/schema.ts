@@ -56,6 +56,7 @@ const PATTERN = {
   description: 'A substring, or a regular expression in a JavaScript config.',
   'x-description-zh': '子串匹配；在 JavaScript 配置里也可以写正则。',
   type: 'string',
+  pattern: String.raw`\S`,
   'x-also': 'RegExp',
 }
 
@@ -63,6 +64,7 @@ const FILE_MATCHER = {
   description: 'A path substring, a regular expression, or a predicate over the file path.',
   'x-description-zh': '路径子串、正则，或一个接收文件路径的判断函数。',
   type: 'string',
+  pattern: String.raw`\S`,
   'x-also': 'RegExp | ((file: string) => boolean)',
 }
 
