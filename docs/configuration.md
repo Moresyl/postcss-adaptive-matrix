@@ -382,4 +382,4 @@ adaptiveMatrix({
 
 This emits the original `px` followed by the `vw`. Whether to use it should be decided by your real target browsers; modern projects should prefer the default `clamp`.
 
-"Real target browsers" does not have to be a guess — `npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` lists every piece of syntax in the output beyond your targets, along with what is lost when it is unsupported and the switch that turns it off. See [Browser support and degradation](./compatibility.md).
+Use `npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` to compare detected features in the bundled support table against explicit targets. Findings describe the impact and available configuration alternatives. Untracked syntax and rendering behavior are not certified by an empty report. See [Browser support and degradation](./compatibility.md).

@@ -382,4 +382,4 @@ adaptiveMatrix({
 
 这会输出原始 `px` 后再输出 `vw`。是否使用该方案应由真实目标浏览器决定；现代项目优先使用默认 `clamp`。
 
-「真实目标浏览器」不必靠猜——`npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` 会把产物里每一处超出目标的语法列出来，连同不支持时丢掉的东西和关掉它的开关。见[浏览器特性支持与降级](./compatibility.zh-CN.md)。
+使用 `npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"` 可将内置支持表中检测到的特性与明确的目标版本比较。报告说明影响及可用配置替代方案；报告为空不能认证未跟踪的语法或渲染行为。见[浏览器特性支持与降级](./compatibility.zh-CN.md)。
