@@ -25,6 +25,9 @@ export async function readMarkdown(url: string, signal: AbortSignal): Promise<st
       if (/text\/html/i.test(response.headers.get('content-type') ?? '')) {
         throw new Error('Expected Markdown, received an HTML fallback.')
       }
+      if (signal.aborted || controller.signal.aborted) {
+        throw new Error('Markdown request cancelled.')
+      }
       return response.text()
     }
     return await Promise.race([request(), interrupted])

@@ -7,6 +7,28 @@ afterEach(() => {
 })
 
 describe('Markdown requests', () => {
+  it('does not read a late response body after cancellation', async () => {
+    let deliver!: (response: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockReturnValue(
+        new Promise<Response>((resolve) => {
+          deliver = resolve
+        }),
+      ),
+    )
+    const controller = new AbortController()
+    const pending = readMarkdown('/guide.md', controller.signal)
+    const rejection = expect(pending).rejects.toThrow('cancelled')
+    controller.abort()
+    await rejection
+    const text = vi.fn().mockResolvedValue('# Stale')
+    deliver({ ok: true, headers: new Headers(), text } as unknown as Response)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(text).not.toHaveBeenCalled()
+  })
+
   it('returns raw Markdown and clears the deadline', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('# Guide')))
