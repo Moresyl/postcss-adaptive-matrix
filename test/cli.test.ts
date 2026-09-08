@@ -54,6 +54,39 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['', '\uFEFF.标题 {\r\n  width: 24px;\r\n}\r\n'])(
+    'keeps file and chunked stdin CSS output equivalent for %j',
+    async (source) => {
+      const path = await file('windows.css', source)
+      expect(await runCli([path, '--css', '--no-color'])).toBe(0)
+      const fileOutput = out
+      const fileErrors = err
+      out = ''
+      err = ''
+      const stdin = process.stdin
+      const bytes = Buffer.from(source)
+      Object.defineProperty(process, 'stdin', {
+        configurable: true,
+        value: (function* pipe() {
+          // Split the BOM and Chinese characters at every byte boundary.
+          for (const byte of bytes) yield Buffer.from([byte])
+        })(),
+      })
+      restore.push(() =>
+        Object.defineProperty(process, 'stdin', { configurable: true, value: stdin }),
+      )
+      expect(await runCli(['-', '--css', '--no-color'])).toBe(0)
+      expect(out).toBe(fileOutput)
+      expect(err).toBe(fileErrors)
+      expect(out).not.toContain('\uFFFD')
+      if (source) {
+        expect(out).toContain('.标题')
+        expect(out).toContain('\r\n')
+        expect(out).not.toContain('width: 24px')
+      }
+    },
+  )
+
   it('streams multiple CSS files in argument order without bundling imports', async () => {
     const first = await file('first.css', '.a { width: 24px }')
     const second = await file('second.css', '@import "./theme.css"; .b { height: 48px }')
