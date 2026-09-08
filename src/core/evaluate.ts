@@ -371,6 +371,7 @@ export function splitComponents(value: string): string[] {
       continue
     }
     if (character === '\\' && next !== undefined) {
+      if (next === '\n' || next === '\r' || next === '\f') return [value]
       let end = index + 1
       while (end < value.length && end < index + 7 && /[0-9a-f]/i.test(value[end]!)) end++
       if (end > index + 1) {

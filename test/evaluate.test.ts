@@ -197,6 +197,9 @@ describe('splitComponents', () => {
       '8px calc(1px + 2px',
       '8px "open 16px',
       '8px /* open 16px',
+      '8px \\\n 16px',
+      '8px \\\r\n 16px',
+      '8px \\\f 16px',
     ]) {
       expect(splitComponents(value), value).toEqual([value])
     }
