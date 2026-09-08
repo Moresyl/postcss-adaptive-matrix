@@ -30,6 +30,10 @@ const output = await compile(source, {
 
 One compiler instance retains conversion caches while dynamic file-based rulers refresh for every call. Requests snapshot target, gate and source-map option fields before asynchronous processing.
 
+Treat compiler configuration as fixed for the lifetime of that instance. Profiles (including fluid bounds and query objects), media route bands and root injection filter arrays are captured when it is created. To apply an edited configuration in a development server, create a new compiler and use it for subsequent requests; already-started calls continue with the old instance. Do not mutate shared configuration to reconfigure a running compiler.
+
+Resolver functions are intentionally retained, not evaluated once and frozen. A `designWidth` or `rootValue` callback can still return a different ruler for each file or rebuild. State captured by your callbacks remains your responsibility, including when requests overlap.
+
 ## Gates and maps
 
 Compatibility gates require `targets` and fail for unsupported features or unknown browser names. A failed gate still returns CSS and diagnostics; the caller chooses whether to set an exit code. Inline PostCSS maps are embedded in CSS and therefore leave `map` undefined; external maps return a map object. `process.map.prev` chains an upstream map.
