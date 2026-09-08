@@ -3,6 +3,22 @@ import { convertLength, convertValue, createConverter, round } from '../src/core
 import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
 import { resolveOptions } from '../src/core/options.js'
 
+it('converts oversized values without retaining them in the value cache', () => {
+  const options = resolveOptions({ profiles: { app: 375 } })
+  const converter = createConverter(options)
+  const convert = (value: string) =>
+    converter.convertWithMetadata(value, 'width', 'app', options.profiles.app!, '')
+  const small = convert('24px')
+  expect(convert('24px')).toBe(small)
+  const value = `custom("${'x'.repeat(16_384)}", 24px)`
+  const first = convert(value)
+  const second = convert(value)
+  expect(second).toEqual(first)
+  expect(second).not.toBe(first)
+  expect(first.value).toContain('calc(6.4vw)')
+  expect(convert('24px')).toBe(small)
+})
+
 it('bounds property classification caching and reclassifies evicted entries correctly', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)

@@ -747,8 +747,11 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     // The JSON array is an unambiguous prefix; the one-character text flag
     // separates the raw value. Serialize the resolved scalars once per canvas
     // and file, rather than re-escaping every declaration on cache hits.
-    const key = cachePrefix + (accessibleText ? '1' : '0') + value
-    const cached = values.get(key)
+    // Large one-off values (e.g. embedded assets) must not be retained merely
+    // because the entry-count limit has not been reached. Still convert them.
+    const cacheable = value.length <= 16_384
+    const key = cacheable ? cachePrefix + (accessibleText ? '1' : '0') + value : undefined
+    const cached = key === undefined ? undefined : values.get(key)
     if (cached !== undefined) return cached
 
     const converted = convertResolvedValue(
@@ -761,8 +764,10 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       rootValue,
       pattern,
     )
-    if (values.size >= MAX_CACHE_ENTRIES) values.clear()
-    values.set(key, converted)
+    if (key !== undefined && converted.value.length <= 16_384) {
+      if (values.size >= MAX_CACHE_ENTRIES) values.clear()
+      values.set(key, converted)
+    }
     return converted
   }
 
