@@ -103,6 +103,7 @@ export function generatedAssets(): Plugin {
     name: 'adaptive-matrix:generated',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
+        if (request.method !== 'GET' && request.method !== 'HEAD') return next()
         let url: string
         try {
           url = decodeURIComponent((request.url ?? '').split('?')[0] ?? '')
@@ -113,12 +114,15 @@ export function generatedAssets(): Plugin {
         }
         const base = server.config.base
         const wanted = url.startsWith(base) ? url.slice(base.length) : url.replace(/^\//, '')
-        // Regenerated per request: these are cheap, and a stale llms.txt in a
-        // dev server is a bug report that never gets filed.
+        const contentType = MIME[path.extname(wanted)]
+        // JS, CSS and Vite internals do not need a repository scan or schema
+        // generation. Relevant requests still regenerate to avoid stale docs.
+        if (!contentType) return next()
         const body = generatedAssetMap().get(wanted)
         if (body === undefined) return next()
-        response.setHeader('Content-Type', MIME[path.extname(wanted)] ?? 'text/plain')
-        response.end(body)
+        response.setHeader('Content-Type', contentType)
+        if (request.method === 'HEAD') response.end()
+        else response.end(body)
       })
     },
   }

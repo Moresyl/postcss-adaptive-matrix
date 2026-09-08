@@ -81,6 +81,28 @@ describe('documentation asset delivery', () => {
     expect(response.end).not.toHaveBeenCalled()
   })
 
+  it('returns headers without a body for HEAD requests', () => {
+    const { response, next } = middleware()('/project/docs/configuration.md', 'HEAD')
+    expect(response.setHeader).toHaveBeenCalledWith('Content-Type', 'text/markdown; charset=utf-8')
+    expect(response.end).toHaveBeenCalledWith()
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it.each(['POST', 'PUT', 'DELETE', 'OPTIONS'])('does not claim %s requests', (method) => {
+    const { response, next } = middleware()('/project/docs/configuration.md', method)
+    expect(next).toHaveBeenCalledOnce()
+    expect(response.end).not.toHaveBeenCalled()
+  })
+
+  it.each(['/project/app.js', '/project/theme.css', '/project/@vite/client', '/project/icon.png'])(
+    'leaves unrelated assets to the host: %s',
+    (url) => {
+      const { response, next } = middleware()(url)
+      expect(next).toHaveBeenCalledOnce()
+      expect(response.end).not.toHaveBeenCalled()
+    },
+  )
+
   it('passes malformed URL encoding through without crashing', () => {
     const { response, next } = middleware()('/project/%E0%A4%A')
     expect(next).toHaveBeenCalledOnce()
