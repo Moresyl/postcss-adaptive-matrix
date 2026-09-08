@@ -11,7 +11,7 @@
 3. 为每条规则解析归属画布，优先级见[配置参考](./configuration.zh-CN.md#adaptiveroute)：`@adaptive` > 属性名路由 > 选择器路由 > 文件路由 > `defaultProfile`。
 4. 使用 PostCSS AST 遍历声明，属性和值经过过滤器。
 5. 使用 `postcss-value-parser` 解析值，跳过字符串和 URL 函数。
-6. 把目标长度转换成有界流体表达式。
+6. 把目标长度转换成边界可选的流体表达式。
 7. 规则内声明处理完毕后，若启用 `fixedContainingBlock` 且该规则自身声明了 `position: fixed`，修正其行内轴 inset 与宽度。
 8. 把 `@adaptive` 改写为 `@media` 或 `@container`。
 9. 如显式启用，最后追加低优先级根布局基础层。
@@ -30,6 +30,8 @@ result    = clamp(minimum, preferred, maximum)
 ```
 
 负数会对边界重新排序，保证 `clamp()` 的最小值始终小于最大值。
+
+上面的公式以同时提供两个可选边界为前提。对于正长度，只设下界生成 `max(minimum, preferred)`，只设上界生成 `min(preferred, maximum)`，不设边界生成 `calc(preferred)`。负长度的单侧操作符相反。例如，375px 画布上的 `-24px` 外边距只设 `maxWidth: 600` 时，输出为 `max(-6.4vw, -38.4px)`：边界限制的是绝对值，而非带符号的数值。显式使用 `strategy: 'viewport'` 会输出不带函数包装的视口表达式，并忽略边界。
 
 ### 单调性
 

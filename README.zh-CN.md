@@ -36,6 +36,12 @@
 
 ## 安装
 
+```bash
+npm i -D postcss postcss-adaptive-matrix
+```
+
+## 程序化接口
+
 构建脚本与编辑器工具也可以直接调用编译接口：
 
 ```ts
@@ -45,10 +51,6 @@ const { css, warnings } = await compileAdaptiveCss('.card { padding: 24px }')
 ```
 
 只有 CSS 输入必填。多文件可使用 `createAdaptiveCompiler()` 复用配置，也可按需传入 PostCSS 源码映射选项和浏览器目标。结果字段和错误处理见[程序化编译](./docs/integration.zh-CN.md#程序化编译)。
-
-```bash
-npm i -D postcss postcss-adaptive-matrix
-```
 
 ## 快速开始
 
@@ -126,7 +128,7 @@ export default {
   <img src="https://raw.githubusercontent.com/Moresyl/postcss-adaptive-matrix/main/docs/assets/fluid-range.svg" alt="clamp 在流体区间两端都有界，纯 vw 没有尽头" width="900">
 </p>
 
-纯 `vw` 在大屏无限放大、小屏无限压缩。默认策略给每个尺寸加上下界：区间内跟随视口，区间外停住。600px 宽的小平板因此不会看到被粗暴放大的手机 UI。
+纯 `vw` 没有尺寸边界。内置 profile 带有上下界：区间内尺寸跟随视口，区间外停住。这是预设的选择，不是自定义 profile 的必填字段。
 
 `fluid` 不是必填，`minWidth` 与 `maxWidth` 也都不是必填：省略整个 `fluid`（或写 `{}`）得到无边界流体表达式，只写一端得到单侧边界，两端都写时才生成 `clamp()`。Profile 真正不可省略的只有用于换算的 `designWidth`，不需要覆盖其他行为时还能直接简写成 `profiles: { app: 375 }`。
 

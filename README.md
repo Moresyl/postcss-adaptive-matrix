@@ -36,6 +36,12 @@ Giving each design file its own **canvas** is the answer. **And it is the defaul
 
 ## Install
 
+```bash
+npm i -D postcss postcss-adaptive-matrix
+```
+
+## Programmatic API
+
 For build scripts and editor tooling, the package also exposes a direct compilation API:
 
 ```ts
@@ -45,10 +51,6 @@ const { css, warnings } = await compileAdaptiveCss('.card { padding: 24px }')
 ```
 
 Only the CSS input is required. Use `createAdaptiveCompiler()` to reuse configuration across files, or supply optional PostCSS source-map settings and browser targets. See [programmatic compilation](./docs/integration.md#programmatic-compilation) for result fields and error handling.
-
-```bash
-npm i -D postcss postcss-adaptive-matrix
-```
 
 ## Quick start
 
@@ -126,7 +128,7 @@ At this point component-library adaptation, safe-area variables, the centred roo
   <img src="https://raw.githubusercontent.com/Moresyl/postcss-adaptive-matrix/main/docs/assets/en/fluid-range.svg" alt="clamp is bounded at both ends of the fluid range; plain vw has no end" width="900">
 </p>
 
-Plain `vw` grows without limit on a large screen and collapses without limit on a small one. The default strategy puts a floor and a ceiling on every size: inside the fluid range it tracks the viewport, outside it stops. A 600px tablet therefore does not get a phone UI blown up to fit.
+Plain `vw` has no size limits. The built-in profiles include lower and upper bounds: inside their fluid range sizes track the viewport, outside it they stop. These are preset choices, not required fields for custom profiles.
 
 `fluid` is optional, and so are both `minWidth` and `maxWidth`: omit `fluid` altogether (or use `{}`) for an unbounded fluid expression, provide either side for a one-sided bound, and provide both only when you want `clamp()`. The only irreducible profile field is the `designWidth` used for conversion; when no other behaviour needs overriding, it can be shortened to `profiles: { app: 375 }`.
 

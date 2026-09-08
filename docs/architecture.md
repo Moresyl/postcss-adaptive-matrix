@@ -11,7 +11,7 @@ Where the numbers come from, and what the compiler deliberately does not do. For
 3. Each rule's canvas is resolved, with the priority given in the [Configuration reference](./configuration.md#adaptiveroute): `@adaptive` > property route > selector route > file route > `defaultProfile`.
 4. Declarations are walked over the PostCSS AST, with properties and values passing through the filters.
 5. Values are parsed with `postcss-value-parser`, skipping strings and URL functions.
-6. Target lengths are converted into bounded fluid expressions.
+6. Target lengths are converted into fluid expressions with optional bounds.
 7. Once a rule's declarations are done, if `fixedContainingBlock` is enabled and the rule itself declares `position: fixed`, its inline-axis insets and width are corrected.
 8. `@adaptive` is rewritten as `@media` or `@container`.
 9. If explicitly enabled, the low-priority root foundation layer is appended last.
@@ -30,6 +30,8 @@ result    = clamp(minimum, preferred, maximum)
 ```
 
 Negative numbers reorder the bounds, so `clamp()`'s minimum is always below its maximum.
+
+The formula above assumes both optional bounds are supplied. For a positive length, a lower bound alone produces `max(minimum, preferred)`, an upper bound alone produces `min(preferred, maximum)`, and no bounds produce `calc(preferred)`. Negative lengths reverse the one-sided operators. For example, a `-24px` margin on a 375px canvas with only `maxWidth: 600` becomes `max(-6.4vw, -38.4px)`: the bound limits its magnitude, not its signed value. Explicit `strategy: 'viewport'` emits the bare viewport expression and ignores bounds.
 
 ### Monotonicity
 
