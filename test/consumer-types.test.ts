@@ -27,8 +27,5 @@ describe.skipIf(!built)('consumer type resolution', () => {
     expect(diagnostics.length, formatted).toBe(0)
     // A real TypeScript program with dependency declarations is materially more
     // expensive under coverage than an ordinary unit test on a loaded CI runner.
-    // TypeScript resolves the complete published declaration graph. Coverage
-    // instrumentation can make this subprocess substantially slower on loaded
-    // CI workers, so allow the contract test a bounded but realistic window.
-  }, 90_000)
+  }, 30000)
 })
