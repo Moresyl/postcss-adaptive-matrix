@@ -76,6 +76,20 @@ describe('splitComponents', () => {
 
 const check = (css: string) => findContinuityIssues(postcss.parse(css))
 
+it('continues diagnosing other groups after excessive expression nesting', () => {
+  const deep = `${'calc('.repeat(10_000)}1px${')'.repeat(10_000)}`
+  const issues = check(`
+    .deep { width: ${deep} }
+    .valid { width: 10vw }
+    @media (min-width: 768px) {
+      .deep { width: 0px }
+      .valid { width: 5vw }
+    }
+  `)
+  expect(issues).toHaveLength(1)
+  expect(issues[0]).toMatchObject({ selector: '.valid', prop: 'width', breakpoint: 768 })
+})
+
 it.each([0, -1, Number.NaN, Infinity, -Infinity, '16', null])(
   'rejects an invalid continuity root font size even for empty CSS: %s',
   (rootFontSize) => {

@@ -6,6 +6,7 @@
 
 - Length evaluation rejects arithmetic outside CSS math functions and mismatched parentheses, including an opening parenthesis where a closing one is required.
 - Wide `min()`/`max()` expressions use reduction rather than function-argument spreading, avoiding call-stack errors with large argument lists.
+- Diagnostic expression evaluation caps recursive nesting at 128 levels and reports unknown instead of overflowing the JavaScript stack.
 
 - Viewport-length evaluation avoids intermediate multiplication overflow when the final pixel result is finite; genuinely overflowing results remain unknown.
 

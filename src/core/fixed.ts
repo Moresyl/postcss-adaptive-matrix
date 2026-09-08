@@ -36,9 +36,15 @@ const ROOT_WIDTH = `var(${ROOT_WIDTH_VARIABLE})`
 export function rootGutterReferenceRanges(value: string): Array<readonly [number, number]> {
   const ranges: Array<readonly [number, number]> = []
   const canonical = canonicalizeCssIdentifierEscapes(value)
-  valueParser(canonical.text).walk((node) => {
+  const pending = [...valueParser(canonical.text).nodes].reverse()
+  while (pending.length) {
+    const node = pending.pop()!
     if (node.type !== 'function' || canonicalCssIdentifierName(node.value) !== 'var') {
-      return undefined
+      if (node.type === 'function') {
+        for (let index = node.nodes.length - 1; index >= 0; index--)
+          pending.push(node.nodes[index]!)
+      }
+      continue
     }
     const first = node.nodes.find((entry) => entry.type !== 'space' && entry.type !== 'comment')
     if (first?.type === 'word' && canonicalCssPropertyName(first.value) === ROOT_GUTTER_VARIABLE) {
@@ -47,8 +53,7 @@ export function rootGutterReferenceRanges(value: string): Array<readonly [number
         canonical.positions[node.sourceEndIndex] ?? value.length,
       ])
     }
-    return false
-  })
+  }
   return ranges
 }
 
