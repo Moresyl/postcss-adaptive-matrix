@@ -3,6 +3,26 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('isolates an in-flight compiler from a replacement created with edited configuration', async () => {
+    const config = {
+      profiles: { app: { designWidth: 400, fluid: { maxWidth: 600 } } },
+      libraries: false as const,
+    }
+    const oldCompiler = createAdaptiveCompiler(config)
+    const oldRequest = oldCompiler('.a { width: 40px }')
+    config.profiles.app.designWidth = 800
+    config.profiles.app.fluid.maxWidth = 1200
+    const newCompiler = createAdaptiveCompiler(config)
+    const [oldResult, newResult] = await Promise.all([
+      oldRequest,
+      newCompiler('.a { width: 40px }'),
+    ])
+    expect(oldResult.css).toContain('min(10vw, 60px)')
+    expect(newResult.css).toContain('min(5vw, 60px)')
+    expect((await oldCompiler('.a { width: 40px }')).css).toBe(oldResult.css)
+    expect((await newCompiler('.a { width: 40px }')).css).toBe(newResult.css)
+  })
+
   it.each(['media', 'container'] as const)(
     'captures %s query settings while keeping dynamic rulers live',
     async (type) => {
