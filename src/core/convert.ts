@@ -539,12 +539,15 @@ function convertResolvedValue(
   }
   // A complete unescaped dimension has no functions, strings or token
   // boundaries to inspect. Reuse the same conversion and diagnostic guards.
-  pattern.lastIndex = 0
-  const single = pattern.exec(value)
-  pattern.lastIndex = 0
-  if (single && single.index === 0 && single[1] === '' && single[0].length === value.length) {
-    const converted = replaceDimension(single[0], '', single[2]!, single[3]!)
-    return { value: converted, generatedBounds, ...(overflow ? { overflow } : {}) }
+  const first = value.charCodeAt(0)
+  if ((first >= 48 && first <= 57) || first === 43 || first === 45 || first === 46) {
+    pattern.lastIndex = 0
+    const single = pattern.exec(value)
+    pattern.lastIndex = 0
+    if (single && single.index === 0 && single[1] === '' && single[0].length === value.length) {
+      const converted = replaceDimension(single[0], '', single[2]!, single[3]!)
+      return { value: converted, generatedBounds, ...(overflow ? { overflow } : {}) }
+    }
   }
   const parsed = valueParser(value)
   const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)

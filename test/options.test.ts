@@ -32,6 +32,10 @@ describe('configuration validation', () => {
     const converter = createConverter(options)
     const cases = [
       ['40px', '10vw'],
+      ['+40px', '10vw'],
+      ['.4px', '.4px'],
+      ['-.4px', '-.4px'],
+      ['4.5px', '1.125vw'],
       [' 80px ', ' 20vw '],
       ['"120px"', '"120px"'],
       ['url(160px.svg)', 'url(160px.svg)'],
