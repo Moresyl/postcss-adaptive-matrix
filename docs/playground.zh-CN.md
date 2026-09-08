@@ -11,7 +11,7 @@ outline: false
 
 每次修改稍作停顿后都会启动一次全新的编译。超过 5 秒的任务会终止，离开页面也会清理等待中和运行中的任务。显示的耗时包含配置求值与编译，不包含 Worker 启动，不能作为跨设备性能排名。编译中或出错后，旧结果会变淡显示。
 
-改左边任意一栏，右边跟着变。配置那一栏是 **JavaScript 表达式**而不是 JSON，所以 `selectorExclude` 里写正则、`designWidth` 写成函数，在这里和在配置文件里是一回事——单独写一个 `appPcPreset({ app: 375, pc: 1440 })` 也是完整答案。
+改左边任意一栏，右边跟着变。配置那一栏是 **JavaScript 表达式**而不是 JSON，所以 `selectorExclude` 里写正则、`designWidth` 写成函数，在这里和在配置文件里是一回事——单独写一个 `appPcPreset({ appDesignWidth: 375, pcDesignWidth: 1440 })` 也是完整答案。
 
 <ClientOnly>
   <Playground />

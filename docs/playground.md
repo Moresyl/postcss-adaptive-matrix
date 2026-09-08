@@ -11,7 +11,7 @@ The compiler runs locally in a dedicated browser Worker using the same source as
 
 Each edit starts a fresh compilation after a short pause. Work that exceeds five seconds is terminated, and leaving the page stops pending work. The displayed duration measures configuration evaluation and compilation, excluding Worker startup; it is not a cross-machine benchmark. Previous output is dimmed while compiling or after an error.
 
-Edit either pane and the output follows. The options pane is a JavaScript expression rather than JSON, so a regular expression in `selectorExclude` or a function `designWidth` works here exactly as it does in a config file — and so does `appPcPreset({ app: 375, pc: 1440 })` on its own.
+Edit either pane and the output follows. The options pane is a JavaScript expression rather than JSON, so a regular expression in `selectorExclude` or a function `designWidth` works here exactly as it does in a config file — and so does `appPcPreset({ appDesignWidth: 375, pcDesignWidth: 1440 })` on its own.
 
 <ClientOnly>
   <Playground />

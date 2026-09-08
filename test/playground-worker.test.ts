@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { SAMPLES } from '../docs/.vitepress/theme/playground-samples'
 
 afterEach(() => {
@@ -17,6 +18,18 @@ async function compile(css: string, options: string) {
 }
 
 describe('playground compiler worker', () => {
+  it.each(['playground.md', 'playground.zh-CN.md'])(
+    'compiles the preset expression documented in %s',
+    async (page) => {
+      const markdown = readFileSync(new URL(`../docs/${page}`, import.meta.url), 'utf8')
+      const expression = /`(appPcPreset\([^`]+\))`/.exec(markdown)?.[1]
+      expect(expression).toBeDefined()
+      const result = await compile('.card { padding: 24px }', expression!)
+      expect(result.error).toBeUndefined()
+      expect(result.css).toContain('6.4vw')
+    },
+  )
+
   it.each(SAMPLES)('compiles the actual $label page sample', async (sample) => {
     const result = await compile(sample.css, sample.options)
     expect(result.error).toBeUndefined()
