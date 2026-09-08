@@ -54,6 +54,19 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each([false, true])('reports overflow with warning gate enabled=%s', async (gated) => {
+    const path = await file('overflow.css', '.a { margin: 1e308px 24px }')
+    expect(await runCli([path, '--json', ...(gated ? ['--fail-on', 'warnings'] : [])])).toBe(
+      gated ? 1 : 0,
+    )
+    const report = JSON.parse(out)
+    expect(report.ok).toBe(true)
+    expect(report.gate).toEqual(gated ? { failOn: ['warnings'], passed: false } : null)
+    expect(report.summary.warnings).toBe(1)
+    expect(report.files[0].warnings[0]).toContain('finite numeric range')
+    expect(err).toBe('')
+  })
+
   it('emits one error document when a later input file cannot be read', async () => {
     const first = await file('first.css', '.a { padding: 24px }')
     const missing = join(directory, 'missing.css')
