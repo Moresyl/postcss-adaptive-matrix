@@ -108,6 +108,13 @@ describe('theme token resolution', () => {
   })
 
   it('does not mistake a registered custom property for an unset token', () => {
+    const registration = postcss.parse(
+      "@property --gap { syntax: '<length>'; inherits: false; initial-value: 24px }",
+    )
+    registration.walkAtRules('property', (atRule) => {
+      atRule.name = String.raw`pr\6f perty`
+    })
+    expect(collectTokens(registration).resolve('var(--gap, 16px)', 400)).toBeNull()
     const tokens = table(`
       @PROPERTY --gap {
         syntax: '<length>';

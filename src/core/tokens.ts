@@ -104,7 +104,7 @@ export function collectTokens(root: Root): TokenTable {
   // Modelling registration syntax and inheritance is outside this width-only
   // table, so the honest answer is unknown.
   root.walkAtRules((atRule: AtRule) => {
-    if (atRule.name.toLowerCase() !== 'property') return
+    if (canonicalCssIdentifierName(atRule.name) !== 'property') return
     const parsed = referenceName(atRule.params)
     if (parsed !== null) rejected.add(decodeCssIdentifier(parsed))
   })
