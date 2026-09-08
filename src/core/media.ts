@@ -51,6 +51,7 @@ const INITIAL_FONT_SIZE = 16
 interface WidthConstraint {
   side: 'min' | 'max'
   px: number
+  strict?: boolean
 }
 
 function lengthInPixels(numberText: string, unitText: string | undefined): number | null {
@@ -61,8 +62,12 @@ function lengthInPixels(numberText: string, unitText: string | undefined): numbe
   return Number.isFinite(pixels) ? pixels : null
 }
 
-function constraint(side: 'min' | 'max', px: number | null): WidthConstraint[] | null {
-  return px === null ? null : [{ side, px }]
+function constraint(
+  side: 'min' | 'max',
+  px: number | null,
+  strict = false,
+): WidthConstraint[] | null {
+  return px === null ? null : [{ side, px, strict }]
 }
 
 function sidesFor(operator: string, featureFirst: boolean): 'min' | 'max' | 'equal' {
@@ -90,7 +95,7 @@ function parseFeature(feature: string): WidthConstraint[] | null {
         { side: 'min', px },
         { side: 'max', px },
       ]
-    return side === 'equal' ? null : constraint(side, px)
+    return side === 'equal' ? null : constraint(side, px, widthFirst[1]!.length === 1)
   }
 
   const valueFirst = VALUE_FIRST_RANGE.exec(feature)
@@ -102,7 +107,7 @@ function parseFeature(feature: string): WidthConstraint[] | null {
         { side: 'min', px },
         { side: 'max', px },
       ]
-    return side === 'equal' ? null : constraint(side, px)
+    return side === 'equal' ? null : constraint(side, px, valueFirst[3]!.length === 1)
   }
 
   const chained = CHAINED_RANGE.exec(feature)
@@ -116,13 +121,13 @@ function parseFeature(feature: string): WidthConstraint[] | null {
   // arrows pointing away from/toward width are not one mathematical interval.
   if (leftSide === 'equal' || rightSide === 'equal' || leftSide === rightSide) return null
   return [
-    { side: leftSide, px: left },
-    { side: rightSide, px: right },
+    { side: leftSide, px: left, strict: chained[3]!.length === 1 },
+    { side: rightSide, px: right, strict: chained[4]!.length === 1 },
   ]
 }
 
 /** The bound in pixels, and which side of it the rule is live on. */
-function parseCondition(condition: string): { side: 'min' | 'max'; px: number } | null {
+function parseCondition(condition: string): WidthConstraint | null {
   const parsed = parseFeature(condition)
   return parsed?.length === 1 ? parsed[0]! : null
 }
@@ -165,7 +170,13 @@ function conditionsIn(params: string, projectOrientation: boolean): string[] | n
     if (projectOrientation && ORIENTATION_FEATURE.test(part)) continue
     const parsed = parseFeature(part)
     if (!parsed) return null
-    for (const entry of parsed) conditions.push(`(${entry.side}-width: ${entry.px}px)`)
+    for (const entry of parsed) {
+      conditions.push(
+        entry.strict
+          ? `(width ${entry.side === 'min' ? '>' : '<'} ${entry.px}px)`
+          : `(${entry.side}-width: ${entry.px}px)`,
+      )
+    }
   }
   return conditions
 }
@@ -177,6 +188,7 @@ export function widthConditions(params: string): string[] | null {
 export function matches(condition: string, width: number): boolean {
   const parsed = parseCondition(condition)
   if (!parsed) return false
+  if (parsed.strict) return parsed.side === 'min' ? width > parsed.px : width < parsed.px
   return parsed.side === 'min' ? width >= parsed.px : width <= parsed.px
 }
 

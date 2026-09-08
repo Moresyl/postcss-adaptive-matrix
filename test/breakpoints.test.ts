@@ -40,6 +40,23 @@ async function run(css: string, options: AdaptiveMatrixOptions) {
 }
 
 describe('bandOf', () => {
+  it.each(['(width > 768px)', '(768px < width)', '(width < 768px)', '(768px > width)'])(
+    'preserves strict endpoints through normalization: %s',
+    (query) => {
+      const conditions = widthConditions(query)!
+      expect(allMatch(conditions, 768)).toBe(false)
+      expect(boundaryOf(conditions[0]!)).toBe(768)
+    },
+  )
+
+  it('preserves mixed inclusive and exclusive chained endpoints', () => {
+    const conditions = widthConditions('(768px <= width < 1024px)')!
+    expect(allMatch(conditions, 768)).toBe(true)
+    expect(allMatch(conditions, 900)).toBe(true)
+    expect(allMatch(conditions, 1024)).toBe(false)
+    expect(bandOf('(768px <= width < 1024px)')).toEqual({ lo: 768, hi: 1024 })
+  })
+
   it.each([
     '(min-width: 1e308rem)',
     '(max-width: -1e308em)',
