@@ -4,7 +4,7 @@
 
 ## Unreleased
 
-- The JSON Schema now rejects blank file and selector/value matcher strings, matching runtime validation without making optional filters required.
+- The JSON Schema now rejects blank file, selector/value matcher and property-filter strings, matching runtime validation without making optional filters required. An empty `textProperties` list remains valid.
 
 - Native non-global, non-sticky regular-expression filters now skip unnecessary cursor bookkeeping, including repeated cloning of frozen expressions. Stateful expressions and custom execution hooks retain the restoring path.
 

@@ -565,7 +565,7 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     default: DEFAULTS.fontFluidity,
   },
   textProperties: oneOrMany(
-    { type: 'string' },
+    { type: 'string', pattern: String.raw`\S` },
     {
       description: 'Properties written with the text formula. Entries may end in `*`.',
       'x-description-zh': '按文字公式书写的属性。条目末尾可用 `*` 通配。',
@@ -576,7 +576,10 @@ const OPTIONS: Fields<AdaptiveMatrixOptions> = {
     description:
       'Properties to convert. `*` matches everything, a leading `!` excludes, and a list of nothing but exclusions is rejected.',
     'x-description-zh': '要转换的属性。`*` 匹配全部，前置 `!` 表示排除；全是排除项的列表会被拒绝。',
-    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' }, minItems: 1 }],
+    oneOf: [
+      { type: 'string', pattern: String.raw`\S` },
+      { type: 'array', items: { type: 'string', pattern: String.raw`\S` }, minItems: 1 },
+    ],
     default: DEFAULTS.propList,
   },
   selectorExclude: oneOrMany(PATTERN, {

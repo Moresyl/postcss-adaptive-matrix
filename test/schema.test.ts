@@ -262,7 +262,14 @@ describe('the published options schema', () => {
     for (const field of ['include', 'exclude']) {
       expect((options[field]!.oneOf as Subschema[])[1]!.minItems).toBe(1)
     }
-    for (const field of ['include', 'exclude', 'selectorExclude', 'valueExclude']) {
+    for (const field of [
+      'include',
+      'exclude',
+      'selectorExclude',
+      'valueExclude',
+      'propList',
+      'textProperties',
+    ]) {
       const alternatives = options[field]!.oneOf as Subschema[]
       const expression = new RegExp(alternatives[0]!.pattern as string)
       for (const blank of ['', ' ', '\t\r\n', '\u00a0']) {
@@ -276,6 +283,11 @@ describe('the published options schema', () => {
       ((options.root!.oneOf as Subschema[])[0]!.properties!.injectTo!.oneOf as Subschema[])[1]!
         .minItems,
     ).toBe(1)
-    expect(options.propList!.oneOf).toEqual(expect.arrayContaining([{ type: 'string' }]))
+    expect(options.propList!.oneOf).toEqual(
+      expect.arrayContaining([{ type: 'string', pattern: String.raw`\S` }]),
+    )
+    expect((options.textProperties!.oneOf as Subschema[])[1]!.minItems).toBeUndefined()
+    expect(resolveOptions({ textProperties: [] }).textProperties).toEqual([])
+    expect(() => resolveOptions({ propList: [] })).toThrow('propList cannot be empty')
   })
 })
