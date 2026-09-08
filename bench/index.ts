@@ -24,7 +24,7 @@
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import postcss, { type AcceptedPlugin } from 'postcss'
-import { CORPORA } from './corpus.js'
+import { CORPORA, CUSTOM_PROPERTY_CORPUS } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
 import { measureAlternating } from './alternating.js'
 import type {
@@ -127,7 +127,11 @@ const ratios: Ratio[] = []
 const rows: Record<string, string | number>[] = []
 const apiRows: Record<string, string | number>[] = []
 const includeApi = process.argv.includes('--api')
-for (const corpus of CORPORA) {
+const corpora = process.argv.includes('--cache-churn')
+  ? [...CORPORA, CUSTOM_PROPERTY_CORPUS]
+  : CORPORA
+for (const corpus of corpora) {
+  const corpusOptions = { transformCustomProperties: corpus.transformCustomProperties ?? false }
   const files = intoFiles(corpus.css, FILES_PER_CORPUS)
   const bytes = files.reduce((sum, file) => sum + Buffer.byteLength(file.css), 0)
 
@@ -138,8 +142,8 @@ for (const corpus of CORPORA) {
   const timings = await measureAlternating(
     [
       pass([baselinePlugin], files),
-      pass([adaptiveMatrix({ libraries: false })], files),
-      pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files),
+      pass([adaptiveMatrix({ ...corpusOptions, libraries: false })], files),
+      pass([adaptiveMatrix({ ...corpusOptions, libraries: ALL_LIBRARIES })], files),
     ],
     ITERATIONS,
     WARMUP,
@@ -148,7 +152,7 @@ for (const corpus of CORPORA) {
   const compiler = total - parseOnly
 
   if (includeApi) {
-    const compile = dist.createAdaptiveCompiler({ libraries: false })
+    const compile = dist.createAdaptiveCompiler({ ...corpusOptions, libraries: false })
     const apiPass = (audit: boolean) => async () => {
       let printed = 0
       for (const file of files) {

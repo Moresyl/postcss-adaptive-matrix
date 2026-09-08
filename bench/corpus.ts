@@ -96,6 +96,17 @@ export function application(ruleCount: number): string {
 export interface Corpus {
   name: string
   css: string
+  transformCustomProperties?: boolean
+}
+
+/** Opt-in cache-churn workload: unique names exceed property-cache capacity. */
+export const CUSTOM_PROPERTY_CORPUS: Corpus = {
+  name: 'unique-custom-properties',
+  transformCustomProperties: true,
+  css: Array.from(
+    { length: 4000 },
+    (_, index) => `.token-${index} { --generated-${index}: ${12 + (index % 100)}px }`,
+  ).join('\n\n'),
 }
 
 export const CORPORA: Corpus[] = [

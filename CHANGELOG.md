@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Property filters cache up to 1024 authored names, including rejected matches; eviction preserves case-sensitive custom-property and escaped-name matching. An opt-in `--cache-churn` benchmark exercises 4000 distinct custom properties.
 - Programmatic compilation captures syntax and object-form stringifier hooks before yielding, preventing later hook replacement from changing pending output while retaining explicit parser/stringifier precedence.
 - Complete unescaped dimensions now reuse conversion and warning guards without parsing a full value tree. Nonnumeric prefixes bypass this probe; functions, strings, escaped units and compound values retain the existing parser path.
 - Reusable converters resolve unit patterns once instead of serializing the unit list on each uncached value; the shared pattern cache is capped at 256 configurations, with existing converters remaining usable after eviction.
