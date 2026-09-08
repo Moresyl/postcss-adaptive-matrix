@@ -3,6 +3,63 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('isolates mixed concurrent requests, failures, maps and file-specific rulers', async () => {
+    const options = {
+      profiles: {
+        app: { designWidth: ({ file }: { file: string }) => (file.includes('wide') ? 750 : 375) },
+      },
+      rootValue: ({ file }: { file: string }) => (file.includes('legacy') ? 10 : 16),
+      unitToConvert: ['px', 'rem'],
+    }
+    const compile = createAdaptiveCompiler(options)
+    const inputs = Array.from({ length: 32 }, (_, index) => {
+      const css =
+        index % 7 === 0
+          ? '.broken {'
+          : index % 3 === 0
+            ? '@adaptive missing { .card { padding: 24px } }'
+            : '.card { padding: 2rem; font-size: 24px }'
+      const request = {
+        process: {
+          from: `/src/${index % 2 ? 'wide' : 'mobile'}-${index % 4 ? 'modern' : 'legacy'}-${index}.css`,
+          to: `/dist/${index}.css`,
+          map: { inline: false, annotation: false },
+        },
+        targets: { safari: index % 2 ? 12 : 17 },
+        failOn: ['warnings', 'compatibility'] as const,
+      }
+      return { css, request }
+    })
+    const shared = await Promise.allSettled(inputs.map(({ css, request }) => compile(css, request)))
+    for (const [index, input] of inputs.entries()) {
+      const result = shared[index]!
+      if (input.css === '.broken {') {
+        expect(result.status).toBe('rejected')
+        if (result.status === 'rejected') expect(String(result.reason)).toContain('Unclosed block')
+        continue
+      }
+      expect(result.status).toBe('fulfilled')
+      if (result.status !== 'fulfilled') throw result.reason
+      const independent = await compileAdaptiveCss(input.css, options, input.request)
+      expect(result.value.css).toBe(independent.css)
+      expect(result.value.map?.toJSON()).toEqual(independent.map?.toJSON())
+      expect(result.value.map?.toJSON().sourcesContent).toEqual([input.css])
+      expect(result.value.warnings.map((warning) => warning.toString())).toEqual(
+        independent.warnings.map((warning) => warning.toString()),
+      )
+      expect(result.value.compatibility).toEqual(independent.compatibility)
+      expect(result.value.gate).toEqual(independent.gate)
+    }
+    const recovered = await compile('.card { padding: 24px }', {
+      process: { from: '/src/mobile-modern.css' },
+      failOn: ['warnings'],
+    })
+    expect(recovered.css).toContain('6.4vw')
+    expect(recovered.gate?.passed).toBe(true)
+    expect(recovered.map).toBeUndefined()
+    expect(recovered.compatibility).toBeNull()
+  })
+
   it('reuses frozen file and selector regex routes across compilations', async () => {
     const file = Object.freeze(/desktop/g)
     const selector = Object.freeze(/\.card/g)

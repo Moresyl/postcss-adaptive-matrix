@@ -85,23 +85,6 @@ function intoFiles(css: string, count: number): BenchFile[] {
   return files
 }
 
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b)
-  const middle = sorted.length >> 1
-  return sorted.length % 2 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2
-}
-
-async function measure(run: () => Promise<unknown>): Promise<number> {
-  for (let index = 0; index < WARMUP; index += 1) await run()
-  const samples: number[] = []
-  for (let index = 0; index < ITERATIONS; index += 1) {
-    const start = process.hrtime.bigint()
-    await run()
-    samples.push(Number(process.hrtime.bigint() - start) / 1e6)
-  }
-  return median(samples)
-}
-
 /** Returns a pass over every file using a single processor, forcing output. */
 function pass(plugins: AcceptedPlugin[], files: BenchFile[]): () => Promise<number> {
   return async () => {
@@ -148,11 +131,20 @@ for (const corpus of CORPORA) {
   const files = intoFiles(corpus.css, FILES_PER_CORPUS)
   const bytes = files.reduce((sum, file) => sum + Buffer.byteLength(file.css), 0)
 
-  const parseOnly = await measure(pass([baselinePlugin], files))
   // `libraries: false` isolates unit conversion; the next pass adds them back,
   // so the difference is the library cost rather than a guess at it.
-  const total = await measure(pass([adaptiveMatrix({ libraries: false })], files))
-  const withLibraries = await measure(pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files))
+  // Rotate all three candidates through the same sampling rounds so machine
+  // drift does not systematically favor one stage of the subtraction.
+  const timings = await measureAlternating(
+    [
+      pass([baselinePlugin], files),
+      pass([adaptiveMatrix({ libraries: false })], files),
+      pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files),
+    ],
+    ITERATIONS,
+    WARMUP,
+  )
+  const [parseOnly, total, withLibraries] = timings as [number, number, number]
   const compiler = total - parseOnly
 
   if (includeApi) {
@@ -201,6 +193,7 @@ for (const corpus of CORPORA) {
 }
 
 console.table(rows)
+console.log('Baseline, compiler and library candidates rotate order each round.')
 if (includeApi) {
   console.table(apiRows)
   console.log('API measurements are observational; no API budget is established yet.')
