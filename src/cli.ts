@@ -280,7 +280,13 @@ async function loadJsonConfig(path: string, absolute: string): Promise<AdaptiveM
     // makes an otherwise valid cross-platform config fail before validation.
     parsed = JSON.parse(source.startsWith('\uFEFF') ? source.slice(1) : source)
   } catch (cause) {
-    const detail = cause instanceof Error ? cause.message : String(cause)
+    // JSON.parse may quote configuration contents in its diagnostic.
+    const detail =
+      cause instanceof SyntaxError
+        ? `Invalid JSON syntax${cause.message.match(/ at position \d+(?: \(line \d+ column \d+\))?$/)?.[0] ?? ''}.`
+        : cause instanceof Error
+          ? cause.message
+          : String(cause)
     throw new CliError(`Could not load config ${path}: ${detail}`)
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {

@@ -55,6 +55,18 @@ async function file(name: string, contents: string): Promise<string> {
 
 describe('runCli', () => {
   it.each(['--css', '--json'])(
+    'does not echo malformed JSON config contents in %s',
+    async (mode) => {
+      const secret = 'private-config-secret-92831'
+      const path = await file('invalid.json', `{"token":"${secret}" invalid}`)
+      expect(await runCli(['--config', path, mode, '--no-color'])).toBe(1)
+      expect(out + err).toContain('Invalid JSON syntax')
+      expect(out + err).not.toContain(secret)
+      expect(out + err).not.toContain('"token"')
+    },
+  )
+
+  it.each(['--css', '--json'])(
     'reports interrupted stdin without publishing partial success in %s mode',
     async (mode) => {
       const stdin = process.stdin
