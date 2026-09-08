@@ -30,6 +30,7 @@ export interface AdaptiveProfile {
    *
    * With neither bound the preferred viewport expression remains unbounded.
    * One bound emits `min()`/`max()`; both emit `clamp()`.
+   * The `viewport` strategy ignores these bounds and stays unbounded.
    */
   fluid?: {
     minWidth?: number

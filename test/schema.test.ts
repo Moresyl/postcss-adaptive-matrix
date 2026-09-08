@@ -155,6 +155,8 @@ describe('the published options schema', () => {
     expect((options.profiles!.propertyNames as Subschema).pattern).toBeTypeOf('string')
     expect(profile.required).toEqual(['designWidth'])
     expect(profile.properties!.fluid!.required).toBeUndefined()
+    expect(profile.properties!.fluid!.description).toContain('viewport strategy ignores')
+    expect(profile.properties!.fluid!['x-description-zh']).toContain('viewport 策略忽略')
     const rootObject = (options.root!.oneOf as Subschema[])[0]!
     expect(rootObject.required).toBeUndefined()
     expect(rootObject.properties!.selector!.default).toBe(':root')

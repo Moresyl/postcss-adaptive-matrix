@@ -131,9 +131,9 @@ const PROFILE: Fields<AdaptiveProfile> = {
   },
   fluid: {
     description:
-      'Optional bounds for scaling. Omit both for an unbounded expression, set either side for one bound, or both for clamp().',
+      'Optional bounds in adaptive mode. Omit both for an unbounded expression, set either side for one bound, or both for clamp(). The viewport strategy ignores these bounds.',
     'x-description-zh':
-      '可选的缩放边界。两端都省略则不设边界，只写一端则单侧限制，两端都写则输出 clamp()。',
+      '自适应模式的可选缩放边界。两端都省略则不设边界，只写一端则单侧限制，两端都写则输出 clamp()。viewport 策略忽略这些边界。',
     type: 'object',
     additionalProperties: false,
     properties: {
