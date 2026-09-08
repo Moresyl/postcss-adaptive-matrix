@@ -33,6 +33,8 @@ Run `npm run build` followed by `npm run bench:check` to measure the shipped art
 
 Record the Node version, machine, configuration and corpus when comparing results. Passing the relative budget is a regression check, not proof of superiority over another compiler.
 
+Use `npm run bench:api` to additionally compare the reusable programmatic compiler, with and without the optional Safari 14 / Chrome 90 compatibility audit. These extra measurements use the same files and warmup/median settings; they are observational and do not yet have a CI budget. Negative deltas can result from measurement noise.
+
 ## Pull requests
 
 Keep a PR focused, and state: the problem, the approach, the compatibility impact, and how you verified it. The default conversion formula, the output order, the public types and the minimum Node/PostCSS versions are all part of the compatibility contract.

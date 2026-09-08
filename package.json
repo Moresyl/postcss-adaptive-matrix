@@ -86,6 +86,7 @@
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
+    "bench:api": "tsx bench/index.ts --api",
     "bench:check": "tsx bench/index.ts --check",
     "docs:check": "node scripts/check-docs.mjs",
     "docs:dev": "vitepress dev docs",

@@ -26,7 +26,10 @@ import { fileURLToPath } from 'node:url'
 import postcss, { type AcceptedPlugin } from 'postcss'
 import { CORPORA } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
-import type { adaptiveMatrix as AdaptiveMatrix } from '../src/index.js'
+import type {
+  adaptiveMatrix as AdaptiveMatrix,
+  createAdaptiveCompiler as CreateAdaptiveCompiler,
+} from '../src/index.js'
 
 const DIST = new URL('../dist/index.js', import.meta.url)
 if (!existsSync(fileURLToPath(DIST))) {
@@ -44,6 +47,7 @@ if (!existsSync(fileURLToPath(DIST))) {
 const dist = (await import(DIST.href)) as {
   default: typeof AdaptiveMatrix
   BUILT_IN_LIBRARIES: readonly string[]
+  createAdaptiveCompiler: typeof CreateAdaptiveCompiler
 }
 const adaptiveMatrix = dist.default
 
@@ -137,6 +141,8 @@ interface Ratio {
 
 const ratios: Ratio[] = []
 const rows: Record<string, string | number>[] = []
+const apiRows: Record<string, string | number>[] = []
+const includeApi = process.argv.includes('--api')
 for (const corpus of CORPORA) {
   const files = intoFiles(corpus.css, FILES_PER_CORPUS)
   const bytes = files.reduce((sum, file) => sum + Buffer.byteLength(file.css), 0)
@@ -147,6 +153,30 @@ for (const corpus of CORPORA) {
   const total = await measure(pass([adaptiveMatrix({ libraries: false })], files))
   const withLibraries = await measure(pass([adaptiveMatrix({ libraries: ALL_LIBRARIES })], files))
   const compiler = total - parseOnly
+
+  if (includeApi) {
+    const compile = dist.createAdaptiveCompiler({ libraries: false })
+    const apiPass = (audit: boolean) => async () => {
+      let printed = 0
+      for (const file of files) {
+        const result = await compile(file.css, {
+          process: { from: file.from },
+          ...(audit ? { targets: { safari: 14, chrome: 90 } } : {}),
+        })
+        printed += result.css.length
+      }
+      return printed
+    }
+    const api = await measure(apiPass(false))
+    const audited = await measure(apiPass(true))
+    apiRows.push({
+      corpus: corpus.name,
+      'plugin (ms)': total.toFixed(2),
+      'reused API (ms)': api.toFixed(2),
+      'API + audit (ms)': audited.toFixed(2),
+      'audit delta (ms)': (audited - api).toFixed(2),
+    })
+  }
 
   ratios.push({
     corpus: corpus.name,
@@ -167,6 +197,10 @@ for (const corpus of CORPORA) {
 }
 
 console.table(rows)
+if (includeApi) {
+  console.table(apiRows)
+  console.log('API measurements are observational; no API budget is established yet.')
+}
 console.log('\n"compiler" is total minus parse+print — the only part this project controls.')
 
 if (process.argv.includes('--check')) {
