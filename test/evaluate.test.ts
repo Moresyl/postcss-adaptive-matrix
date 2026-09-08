@@ -107,6 +107,8 @@ describe('evaluateLength', () => {
   })
 
   it('returns null for an expression it cannot finish parsing', () => {
+    expect(evaluateLength('calc((16px()', context)).toBeNull()
+    expect(evaluateLength('min((16px(, 32px)', context)).toBeNull()
     expect(evaluateLength('calc(16px', context)).toBeNull()
     expect(evaluateLength('calc(16px +', context)).toBeNull()
     expect(evaluateLength('calc(16px +)', context)).toBeNull()

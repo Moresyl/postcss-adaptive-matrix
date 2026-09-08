@@ -240,7 +240,8 @@ class Parser {
     if (token.kind === 'paren' && token.value === '(') {
       this.index += 1
       const value = this.sum()
-      if (value === null || this.peek()?.kind !== 'paren') return null
+      const closing = this.peek()
+      if (value === null || closing?.kind !== 'paren' || closing.value !== ')') return null
       this.index += 1
       return value
     }
