@@ -295,6 +295,17 @@ describe('detection', () => {
     expect(found).toContain('viewport-units')
   })
 
+  it.each([
+    'url(/images/*/12cqi.svg)',
+    String.raw`u\72l(/images/*/12cqi.svg)`,
+    String.raw`url(/images/\)12cqi.svg)`,
+    'url("/images/)12cqi.svg")',
+  ])('keeps URL data from hiding subsequent declarations: %s', (url) => {
+    const found = ids(`.a { background: ${url}; width: 12vw }`)
+    expect(found).not.toContain('container-query-units')
+    expect(found).toContain('viewport-units')
+  })
+
   it('resumes detection after escaped strings and comments close', () => {
     const css = String.raw`.a { content: "escaped \" clamp(1px,2vw,3px)" } /* :has(.x) */
       .b { width: clamp(1px, 2vw, 3px) }`

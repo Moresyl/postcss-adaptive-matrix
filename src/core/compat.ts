@@ -16,7 +16,11 @@
  * feature is not "does it work" but "how much disappears when it doesn't".
  */
 import { FEATURE_SUPPORT, type CaniuseFeatureId } from './compat-data.js'
-import { CSS_NUMBER_SOURCE, canonicalizeCssIdentifierEscapes } from './syntax.js'
+import {
+  CSS_NUMBER_SOURCE,
+  canonicalizeCssIdentifierEscapes,
+  canonicalCssIdentifierName,
+} from './syntax.js'
 import { isPlainObject, valueKind } from './validation.js'
 
 export type CompatFeatureId =
@@ -380,6 +384,8 @@ function compatibilitySyntax(css: string): { syntax: string; positions?: number[
   const syntax = css.split('')
   let quote: "'" | '"' | null = null
   let comment = false
+  const functionName =
+    /(?:[-_a-z0-9\u0080-\uFFFF]|\\(?:[0-9a-f]{1,6}(?:\r\n|[ \t\r\n\f])?|[^\r\n\f]))+\(/iy
 
   for (let index = 0; index < syntax.length; index += 1) {
     const character = css[index]!
@@ -404,6 +410,35 @@ function compatibilitySyntax(css: string): { syntax: string; positions?: number[
         quote = null
       }
       continue
+    }
+
+    if (
+      /[uU\\]/.test(character) &&
+      (index === 0 || !/[-_a-z0-9\\\u0080-\uFFFF]/i.test(css[index - 1]!))
+    ) {
+      functionName.lastIndex = index
+      const match = functionName.exec(css)
+      if (match && canonicalCssIdentifierName(match[0].slice(0, -1)) === 'url') {
+        let cursor = functionName.lastIndex
+        let urlQuote: string | null = null
+        for (; cursor < css.length; cursor++) {
+          const part = css[cursor]!
+          if (part === '\\') {
+            cursor++
+            continue
+          }
+          if (urlQuote) {
+            if (part === urlQuote) urlQuote = null
+          } else if (part === '"' || part === "'") urlQuote = part
+          else if (part === ')') {
+            cursor++
+            break
+          }
+        }
+        syntax.fill(' ', index, Math.min(cursor, css.length))
+        index = cursor - 1
+        continue
+      }
     }
 
     // In an identifier, escaped punctuation is data, not the start of a
