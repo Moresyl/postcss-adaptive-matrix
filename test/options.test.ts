@@ -1019,6 +1019,23 @@ describe('matchers and math helpers', () => {
     expect(matchesFile(undefined, '/src/a.css')).toBe(false)
   })
 
+  it('preserves non-stateful regex cursors and restores custom execution after errors', () => {
+    const ordinary = /src/i
+    ordinary.lastIndex = 7
+    expect(matchesPattern(ordinary, 'SRC/card.css')).toBe(true)
+    expect(matchesPattern(ordinary, 'other.css')).toBe(false)
+    expect(ordinary.lastIndex).toBe(7)
+    const custom = /src/
+    custom.lastIndex = 9
+    custom.exec = () => {
+      expect(custom.lastIndex).toBe(0)
+      custom.lastIndex = 42
+      throw new Error('custom matcher failed')
+    }
+    expect(() => matchesFile(custom, 'src/card.css')).toThrow('custom matcher failed')
+    expect(custom.lastIndex).toBe(9)
+  })
+
   it.each(['', 'g', 'y'])('supports frozen %s regex configuration without mutation', (flags) => {
     const pattern = new RegExp('src', flags)
     pattern.lastIndex = 2

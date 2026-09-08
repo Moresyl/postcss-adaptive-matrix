@@ -14,6 +14,16 @@ export function toArray<T>(value: T | readonly T[] | undefined): T[] {
 }
 
 function resettableTest(pattern: RegExp, value: string): boolean {
+  // Native non-stateful expressions neither read nor write lastIndex. Keep
+  // custom test/exec implementations on the restoring path below.
+  if (
+    !pattern.global &&
+    !pattern.sticky &&
+    pattern.test === RegExp.prototype.test &&
+    pattern.exec === RegExp.prototype.exec
+  ) {
+    return pattern.test(value)
+  }
   // Frozen configuration objects may also freeze their regexes. Native test
   // cannot update lastIndex on a frozen global/sticky expression; use an
   // independent expression instead of mutating caller-owned immutable data.
