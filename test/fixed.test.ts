@@ -28,6 +28,29 @@ const CONFIG = {
   root: { selector: '#app', fixedContainingBlock: true, safeAreaVariables: false },
 }
 
+describe('gutter reference source ranges', () => {
+  it('retains source order and exact escaped slices across nested sibling functions', () => {
+    const first = String.raw`v\61 r(--adaptive-root-gutter)`
+    const second = 'var(--adaptive-root-gutter, 0px)'
+    const value = `calc(min(1px, ${first}) + max(2px, ${second}))`
+    const ranges = rootGutterReferenceRanges(value)
+    expect(ranges.map(([start, end]) => value.slice(start, end))).toEqual([first, second])
+    expect(ranges[0]![0]).toBeLessThan(ranges[1]![0])
+  })
+
+  it('does not treat a nested var fallback as an unconditional gutter reference', () => {
+    expect(rootGutterReferenceRanges('var(--other, var(--adaptive-root-gutter))')).toEqual([])
+    const value = 'var(--adaptive-root-gutter, var(--adaptive-root-gutter))'
+    expect(rootGutterReferenceRanges(value)).toEqual([[0, value.length]])
+  })
+
+  it('finds a gutter reference through ten thousand function levels', () => {
+    const reference = 'var(--adaptive-root-gutter)'
+    const value = `${'calc('.repeat(10_000)}${reference}${')'.repeat(10_000)}`
+    expect(rootGutterReferenceRanges(value)).toEqual([[50_000, 50_000 + reference.length]])
+  })
+})
+
 async function run(css: string, options: AdaptiveMatrixOptions = CONFIG): Promise<string> {
   const result = await postcss([adaptiveMatrix(options)]).process(css, {
     from: '/src/app.css',
