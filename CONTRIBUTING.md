@@ -35,6 +35,8 @@ Code expectations:
 
 ## Performance measurements
 
+Run `npm run bench:continuity -- a3025cc` for a source-level analyzer comparison, replacing the hash with an available trusted baseline commit. The script executes that revision's analyzer with current dependencies, verifies identical findings, and alternates timing against the working tree on synthetic 2- and 40-breakpoint corpora. This is not a whole-release comparison or CI gate. Output differences fail before timing; the same iteration and warmup environment variables apply.
+
 The throughput corpora are generated synthetic CSS shaped like component libraries, utility frameworks and applications, not downloaded bundles or browser-rendering benchmarks. Run `npm run bench:check -- --cache-churn` to add 4000 distinct custom properties with custom-property conversion enabled. Before timing, the built compiler must change every declaration value while retaining names and counts, without warnings, both with libraries disabled and with all built-ins enabled. This preflight is outside the timed region; separate tests check numeric output and idempotence. It does not prove arbitrary CSS is correct or represent every watch-build workload.
 
 Run `npm run build` followed by `npm run bench:check` to measure the shipped artifacts against a real PostCSS parse-and-print baseline. The report uses medians over 20 timed passes after 5 warmup passes. Optional environment variables `BENCH_ITERATIONS` and `BENCH_WARMUP` override these counts: iterations must be a positive safe integer, warmup a nonnegative safe integer. Invalid values fail instead of producing an empty or misleading report. Setting warmup to zero is useful for investigation but is not comparable to the default warmed measurement.

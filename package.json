@@ -88,6 +88,7 @@
     "conformance:update": "tsx scripts/update-conformance.ts",
     "bench": "tsx bench/index.ts",
     "bench:api": "tsx bench/index.ts --api",
+    "bench:continuity": "tsx bench/continuity.ts",
     "bench:check": "tsx bench/index.ts --check",
     "verify:libraries": "tsx scripts/verify-libraries.ts",
     "docs:check": "node scripts/check-docs.mjs",
