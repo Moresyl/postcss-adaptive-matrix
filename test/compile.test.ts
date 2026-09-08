@@ -3,6 +3,36 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('distinguishes an omitted include filter from an empty one', async () => {
+    const source = '.card { padding: 40px }'
+    const options = { profiles: { app: 400 }, libraries: false as const }
+    const request = { process: { from: 'src/card.css' } }
+    expect((await compileAdaptiveCss(source, options, request)).css).toContain('10vw')
+    for (const field of ['include', 'exclude'] as const) {
+      await expect(
+        compileAdaptiveCss(source, { ...options, [field]: [] }, request),
+      ).rejects.toThrow(`${field} cannot be an empty array`)
+    }
+  })
+
+  it.each(['include', 'exclude'] as const)(
+    'captures the %s file filter array when creating a reusable compiler',
+    async (field) => {
+      const filters = [field === 'include' ? 'card.css' : 'vendor.css']
+      const compile = createAdaptiveCompiler({
+        profiles: { app: 400 },
+        libraries: false,
+        [field]: filters,
+      })
+      const request = { process: { from: 'src/card.css' } }
+      const before = await compile('.card { padding: 40px }', request)
+      filters.splice(0, 1, field === 'include' ? 'vendor.css' : 'card.css')
+      const after = await compile('.card { padding: 40px }', request)
+      expect(before.css).toContain('10vw')
+      expect(after.css).toBe(before.css)
+    },
+  )
+
   it.each(['minWidth', 'maxWidth'] as const)(
     'rejects null fluid.%s instead of silently treating it as an omitted bound',
     async (bound) => {

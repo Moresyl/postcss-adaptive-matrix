@@ -655,6 +655,10 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
     propList: toArray(input.propList ?? DEFAULTS.propList),
     selectorExclude: toArray(input.selectorExclude ?? DEFAULTS.selectorExclude),
     valueExclude: toArray(input.valueExclude ?? DEFAULTS.valueExclude),
+    // Capture caller-owned arrays, just like routes and declaration filters.
+    // Preserve absence so the default remains unrestricted.
+    ...(input.include === undefined ? {} : { include: toArray(input.include) }),
+    ...(input.exclude === undefined ? {} : { exclude: toArray(input.exclude) }),
     libraries,
     profiles: authored,
     root,

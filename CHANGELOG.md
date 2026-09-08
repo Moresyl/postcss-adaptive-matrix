@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Reusable compilers now snapshot `include` and `exclude` file-filter arrays. Editing the caller's arrays no longer changes whether an existing compiler converts subsequent files. Omitted filters remain optional; empty arrays retain their existing validation error.
+
 - Production documentation search now loads separate English and Chinese indexes on demand, retaining section anchors and stored titles. Development keeps the shared live index for native hot updates. Offline build checks verify locale isolation and lazy loading for root and subpath deployments.
 
 - Continuity diagnostics now recognize escaped `var()` and math-function names and viewport units. Component splitting preserves escape terminators and escaped punctuation; gutter removal is reused within each analysis without retaining values across calls.
