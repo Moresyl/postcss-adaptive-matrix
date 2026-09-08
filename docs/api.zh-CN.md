@@ -37,3 +37,23 @@ const output = await compile(source, {
 此 API 门禁覆盖警告和兼容性，不包含 CLI 的断点接缝分析；若接缝问题也属于构建策略，请使用 [CLI JSON 报告](./cli.zh-CN.md#机器可读报告)。
 
 包内包含 ESM 与 CommonJS 类型声明。可直接导入 `AdaptiveCompileOptions`、`AdaptiveCompileResult`、`AdaptiveCompileGate` 和 `AdaptiveCompileGateCategory`，无需重复声明结果契约。
+
+## 异常与恢复
+
+CSS 语法错误、非法请求或配置回调抛错会拒绝编译 Promise；诊断门禁失败则不会。因此，在构建接收输出之前，应检查 `output.gate?.passed === false`。警告和 PostCSS 结果归属各次调用，同一个编译器中的失败请求或警告不会污染后续请求。即使回调曾经抛错，下一次编译也会重新读取动态画布与根字号。
+
+```ts
+const compile = createAdaptiveCompiler()
+try {
+  const output = await compile('.card { padding: 24px }', { failOn: ['warnings'] })
+  if (output.gate?.passed === false) {
+    console.error('CSS 质量门禁未通过', output.warnings.map((warning) => warning.text))
+  } else {
+    console.log(output.css)
+  }
+} catch (error) {
+  console.error('CSS 编译失败', error instanceof Error ? error.message : '未知错误')
+}
+```
+
+在服务端使用时，详细诊断应保留在可信日志中：源码路径和原始 CSS 可能含敏感信息。向不可信客户端返回适当的公开错误，不要直接暴露原始异常。

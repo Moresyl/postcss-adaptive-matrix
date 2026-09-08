@@ -117,6 +117,41 @@ describe('programmatic compiler', () => {
     await expect(compileAdaptiveCss('.broken {')).rejects.toThrow('Unclosed block')
   })
 
+  it('recovers after syntax errors without leaking diagnostics into later requests', async () => {
+    const compile = createAdaptiveCompiler()
+    await expect(compile('.broken {')).rejects.toThrow('Unclosed block')
+    const warning = await compile('@adaptive missing { .a { width: 24px } }', {
+      failOn: ['warnings'],
+    })
+    expect(warning.gate?.passed).toBe(false)
+    const clean = await compile('.a { padding: 24px }', { failOn: ['warnings'] })
+    expect(clean.css).toContain('6.4vw')
+    expect(clean.warnings).toEqual([])
+    expect(clean.gate?.passed).toBe(true)
+    expect(clean.result).not.toBe(warning.result)
+  })
+
+  it('refreshes dynamic rulers after a callback failure', async () => {
+    let width = 375
+    let failing = false
+    const compile = createAdaptiveCompiler({
+      profiles: {
+        app: {
+          designWidth: () => {
+            if (failing) throw new Error('Design width unavailable')
+            return width
+          },
+        },
+      },
+    })
+    expect((await compile('.a { padding: 24px }')).css).toContain('6.4vw')
+    failing = true
+    await expect(compile('.a { padding: 24px }')).rejects.toThrow('Design width unavailable')
+    failing = false
+    width = 750
+    expect((await compile('.a { padding: 24px }')).css).toContain('3.2vw')
+  })
+
   it('snapshots browser targets before yielding to the caller', async () => {
     const targets = { safari: 12 }
     const pending = compileAdaptiveCss('.card { padding: 24px }', {}, { targets })

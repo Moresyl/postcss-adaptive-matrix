@@ -37,3 +37,23 @@ Compatibility gates require `targets` and fail for unsupported features or unkno
 The API gate covers warnings and compatibility, not CLI continuity analysis. Use the [CLI JSON report](./cli.md) when continuity findings are part of the build policy.
 
 The package includes ESM and CommonJS type declarations. Import `AdaptiveCompileOptions`, `AdaptiveCompileResult`, `AdaptiveCompileGate` and `AdaptiveCompileGateCategory` instead of restating the result contract.
+
+## Errors and recovery
+
+A syntax error, invalid request or throwing configuration callback rejects the compile promise. A diagnostic gate failure does not: inspect `output.gate?.passed === false` before accepting output into a build. Warnings and PostCSS results belong to each call, so a failed or warning-producing request does not contaminate later requests on the same compiler. Dynamic rulers are refreshed on the next compilation even after a callback throws.
+
+```ts
+const compile = createAdaptiveCompiler()
+try {
+  const output = await compile('.card { padding: 24px }', { failOn: ['warnings'] })
+  if (output.gate?.passed === false) {
+    console.error('CSS quality gate failed', output.warnings.map((warning) => warning.text))
+  } else {
+    console.log(output.css)
+  }
+} catch (error) {
+  console.error('CSS compilation failed', error instanceof Error ? error.message : 'Unknown error')
+}
+```
+
+In a service, keep detailed compiler diagnostics in trusted logs: source paths and authored CSS can be sensitive. Return a suitable public error instead of exposing raw exceptions to untrusted clients.
