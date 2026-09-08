@@ -56,6 +56,24 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('rolls back partial registration when the host rejects a later listener', () => {
+    const host = stubWindow(null)
+    const target = stubTarget()
+    const active = new Map<string, unknown>()
+    host.listeners.add.mockImplementation((event: string, listener: unknown) => {
+      if (event === 'orientationchange') throw new Error('listener registration rejected')
+      active.set(event, listener)
+    })
+    host.listeners.remove.mockImplementation((event: string) => active.delete(event))
+
+    expect(() => observeAdaptiveViewport({ window: host.window, target: target.element })).toThrow(
+      'listener registration rejected',
+    )
+    expect(active.size).toBe(0)
+    expect(target.setProperty).not.toHaveBeenCalled()
+    expect(host.pending()).toBe(0)
+  })
+
   it('honors cancellation triggered by a host during listener registration', () => {
     const controller = new AbortController()
     const host = stubWindow(null)
