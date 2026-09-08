@@ -7,6 +7,21 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it.each(['\n', '\r\n', '\f'])(
+  'does not report valid-looking fragments around an invalid escaped newline %j',
+  (newline) => {
+    const root = postcss.parse(
+      `.a { margin: 10vw \\${newline} 20vw; }
+       @media (min-width: 768px) { .a { margin: 5vw \\${newline} 10vw; } }
+       .valid { width: 10vw; }
+       @media (min-width: 768px) { .valid { width: 5vw; } }`,
+    )
+    const issues = findContinuityIssues(root)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.selector).toBe('.valid')
+  },
+)
+
 it.each([
   [String.raw`c\61 lc(10vw)`, String.raw`c\61 lc(5vw)`],
   [String.raw`10v\77`, String.raw`5v\77`],
