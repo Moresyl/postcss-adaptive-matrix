@@ -252,7 +252,7 @@ for (const target of TARGETS) {
   const warnings = first.warnings().length
 
   const missing = prefixed === 0 || (target.tokenPrefix ? tokens === 0 : false)
-  if (missing || !idempotent || seams > 0 || !canvasOk) problems += 1
+  if (missing || !idempotent || seams > 0 || warnings > 0 || !canvasOk) problems += 1
 
   rows.push([
     target.library,
