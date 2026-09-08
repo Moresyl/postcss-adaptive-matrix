@@ -56,6 +56,24 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('honors cancellation triggered by a host during listener registration', () => {
+    const controller = new AbortController()
+    const host = stubWindow(null)
+    const target = stubTarget()
+    host.listeners.add.mockImplementationOnce(() => controller.abort())
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+      signal: controller.signal,
+    })
+    expect(target.setProperty).not.toHaveBeenCalled()
+    expect(observer.update()).toBeNull()
+    expect(host.listeners.remove).toHaveBeenCalledWith('resize', expect.any(Function))
+    expect(host.listeners.remove).toHaveBeenCalledWith('orientationchange', expect.any(Function))
+    host.fire('resize')
+    expect(host.pending()).toBe(0)
+  })
+
   it('cleans up the original abort signal if the options object changes', () => {
     const first = new AbortController()
     const second = new AbortController()

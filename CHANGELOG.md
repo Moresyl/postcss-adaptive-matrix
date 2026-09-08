@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Viewport initialization now honors cancellation triggered during host listener registration, cleaning up before publishing CSS variables.
 - Playground Worker message decoding failures now terminate immediately and clear their deadline instead of waiting for a timeout.
 - Frozen regular-expression matchers now work without mutating their read-only `lastIndex`, including global and sticky patterns.
 - Documentation Markdown requests now time out after ten seconds and cancel cleanly during page changes, including stalled response bodies.

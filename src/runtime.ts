@@ -240,6 +240,9 @@ export function observeAdaptiveViewport(
       passive: true,
     })
     signal?.addEventListener('abort', abort, { once: true })
+    // Host registration hooks can synchronously abort before our listener is
+    // attached. Recheck before publishing so that cancellation is not lost.
+    if (signal?.aborted) observer.destroy()
     update()
   } catch (error) {
     // Construction is transactional: callers cannot destroy an observer that
