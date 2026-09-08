@@ -54,6 +54,15 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it('streams multiple CSS files in argument order without bundling imports', async () => {
+    const first = await file('first.css', '.a { width: 24px }')
+    const second = await file('second.css', '@import "./theme.css"; .b { height: 48px }')
+    expect(await runCli([first, second, '--css', '--no-color'])).toBe(0)
+    expect(out.indexOf('.a {')).toBeLessThan(out.indexOf('@import "./theme.css"'))
+    expect(out.indexOf('@import "./theme.css"')).toBeLessThan(out.indexOf('.b {'))
+    expect(out).toContain('}\n@import')
+  })
+
   it.each(['--json', '--css'])('reports a later parse failure in %s mode', async (mode) => {
     const first = await file('first.css', '.a { width: 24px }')
     const invalid = await file('invalid.css', '.b {')
