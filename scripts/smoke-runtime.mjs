@@ -26,6 +26,11 @@ assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
 for (const api of [esm, cjs]) {
+  const document = postcss.document()
+  document.append(postcss.parse('.a { width: min(40px, 100vw) }'))
+  document.append(postcss.parse('@media (min-width: 768px) { .a { width: min(20px, 100vw) } }'))
+  assert.deepEqual(api.findContinuityIssues(document), [])
+  assert.throws(() => api.findContinuityIssues(document, 0), RangeError)
   const compile = api.createAdaptiveCompiler({ profiles: { app: 375 } })
   const output = await compile('.card { padding: 24px }', {
     process: {

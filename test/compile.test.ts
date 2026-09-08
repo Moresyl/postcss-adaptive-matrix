@@ -1,7 +1,40 @@
 import { describe, expect, it } from 'vitest'
+import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('supports custom parsers returning independent source roots', async () => {
+    const files: string[] = []
+    const compile = createAdaptiveCompiler({
+      profiles: {
+        app: {
+          designWidth: ({ file }) => {
+            files.push(file)
+            return file.includes('desktop') ? 750 : 375
+          },
+        },
+      },
+    })
+    const output = await compile('', {
+      process: {
+        parser: () => {
+          const document = postcss.document()
+          document.append(postcss.parse('.a { width: 24px }', { from: '/src/mobile.css' }))
+          document.append(postcss.parse('.a { width: 24px }', { from: '/src/desktop.css' }))
+          return document
+        },
+      },
+    })
+    expect(output.result.root.type).toBe('document')
+    expect(output.css).toContain('6.4vw')
+    expect(output.css).toContain('3.2vw')
+    expect(files).toHaveLength(2)
+    expect(files[0]).toContain('mobile.css')
+    expect(files[1]).toContain('desktop.css')
+    expect(findContinuityIssues(output.result.root)).toEqual([])
+    expect(output.warnings).toEqual([])
+  })
+
   it('composes with continuity analysis using the same nondefault rem ruler', async () => {
     const rootValue = 20
     const output = await compileAdaptiveCss(
