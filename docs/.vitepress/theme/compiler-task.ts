@@ -37,6 +37,11 @@ export function createCompilerTask(
         stop()
         fail('worker')
       }
+      current.onmessageerror = () => {
+        if (worker !== current) return
+        stop()
+        fail('worker')
+      }
       deadline = setTimeout(() => {
         if (worker !== current) return
         stop()

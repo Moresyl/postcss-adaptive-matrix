@@ -19,6 +19,22 @@ const input = { css: '.a {}', options: '{}' }
 const event = { data: { css: '.a {}' } } as MessageEvent
 
 describe('disposable compiler task', () => {
+  it('fails immediately on message decoding errors and ignores stale ones', () => {
+    const { task, workers, receive, fail } = fixture()
+    task.run(input)
+    const old = workers[0]!
+    expect(old.onmessageerror).toBeTypeOf('function')
+    old.onmessageerror!.call(old, {} as MessageEvent)
+    expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+    expect(old.terminate).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
+    task.run(input)
+    old.onmessageerror!.call(old, {} as MessageEvent)
+    expect(fail).toHaveBeenCalledOnce()
+    workers[1]!.onmessage!.call(workers[1]!, event)
+    expect(receive).toHaveBeenCalledExactlyOnceWith(event.data)
+  })
+
   it('publishes once and clears the deadline after success', () => {
     const { task, workers, receive, fail } = fixture()
     task.run(input)
