@@ -675,6 +675,9 @@ export function convertValue(
 
 /** Cleared wholesale rather than evicted; the point is a ceiling, not a policy. */
 const MAX_CACHE_ENTRIES = 20_000
+const MAX_CACHED_VALUE_LENGTH = 16_384
+// UTF-16 code units, not a promise about engine-specific heap overhead.
+const MAX_CACHE_CHARACTERS = 4 * 1024 * 1024
 
 /**
  * A converter bound to one set of options, memoised across declarations.
@@ -702,6 +705,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const rootValues = new Map<string, number>()
   const textProperties = new Map<string, boolean>()
   const values = new Map<string, ValueConversion>()
+  let cachedCharacters = 0
 
   const convertWithMetadata = (
     value: string,
@@ -749,7 +753,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
     // and file, rather than re-escaping every declaration on cache hits.
     // Large one-off values (e.g. embedded assets) must not be retained merely
     // because the entry-count limit has not been reached. Still convert them.
-    const cacheable = value.length <= 16_384
+    const cacheable = value.length <= MAX_CACHED_VALUE_LENGTH
     const key = cacheable ? cachePrefix + (accessibleText ? '1' : '0') + value : undefined
     const cached = key === undefined ? undefined : values.get(key)
     if (cached !== undefined) return cached
@@ -764,9 +768,21 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       rootValue,
       pattern,
     )
-    if (key !== undefined && converted.value.length <= 16_384) {
-      if (values.size >= MAX_CACHE_ENTRIES) values.clear()
+    const entryCharacters = (key?.length ?? 0) + converted.value.length
+    if (
+      key !== undefined &&
+      converted.value.length <= MAX_CACHED_VALUE_LENGTH &&
+      entryCharacters <= MAX_CACHE_CHARACTERS
+    ) {
+      if (
+        values.size >= MAX_CACHE_ENTRIES ||
+        cachedCharacters + entryCharacters > MAX_CACHE_CHARACTERS
+      ) {
+        values.clear()
+        cachedCharacters = 0
+      }
       values.set(key, converted)
+      cachedCharacters += entryCharacters
     }
     return converted
   }

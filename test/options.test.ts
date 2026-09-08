@@ -19,6 +19,20 @@ it('converts oversized values without retaining them in the value cache', () => 
   expect(convert('24px')).toBe(small)
 })
 
+it('evicts cached strings on aggregate size before the entry-count limit', () => {
+  const options = resolveOptions({ profiles: { app: 375 } })
+  const converter = createConverter(options)
+  const convert = (value: string) =>
+    converter.convertWithMetadata(value, 'width', 'app', options.profiles.app!, '')
+  const first = convert('24px')
+  const padding = 'x'.repeat(8_000)
+  for (let index = 0; index < 300; index++) convert(`custom("${padding}${index}", 24px)`)
+  const renewed = convert('24px')
+  expect(renewed).toEqual(first)
+  expect(renewed).not.toBe(first)
+  expect(convert('24px')).toBe(renewed)
+})
+
 it('bounds property classification caching and reclassifies evicted entries correctly', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)
