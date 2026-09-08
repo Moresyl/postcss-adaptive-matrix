@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Added documentation print styles to hide navigation and copy controls, expand the reading column, wrap long code/table content, and request that code blocks, tables, and quotes stay together. Printed pagination has not been browser-verified.
 - The JSON Schema now rejects blank file, selector/value matcher and property-filter strings, matching runtime validation without making optional filters required. An empty `textProperties` list remains valid.
 
 - Native non-global, non-sticky regular-expression filters now skip unnecessary cursor bookkeeping, including repeated cloning of frozen expressions. Stateful expressions and custom execution hooks retain the restoring path.

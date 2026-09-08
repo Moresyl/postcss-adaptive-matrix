@@ -141,3 +141,70 @@
     transition: none !important;
   }
 }
+
+/* Keep exported PDFs focused on the reference, not the app chrome. */
+@media print {
+  :root {
+    --vp-c-bg: #fff;
+    --vp-c-bg-alt: #fff;
+    --vp-c-bg-soft: #f5f6f8;
+    --vp-c-text-1: #111827;
+    --vp-c-text-2: #374151;
+  }
+
+  .VPNav,
+  .VPLocalNav,
+  .VPSkipLink,
+  .VPSidebar,
+  .VPDoc .aside,
+  .VPDocFooter,
+  .copy-page,
+  .vp-doc button.copy,
+  .vp-doc .header-anchor,
+  .edit-link,
+  .pager {
+    display: none !important;
+  }
+
+  .VPDoc,
+  .VPContent,
+  .VPDoc .container,
+  .VPDoc .content,
+  .VPDoc .content-container {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .vp-doc a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .vp-doc pre,
+  .vp-doc pre code {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+  }
+
+  .vp-doc pre span {
+    color: #111827 !important;
+  }
+
+  .vp-doc table {
+    display: table;
+    table-layout: fixed;
+  }
+
+  .vp-doc th,
+  .vp-doc td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .vp-doc pre,
+  .vp-doc table,
+  .vp-doc blockquote {
+    break-inside: avoid;
+  }
+}
