@@ -1,7 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { compileAdaptiveCss, createAdaptiveCompiler } from '../src/index.js'
+import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('composes with continuity analysis using the same nondefault rem ruler', async () => {
+    const rootValue = 20
+    const output = await compileAdaptiveCss(
+      '.card { font-size: calc(2rem) } @media (min-width: 768px) { .card { font-size: calc(1rem) } }',
+      { rootValue },
+    )
+    const root = output.result.root
+    if (root.type !== 'root') throw new Error('Expected a single stylesheet root')
+    const issues = findContinuityIssues(root, rootValue)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]).toMatchObject({
+      selector: '.card',
+      prop: 'font-size',
+      breakpoint: 768,
+      below: { px: 40 },
+      above: { px: 20 },
+    })
+  })
+
   it('snapshots source-map settings before yielding', async () => {
     const map = { inline: false, annotation: false, sourcesContent: true }
     const pending = compileAdaptiveCss(

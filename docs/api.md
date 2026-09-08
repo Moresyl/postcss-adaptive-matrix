@@ -36,6 +36,22 @@ Compatibility gates require `targets` and fail for unsupported features or unkno
 
 The API gate covers warnings and compatibility, not CLI continuity analysis. Use the [CLI JSON report](./cli.md) when continuity findings are part of the build policy.
 
+For an in-process continuity check, compose the exported analyzer with the compiled root. Pass the same root font size to both conversion and analysis (the default is 16). Resolve a dynamic root font size once for the file and supply that number to both calls, rather than invoking a changing callback twice.
+
+```ts
+import { compileAdaptiveCss, findContinuityIssues } from 'postcss-adaptive-matrix'
+
+const rootValue = 20
+const output = await compileAdaptiveCss(source, { rootValue })
+const root = output.result.root
+// A custom PostCSS parser can return a Document instead of one stylesheet.
+if (root.type !== 'root') throw new Error('Analyze Document roots separately')
+const seams = findContinuityIssues(root, rootValue)
+const accepted = output.gate?.passed !== false && seams.length === 0
+```
+
+This is a static check for backwards length steps at resolvable viewport breakpoints, not a layout or visual test. Unresolvable values and conditions are skipped; an empty report does not certify every responsive layout.
+
 The package includes ESM and CommonJS type declarations. Import `AdaptiveCompileOptions`, `AdaptiveCompileResult`, `AdaptiveCompileGate` and `AdaptiveCompileGateCategory` instead of restating the result contract.
 
 ## Errors and recovery

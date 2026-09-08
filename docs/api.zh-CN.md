@@ -36,6 +36,22 @@ const output = await compile(source, {
 
 此 API 门禁覆盖警告和兼容性，不包含 CLI 的断点接缝分析；若接缝问题也属于构建策略，请使用 [CLI JSON 报告](./cli.zh-CN.md#机器可读报告)。
 
+也可以在进程内把导出的分析器与编译结果组合使用。转换和分析必须使用相同的根字号（默认值为 16）。动态根字号应按文件求值一次，再把数值传给两者，不要重复调用可能变化的回调。
+
+```ts
+import { compileAdaptiveCss, findContinuityIssues } from 'postcss-adaptive-matrix'
+
+const rootValue = 20
+const output = await compileAdaptiveCss(source, { rootValue })
+const root = output.result.root
+// 自定义 PostCSS 解析器可能返回 Document，而不是一份样式表。
+if (root.type !== 'root') throw new Error('请分别分析 Document 内的各个 Root')
+const seams = findContinuityIssues(root, rootValue)
+const accepted = output.gate?.passed !== false && seams.length === 0
+```
+
+这是一项静态检查，用于发现可计算的视口断点处长度反向缩小，不是布局或视觉测试。无法解析的值和条件会被跳过；报告为空不能证明所有响应式布局都正确。
+
 包内包含 ESM 与 CommonJS 类型声明。可直接导入 `AdaptiveCompileOptions`、`AdaptiveCompileResult`、`AdaptiveCompileGate` 和 `AdaptiveCompileGateCategory`，无需重复声明结果契约。
 
 ## 异常与恢复
