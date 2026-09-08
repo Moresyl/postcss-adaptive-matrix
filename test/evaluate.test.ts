@@ -164,6 +164,18 @@ describe('evaluateLength', () => {
 })
 
 describe('splitComponents', () => {
+  it.each<[string, string[]]>([
+    [String.raw`c\61 lc(1px + 2px) 4px`, [String.raw`c\61 lc(1px + 2px)`, '4px']],
+    [String.raw`10v\77  4px`, [String.raw`10v\77 `, '4px']],
+    ['10v\\77\r\n 4px', ['10v\\77\r\n', '4px']],
+    [String.raw`name\( 4px`, [String.raw`name\(`, '4px']],
+    [String.raw`name\" 4px`, [String.raw`name\"`, '4px']],
+    [String.raw`name\ space 4px`, [String.raw`name\ space`, '4px']],
+    [String.raw`\000076w 4px`, [String.raw`\000076w`, '4px']],
+  ])('preserves escape boundaries in %s', (value, expected) => {
+    expect(splitComponents(value)).toEqual(expected)
+  })
+
   it('keeps a bracketed group together', () => {
     // Whitespace inside the brackets survives: the group is handed on to be
     // evaluated, not rewritten, and the evaluator reads it as authored.

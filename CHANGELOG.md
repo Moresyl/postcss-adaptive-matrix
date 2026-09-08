@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Continuity diagnostics now recognize escaped `var()` and math-function names and viewport units. Component splitting preserves escape terminators and escaped punctuation; gutter removal is reused within each analysis without retaining values across calls.
+
 - CI now runs the full verification and runtime smoke checks on Windows with Node 24, covering the platform-specific CLI and filesystem path surface alongside the Linux matrix.
 
 - Tighten the published JSON Schema to reject blank query conditions, matching runtime validation while keeping the optional `query` field optional.
