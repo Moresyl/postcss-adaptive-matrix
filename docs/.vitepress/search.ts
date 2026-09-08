@@ -16,6 +16,9 @@ export function rewrittenLocaleSearch(): Plugin {
       }
       return {
         code: `const indexes = ${code.slice(declaration.length)}
+if (typeof (indexes.zh ?? indexes.root) !== 'function') {
+  throw new Error('VitePress search has no Chinese or root index loader; review locale compatibility.');
+}
 export default { ...indexes, zh: indexes.zh ?? indexes.root };`,
         map: null,
       }

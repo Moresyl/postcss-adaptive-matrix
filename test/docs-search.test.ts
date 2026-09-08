@@ -1,33 +1,42 @@
 import { describe, expect, it } from 'vitest'
+import { runInNewContext } from 'node:vm'
 import { rewrittenLocaleSearch } from '../docs/.vitepress/search.js'
 
-function transform(code: string, id = '/@localSearchIndex') {
-  const hook = rewrittenLocaleSearch().transform as CallableFunction
-  return hook(code, id) as { code: string; map: null } | undefined
+const transform = rewrittenLocaleSearch().transform as (
+  code: string,
+  id: string,
+) => { code: string; map: null } | undefined
+
+function evaluate(expression: string): Record<string, () => string> {
+  const result = transform(`export default ${expression}`, '/@localSearchIndex')!
+  // Only test-owned literals are evaluated, never repository or user input.
+  return runInNewContext(result.code.replace('export default ', 'result = '), { result: {} }).result
 }
 
-describe('rewritten documentation locale search', () => {
-  it('makes the shared index available to Chinese clients', () => {
-    const result = transform('export default { root: () => "shared" }')!
-    expect(result.code).toContain('zh: indexes.zh ?? indexes.root')
+describe('rewritten locale search compatibility', () => {
+  it('shares the root loader without eagerly loading its index', () => {
+    const indexes = evaluate('{ root: () => "shared" }')
+    expect(indexes.zh).toBe(indexes.root)
+    expect(indexes.zh!()).toBe('shared')
   })
 
-  it('preserves independent locale indexes when available', () => {
-    const result = transform(
-      'export default { root: () => "english", zh: () => "chinese", fr: () => "french" };',
-    )!
-    expect(result.code).toContain('zh: indexes.zh ?? indexes.root')
-    expect(result.code).toContain('zh: () => "chinese"')
+  it('preserves a native Chinese index and other locales', () => {
+    const indexes = evaluate('{ root: () => "en", zh: () => "zh", fr: () => "fr" }')
+    expect(indexes.zh!()).toBe('zh')
+    expect(indexes.root!()).toBe('en')
+    expect(indexes.fr!()).toBe('fr')
   })
 
-  it('does not transform index data or unrelated modules', () => {
-    expect(transform('export default "data"', '/@localSearchIndexroot')).toBeUndefined()
-    expect(transform('export default {}', '/other.ts')).toBeUndefined()
+  it('fails explicitly when neither compatible loader exists', () => {
+    for (const expression of ['{}', '{ root: null }', '{ root: {}, zh: false }']) {
+      expect(() => evaluate(expression)).toThrow('no Chinese or root index loader')
+    }
   })
 
-  it('fails explicitly if the upstream module contract changes', () => {
-    expect(() => transform('const indexes = {}; export { indexes as default }')).toThrow(
-      'review locale compatibility',
+  it('ignores unrelated modules and rejects an unexpected module format', () => {
+    expect(transform('export default {}', '/@localSearchIndexroot')).toBeUndefined()
+    expect(() => transform('const indexes = {}', '/@localSearchIndex')).toThrow(
+      'Unexpected VitePress search index module',
     )
   })
 })
