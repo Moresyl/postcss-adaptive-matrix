@@ -232,11 +232,11 @@ Versions are dotted numeric releases (`14`, `13.4`) and may be separated from th
 
 ## This is not a substitute for real devices
 
-To be clear about what this audit proves: **every target browser can parse every piece of syntax in this CSS.** That is all.
+The audit compares detected features in its bundled feature table against the supplied browser versions. **An empty report means no unsupported tracked feature was found; it does not certify every piece of CSS syntax.** Untracked features, unsupported value combinations and detection gaps are outside that result. Unknown browser names must also be handled explicitly when using the API.
 
 It does not prove the page looks right on that device. Real devices test something else — rendering differences, the keyboard pushing the viewport up, the height jump when the address bar collapses, a WebView's custom behaviour. The [optional runtime](./runtime.md) has patches for those, but that is a different problem.
 
-Conversely, real devices cannot test version thresholds either: the iPhone on your desk runs iOS 17, and the fact that it reads `@layer` says nothing about iOS 15.4 and below. Testing that needs a cupboard of old devices rather than one good one. The audit does exactly that half — and does it more completely than a cupboard would.
+A test on one current device cannot establish support on every older version. The bundled support data helps identify version-related risks for tracked features; testing representative target browsers remains necessary when rendering, feature combinations or embedded WebView behavior matter. Neither source of evidence replaces the other.
 
 ## Related
 
