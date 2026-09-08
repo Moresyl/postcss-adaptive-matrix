@@ -363,6 +363,16 @@ export function convertLength(
   return converted
 }
 
+/** Pre-order traversal with the same subtree-pruning contract as value-parser. */
+function walkValueNodes(nodes: Node[], visit: (node: Node) => false | undefined): void {
+  const pending = [...nodes].reverse()
+  while (pending.length) {
+    const node = pending.pop()!
+    if (visit(node) === false || node.type !== 'function') continue
+    for (let index = node.nodes.length - 1; index >= 0; index--) pending.push(node.nodes[index]!)
+  }
+}
+
 function shouldSkipFunction(node: Node): boolean {
   return node.type === 'function' && SKIPPED_FUNCTIONS.has(canonicalCssIdentifierName(node.value))
 }
@@ -452,7 +462,7 @@ function escapedProtectedRanges(
   const canonical = canonicalizeCssIdentifierEscapes(value)
   const parsed = valueParser(canonical.text)
   const ranges: Array<readonly [number, number]> = []
-  parsed.walk((node) => {
+  walkValueNodes(parsed.nodes, (node) => {
     if (!shouldSkipFunction(node) && !isAlreadyFluid(node, accessibleText, staticText)) {
       return undefined
     }
@@ -556,7 +566,7 @@ function convertResolvedValue(
   }
   const parsed = valueParser(value)
   const protectedRanges = escapedProtectedRanges(value, accessibleText, staticText)
-  parsed.walk((node) => {
+  walkValueNodes(parsed.nodes, (node) => {
     if (shouldSkipFunction(node) || isAlreadyFluid(node, accessibleText, staticText)) return false
     if (node.type !== 'word') return undefined
     if (
