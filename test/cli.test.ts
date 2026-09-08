@@ -54,6 +54,34 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['close', 'error'])(
+    'stops on stdout %s while waiting for drain and removes listeners',
+    async (event) => {
+      const path = await file('output.css', '.a { width: 24px }')
+      const captureWrite = process.stdout.write
+      const counts = ['drain', 'close', 'error'].map((name) => process.stdout.listenerCount(name))
+      let signal: () => void = () => {}
+      const written = new Promise<void>((resolve) => {
+        signal = resolve
+      })
+      process.stdout.write = () => {
+        signal()
+        return false
+      }
+      restore.push(() => {
+        process.stdout.write = captureWrite
+      })
+      const pending = runCli([path, '--css', '--no-color'])
+      await written
+      process.stdout.emit(event, new Error('downstream failed'))
+      expect(await pending).toBe(1)
+      expect(err).toContain(event === 'close' ? 'Output stream closed' : 'downstream failed')
+      expect(['drain', 'close', 'error'].map((name) => process.stdout.listenerCount(name))).toEqual(
+        counts,
+      )
+    },
+  )
+
   it('waits for stdout drain before writing the next CSS file', async () => {
     const first = await file('first.css', '.first { width: 24px }')
     const second = await file('second.css', '.second { width: 48px }')

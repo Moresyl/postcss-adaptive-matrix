@@ -2,7 +2,6 @@
 // source avoids emitting it twice, and this file is run through `tsx` in
 // development, which does not need one.
 import { readFile } from 'node:fs/promises'
-import { once } from 'node:events'
 import { relative, resolve } from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 import { pathToFileURL } from 'node:url'
@@ -565,6 +564,31 @@ function writeJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
 }
 
+async function writeReportChunk(chunk: string): Promise<void> {
+  const stream = process.stdout
+  if (stream.write(chunk)) return
+  await new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      stream.removeListener('drain', drained)
+      stream.removeListener('error', failed)
+      stream.removeListener('close', closed)
+    }
+    const drained = () => {
+      cleanup()
+      resolve()
+    }
+    const failed = (error: Error) => {
+      cleanup()
+      reject(error)
+    }
+    const closed = () => failed(new CliError('Output stream closed before draining.'))
+    stream.once('drain', drained)
+    stream.once('error', failed)
+    stream.once('close', closed)
+    if (stream.destroyed || stream.writableEnded) closed()
+  })
+}
+
 function writeCliError(error: unknown, json: boolean): void {
   const message = error instanceof Error ? error.message : String(error)
   if (json) {
@@ -696,7 +720,7 @@ export async function runCli(argv: string[]): Promise<number> {
         if (diagnostics.length) {
           process.stderr.write(`${c.bold(input.label)}\n${diagnostics.join('\n')}\n`)
         }
-        if (!process.stdout.write(`${root.toString()}\n`)) await once(process.stdout, 'drain')
+        await writeReportChunk(`${root.toString()}\n`)
         continue
       }
       if (args.json) {
@@ -723,7 +747,7 @@ export async function runCli(argv: string[]): Promise<number> {
         profiles,
       )
       total += converted
-      if (!process.stdout.write(`${lines.join('\n')}\n`)) await once(process.stdout, 'drain')
+      await writeReportChunk(`${lines.join('\n')}\n`)
     }
 
     const gateCounts: Record<CliQualityGateCategory, number> = {
