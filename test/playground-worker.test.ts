@@ -8,6 +8,7 @@ afterEach(() => {
 })
 
 async function compile(css: string, options: string) {
+  vi.resetModules()
   const postMessage = vi.fn()
   const scope = { postMessage, onmessage: undefined as unknown as (event: unknown) => void }
   vi.stubGlobal('self', scope)
@@ -72,5 +73,25 @@ describe('playground compiler worker', () => {
   it('reports CSS syntax failures', async () => {
     const result = await compile('.card {', '{}')
     expect(result.error).toContain('Unclosed block')
+  })
+
+  it.each(['null', '42', '"options"', '[]', 'new Date(0)', 'Promise.resolve({})', '() => ({})'])(
+    'rejects a non-configuration expression result: %s',
+    async (options) => {
+      const result = await compile('.card { padding: 24px }', options)
+      expect(result.error).toMatch(/Options must be an object/)
+      expect(result.css).toBeUndefined()
+      expect(result.duration).toBeUndefined()
+      expect(structuredClone(result)).toEqual(result)
+    },
+  )
+
+  it('keeps an omitted options result equivalent to zero configuration', async () => {
+    const source = '.card { padding: 24px }'
+    const omitted = await compile(source, 'undefined')
+    const empty = await compile(source, '{}')
+    expect(omitted.error).toBeUndefined()
+    expect(omitted.css).toBe(empty.css)
+    expect(omitted.warnings).toEqual(empty.warnings)
   })
 })

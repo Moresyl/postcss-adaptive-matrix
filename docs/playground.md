@@ -19,6 +19,8 @@ Edit either pane and the output follows. The options pane is a JavaScript expres
 
 ## Reading the output
 
+The options expression must synchronously return a configuration object (or `undefined` for defaults). Promises and function values are not invoked or awaited as configuration factories. For example, use `appPcPreset()` directly, not `() => appPcPreset()` or `Promise.resolve(appPcPreset())`. Callbacks inside a configuration object remain supported.
+
 Use **Compile again** to retry after a Worker startup failure or timeout without changing your input. The button is unavailable while a compilation is pending. Before the first successful run, a failed attempt displays “No successful compilation yet” instead of a misleading loading message; later failures retain the dimmed last successful result.
 
 Both `fluid.minWidth` and `fluid.maxWidth` are optional. Two bounds produce `clamp(min, fluid, max)`, one produces `min()` or `max()`, and no bounds leave the fluid expression unbounded. For example, 24px on a 375 canvas is `6.4vw` before bounds are applied. Try the maximum-only and container-unit samples to see these differences.
