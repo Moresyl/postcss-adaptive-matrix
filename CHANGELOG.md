@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Programmatic compilation captures syntax and object-form stringifier hooks before yielding, preventing later hook replacement from changing pending output while retaining explicit parser/stringifier precedence.
 - Complete unescaped dimensions now reuse conversion and warning guards without parsing a full value tree. Nonnumeric prefixes bypass this probe; functions, strings, escaped units and compound values retain the existing parser path.
 - Reusable converters resolve unit patterns once instead of serializing the unit list on each uncached value; the shared pattern cache is capped at 256 configurations, with existing converters remaining usable after eviction.
 - Compiler creation now captures nested profile settings, media route bands and root injection filter arrays. Later caller edits no longer change those settings in an existing compiler; dynamic width and root-value callbacks still run per file.
