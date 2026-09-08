@@ -15,6 +15,12 @@ adaptiveMatrix({ profiles: { app: { designWidth: 375 } } })
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: {} } } })
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: 320 } } } })
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: 600 } } } })
+// @ts-expect-error a custom canvas still needs its design measurement
+adaptiveMatrix({ profiles: { app: { fluid: {} } } })
+// @ts-expect-error optional does not accept CSS strings in numeric bounds
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: '320px' } } } })
+// @ts-expect-error optional does not accept null instead of a numeric bound
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: null } } } })
 observeAdaptiveViewport().destroy()
 const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: ['compatibility'] }
 const compile = createAdaptiveCompiler()
