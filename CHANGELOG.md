@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Conversion now traverses and serializes deeply nested value-parser functions iteratively, avoiding call-stack failures while retaining opaque URL/string handling.
+
 - Length evaluation rejects arithmetic outside CSS math functions and mismatched parentheses, including an opening parenthesis where a closing one is required.
 - Wide `min()`/`max()` expressions use reduction rather than function-argument spreading, avoiding call-stack errors with large argument lists.
 - Diagnostic expression evaluation caps recursive nesting at 128 levels and reports unknown instead of overflowing the JavaScript stack.
