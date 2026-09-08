@@ -8,6 +8,7 @@ import {
   generatedAssets,
   generatedAssetMap,
   writeGeneratedAssets,
+  SITE_URL,
 } from '../docs/.vitepress/generated.js'
 import { rewrite, siteHref } from '../docs/.vitepress/paths.js'
 
@@ -38,6 +39,22 @@ function middleware() {
 }
 
 describe('documentation asset delivery', () => {
+  it.each(['llms.txt', 'zh/llms.txt'])(
+    'resolves every curated link in %s to a generated asset',
+    (name) => {
+      const assets = generatedAssetMap()
+      const links = [...assets.get(name)!.matchAll(/\]\((https?:\/\/[^\s)]+)\)/g)]
+      expect(links.length).toBeGreaterThan(10)
+      for (const match of links) {
+        const url = match[1]!
+        expect(url.startsWith(SITE_URL), url).toBe(true)
+        const target = url.slice(SITE_URL.length)
+        expect(assets.has(target), `${name}: ${target}`).toBe(true)
+        if (target.endsWith('.md')) expect(target.startsWith('zh/')).toBe(name.startsWith('zh/'))
+      }
+    },
+  )
+
   it('checks production assets and rejects stale content', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-gate-'))
     try {
