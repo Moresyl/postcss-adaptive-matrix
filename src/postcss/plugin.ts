@@ -120,7 +120,9 @@ function shouldIgnoreRule(rule: Rule): boolean {
 function isFollowedByEquivalent(declaration: Declaration, value: string): boolean {
   let node = declaration.next()
   while (node?.type === 'comment') node = node.next()
-  if (node?.type !== 'decl' || node.value !== value) return false
+  if (node?.type !== 'decl') return false
+  const nextValue = node.raws.value?.value === node.value ? node.raws.value.raw : node.value
+  if (nextValue !== value) return false
   const sameProperty =
     canonicalCssPropertyName(node.prop) === canonicalCssPropertyName(declaration.prop)
   // A normal twin can never override an important authored fallback. In that
@@ -200,7 +202,11 @@ function transformDeclaration(
     return
   }
 
-  const original = declaration.value
+  // PostCSS stores comments separately from the normalized value. Use the
+  // authored representation only while it still corresponds to this value;
+  // a preceding plugin may have changed the declaration without clearing raws.
+  const rawValue = declaration.raws.value
+  const original = rawValue?.value === declaration.value ? rawValue.raw : declaration.value
   const conversion = context.converter.convertWithMetadata(
     original,
     property,
@@ -215,7 +221,7 @@ function transformDeclaration(
       { node: declaration, plugin: PLUGIN_NAME },
     )
   }
-  if (converted === declaration.value || isFollowedByEquivalent(declaration, converted)) {
+  if (converted === original || isFollowedByEquivalent(declaration, converted)) {
     return
   }
   if (options.preserveOriginal) {

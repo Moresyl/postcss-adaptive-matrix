@@ -13,9 +13,28 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  it('does not resurrect stale raw values changed by a preceding plugin', async () => {
+    const root = postcss.parse('.a { width: custom(24px /* old */) }')
+    root.walkDecls((declaration) => {
+      declaration.value = '48px'
+    })
+    const result = await postcss([
+      adaptiveMatrix({ profiles: { app: 375 }, libraries: false }),
+    ]).process(root, { from: 'changed.css' })
+    expect(result.css).toContain('width: calc(12.8vw)')
+    expect(result.css).not.toContain('old')
+  })
+
+  it('preserves value comments across fallback generation and a second pass', async () => {
+    const options = { profiles: { app: 375 }, libraries: false as const, preserveOriginal: true }
+    const first = await process('.a { width: custom(24px /* keep */) }', options)
+    const second = await process(first.css, options)
+    expect(first.css).toContain('custom(calc(6.4vw) /* keep */)')
+    expect(second.css).toBe(first.css)
+  })
   it('preserves nested function trivia and opaque leaves while serializing a conversion', async () => {
-    const before = String.raw`custom(  "24px", inner(24px / 2), url("asset-24px.png"), 'x\\y'  )`
-    const after = String.raw`custom(  "24px", inner(calc(6.4vw) / 2), url("asset-24px.png"), 'x\\y'  )`
+    const before = String.raw`custom(  "24px", /* keep */ inner(24px / 2), url("asset-24px.png"), 'x\\y'  )`
+    const after = String.raw`custom(  "24px", /* keep */ inner(calc(6.4vw) / 2), url("asset-24px.png"), 'x\\y'  )`
     const result = await process(`.a { width: ${before} }`, {
       profiles: { app: 375 },
       libraries: false,
