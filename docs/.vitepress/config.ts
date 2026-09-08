@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 import { generatedAssets, writeGeneratedAssets } from './generated'
 import { localeLinks } from './links'
 import { rewrite } from './paths'
+import { rewrittenLocaleSearch } from './search'
 
 const REPO = 'https://github.com/Moresyl/postcss-adaptive-matrix'
 
@@ -239,7 +240,7 @@ export default defineConfig({
   ],
 
   vite: {
-    plugins: [generatedAssets()],
+    plugins: [generatedAssets(), rewrittenLocaleSearch()],
   },
 
   async buildEnd(site) {
