@@ -7,6 +7,22 @@ import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 
 it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
+  'preserves Unicode CSS through real stdin and stdout pipes',
+  () => {
+    const css = '/* 中文 🌏 */\n.卡片::before { content: "你好 🌏 24px"; color: red }'
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('../dist/cli.js', import.meta.url)), '-', '--css', '--no-color'],
+      { input: Buffer.from(css, 'utf8'), encoding: 'utf8', timeout: 10_000 },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stderr).toBe('')
+    expect(result.stdout).toBe(`${css}\n`)
+  },
+)
+
+it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
   'loads CSS and configuration from Unicode paths with spaces and URL-significant characters',
   async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive 中文 #%-'))
