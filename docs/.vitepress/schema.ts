@@ -97,6 +97,7 @@ const QUERY: Fields<AdaptiveQuery> = {
     description: 'The query condition, written as it would appear in CSS.',
     'x-description-zh': '查询条件，按 CSS 里的写法书写。',
     type: 'string',
+    pattern: String.raw`\S`,
     examples: ['(min-width: 768px)'],
   },
   name: {
@@ -154,7 +155,7 @@ const PROFILE: Fields<AdaptiveProfile> = {
   query: {
     description: 'Wrapper generated for `@adaptive <profile>`; `false` unwraps the block.',
     'x-description-zh': '`@adaptive <画布>` 生成的包裹层；`false` 表示不包裹。',
-    oneOf: [{ type: 'string' }, QUERY_SCHEMA, { const: false }],
+    oneOf: [{ type: 'string', pattern: String.raw`\S` }, QUERY_SCHEMA, { const: false }],
   },
   unit: {
     description: 'Width unit the fluid half is written in.',

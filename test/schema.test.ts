@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { optionsSchema } from '../docs/.vitepress/schema.js'
+import { resolveOptions } from '../src/core/options.js'
 
 /**
  * The published schema, checked against the compiler and against the prose.
@@ -97,6 +98,29 @@ function documentedDefaults(file: string): Map<string, unknown> {
 const REFERENCES = ['docs/configuration.md', 'docs/configuration.zh-CN.md']
 
 describe('the published options schema', () => {
+  it('rejects blank query conditions without requiring an optional query', () => {
+    const profile = ((options.profiles!.additionalProperties as Subschema).oneOf as Subschema[])[1]!
+    const variants = profile.properties!.query!.oneOf as Subschema[]
+    const patterns = [variants[0]!.pattern, variants[1]!.properties!.condition!.pattern]
+    for (const condition of ['', ' ', '\t\r\n', '\u00a0', '(width > 1px)', ' \n(width > 1px) ']) {
+      const valid = condition.trim().length > 0
+      for (const pattern of patterns) {
+        expect(new RegExp(pattern as string).test(condition)).toBe(valid)
+      }
+      for (const query of [condition, { condition }]) {
+        const resolve = () => resolveOptions({ profiles: { app: { designWidth: 375, query } } })
+        if (valid) expect(resolve).not.toThrow()
+        else expect(resolve).toThrow(/empty string/)
+      }
+    }
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375 } } }).profiles.app!.query,
+    ).toBeUndefined()
+    expect(
+      resolveOptions({ profiles: { app: { designWidth: 375, query: false } } }).profiles.app!.query,
+    ).toBe(false)
+  })
+
   it('describes every option in both languages, at every depth', () => {
     const entries = described(schema, '$')
 

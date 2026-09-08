@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Tighten the published JSON Schema to reject blank query conditions, matching runtime validation while keeping the optional `query` field optional.
+
 - Update development tooling to Vitest/coverage 4.1.11 and the locked js-yaml dependency to 4.3.2, clearing the reported mocker file-read and YAML merge CPU advisories. No runtime API change.
 
 - Conversion value caching now caps individual inputs/results at 16,384 characters and total key/result storage at 4 Mi UTF-16 code units, in addition to the entry-count cap. Larger values still convert normally without retention; these are cache budgets, not process heap limits.
