@@ -168,7 +168,9 @@ class Parser {
   ) {}
 
   parse(): Quantity | null {
-    const value = this.sum()
+    const first = this.peek()
+    if (first?.kind !== 'number' && first?.kind !== 'function') return null
+    const value = this.primary()
     if (value === null || this.index !== this.tokens.length) return null
     return value
   }

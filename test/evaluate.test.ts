@@ -13,6 +13,10 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const context = { width: 1000, height: 800, rootFontSize: 16 }
 
 describe('evaluateLength', () => {
+  it.each(['10vw / 2', '10px + 2px', '(10px)', 'calc(10px) + 2px', '- min(10px, 20px)'])(
+    'rejects arithmetic outside a CSS math function: %s',
+    (value) => expect(evaluateLength(value, context)).toBeNull(),
+  )
   it('resolves the units the compiler emits', () => {
     expect(evaluateLength('16px', context)).toBe(16)
     expect(evaluateLength('0', context)).toBe(0)
