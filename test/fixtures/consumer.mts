@@ -8,6 +8,11 @@ import adaptiveMatrix, {
 import { observeAdaptiveViewport } from 'postcss-adaptive-matrix/runtime'
 
 adaptiveMatrix()
+adaptiveMatrix({})
+adaptiveMatrix({ profiles: { app: 375 } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375 } } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: {} } } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: 320 } } } })
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: 600 } } } })
 observeAdaptiveViewport().destroy()
 const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: ['compatibility'] }

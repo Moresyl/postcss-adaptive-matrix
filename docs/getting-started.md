@@ -17,21 +17,13 @@ With a single design file:
 import adaptiveMatrix from 'postcss-adaptive-matrix'
 
 export default {
-  plugins: [
-    adaptiveMatrix({
-      defaultProfile: 'app',
-      profiles: {
-        app: {
-          designWidth: 375,
-          fluid: { minWidth: 320, maxWidth: 480 },
-        },
-      },
-    }),
-  ],
+  plugins: [adaptiveMatrix({ profiles: { app: 375 } })],
 }
 ```
 
-`designWidth` is the width of the design file; `fluid` is the range across which a size keeps following the viewport. Outside that range the size stops — which is the biggest difference from a plain `vw` setup, see [Bounded fluid sizing](#bounded-fluid-sizing).
+`375` is shorthand for `{ designWidth: 375 }`. A single profile is selected automatically, so `defaultProfile` is unnecessary here. This custom profile has no fluid bounds. To use the built-in bounded presets instead, call `adaptiveMatrix()` with no configuration.
+
+Bounds are optional: add `fluid: { minWidth: 320 }` to stop shrinking below 320px, `fluid: { maxWidth: 480 }` to stop growing above 480px, or both for a bounded interval. Omitting `fluid` or passing `{}` leaves both ends open. See [Bounded fluid sizing](#bounded-fluid-sizing).
 
 ## Two design files: app + desktop
 

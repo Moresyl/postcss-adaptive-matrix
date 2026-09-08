@@ -2,6 +2,11 @@ import adaptiveMatrix = require('postcss-adaptive-matrix')
 import runtime = require('postcss-adaptive-matrix/runtime')
 
 adaptiveMatrix()
+adaptiveMatrix({})
+adaptiveMatrix({ profiles: { app: { designWidth: 375 } } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: {} } } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: 320 } } } })
+adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: 600 } } } })
 adaptiveMatrix({ profiles: { app: 375 } })
 runtime.observeAdaptiveViewport().destroy()
 const request: adaptiveMatrix.AdaptiveCompileOptions = { failOn: ['warnings'] }

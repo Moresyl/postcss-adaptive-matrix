@@ -17,21 +17,13 @@ npm i -D postcss postcss-adaptive-matrix
 import adaptiveMatrix from 'postcss-adaptive-matrix'
 
 export default {
-  plugins: [
-    adaptiveMatrix({
-      defaultProfile: 'app',
-      profiles: {
-        app: {
-          designWidth: 375,
-          fluid: { minWidth: 320, maxWidth: 480 },
-        },
-      },
-    }),
-  ],
+  plugins: [adaptiveMatrix({ profiles: { app: 375 } })],
 }
 ```
 
-`designWidth` 是设计稿宽度，`fluid` 是尺寸继续跟随视口变化的区间。区间之外尺寸停住——这是与纯 `vw` 方案最大的区别，详见[有界流体](#有界流体)。
+`375` 是 `{ designWidth: 375 }` 的简写。只有一个 Profile 时会自动选中，因此这里不需要 `defaultProfile`。这个自定义 Profile 没有流体边界。如果希望使用内置的有界预设，直接调用无参数的 `adaptiveMatrix()` 即可。
+
+边界均为可选：添加 `fluid: { minWidth: 320 }` 可在 320px 以下停止缩小，添加 `fluid: { maxWidth: 480 }` 可在 480px 以上停止增长，同时填写则限定两端。省略 `fluid` 或传入 `{}` 时两端均不设限。详见[有界流体](#有界流体)。
 
 ## 双设计稿：App + PC
 
