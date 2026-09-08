@@ -29,10 +29,26 @@ for (const route of ['/docs/api#', '/zh/docs/api#']) {
     `API query did not return ${route}`,
   )
 }
+const basePath = process.env.DOCS_BASE ?? '/postcss-adaptive-matrix/'
+const pages = new Map()
+for (const id of Object.values(JSON.parse(json).documentIds)) {
+  const [route, fragment] = id.split('#')
+  assert.ok(route.startsWith(basePath), `Search result is outside the site base: ${id}`)
+  const relative = route.slice(basePath.length)
+  const page = relative.endsWith('/') || !relative ? `${relative}index.html` : `${relative}.html`
+  if (!pages.has(page)) {
+    pages.set(
+      page,
+      readFileSync(new URL(`../docs/.vitepress/dist/${page}`, import.meta.url), 'utf8'),
+    )
+  }
+  const anchor = decodeURIComponent(fragment ?? '')
+  assert.ok(anchor && pages.get(page).includes(`id="${anchor}"`), `Missing search anchor: ${id}`)
+}
 assert.ok(
   index.search('程序化').some((result) => result.id.includes('/zh/docs/api#')),
   'Chinese title query did not return the Chinese API page',
 )
 console.log(
-  `OK: ${index.documentCount} search sections; bilingual API queries and locale fallback.`,
+  `OK: ${index.documentCount} search sections across ${pages.size} pages; anchors, bilingual queries and locale fallback.`,
 )
