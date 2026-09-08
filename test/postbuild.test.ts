@@ -56,6 +56,15 @@ it.each([
       expect(result.status).toBe(1)
       expect(result.stderr).toContain(reason)
       expect(await readFile(types, 'utf8')).toBe(source)
+      // The JS rewrite precedes declaration validation. A later successful
+      // retry must reuse that wrapper, not append another one.
+      await writeFile(types, 'declare function plugin(): void; export { plugin as default };')
+      const retry = run(directory)
+      expect(retry.error).toBeUndefined()
+      expect(retry.status, retry.stderr).toBe(0)
+      expect(await readFile(types, 'utf8')).toContain('export = _cjs;')
+      const js = await readFile(join(directory, 'dist/index.cjs'), 'utf8')
+      expect(js.match(/\/\* callable module\.exports \*\//g)).toHaveLength(1)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
