@@ -45,6 +45,10 @@ Existing `/* px-to-viewport-ignore(-next) */` and `/* mobile-ignore(-next) */` d
 
 Two things need a different idea rather than a different name:
 
+### Check existing math expressions
+
+Conversion is not byte-compatible with every legacy plugin. In a local comparison with `postcss-px-to-viewport@1.1.1`, using a 375px canvas and viewport output, `min(24px, 50vw)` became `min(6.4vw, 50vw)` there but stayed unchanged here. Adaptive Matrix protects bounding expressions that already contain viewport/container units so precompiled output is not converted again. Audit authored `min()` / `max()` / `clamp()` expressions during migration: write the intended fluid expression explicitly when a pixel term must scale. Uppercase input units are also converted here; do not rely on `PX` as an ignore marker.
+
 **Landscape is not a global switch.** Create a landscape profile with an explicit media query, and landscape gets its own design width and scaling range instead of a ratio derived from portrait.
 
 **Desktop width is not a design width.** If desktop is just the mobile version centred, it has no design file of its own: use the app profile with `rootMaxWidth`. If desktop has its own design file, give it its own `designWidth` and put the differences in `@adaptive pc`. Those two used to be expressed by the same option; here they are two different structures.
