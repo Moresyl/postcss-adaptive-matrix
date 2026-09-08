@@ -9,10 +9,9 @@ import { canonicalCssPropertyName } from './syntax.js'
 /**
  * One place where a length moves backwards as the viewport grows.
  *
- * Every formula this compiler emits is non-decreasing in viewport width — a
- * `clamp()` of positive bounds cannot shrink. So a length that gets *smaller*
- * on a wider screen can only come from crossing a breakpoint into a different
- * canvas, where the two design files disagree about that element.
+ * A positive bounded formula is non-decreasing in viewport width. The analyzer
+ * uses that fact as a sampled diagnostic across canvas breakpoints; it does not
+ * prove every width or infer whether a value came from this compiler.
  *
  * That disagreement is invisible in the source: both numbers are plausible on
  * their own, and each canvas renders correctly in isolation. It shows up only

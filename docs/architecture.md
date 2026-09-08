@@ -39,7 +39,7 @@ With `D`, `L` and `U` positive, the **absolute value** of the expression above i
 
 For positive `P` that is simply "non-decreasing". For negative `P` the formula is non-increasing — `-16px` on a 375 file compiles to `clamp(-20.48px, -4.26667vw, -13.65333px)`, whose value drops as the viewport widens. Negative lengths (negative margins, bleeds, reverse offsets) grow by moving away from zero, so the quantity that is actually conserved is the absolute value, not the signed number.
 
-That property has one direct use: nothing in the output where "the viewport widens and the absolute size gets smaller" can come from the formula itself. It can only come from a canvas change across a breakpoint — two design files giving contradictory numbers for the same element. The CLI uses this for its seam check (see [Going backwards at a breakpoint](./cli.md#going-backwards-at-a-breakpoint)), and the check is complete for this class of problem: it cannot escape to some other width.
+That property explains one useful diagnostic: if sampled values get smaller in absolute terms across a breakpoint, the change may come from two design files giving contradictory numbers for the same element. The CLI reports this only when both sides are evaluable and at least one side matches its syntax heuristic; it is not a proof for every width or a provenance claim (see [Going backwards at a breakpoint](./cli.md#going-backwards-at-a-breakpoint)).
 
 Comparing absolute values is not a detail. The first version of the check compared signed numbers, and was therefore inverted for every negative length: a desktop file asking for a deeper bleed got reported, while a bleed that nearly vanished at the breakpoint did not.
 
