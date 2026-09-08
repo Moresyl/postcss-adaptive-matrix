@@ -179,20 +179,12 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
   return { entries, poisoned }
 }
 
-/** The declaration that wins at `width`, by source order among those that apply. */
+/** Groups are ordered by cascade priority; the first matching entry wins. */
 function effective(group: Entry[], width: number): Entry | undefined {
-  let winner: Entry | undefined
   for (const entry of group) {
-    if (!allMatch(entry.conditions, width)) continue
-    if (
-      !winner ||
-      (entry.important && !winner.important) ||
-      (entry.important === winner.important && entry.order > winner.order)
-    ) {
-      winner = entry
-    }
+    if (allMatch(entry.conditions, width)) return entry
   }
-  return winner
+  return undefined
 }
 
 /**
@@ -274,6 +266,9 @@ export function findContinuityIssues(
     // Include escaped function names such as `v\\61 r(...)`, which CSS treats
     // as `var(...)` and the token resolver can therefore evaluate.
     if (group.length < 2 && !/var\(|\\/i.test(group[0]!.value)) continue
+    // Mixed-layer groups have already been excluded. Within one layer,
+    // importance precedes source order, independent of the sampled width.
+    group.sort((a, b) => Number(!!b.important) - Number(!!a.important) || b.order - a.order)
     for (const breakpoint of sortedBoundaries) {
       // There is no viewport below zero. Probing the synthetic negative side
       // of `(max-width: 0px)` can invent a cascade transition no browser can
