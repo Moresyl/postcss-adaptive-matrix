@@ -191,6 +191,11 @@
     color: #111827 !important;
   }
 
+  .vp-doc div[class*='language-'] {
+    background: #f8fafc !important;
+    border-color: #cbd5e1;
+  }
+
   .vp-doc table {
     display: table;
     table-layout: fixed;
