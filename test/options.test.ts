@@ -921,6 +921,29 @@ describe('convertValue public core API', () => {
 })
 
 describe('matchers and math helpers', () => {
+  it('preserves property decisions across cache hits and repeated eviction', () => {
+    const match = createPropertyMatcher(['width', '--Theme-*', '! --unused', '!--Theme-private*'])
+    const cases: [string, boolean][] = [
+      ['WIDTH', true],
+      [String.raw`w\69 dth`, true],
+      ['height', false],
+      ['--Theme-gap', true],
+      ['--theme-gap', false],
+      ['--Theme-private-gap', false],
+      [String.raw`--\54 heme-gap`, true],
+    ]
+    for (let cycle = 0; cycle < 3; cycle++) {
+      for (let repeat = 0; repeat < 2; repeat++) {
+        for (const [property, expected] of cases) expect(match(property)).toBe(expected)
+      }
+      for (let index = 0; index < 1100; index++) {
+        expect(match(`--Theme-generated-${cycle}-${index}`)).toBe(true)
+        expect(match(`--other-generated-${cycle}-${index}`)).toBe(false)
+      }
+    }
+    for (const [property, expected] of cases) expect(match(property)).toBe(expected)
+  })
+
   it('matches legacy-compatible property globs', () => {
     const match = createPropertyMatcher(['*', '!margin-*', '!font'])
     expect(match('width')).toBe(true)
