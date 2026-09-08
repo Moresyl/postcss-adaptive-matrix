@@ -44,6 +44,52 @@ describe('programmatic compiler', () => {
     expect(output.map?.toJSON().sources).toEqual(['../src/card.css'])
   })
 
+  it.each([
+    { label: 'disabled', map: false, expectsMap: false },
+    { label: 'inline', map: { inline: true, annotation: true }, expectsMap: true },
+  ])(
+    'supports $label source-map mode without changing CSS semantics',
+    async ({ map, expectsMap }) => {
+      const output = await compileAdaptiveCss(
+        '.card { padding: 24px }',
+        {},
+        {
+          process: { from: 'card.css', map },
+        },
+      )
+      // PostCSS embeds inline maps in CSS instead of returning a map object.
+      expect(output.map).toBeUndefined()
+      expect(output.css).toContain('6.4vw')
+      if (expectsMap) expect(output.css).toContain('sourceMappingURL=data:')
+    },
+  )
+
+  it('chains an upstream map back to the original source', async () => {
+    const original = '.original { padding: 24px }'
+    const prev = JSON.stringify({
+      version: 3,
+      file: 'intermediate.css',
+      sources: ['original.scss'],
+      sourcesContent: [original],
+      names: [],
+      mappings: 'AAAA',
+    })
+    const output = await compileAdaptiveCss(
+      '.card { padding: 24px }',
+      {},
+      {
+        process: {
+          from: '/src/intermediate.css',
+          to: '/dist/card.css',
+          map: { prev, inline: false, annotation: false },
+        },
+      },
+    )
+    expect(output.map?.toJSON().sources).toEqual(['../src/original.scss'])
+    expect(output.map?.toJSON().sourcesContent).toEqual([original])
+    expect(output.map?.toJSON().mappings).not.toBe('')
+  })
+
   it('audits generated features only when targets are supplied', async () => {
     const output = await compileAdaptiveCss(
       '.card { padding: 24px }',

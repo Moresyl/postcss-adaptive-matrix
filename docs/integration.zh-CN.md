@@ -295,6 +295,8 @@ const result = await compile('.card { padding: 24px }', {
 多文件可复用同一个编译函数以保留转换缓存。动态画布宽度与根字号会在每次编译时重新求值，同一路径的重新构建也不会使用过时的值。
 ### 可选构建门禁
 
+源码映射沿用 PostCSS 约定：`process.map: false` 禁用映射；`{ inline: true }` 将映射嵌入 CSS 注释，此时返回的 `map` 为 `undefined`；`{ inline: false }` 返回独立映射对象。通过 `process.map.prev` 传入上游映射，可在预处理链路中保留原始来源路径与源码内容。测试验证了传入映射的链路，并未运行 Sass 编译器。
+
 传入 `failOn: ['warnings', 'compatibility']` 后，结果的 `gate` 包含所选类别与 `passed` 布尔值。此选项及每个类别均按需启用；省略或传入 `[]` 时为 `gate: null`。兼容性门禁必须同时传入 `targets`，不支持的特性或未知浏览器名都会导致门禁失败，避免把无法识别的目标当作通过。门禁失败不会拒绝编译，也不会丢弃 CSS、源码映射或诊断：
 
 ```ts

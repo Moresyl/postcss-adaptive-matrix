@@ -296,6 +296,8 @@ Reuse a compiler for several files to retain conversion caches. Dynamic canvas a
 
 ### Optional build gates
 
+Source maps follow PostCSS conventions: `process.map: false` disables them, `{ inline: true }` embeds the map in the CSS annotation and leaves the returned `map` undefined, and `{ inline: false }` returns a separate map object. Pass an upstream map using `process.map.prev` to preserve original source paths and contents through a preprocessing pipeline. The tests exercise a supplied map; they do not run a Sass compiler.
+
 Pass `failOn: ['warnings', 'compatibility']` to receive a `gate` with the selected categories and a `passed` boolean. Both the option and each category are opt-in; omit it or use `[]` for `gate: null`. A compatibility gate requires `targets` and fails for unsupported features **or unknown browser names**, so an unrecognized target cannot silently certify a build. A failed gate does not reject compilation or discard CSS, maps or diagnostics:
 
 ```ts
