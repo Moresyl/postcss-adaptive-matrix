@@ -36,6 +36,8 @@ Resolver functions are intentionally retained, not evaluated once and frozen. A 
 
 ## Gates and maps
 
+Analysis canonicalizes complete escaped at-rule names supplied in PostCSS ASTs, including media conditions and property registrations. This does not repair source text whose at-rule name the default parser has already split into the name and parameters; support depends on the AST provided by the upstream parser or plugin.
+
 Compatibility gates require `targets` and fail for unsupported features or unknown browser names. A failed gate still returns CSS and diagnostics; the caller chooses whether to set an exit code. Inline PostCSS maps are embedded in CSS and therefore leave `map` undefined; external maps return a map object. `process.map.prev` chains an upstream map.
 
 The API gate covers warnings and compatibility, not CLI continuity analysis. Use the [CLI JSON report](./cli.md) when continuity findings are part of the build policy.

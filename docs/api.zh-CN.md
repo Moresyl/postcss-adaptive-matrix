@@ -36,6 +36,8 @@ const output = await compile(source, {
 
 ## 门禁与映射
 
+分析会规范化 PostCSS AST 提供的完整转义 at-rule 名称，包括媒体条件和属性注册。这不会修复默认解析器已将名称拆入参数的源文本；支持范围取决于上游解析器或插件提供的 AST。
+
 兼容性门禁必须传入 `targets`，不支持的特性或未知浏览器名都会失败。门禁失败仍会返回 CSS 和诊断，由调用方决定是否设置退出码。PostCSS 内联映射嵌入 CSS，因此 `map` 为 `undefined`；外部映射返回 map 对象。`process.map.prev` 可串接上游映射。
 
 此 API 门禁覆盖警告和兼容性，不包含 CLI 的断点接缝分析；若接缝问题也属于构建策略，请使用 [CLI JSON 报告](./cli.zh-CN.md#机器可读报告)。

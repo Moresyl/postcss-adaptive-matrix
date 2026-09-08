@@ -29,6 +29,21 @@ assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
 for (const api of [esm, cjs]) {
+  const escapedMedia = postcss.parse(
+    '.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }',
+  )
+  escapedMedia.walkAtRules('media', (rule) => {
+    rule.name = String.raw`m\65 dia`
+  })
+  assert.equal(api.findContinuityIssues(escapedMedia).length, 1)
+  const registration = postcss.parse(
+    '@property --gap { syntax: "<length>"; inherits: false; initial-value: 24px }' +
+      '.a { width: var(--gap, 10vw) } @media (min-width: 768px) { .a { width: 5vw } }',
+  )
+  registration.walkAtRules('property', (rule) => {
+    rule.name = String.raw`pr\6f perty`
+  })
+  assert.deepEqual(api.findContinuityIssues(registration), [])
   const seam = api.findContinuityIssues(
     postcss.parse('.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }'),
   )
