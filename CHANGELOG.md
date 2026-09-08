@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Compatibility detection skips character-position mapping when no identifier escapes require it, retaining original diagnostic excerpts and comment/string masking.
 - Added optional programmatic warning/compatibility gates. Failed gates retain output and diagnostics; unknown browser targets fail an explicitly requested compatibility gate.
 - Added `compileAdaptiveCss()` and reusable `createAdaptiveCompiler()` helpers with optional processing options, source maps, warnings and browser compatibility reports.
 - Moved playground compilation into disposable Workers with a five-second deadline and cleanup on edits/navigation. Added zero-config, maximum-only and container-unit examples, timing and status feedback.

@@ -296,6 +296,17 @@ describe('detection', () => {
     expect(ids(css)).toEqual(ids(css))
     expect(ids(css)).toContain('math-functions')
   })
+
+  it('keeps diagnostic excerpts identical with identity and escaped position maps', () => {
+    const plain = '.a { width: clamp(1px, 2vw, 3px) } .tail { color: red }'
+    const escaped = String.raw`.\61 { width: clamp(1px, 2vw, 3px) } .tail { color: red }`
+    const masked = `/* ignored */ ${plain}`
+    const sample = (css: string) =>
+      detectFeatures(css).find(({ feature }) => feature.id === 'math-functions')?.sample
+    expect(sample(plain)).toBe(sample(escaped))
+    expect(sample(masked)).toBe(sample(plain))
+    expect(sample(plain)?.length).toBeLessThan(plain.length)
+  })
 })
 
 describe('version comparison', () => {

@@ -373,7 +373,10 @@ function sampleAt(css: string, index: number, length: number): string {
  * their code units with spaces preserves every match index for `sampleAt()`
  * while preventing those decoys from failing a compatibility quality gate.
  */
-function compatibilitySyntax(css: string): { syntax: string; positions: number[] } {
+function compatibilitySyntax(css: string): { syntax: string; positions?: number[] } {
+  // Ordinary generated CSS has neither quoted data nor escaped identifiers.
+  // Preserve direct offsets without allocating one entry per source code unit.
+  if (!/["'\\\\]|\/\*/.test(css)) return { syntax: css }
   const syntax = css.split('')
   let quote: "'" | '"' | null = null
   let comment = false
@@ -414,7 +417,9 @@ function compatibilitySyntax(css: string): { syntax: string; positions: number[]
     }
   }
 
-  const canonical = canonicalizeCssIdentifierEscapes(syntax.join(''))
+  const masked = syntax.join('')
+  if (!masked.includes('\\')) return { syntax: masked }
+  const canonical = canonicalizeCssIdentifierEscapes(masked)
   return { syntax: canonical.text, positions: canonical.positions }
 }
 
@@ -429,8 +434,10 @@ export function detectFeatures(css: string): { feature: CompatFeature; sample: s
     const pattern = new RegExp(feature.detect.source, feature.detect.flags)
     const match = pattern.exec(syntax)
     if (!match) continue
-    const originalStart = positions[match.index] ?? match.index
-    const originalEnd = positions[match.index + match[0].length] ?? css.length
+    const originalStart = positions?.[match.index] ?? match.index
+    const originalEnd = positions
+      ? (positions[match.index + match[0].length] ?? css.length)
+      : match.index + match[0].length
     found.push({ feature, sample: sampleAt(css, originalStart, originalEnd - originalStart) })
   }
   return found
