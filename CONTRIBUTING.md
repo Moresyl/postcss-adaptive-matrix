@@ -29,6 +29,8 @@ Code expectations:
 
 ## Performance measurements
 
+The throughput corpora are generated synthetic CSS shaped like component libraries, utility frameworks and applications, not downloaded bundles or browser-rendering benchmarks. Run `npm run bench:check -- --cache-churn` to add 4000 distinct custom properties with custom-property conversion enabled. Before timing, the built compiler must change every declaration value while retaining names and counts, without warnings, both with libraries disabled and with all built-ins enabled. This preflight is outside the timed region; separate tests check numeric output and idempotence. It does not prove arbitrary CSS is correct or represent every watch-build workload.
+
 Run `npm run build` followed by `npm run bench:check` to measure the shipped artifacts against a real PostCSS parse-and-print baseline. The report uses medians over 20 timed passes after 5 warmup passes. Optional environment variables `BENCH_ITERATIONS` and `BENCH_WARMUP` override these counts: iterations must be a positive safe integer, warmup a nonnegative safe integer. Invalid values fail instead of producing an empty or misleading report. Setting warmup to zero is useful for investigation but is not comparable to the default warmed measurement.
 
 Record the Node version, machine, configuration and corpus when comparing results. Passing the relative budget is a regression check, not proof of superiority over another compiler.
