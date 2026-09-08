@@ -13,6 +13,8 @@ it('defaults and normalizes public site roots', () => {
 it('keeps generated absolute links rooted at the normalized URL', () => {
   const base = siteUrl('https://docs.example.com/reference')
   expect(llmsTxt(base, false)).toContain('https://docs.example.com/reference/docs/api.md')
+  expect(llmsTxt(base, true)).toContain('https://docs.example.com/reference/zh/llms-full.txt')
+  expect(llmsTxt(base, false)).toContain('https://docs.example.com/reference/llms-full.txt')
   expect(JSON.parse(optionsSchema(base)).$id).toBe(
     'https://docs.example.com/reference/schema/options.json',
   )

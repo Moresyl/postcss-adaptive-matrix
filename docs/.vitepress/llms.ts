@@ -239,7 +239,7 @@ export function llmsTxt(base: string, chinese: boolean): string {
   const docs = chinese ? DOCS_ZH : DOCS
   const extra = chinese ? EXTRA_ZH : EXTRA
   const head = chinese
-    ? `# Adaptive Matrix\n\n> ${SUMMARY_ZH}\n\n每个链接都指向该页的原始 Markdown，可以直接抓取。整套文档拼在一起是 ${base}llms-full.txt。\n`
+    ? `# Adaptive Matrix\n\n> ${SUMMARY_ZH}\n\n每个链接都指向该页的原始 Markdown，可以直接抓取。整套文档拼在一起是 ${base}zh/llms-full.txt。\n`
     : `# Adaptive Matrix\n\n> ${SUMMARY}\n\nEvery link below is the page's raw Markdown and can be fetched directly. The whole set concatenated is at ${base}llms-full.txt.\n`
   return [
     head,
