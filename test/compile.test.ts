@@ -3,6 +3,31 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each([
+    { css: '.a { /* adaptive-ignore-next */ width: 1e308px }', options: {} },
+    { css: '.a { width: 1e308px }', options: { propList: 'height' } },
+    { css: '.a { width: 1e308px }', options: { selectorExclude: '.a' } },
+    { css: '.a { width: 1e308px }', options: { valueExclude: '1e308px' } },
+    {
+      css: '.a { width: 1e308px }',
+      options: { routes: { selector: '.a', profile: false as const } },
+    },
+    { css: ':root { --custom-width: 1e308px }', options: {} },
+    { css: '.a { width: min(1e308px, 50vw) }', options: {} },
+  ])(
+    'does not warn about overflow in deliberately unconverted CSS: $css',
+    async ({ css, options }) => {
+      const result = await compileAdaptiveCss(
+        css,
+        { libraries: false, ...options },
+        { failOn: ['warnings'] },
+      )
+      expect(result.css).toBe(css)
+      expect(result.warnings).toEqual([])
+      expect(result.gate?.passed).toBe(true)
+    },
+  )
+
   it('gates overflowing dimensions with located warnings, including cached conversions', async () => {
     const compile = createAdaptiveCompiler({ profiles: { app: 375 }, strategy: 'viewport' })
     for (const from of ['first.css', 'second.css']) {
