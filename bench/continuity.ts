@@ -47,11 +47,14 @@ for (const count of [2, 40]) {
       Array.from(
         { length: 30 },
         (_, selector) =>
-          `.card-${selector} { left: calc(${count - breakpoint}vw + var(--adaptive-root-gutter)) }`,
+          `.card-${selector} { left: calc(${count - breakpoint}vw + var(--adaptive-root-gutter))${breakpoint % 2 ? ' !important' : ''} }`,
       ).join('\n') +
       '}',
   ).join('\n')
-  const root = postcss.parse(css)
+  // This rule is inactive at the regular probes and adds its own distant seam.
+  const root = postcss.parse(
+    `${css}\n@media (min-width: 100000px) { .card-0 { left: 1px !important } }`,
+  )
   const expected = baseline(root)
   assert.ok(expected.length > 0, 'Corpus must exercise real findings')
   assert.deepEqual(current(root), expected)
@@ -65,6 +68,8 @@ for (const count of [2, 40]) {
       node: process.version,
       baseline: revision,
       breakpoints: count,
+      distantBreakpoint: 100000,
+      priority: 'alternating-important',
       selectors: 30,
       findings: expected.length,
       iterations,
