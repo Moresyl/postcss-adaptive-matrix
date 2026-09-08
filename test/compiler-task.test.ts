@@ -21,7 +21,7 @@ const event = { data: { css: '.a {}' } } as MessageEvent
 describe('disposable compiler task', () => {
   it.each([
     null,
-    [],
+    undefined,
     'unexpected',
     {},
     { css: 123 },
@@ -32,6 +32,7 @@ describe('disposable compiler task', () => {
     { css: '', warnings: [null] },
     { css: '', warnings: [{ text: 1 }] },
     { css: '', warnings: {} },
+    { css: '', warnings: new Array(1) },
     { error: 123 },
   ])('rejects malformed Worker payloads without publishing: %j', (data) => {
     const { task, workers, receive, fail } = fixture()
@@ -47,6 +48,30 @@ describe('disposable compiler task', () => {
     expect(receive).not.toHaveBeenCalled()
     workers[1]!.onmessage!.call(workers[1]!, event)
     expect(receive).toHaveBeenCalledExactlyOnceWith(event.data)
+  })
+
+  it('rejects an array response without Vitest spreading it into arguments', () => {
+    const { task, workers, receive, fail } = fixture()
+    task.run(input)
+    const worker = workers[0]!
+    worker.onmessage!.call(worker, { data: [] } as MessageEvent)
+    expect(receive).not.toHaveBeenCalled()
+    expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+  })
+
+  it.each([
+    { css: '', warnings: [], duration: 0 },
+    { css: '.a {}', warnings: [{ text: 'A warning' }], duration: 1.5 },
+    { error: 'Invalid configuration' },
+  ])('accepts valid success and error responses: %j', (data) => {
+    const { task, workers, receive, fail } = fixture()
+    task.run(input)
+    const worker = workers[0]!
+    worker.onmessage!.call(worker, { data } as MessageEvent)
+    expect(receive).toHaveBeenCalledExactlyOnceWith(data)
+    expect(fail).not.toHaveBeenCalled()
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('fails immediately on message decoding errors and ignores stale ones', () => {

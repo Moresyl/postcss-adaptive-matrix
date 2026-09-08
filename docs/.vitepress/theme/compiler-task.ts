@@ -6,7 +6,7 @@ export interface CompilerResponse {
 }
 
 function validResponse(value: unknown): value is CompilerResponse {
-  if (value === null || typeof value !== 'object') return false
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
   const response = value as Record<string, unknown>
   if ('css' in response && response.css !== undefined && typeof response.css !== 'string')
     return false
@@ -23,7 +23,7 @@ function validResponse(value: unknown): value is CompilerResponse {
   if ('warnings' in response && response.warnings !== undefined) {
     if (!Array.isArray(response.warnings)) return false
     if (
-      response.warnings.some(
+      Array.from(response.warnings).some(
         (warning) =>
           warning === null ||
           typeof warning !== 'object' ||
