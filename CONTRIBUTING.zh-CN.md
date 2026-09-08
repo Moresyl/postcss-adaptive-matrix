@@ -12,6 +12,8 @@
 
 ## 本地开发
 
+发布包支持 Node 18+，但开发测试工具不支持 Node 18。当前安装的 Vitest 声明支持 Node `^20.0.0 || ^22.0.0 || >=24.0.0`；完整验证矩阵使用 Node 20、22、24，并额外配置 Windows/Node 24。下面的命令已在本地 Node 24 环境验证。独立的 Node 18 运行时冒烟任务只检查构建后的 ESM、CommonJS 和 CLI 产物，不运行 Vitest。消费者运行兼容性与贡献者工具要求是两回事。
+
 ```bash
 git clone https://github.com/Moresyl/postcss-adaptive-matrix.git
 cd postcss-adaptive-matrix

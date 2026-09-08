@@ -12,6 +12,8 @@ Thank you for wanting to improve postcss-adaptive-matrix.
 
 ## Local development
 
+The published package supports Node 18+, but the development test runner does not support Node 18. The installed Vitest version declares Node `^20.0.0 || ^22.0.0 || >=24.0.0`; the full verification matrix uses Node 20, 22 and 24, with an additional Windows/Node 24 job. Node 24 is the locally verified environment for the commands below. A separate Node 18 runtime smoke job exercises the built ESM, CommonJS and CLI artifacts without running Vitest. Runtime compatibility and contributor-tool requirements are separate contracts.
+
 ```bash
 git clone https://github.com/Moresyl/postcss-adaptive-matrix.git
 cd postcss-adaptive-matrix
