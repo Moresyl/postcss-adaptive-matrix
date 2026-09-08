@@ -23,6 +23,18 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it('rejects overflow in the numeric core helper while preserving authored CSS values', () => {
+    const options = resolveOptions({ profiles: { app: 375 }, strategy: 'viewport' })
+    const profile = options.profiles.app!
+    expect(() => convertLength(1e308, 'width', 'app', profile, options, '')).toThrow(
+      /Converted length exceeds the finite numeric range/,
+    )
+    expect(convertValue('1e308px 24px', 'margin', 'app', profile, options, '')).toBe(
+      '1e308px 6.4vw',
+    )
+    expect(convertLength(24, 'width', 'app', profile, options, '')).toBe('6.4vw')
+  })
+
   it('keeps text classification in viewport mode to protect precompiled hybrid text', () => {
     const options = resolveOptions({
       profiles: { app: 375 },

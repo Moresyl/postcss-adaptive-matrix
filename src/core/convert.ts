@@ -342,7 +342,7 @@ export function convertLength(
   file: string,
 ): string {
   const [designWidth, anchorWidth] = resolveProfileWidths(profileName, profile, file)
-  return convertResolvedLength(
+  const converted = convertResolvedLength(
     pixels,
     designWidth,
     anchorWidth,
@@ -351,6 +351,12 @@ export function convertLength(
     options,
     resolveRootValue(options, file),
   )
+  if (converted.includes('Infinity') || converted.includes('NaN')) {
+    throw new RangeError(
+      '[postcss-adaptive-matrix] Converted length exceeds the finite numeric range.',
+    )
+  }
+  return converted
 }
 
 function shouldSkipFunction(node: Node): boolean {
