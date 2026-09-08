@@ -21,6 +21,7 @@
  * the work PostCSS does regardless cancels the machine out; what is left is
  * this project's share of it, which is the thing a regression would change.
  */
+import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import postcss, { type AcceptedPlugin } from 'postcss'
@@ -161,6 +162,14 @@ for (const corpus of corpora) {
 
   if (includeApi) {
     const compile = dist.createAdaptiveCompiler({ ...corpusOptions, libraries: false })
+    const plugin = adaptiveMatrix({ ...corpusOptions, libraries: false })
+    const processor = postcss([plugin])
+    // Compare equivalent work before timing, including opt-in corpus settings.
+    for (const file of files) {
+      const expected = await processor.process(file.css, { from: file.from })
+      const actual = await compile(file.css, { process: { from: file.from } })
+      assert.equal(actual.css, expected.css, `API benchmark output differs in ${file.from}`)
+    }
     const apiPass = (audit: boolean) => async () => {
       let printed = 0
       for (const file of files) {
@@ -172,14 +181,14 @@ for (const corpus of corpora) {
       }
       return printed
     }
-    const [plugin, api, audited] = await measureAlternating(
-      [pass([adaptiveMatrix({ libraries: false })], files), apiPass(false), apiPass(true)],
+    const [pluginTime, api, audited] = await measureAlternating(
+      [pass([plugin], files), apiPass(false), apiPass(true)],
       ITERATIONS,
       WARMUP,
     )
     apiRows.push({
       corpus: corpus.name,
-      'plugin (ms)': plugin!.toFixed(2),
+      'plugin (ms)': pluginTime!.toFixed(2),
       'reused API (ms)': api!.toFixed(2),
       'API + audit (ms)': audited!.toFixed(2),
       'audit delta (ms)': (audited! - api!).toFixed(2),
