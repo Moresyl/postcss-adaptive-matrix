@@ -281,7 +281,15 @@ for (const target of TARGETS) {
     const first = await postcss([adaptiveMatrix({})]).process(css, { from })
     const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
     idempotent = first.css === second.css
-    seams = findContinuityIssues(first.root).length
+    const findings = findContinuityIssues(first.root)
+    seams = findings.length
+    for (const finding of findings) {
+      console.log(
+        `${target.library} ${relative(packaged, stylesheet)}: ${finding.selector} ${finding.prop} ` +
+          `at ${finding.breakpoint}px: ${finding.below.value} (${finding.below.px}px) -> ` +
+          `${finding.above.value} (${finding.above.px}px)`,
+      )
+    }
     warnings = first.warnings().length
   } catch (error) {
     const reason = error instanceof Error ? error.message.split('\n')[0] : 'Unknown error'
