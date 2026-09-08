@@ -10,11 +10,9 @@ Introduce no new features yet; get the new output as close to the old as possibl
 
 ```js
 adaptiveMatrix({
-  defaultProfile: 'app',
   profiles: {
     app: {
       designWidth: 375,     // your old viewport base width
-      fluid: { minWidth: 320, maxWidth: 480 },
       query: false,         // do not generate a media query wrapper
     },
   },
@@ -24,7 +22,7 @@ adaptiveMatrix({
 })
 ```
 
-`strategy: 'viewport'` emits unbounded `vw`, byte-comparable with a traditional setup. At this point the only differences should be rounding.
+`strategy: 'viewport'` emits unbounded `vw`; fluid bounds are unnecessary in this mode. A sole profile becomes the default automatically. This is a starting point, not a byte-for-byte compatibility guarantee: match property filters, ignored values, hairline handling and rounding against your existing output. For example, the default `hairline: 1` preserves a 1px border; use `hairline: 0` only if your old build intentionally scales it.
 
 ## Step two: map the concepts
 
@@ -55,7 +53,7 @@ Two things need a different idea rather than a different name:
 
 Once the visuals match, turn things on in order:
 
-1. Put `strategy` back to the default `clamp` — sizes gain a floor and a ceiling, and stop growing without limit on a large screen;
+1. Remove `strategy: 'viewport'` to restore the default strategy. Add `fluid` bounds only if the design needs them: `{ maxWidth: 480 }` sets a ceiling, `{ minWidth: 320 }` sets a floor, and both give `clamp()`. Without bounds, lengths remain unbounded; switching the strategy alone does not invent a range. Text also regains the default rem/viewport hybrid;
 2. Remove `query: false`, or switch to `appPcPreset` to bring in a desktop profile;
 3. Drop `libraries: false`, so component libraries adapt on their own canvases (see [Component libraries](./libraries.md)). This step usually lets you delete the entire ignore list your old setup needed for them;
 4. Configure `root` when you want a centred column, and `fixedContainingBlock` handles fixed-position elements along with it.

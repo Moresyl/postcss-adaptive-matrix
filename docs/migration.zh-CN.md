@@ -10,11 +10,9 @@
 
 ```js
 adaptiveMatrix({
-  defaultProfile: 'app',
   profiles: {
     app: {
       designWidth: 375,     // 原来的视口基准宽度
-      fluid: { minWidth: 320, maxWidth: 480 },
       query: false,         // 不生成媒体查询外壳
     },
   },
@@ -24,7 +22,7 @@ adaptiveMatrix({
 })
 ```
 
-`strategy: 'viewport'` 输出的是不带边界的 `vw`，与传统方案逐字节可比。此时差异只应来自舍入。
+`strategy: 'viewport'` 输出不带边界的 `vw`，此模式不需要填写流体边界。只有一个 profile 时也会自动选为默认。这个配置是迁移起点，不保证与旧插件逐字节一致：需要对照原产物核对属性过滤、忽略值、细线处理和舍入。例如默认 `hairline: 1` 会保留 1px 边框；只有旧构建确实需要缩放细线时，才设置 `hairline: 0`。
 
 ## 第二步：概念对照
 
@@ -55,7 +53,7 @@ adaptiveMatrix({
 
 确认视觉一致后，按顺序打开：
 
-1. `strategy` 改回默认 `clamp`——尺寸获得上下界，大屏不再无限放大；
+1. 移除 `strategy: 'viewport'` 恢复默认策略。只有设计需要时才添加 `fluid` 边界：`{ maxWidth: 480 }` 限制上界，`{ minWidth: 320 }` 限制下界，同时提供两者才输出 `clamp()`。不设边界仍然无界缩放，切换策略本身不会自动补出范围；文字也会恢复默认的 rem/视口混合公式；
 2. 移除 `query: false`，或改用 `appPcPreset` 引入 PC profile；
 3. 删掉 `libraries: false`，组件库按各自画布适配（详见 [组件库适配](./libraries.zh-CN.md)）。这一步通常可以顺带删掉原方案里为组件库写的整段忽略名单；
 4. 需要居中列时配置 `root`，`fixedContainingBlock` 会一并处理固定定位元素。
