@@ -1,4 +1,6 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -36,6 +38,29 @@ function middleware() {
 }
 
 describe('documentation asset delivery', () => {
+  it('checks production assets and rejects stale content', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-gate-'))
+    try {
+      await writeGeneratedAssets(directory)
+      const check = () =>
+        execFileSync(
+          process.execPath,
+          [
+            '--import',
+            'tsx',
+            fileURLToPath(new URL('../scripts/check-docs-assets.ts', import.meta.url)),
+            directory,
+          ],
+          { encoding: 'utf8', stdio: 'pipe' },
+        )
+      expect(check()).toContain('assets match their sources')
+      await writeFile(join(directory, 'docs/configuration.md'), 'stale')
+      expect(check).toThrow('Stale generated asset: docs/configuration.md')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   it('writes every generated asset byte-for-byte into a production directory', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-assets-'))
     try {
