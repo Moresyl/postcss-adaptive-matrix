@@ -27,6 +27,7 @@ import postcss, { type AcceptedPlugin } from 'postcss'
 import { CORPORA, CUSTOM_PROPERTY_CORPUS } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
 import { measureAlternating } from './alternating.js'
+import { verifyConversion } from './verify-conversion.js'
 import type {
   adaptiveMatrix as AdaptiveMatrix,
   createAdaptiveCompiler as CreateAdaptiveCompiler,
@@ -134,6 +135,13 @@ for (const corpus of corpora) {
   const corpusOptions = { transformCustomProperties: corpus.transformCustomProperties ?? false }
   const files = intoFiles(corpus.css, FILES_PER_CORPUS)
   const bytes = files.reduce((sum, file) => sum + Buffer.byteLength(file.css), 0)
+
+  if (corpus === CUSTOM_PROPERTY_CORPUS) {
+    for (const libraries of [false, ALL_LIBRARIES] as const) {
+      const count = await verifyConversion(adaptiveMatrix({ ...corpusOptions, libraries }), files)
+      console.log(`Preflight: ${count} custom properties converted (libraries: ${!!libraries}).`)
+    }
+  }
 
   // `libraries: false` isolates unit conversion; the next pass adds them back,
   // so the difference is the library cost rather than a guess at it.
