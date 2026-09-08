@@ -274,11 +274,21 @@ for (const target of TARGETS) {
   const expected = target.canvas ?? `library:${target.library}`
   const canvasOk = canvas === expected || (!routed.convert && expected === 'unconverted')
 
-  const first = await postcss([adaptiveMatrix({})]).process(css, { from })
-  const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
-  const idempotent = first.css === second.css
-  const seams = findContinuityIssues(first.root).length
-  const warnings = first.warnings().length
+  let idempotent: boolean
+  let seams: number
+  let warnings: number
+  try {
+    const first = await postcss([adaptiveMatrix({})]).process(css, { from })
+    const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
+    idempotent = first.css === second.css
+    seams = findContinuityIssues(first.root).length
+    warnings = first.warnings().length
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0] : 'Unknown error'
+    rows.push([target.library, `COMPILATION FAILED: ${reason}`, '—', '—', '—', '—', '—'])
+    problems += 1
+    continue
+  }
   staticChecked += 1
 
   const missing = prefixed === 0 || (target.tokenPrefix ? tokens === 0 : false)

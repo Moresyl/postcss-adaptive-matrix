@@ -8,6 +8,36 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('continues to the RTL check after a compiler exception in the LTR file', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-compile-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'quasar', 'package', 'dist')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(join(packaged, 'quasar.css'), '.q-button { --reject-compile-fixture: 24px }')
+    await writeFile(join(packaged, 'quasar.rtl.css'), '.q-button { margin-right: 24px }')
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        '--import',
+        new URL('./fixtures/reject-library-compile.mjs', import.meta.url).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'quasar',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('COMPILATION FAILED: fixture compilation rejected')
+    expect(result.stdout).toContain('quasar.rtl.css')
+    expect(result.stdout).toContain('2 reviewed, 1 needing attention')
+    expect(result.stdout).toContain('1 static stylesheet checks completed')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it.each(['both', 'ltr-only', 'rtl-only'])(
   'requires both Quasar direction files: %s',
   async (variant) => {
