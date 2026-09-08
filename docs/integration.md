@@ -293,3 +293,20 @@ const result = await compile('.card { padding: 24px }', {
 Only the CSS string is required. Compiler configuration and request options are optional. `process` accepts PostCSS processing options; `targets` enables the existing feature-support audit. Results expose `css`, `map`, `warnings`, `compatibility` (null without targets), and the full PostCSS `result`. Parse and configuration failures reject the promise. Compatibility findings are data, not exceptions; inspect `findings` and `unknownBrowsers` before deciding whether to fail your build. The audit is limited to its documented feature table, not all CSS behavior.
 
 Reuse a compiler for several files to retain conversion caches. Dynamic canvas and root rulers refresh for every compilation, including rebuilds of the same path.
+
+### Optional build gates
+
+Pass `failOn: ['warnings', 'compatibility']` to receive a `gate` with the selected categories and a `passed` boolean. Both the option and each category are opt-in; omit it or use `[]` for `gate: null`. A compatibility gate requires `targets` and fails for unsupported features **or unknown browser names**, so an unrecognized target cannot silently certify a build. A failed gate does not reject compilation or discard CSS, maps or diagnostics:
+
+```ts
+const output = await compileAdaptiveCss(source, {}, {
+  targets: { safari: 14 },
+  failOn: ['compatibility'],
+})
+if (output.gate?.passed === false) {
+  console.error(output.compatibility)
+  process.exitCode = 1
+}
+```
+
+This API gate currently covers warnings and compatibility, not CLI continuity analysis. Syntax/configuration errors still reject the promise; gate failures remain inspectable result data.

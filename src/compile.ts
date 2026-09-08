@@ -9,6 +9,15 @@ export interface AdaptiveCompileOptions {
   process?: ProcessOptions
   /** Optional oldest browser versions to audit against. */
   targets?: Readonly<Record<string, string | number>>
+  /** Optional build gate. Compatibility gates require targets. */
+  failOn?: readonly AdaptiveCompileGateCategory[]
+}
+
+export type AdaptiveCompileGateCategory = 'warnings' | 'compatibility'
+
+export interface AdaptiveCompileGate {
+  failOn: AdaptiveCompileGateCategory[]
+  passed: boolean
 }
 
 export interface AdaptiveCompileResult {
@@ -16,6 +25,8 @@ export interface AdaptiveCompileResult {
   map: Result['map']
   warnings: Warning[]
   compatibility: CompatAudit | null
+  /** Null unless a nonempty failOn list was requested; compilation still succeeds. */
+  gate: AdaptiveCompileGate | null
   /** Full PostCSS result for downstream AST processing and messages. */
   result: Result
 }
@@ -29,7 +40,7 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
   ): Promise<AdaptiveCompileResult> {
     if (typeof css !== 'string') throw new TypeError('CSS input must be a string.')
     if (!isPlainObject(request)) throw new TypeError('Compile options must be an object.')
-    rejectUnknownKeys('compile options', request, ['process', 'targets'])
+    rejectUnknownKeys('compile options', request, ['process', 'targets', 'failOn'])
     if (request.process !== undefined && !isPlainObject(request.process)) {
       throw new TypeError('Compile options.process must be a PostCSS options object.')
     }
@@ -42,12 +53,39 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
     // Otherwise mutating a shared request could silently change its verdict.
     const targets = suppliedTargets === undefined ? undefined : { ...suppliedTargets }
     if (targets !== undefined) auditCompatibility('', targets)
+    if (
+      request.failOn !== undefined &&
+      (!Array.isArray(request.failOn) ||
+        Array.from(request.failOn as readonly unknown[]).some(
+          (category) => category !== 'warnings' && category !== 'compatibility',
+        ))
+    ) {
+      throw new TypeError('Compile options.failOn must be an array of warnings or compatibility.')
+    }
+    const failOn = [...new Set((request.failOn ?? []) as readonly AdaptiveCompileGateCategory[])]
+    if (failOn.includes('compatibility') && targets === undefined) {
+      throw new TypeError('Compile options.failOn compatibility requires targets.')
+    }
     const result = await processor.process(css, { from: undefined, ...request.process })
+    const warnings = result.warnings()
+    const compatibility = targets === undefined ? null : auditCompatibility(result.css, targets)
     return {
       css: result.css,
       map: result.map,
-      warnings: result.warnings(),
-      compatibility: targets === undefined ? null : auditCompatibility(result.css, targets),
+      warnings,
+      compatibility,
+      gate:
+        failOn.length === 0
+          ? null
+          : {
+              failOn,
+              passed: !(
+                (failOn.includes('warnings') && warnings.length > 0) ||
+                (failOn.includes('compatibility') &&
+                  ((compatibility?.findings.length ?? 0) > 0 ||
+                    (compatibility?.unknownBrowsers.length ?? 0) > 0))
+              ),
+            },
       result,
     }
   }

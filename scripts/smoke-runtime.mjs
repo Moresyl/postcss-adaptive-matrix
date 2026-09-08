@@ -39,6 +39,16 @@ for (const api of [esm, cjs]) {
   assert.equal(output.compatibility, null)
   const single = await api.compileAdaptiveCss('.card { padding: 24px }')
   assert.match(single.css, /6\.4vw/)
+  const gated = await api.compileAdaptiveCss(
+    '.card { padding: 24px }',
+    {},
+    {
+      targets: { safari: 12 },
+      failOn: ['compatibility'],
+    },
+  )
+  assert.equal(gated.gate.passed, false)
+  assert.match(gated.css, /6\.4vw/)
 }
 
 const runtime = await import('../dist/runtime.js')

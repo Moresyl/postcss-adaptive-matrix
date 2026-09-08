@@ -293,3 +293,19 @@ const result = await compile('.card { padding: 24px }', {
 只有 CSS 字符串必填，编译配置和请求选项均可省略。`process` 接受 PostCSS 处理选项，`targets` 开启已有的特性支持审计。结果包含 `css`、`map`、`warnings`、`compatibility`（未传 targets 时为 null）和完整的 PostCSS `result`。语法或配置错误会拒绝 Promise。兼容性问题以数据返回，不会自动抛错；请检查 `findings` 与 `unknownBrowsers` 决定是否阻止构建。审计只覆盖文档列出的特性，并非全部 CSS 行为。
 
 多文件可复用同一个编译函数以保留转换缓存。动态画布宽度与根字号会在每次编译时重新求值，同一路径的重新构建也不会使用过时的值。
+### 可选构建门禁
+
+传入 `failOn: ['warnings', 'compatibility']` 后，结果的 `gate` 包含所选类别与 `passed` 布尔值。此选项及每个类别均按需启用；省略或传入 `[]` 时为 `gate: null`。兼容性门禁必须同时传入 `targets`，不支持的特性或未知浏览器名都会导致门禁失败，避免把无法识别的目标当作通过。门禁失败不会拒绝编译，也不会丢弃 CSS、源码映射或诊断：
+
+```ts
+const output = await compileAdaptiveCss(source, {}, {
+  targets: { safari: 14 },
+  failOn: ['compatibility'],
+})
+if (output.gate?.passed === false) {
+  console.error(output.compatibility)
+  process.exitCode = 1
+}
+```
+
+此接口门禁目前覆盖警告和兼容性，不包含 CLI 的断点接缝分析。语法与配置错误仍会拒绝 Promise；门禁失败则保留为可检查的结果数据。

@@ -7,6 +7,7 @@ describe('programmatic compiler', () => {
     expect(output.css).toContain('6.4vw')
     expect(output.result.css).toBe(output.css)
     expect(output.compatibility).toBeNull()
+    expect(output.gate).toBeNull()
     expect(output.warnings).toEqual([])
   })
 
@@ -108,4 +109,91 @@ describe('programmatic compiler', () => {
   it('rejects non-string CSS', async () => {
     await expect(compileAdaptiveCss(null as never)).rejects.toThrow('CSS input must be a string')
   })
+
+  it('retains CSS when a compatibility gate fails', async () => {
+    const output = await compileAdaptiveCss(
+      '.a { padding: 24px }',
+      {},
+      {
+        targets: { safari: 12 },
+        failOn: ['compatibility'],
+      },
+    )
+    expect(output.gate).toEqual({ failOn: ['compatibility'], passed: false })
+    expect(output.css).toContain('6.4vw')
+    expect(output.compatibility?.findings.length).toBeGreaterThan(0)
+  })
+
+  it('does not pass a compatibility gate for unknown targets', async () => {
+    const output = await compileAdaptiveCss(
+      '',
+      {},
+      {
+        targets: { unknown: 1 },
+        failOn: ['compatibility'],
+      },
+    )
+    expect(output.gate?.passed).toBe(false)
+  })
+
+  it('passes when selected diagnostics are absent and deduplicates categories', async () => {
+    const output = await compileAdaptiveCss(
+      '',
+      {},
+      {
+        targets: { chrome: 100 },
+        failOn: ['warnings', 'compatibility', 'warnings'],
+      },
+    )
+    expect(output.gate).toEqual({ failOn: ['warnings', 'compatibility'], passed: true })
+  })
+
+  it('fails the warning gate while retaining source diagnostics', async () => {
+    const output = await compileAdaptiveCss(
+      '@adaptive missing { .a { width: 24px } }',
+      {},
+      {
+        failOn: ['warnings'],
+      },
+    )
+    expect(output.gate?.passed).toBe(false)
+    expect(output.warnings.length).toBeGreaterThan(0)
+  })
+
+  it('snapshots gate categories before yielding', async () => {
+    const failOn: ('warnings' | 'compatibility')[] = ['compatibility']
+    const pending = compileAdaptiveCss(
+      '.a { padding: 24px }',
+      {},
+      {
+        targets: { safari: 12 },
+        failOn,
+      },
+    )
+    failOn.splice(0)
+    expect((await pending).gate?.passed).toBe(false)
+  })
+
+  it('treats an empty gate as omitted', async () => {
+    expect((await compileAdaptiveCss('', {}, { failOn: [] })).gate).toBeNull()
+  })
+
+  it.each([null, 'warnings', ['continuity'], [1], new Array(1), ['compatibility']])(
+    'rejects invalid gates before dynamic callbacks: %j',
+    async (failOn) => {
+      let calls = 0
+      const compile = createAdaptiveCompiler({
+        profiles: {
+          app: {
+            designWidth: () => {
+              calls++
+              return 375
+            },
+          },
+        },
+      })
+      await expect(compile('.a { padding: 24px }', { failOn } as never)).rejects.toThrow()
+      expect(calls).toBe(0)
+    },
+  )
 })

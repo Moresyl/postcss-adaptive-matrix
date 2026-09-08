@@ -3,7 +3,12 @@ import type { AdaptiveMatrixOptions } from './core/types.js'
 
 export { adaptiveMatrix }
 export { compileAdaptiveCss, createAdaptiveCompiler } from './compile.js'
-export type { AdaptiveCompileOptions, AdaptiveCompileResult } from './compile.js'
+export type {
+  AdaptiveCompileOptions,
+  AdaptiveCompileResult,
+  AdaptiveCompileGate,
+  AdaptiveCompileGateCategory,
+} from './compile.js'
 export { appPcPreset, presets, withAtomicCss } from './core/presets.js'
 export { BUILT_IN_LIBRARIES, defineLibraries } from './core/libraries.js'
 // Exported so a build can fail on what the CLI only prints. The check reads a
