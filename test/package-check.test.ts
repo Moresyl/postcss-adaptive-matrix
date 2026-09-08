@@ -33,6 +33,23 @@ async function inspect(files: string[]) {
       bin: { fixture: './dist/cli.js' },
     }),
   )
+  for (const file of files) {
+    const target = join(directory, file)
+    await mkdir(join(target, '..'), { recursive: true })
+    if (file.endsWith('.map')) {
+      await writeFile(
+        target,
+        JSON.stringify({
+          version: 3,
+          sources: ['../src/index.ts'],
+          sourcesContent: [''],
+          mappings: '',
+        }),
+      )
+    } else {
+      await writeFile(target, '')
+    }
+  }
   const npm = join(directory, 'fake-npm.cjs')
   await writeFile(
     npm,
@@ -58,6 +75,10 @@ const complete = [
   'dist/index.d.ts',
   'dist/runtime.js',
   'dist/cli.js',
+  'dist/index.cjs.map',
+  'dist/index.js.map',
+  'dist/runtime.js.map',
+  'dist/cli.js.map',
 ]
 
 describe('package entrypoint gate', () => {
