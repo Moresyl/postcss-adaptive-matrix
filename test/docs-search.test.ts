@@ -10,7 +10,7 @@ const transform = rewrittenLocaleSearch().transform as (
 function evaluate(expression: string): Record<string, () => string> {
   const result = transform(`export default ${expression}`, '/@localSearchIndex')!
   // Only test-owned literals are evaluated, never repository or user input.
-  return runInNewContext(result.code.replace('export default ', 'result = '), { result: {} }).result
+  return runInNewContext(result.code.replace('export default ', 'result = '), { result: {} })
 }
 
 describe('rewritten locale search compatibility', () => {
