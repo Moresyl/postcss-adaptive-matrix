@@ -23,6 +23,32 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it('alternates simple and complex values without leaking unit-pattern state', () => {
+    const options = resolveOptions({
+      profiles: { app: 400 },
+      strategy: 'viewport',
+      libraries: false,
+    })
+    const converter = createConverter(options)
+    const cases = [
+      ['40px', '10vw'],
+      [' 80px ', ' 20vw '],
+      ['"120px"', '"120px"'],
+      ['url(160px.svg)', 'url(160px.svg)'],
+      ['calc(100vw - 200px)', 'calc(100vw - 50vw)'],
+      [String.raw`240p\78`, '60vw'],
+      ['min(280px, 50vw)', 'min(280px, 50vw)'],
+      ['320px 360px', '80vw 90vw'],
+      ['400px', '100vw'],
+    ] as const
+    for (let pass = 0; pass < 2; pass++) {
+      converter.beginFile()
+      for (const [value, expected] of cases) {
+        expect(converter.convert(value, 'width', 'app', options.profiles.app!, '')).toBe(expected)
+      }
+    }
+  })
+
   it.each(['24px', '-24px', '1e2px', '1rem', '1px', '0px', '1e309px', '24PX'])(
     'matches the parsed path for a single dimension %s',
     (value) => {
