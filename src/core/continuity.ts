@@ -246,6 +246,17 @@ export function findContinuityIssues(
   // All groups use the same declaration/token boundaries. Sort once rather
   // than allocating and sorting the same set for every selector/property.
   const sortedBoundaries = [...boundaries].sort((a, b) => a - b)
+  // Gutter removal depends only on authored text, not on the probe width.
+  // Keep this cache local to one analysis; token substitution remains per probe.
+  const gutterless = new Map<Entry, string>()
+  const valueWithoutGutter = (entry: Entry): string => {
+    let value = gutterless.get(entry)
+    if (value === undefined) {
+      value = withoutGutter(entry.value)
+      gutterless.set(entry, value)
+    }
+    return value
+  }
 
   for (const [key, group] of groups) {
     // One declaration cannot disagree with itself — unless it reads a token
@@ -266,8 +277,8 @@ export function findContinuityIssues(
       // redefined across the breakpoint is compared at the value that actually
       // applies on each side. `null` means the value reads something this
       // cannot pin down, and the pair is dropped.
-      const lowValue = tokens.resolve(withoutGutter(low.value), breakpoint - PROBE)
-      const highValue = tokens.resolve(withoutGutter(high.value), breakpoint + PROBE)
+      const lowValue = tokens.resolve(valueWithoutGutter(low), breakpoint - PROBE)
+      const highValue = tokens.resolve(valueWithoutGutter(high), breakpoint + PROBE)
       if (lowValue === null || highValue === null || lowValue === highValue) continue
       // Substitution happens first: a token can hold the generated formula
       // while the declaration reading it is a bare `var()`.

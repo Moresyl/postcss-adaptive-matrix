@@ -7,6 +7,15 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it('does not reuse gutter-stripped values across analyses of a mutated root', () => {
+  const root = postcss.parse('.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }')
+  expect(findContinuityIssues(root)).toHaveLength(1)
+  root.walkDecls((declaration) => {
+    if (declaration.value === '5vw') declaration.value = '20vw'
+  })
+  expect(findContinuityIssues(root)).toEqual([])
+})
+
 describe('evaluateLength', () => {
   it.each(['vw', 'vh', 'vi', 'vb', 'vmin', 'vmax'])(
     'avoids intermediate overflow when evaluating a representable %s length',
