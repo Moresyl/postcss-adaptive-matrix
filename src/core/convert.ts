@@ -369,10 +369,15 @@ function shouldSkipFunction(node: Node): boolean {
 
 /** Finds a real length token while ignoring comments, strings and separators. */
 function containsRelativeLength(nodes: Node[], pattern: RegExp): boolean {
-  return nodes.some((node) => {
-    if (node.type === 'word') return pattern.test(node.value)
-    return node.type === 'function' && containsRelativeLength(node.nodes, pattern)
-  })
+  const pending = [...nodes].reverse()
+  while (pending.length) {
+    const node = pending.pop()!
+    if (node.type === 'word' && pattern.test(node.value)) return true
+    if (node.type === 'function') {
+      for (let index = node.nodes.length - 1; index >= 0; index--) pending.push(node.nodes[index]!)
+    }
+  }
+  return false
 }
 
 /**
