@@ -214,10 +214,19 @@ appPcPreset({
 
 Regular expressions and functions are accepted too, with the same rules as `include`. When writing `root` directly the field is `root.injectTo`.
 
-A pattern that matches nothing is not an error — it just injects nothing. Confirming with the [CLI](./cli.md) is the safest move; the entry file should show added declarations like `+ inline-size 100%`:
+A pattern that matches nothing is not an error — it just injects nothing. Confirm with the [CLI](./cli.md); the entry file should show added declarations like `+ inline-size 100%`. The CLI takes compiler options, not PostCSS's `{ plugins: [...] }` wrapper. Put the shared options in `adaptive.config.mjs`:
+
+```js
+import { appPcPreset } from 'postcss-adaptive-matrix'
+
+export default appPcPreset({
+  rootSelector: '#app',
+  rootInjectTo: 'src/styles/main',
+})
+```
 
 ```bash
-npx adaptive-matrix src/styles/main.css -c postcss.config.mjs
+npx adaptive-matrix src/styles/main.css -c adaptive.config.mjs
 ```
 
 ## Component libraries

@@ -214,10 +214,19 @@ appPcPreset({
 
 也接受正则和函数，规则与 `include` 一致。直接写 `root` 时对应字段是 `root.injectTo`。
 
-匹配不上不会报错，只是一份都不注入。用[命令行](./cli.zh-CN.md)确认一下最稳妥——入口文件应当出现 `+ inline-size 100%` 这类新增声明：
+匹配不上不会报错，只是一份都不注入。可用[命令行](./cli.zh-CN.md)确认——入口文件应当出现 `+ inline-size 100%` 这类新增声明。CLI 接收编译器选项，不接收 PostCSS 的 `{ plugins: [...] }` 外壳。将共用选项放入 `adaptive.config.mjs`：
+
+```js
+import { appPcPreset } from 'postcss-adaptive-matrix'
+
+export default appPcPreset({
+  rootSelector: '#app',
+  rootInjectTo: 'src/styles/main',
+})
+```
 
 ```bash
-npx adaptive-matrix src/styles/main.css -c postcss.config.mjs
+npx adaptive-matrix src/styles/main.css -c adaptive.config.mjs
 ```
 
 ## 组件库
