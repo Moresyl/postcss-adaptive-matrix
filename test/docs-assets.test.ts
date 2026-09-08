@@ -63,7 +63,12 @@ describe('documentation asset delivery', () => {
     expect(assets.get('zh/docs/configuration.md')).toContain('配置')
     for (const name of ['llms.txt', 'zh/llms.txt', 'llms-full.txt', 'zh/llms-full.txt']) {
       expect(assets.get(name)?.length).toBeGreaterThan(100)
+      expect(assets.get(name)).toContain('API')
     }
+    expect(assets.get('llms.txt')).toContain('/docs/api')
+    expect(assets.get('zh/llms.txt')).toContain('/zh/docs/api')
+    expect(assets.get('llms-full.txt')).toContain('AdaptiveCompileGateCategory')
+    expect(assets.get('zh/llms-full.txt')).toContain('AdaptiveCompileGateCategory')
     expect(JSON.parse(assets.get('schema/options.json')!).properties).toHaveProperty('profiles')
     expect([...assets.keys()].some((name) => name.startsWith('.upgrade'))).toBe(false)
   })

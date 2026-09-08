@@ -9,8 +9,8 @@
  * of the bargain — the whole documentation set in one file, for when the model
  * has the context window and would rather read everything once.
  *
- * Both are generated from the same page list the site is built from, so a page
- * cannot be added to one and forgotten in the other.
+ * Both share the curated entries below. New guides must be added here as well
+ * as to the sidebar; raw Markdown delivery is generated separately.
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -29,17 +29,24 @@ const SUMMARY = `Adaptive Matrix is a PostCSS 8 plugin that compiles px to respo
 units against the design width of the file each px was drawn on, rather than against a
 single global width. Pages, a mobile component library and a desktop component library
 come from different design files; giving each its own canvas is what lets all three
-scale correctly at once. Output is bounded fluid clamp(), with text kept zoomable for
-WCAG 1.4.4. Component-library canvases are built in, so the default configuration is
-already correct for a project that uses one.`.replace(/\s+/g, ' ')
+scale against their intended rulers. Fluid bounds are optional: use none, either side,
+or both. Rem-aware text formulas support text resizing, but do not certify page-level
+accessibility. Built-in library routes and optional programmatic compilation, source
+maps and quality gates support integration into build tools.`.replace(/\s+/g, ' ')
 
 // One line on purpose: collapsing the whitespace of a wrapped Chinese string
 // either leaves the wrap points as spaces mid-sentence or, if they are dropped,
 // welds `PostCSS 8` into `PostCSS8` along with every other Latin word in it.
 const SUMMARY_ZH =
-  'Adaptive Matrix 是一个 PostCSS 8 插件：每个 px 按它所在设计稿的宽度换算，而不是按全局唯一的宽度换算。页面、移动端组件库、桌面端组件库来自不同的设计稿，给每张稿子一张自己的画布，是让三者同时缩放正确的前提。产物是有上下界的 clamp()，文字保持可缩放以满足 WCAG 1.4.4。常见组件库的画布已经内置，用了组件库的项目默认配置就是对的。'
+  'Adaptive Matrix 是一个 PostCSS 8 插件：每个 px 按所属设计稿的宽度换算，而不是按全局唯一宽度换算。流体上下界均可选，可不设、只设一侧或同时设置。含 rem 的文字公式支持文字缩放，但不代表页面已通过可访问性认证。内置组件库路由，以及可选程序化编译、源码映射和质量门禁，方便接入构建工具。'
 
 const DOCS: Entry[] = [
+  {
+    source: 'docs/api.md',
+    title: 'Programmatic API',
+    summary:
+      'Compile CSS directly, reuse a compiler, chain source maps and inspect optional gates.',
+  },
   {
     source: 'docs/getting-started.md',
     title: 'Getting started',
@@ -104,6 +111,11 @@ const DOCS: Entry[] = [
 ]
 
 const DOCS_ZH: Entry[] = [
+  {
+    source: 'docs/api.zh-CN.md',
+    title: '程序化 API',
+    summary: '直接编译 CSS、复用编译器、串接源码映射并检查可选门禁。',
+  },
   {
     source: 'docs/getting-started.zh-CN.md',
     title: '快速上手',
