@@ -42,6 +42,8 @@ The API gate covers warnings and compatibility, not CLI continuity analysis. Use
 
 The analyzer considers math expressions and bare viewport-unit values, including output from profiles with no fluid bounds. This is a syntax heuristic, not compiler provenance: authored fluid expressions can also produce findings. Plain fixed-pixel changes remain excluded.
 
+Diagnostic length evaluation has a 128-level recursive-descent budget for nested expressions and unary operations. Exceeding it returns unknown instead of overflowing the JavaScript stack. This limits analysis, not CSS compilation; a clean report is not evidence that such a value was checked.
+
 Continuity analysis samples 0.05 CSS pixels below and above each known breakpoint. This accommodates common 0.02px gaps, but it is not an exact limit calculation: narrower intermediate ranges can be crossed by a probe. Findings are diagnostic evidence to investigate, not a proof of continuity at every viewport width.
 
 For an in-process continuity check, compose the exported analyzer with the compiled root. Pass the same root font size to both conversion and analysis (the default is 16). Resolve a dynamic root font size once for the file and supply that number to both calls, rather than invoking a changing callback twice.

@@ -161,6 +161,7 @@ function toPixels(value: number, unit: string, context: EvaluationContext): Quan
 
 class Parser {
   private index = 0
+  private depth = 0
 
   constructor(
     private readonly tokens: Token[],
@@ -219,6 +220,18 @@ class Parser {
   }
 
   private unary(): Quantity | null {
+    // Bound recursive descent independently of the host's call-stack size.
+    // Sequential arguments do not consume this budget; only nesting does.
+    if (this.depth >= 128) return null
+    this.depth += 1
+    try {
+      return this.unaryValue()
+    } finally {
+      this.depth -= 1
+    }
+  }
+
+  private unaryValue(): Quantity | null {
     const token = this.peek()
     if (token?.kind === 'op' && (token.value === '+' || token.value === '-')) {
       this.index += 1

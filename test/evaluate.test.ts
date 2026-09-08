@@ -13,6 +13,12 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const context = { width: 1000, height: 800, rootFontSize: 16 }
 
 describe('evaluateLength', () => {
+  it('returns unknown for excessive nesting without leaking a stack error', () => {
+    const deep = `${'calc('.repeat(10_000)}1px${')'.repeat(10_000)}`
+    expect(evaluateLength(deep, context)).toBeNull()
+    expect(evaluateLength(`calc(${'- '.repeat(10_000)}1px)`, context)).toBeNull()
+    expect(evaluateLength(`${'calc('.repeat(32)}1px${')'.repeat(32)}`, context)).toBe(1)
+  })
   it.each(['min', 'max'])(
     'evaluates a wide %s without spreading arguments onto the stack',
     (name) => {
