@@ -389,6 +389,21 @@ describe('findContinuityIssues', () => {
     ).toHaveLength(1)
   })
 
+  it('skips inactive high-priority declarations and orders matching important declarations', () => {
+    const issues = check(`
+      .a { width: ${fluid(40)} !important }
+      @media (min-width: 768px) { .a { width: ${fluid(30)} !important } }
+      @media (min-width: 768px) { .a { width: ${fluid(20)} !important } }
+      @media (min-width: 2000px) { .a { width: ${fluid(10)} !important } }
+      .a { width: ${fluid(100)} }
+    `)
+    expect(issues).toHaveLength(2)
+    expect(issues.map(({ breakpoint, below, above }) => [breakpoint, below.px, above.px])).toEqual([
+      [768, 40, 20],
+      [2000, 20, 10],
+    ])
+  })
+
   it('ignores values it cannot put a number to', () => {
     // A token this stylesheet never defines. It used to be spelled
     // `--adaptive-root-gutter` here, which stopped being an example of an
