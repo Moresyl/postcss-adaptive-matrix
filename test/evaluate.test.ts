@@ -13,6 +13,13 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const context = { width: 1000, height: 800, rootFontSize: 16 }
 
 describe('evaluateLength', () => {
+  it.each(['min', 'max'])(
+    'evaluates a wide %s without spreading arguments onto the stack',
+    (name) => {
+      const values = Array.from({ length: 150_000 }, (_, index) => `${index % 10}px`)
+      expect(evaluateLength(`${name}(${values.join(',')})`, context)).toBe(name === 'min' ? 0 : 9)
+    },
+  )
   it.each(['10vw / 2', '10px + 2px', '(10px)', 'calc(10px) + 2px', '- min(10px, 20px)'])(
     'rejects arithmetic outside a CSS math function: %s',
     (value) => expect(evaluateLength(value, context)).toBeNull(),

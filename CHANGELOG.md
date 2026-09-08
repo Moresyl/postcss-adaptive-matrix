@@ -4,7 +4,8 @@
 
 ## Unreleased
 
-- Length evaluation now rejects mismatched parentheses instead of accepting a stray closing token as a valid expression.
+- Length evaluation rejects arithmetic outside CSS math functions and mismatched parentheses, including an opening parenthesis where a closing one is required.
+- Wide `min()`/`max()` expressions use reduction rather than function-argument spreading, avoiding call-stack errors with large argument lists.
 
 - Viewport-length evaluation avoids intermediate multiplication overflow when the final pixel result is finite; genuinely overflowing results remain unknown.
 

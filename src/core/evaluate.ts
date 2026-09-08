@@ -280,14 +280,14 @@ class Parser {
       case 'min':
         return sameDimension(args)
           ? {
-              value: Math.min(...args.map((argument) => argument.value)),
+              value: args.reduce((value, argument) => Math.min(value, argument.value), Infinity),
               dimension: args[0]!.dimension,
             }
           : null
       case 'max':
         return sameDimension(args)
           ? {
-              value: Math.max(...args.map((argument) => argument.value)),
+              value: args.reduce((value, argument) => Math.max(value, argument.value), -Infinity),
               dimension: args[0]!.dimension,
             }
           : null
