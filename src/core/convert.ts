@@ -392,9 +392,9 @@ function containsRelativeLength(nodes: Node[], pattern: RegExp): boolean {
  */
 function isAlreadyFluid(node: Node, accessibleText: boolean, staticText: boolean): boolean {
   if (node.type !== 'function') return false
-  const hasViewportLength = containsRelativeLength(node.nodes, VIEWPORT_RELATIVE)
   const name = canonicalCssIdentifierName(node.value)
-  if (BOUNDING_FUNCTIONS.has(name)) return hasViewportLength
+  if (BOUNDING_FUNCTIONS.has(name)) return containsRelativeLength(node.nodes, VIEWPORT_RELATIVE)
+  if (name !== 'calc') return false
   const isUnboundedMarker =
     name === 'calc' &&
     node.nodes.length === 1 &&
@@ -411,7 +411,7 @@ function isAlreadyFluid(node: Node, accessibleText: boolean, staticText: boolean
     isStaticTextMarker ||
     (accessibleText &&
       name === 'calc' &&
-      hasViewportLength &&
+      containsRelativeLength(node.nodes, VIEWPORT_RELATIVE) &&
       containsRelativeLength(node.nodes, ROOT_RELATIVE))
   )
 }
