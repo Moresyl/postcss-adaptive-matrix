@@ -4,6 +4,8 @@
 
 ## 尚未发布
 
+- CI 现在新增 Windows + Node 24 的完整验证与运行时冒烟检查，覆盖平台相关的 CLI 和文件路径行为，并保留 Linux 矩阵。
+
 - 收紧公开 JSON Schema，拒绝空白查询条件并与运行时校验一致，同时保持可选的 `query` 字段无需填写。
 
 - 开发工具升级至 Vitest/coverage 4.1.11，锁定的 js-yaml 依赖更新至 4.3.2，消除本次审计报告的 mocker 文件读取与 YAML 合并 CPU 消耗告警；不改变运行时 API。

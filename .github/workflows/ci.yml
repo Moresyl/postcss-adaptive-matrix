@@ -30,7 +30,11 @@ jobs:
       fail-fast: false
       matrix:
         node: [20, 22, 24]
-    runs-on: ubuntu-latest
+        os: [ubuntu-latest]
+        include:
+          - os: windows-latest
+            node: 24
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,9 +44,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run pack:check
+      - run: npm run smoke:runtime
 
   # Its own job, on one Node version. A performance budget is not a correctness
-  # check: running it across the matrix would triple the exposure to a noisy
+  # check: running it across the matrix would multiply the exposure to a noisy
   # runner without measuring anything the first run did not, and a failure here
   # should read as "this got slower", not as "the tests broke on Node 20".
   performance:

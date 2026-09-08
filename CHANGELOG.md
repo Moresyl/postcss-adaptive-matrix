@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- CI now runs the full verification and runtime smoke checks on Windows with Node 24, covering the platform-specific CLI and filesystem path surface alongside the Linux matrix.
+
 - Tighten the published JSON Schema to reject blank query conditions, matching runtime validation while keeping the optional `query` field optional.
 
 - Update development tooling to Vitest/coverage 4.1.11 and the locked js-yaml dependency to 4.3.2, clearing the reported mocker file-read and YAML merge CPU advisories. No runtime API change.
