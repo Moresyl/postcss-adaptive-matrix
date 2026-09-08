@@ -9,8 +9,10 @@ export function benchmarkSettings(env: Record<string, string | undefined>) {
     }
     return value
   }
-  return {
-    iterations: count('BENCH_ITERATIONS', 20, 1),
-    warmup: count('BENCH_WARMUP', 5, 0),
+  const iterations = count('BENCH_ITERATIONS', 20, 1)
+  const warmup = count('BENCH_WARMUP', 5, 0)
+  if (!Number.isSafeInteger(iterations + warmup)) {
+    throw new RangeError('BENCH_ITERATIONS + BENCH_WARMUP must be a safe integer.')
   }
+  return { iterations, warmup }
 }

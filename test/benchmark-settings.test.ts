@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest'
 import { benchmarkSettings } from '../bench/settings.js'
 
 describe('benchmark settings', () => {
+  it('rejects an unsafe total before any benchmark starts', () => {
+    expect(() =>
+      benchmarkSettings({
+        BENCH_ITERATIONS: String(Number.MAX_SAFE_INTEGER),
+        BENCH_WARMUP: '1',
+      }),
+    ).toThrow('BENCH_ITERATIONS + BENCH_WARMUP')
+    expect(
+      benchmarkSettings({
+        BENCH_ITERATIONS: String(Number.MAX_SAFE_INTEGER),
+        BENCH_WARMUP: '0',
+      }).iterations,
+    ).toBe(Number.MAX_SAFE_INTEGER)
+  })
+
   it('keeps both settings optional', () => {
     expect(benchmarkSettings({})).toEqual({ iterations: 20, warmup: 5 })
   })
