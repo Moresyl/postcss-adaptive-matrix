@@ -310,6 +310,8 @@ npx adaptive-matrix src/app.css src/admin.css \
 npx adaptive-matrix src/app.css --css > out.css
 ```
 
+这是 shell 重定向，不是原子写文件功能。编译开始前，shell 就可能清空已有的 `out.css`，因此绝不要重定向到输入文件本身。多文件 CSS 输出在后续文件失败时也可能只有部分内容；质量门禁失败仍会输出 CSS。用于构建产物时，应先把 stdout 保存到临时文件，确认退出码为 `0` 后再替换目标文件，失败则保留旧产物。若构建需要先检查结果再决定如何写入，可使用[程序化 API](./api.zh-CN.md)。
+
 `--css` 模式的 stdout 只有 CSS；编译器警告、连续性发现和浏览器兼容证据全部走 stderr。所以重定向出来的文件是干净的、可直接解析的 CSS，而所有可操作诊断——包括门禁失败背后的详情——依然会出现在终端里，不会被悄悄吞掉。
 
 ## 读懂输出

@@ -310,6 +310,8 @@ To hand the result to another tool, use `--css`:
 npx adaptive-matrix src/app.css --css > out.css
 ```
 
+This is shell redirection, not an atomic file-writing feature. The shell can truncate an existing `out.css` before compilation starts. Never redirect to an input file. Multi-file CSS output can also be partial if a later input fails, and a failed quality gate still emits CSS. For build artifacts, capture stdout in a temporary file, require exit code `0`, then replace the destination; retain the previous artifact on failure. Use the [programmatic API](./api.md) if your build needs to validate the result before deciding how to write it.
+
 In `--css` mode stdout is CSS only; compiler warnings, continuity findings and browser-compatibility evidence go to stderr. So the redirected file is clean, directly parseable CSS, while every actionable diagnostic—including the details behind a failed quality gate—still appears in your terminal rather than being swallowed.
 
 ## Reading the output
