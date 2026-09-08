@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Documentation Markdown requests now time out after ten seconds and cancel cleanly during page changes, including stalled response bodies.
 - Continuity analysis accepts PostCSS Documents, analyzing each stylesheet independently without cross-root cascade or token leakage.
 - Continuity analysis now rejects invalid root font sizes instead of producing misleading pixel comparisons.
 - Bounded the property classification cache for reusable compilers handling generated custom-property names, preserving text conversion semantics after eviction.

@@ -11,6 +11,7 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useData, withBase } from 'vitepress'
+import { readMarkdown } from './markdown-request.js'
 
 const { page, lang, site } = useData()
 
@@ -63,14 +64,8 @@ async function copy() {
   controller = current
   state.value = 'copying'
   try {
-    const response = await fetch(rawPath.value, { signal: current.signal })
-    if (!response.ok) throw new Error(String(response.status))
-    const markdown = await response.text()
+    const markdown = await readMarkdown(rawPath.value, current.signal)
     if (controller !== current) return
-    // Static hosts may return the HTML fallback with status 200 for missing files.
-    if (/text\/html/i.test(response.headers.get('content-type') ?? '')) {
-      throw new Error('Expected Markdown, received an HTML fallback.')
-    }
     await navigator.clipboard.writeText(markdown)
     if (controller !== current) return
     state.value = 'copied'
