@@ -605,6 +605,13 @@ export async function runCli(argv: string[]): Promise<number> {
       throw new CliError('--fail-on compatibility requires --targets to define browser support.')
     }
     const loadedOptions = args.config ? await loadConfig(args.config) : {}
+    if (Object.hasOwn(loadedOptions, 'plugins')) {
+      throw new CliError(
+        `Config ${args.config} contains a PostCSS "plugins" wrapper. ` +
+          'The CLI expects adaptive-matrix options directly; move the shared options ' +
+          'to adaptive.config.mjs and pass that file with --config.',
+      )
+    }
     // Config modules are cached by ESM and may deliberately freeze their
     // exported object. A command-line override belongs to this invocation;
     // mutating the export either throws or leaks into the next runCli() call.

@@ -717,6 +717,22 @@ describe('runCli', () => {
     expect(err).toContain('must default-export an options object')
   })
 
+  it.each(['json', 'mjs'])(
+    'explains a PostCSS wrapper in a %s config before reading CSS',
+    async (extension) => {
+      const config = join(directory, `postcss.config.${extension}`)
+      const options = JSON.stringify({ plugins: [] })
+      await writeFile(config, extension === 'json' ? options : `export default ${options}`, 'utf8')
+      expect(await runCli([join(directory, 'absent.css'), '-c', config, '--json'])).toBe(1)
+      expect(err).toBe('')
+      const report = JSON.parse(out)
+      expect(report.ok).toBe(false)
+      expect(report.error.message).toContain('PostCSS "plugins" wrapper')
+      expect(report.error.message).toContain('adaptive.config.mjs')
+      expect(report.error.message).not.toContain('absent.css')
+    },
+  )
+
   it('rejects an array exported from a config module just like an array in JSON', async () => {
     const config = join(directory, 'array.config.mjs')
     await writeFile(config, 'export default []', 'utf8')

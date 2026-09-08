@@ -54,7 +54,7 @@ Exit codes: `0` when compilation and every requested quality gate pass; `1` for 
 Without `-c` the built-in defaults are used, and the header tells you which canvases are active.
 
 ```bash
-npx adaptive-matrix src/app.css -c postcss.config.mjs
+npx adaptive-matrix src/app.css -c adaptive.config.mjs
 ```
 
 The config module must default-export the **plugin options object**, not a PostCSS config. When the two differ, write a separate file:

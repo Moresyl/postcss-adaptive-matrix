@@ -54,7 +54,7 @@ cat app.css | adaptive-matrix --from src/app.css
 不传 `-c` 就用内置默认值，表头会告诉你当前是哪几个画布。
 
 ```bash
-npx adaptive-matrix src/app.css -c postcss.config.mjs
+npx adaptive-matrix src/app.css -c adaptive.config.mjs
 ```
 
 配置模块要默认导出**插件选项对象**，不是 PostCSS 配置。两者不一样时单独写一个：
