@@ -34,7 +34,7 @@ CSS 的 `vw` / `vh` 指的是**布局视口**，浏览器有意让它在软键�
 | `--adaptive-width` | 可视区域宽度（px 数值，无单位） |
 | `--adaptive-height` | 可视区域高度 |
 | `--adaptive-layout-height` | 布局视口高度，即 `window.innerHeight` |
-| `--adaptive-keyboard-height` | 当前缩放倍数下的软键盘遮挡高度，无键盘时为 `0` |
+| `--adaptive-keyboard-height` | 当前缩放倍数下的可视高度损失估计值，并非权威的键盘几何尺寸 |
 | `--adaptive-scale` | 当前捏合缩放倍数 |
 | `--adaptive-vh` | 可视高度的 1%，**带 px 单位** |
 | `--adaptive-vw` | 可视宽度的 1%，**带 px 单位** |
@@ -52,6 +52,8 @@ CSS 的 `vw` / `vh` 指的是**布局视口**，浏览器有意让它在软键�
 ```
 
 双指缩放同样会让 `VisualViewport.height` 变小，但它不是键盘。观察器会先用 `VisualViewport.scale` 折算当前缩放下本来应有的可视高度：800px 布局在 2× 缩放时出现 400px 可视视口是正常的，键盘高度为 `0`；若键盘再把它压到 250px，才报告 `150`。这样普通缩放手势不会把底部操作栏无故顶到页面中间。
+
+`keyboardHeight` 只是便于使用的名称，不是键盘检测 API。实现计算的是 `max(0, layoutHeight / scale - visualHeight - offset)`，仅在缩放接近 1 时扣除 `offsetTop`。其他视口变化也可能产生相同差值；如果宿主同时缩小布局和可视高度，即使键盘打开也可能报告零。请在目标宿主验收操作栏行为，不要把这个估计值当作键盘已显示的证据或准确边界。
 
 回退值 `1vh` 很重要——运行时没加载、或者在 SSR 首屏时，样式依然成立。
 

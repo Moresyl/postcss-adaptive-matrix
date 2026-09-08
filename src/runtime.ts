@@ -13,6 +13,7 @@ export interface AdaptiveViewportSnapshot {
   width: number
   height: number
   layoutHeight: number
+  /** Estimated viewport height loss, not authoritative keyboard visibility or geometry. */
   keyboardHeight: number
   scale: number
 }

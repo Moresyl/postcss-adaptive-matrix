@@ -34,7 +34,7 @@ Written to `document.documentElement` after the call (changeable with `target`):
 | `--adaptive-width` | Visible width (a bare px number, no unit) |
 | `--adaptive-height` | Visible height |
 | `--adaptive-layout-height` | Layout viewport height, i.e. `window.innerHeight` |
-| `--adaptive-keyboard-height` | Height obscured by the keyboard at the current zoom, `0` when there is none |
+| `--adaptive-keyboard-height` | Estimated visible-height loss at the current zoom; not authoritative keyboard geometry |
 | `--adaptive-scale` | The current pinch-zoom factor |
 | `--adaptive-vh` | 1% of the visible height, **with a px unit** |
 | `--adaptive-vw` | 1% of the visible width, **with a px unit** |
@@ -63,6 +63,8 @@ A bottom action bar that avoids the keyboard:
 ```
 
 Pinch zoom also makes `VisualViewport.height` smaller, but it is not a keyboard. The observer divides the layout height by `VisualViewport.scale` before measuring the missing height, so a 2× zoom on an 800px layout (a legitimate 400px visual viewport) reports `0`; a keyboard that then shrinks it to 250px reports `150`. This prevents an ordinary zoom gesture from pushing the action bar halfway up the page.
+
+The `keyboardHeight` name is a convenience, not a keyboard-detection API. The implementation computes `max(0, layoutHeight / scale - visualHeight - offset)`, with `offsetTop` deducted only near scale 1. Other viewport changes can produce the same difference, and a host that resizes both heights together can report zero even with a keyboard open. Validate the action-bar behavior in your target host; do not use this estimate as proof that a keyboard is visible or as its exact bounds.
 
 ## Options
 
