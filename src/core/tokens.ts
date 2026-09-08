@@ -126,7 +126,7 @@ export function collectTokens(root: Root): TokenTable {
         else selector = (node as Rule).selector.trim()
       } else if (node.type === 'atrule') {
         const at = node as AtRule
-        const name = at.name.toLowerCase()
+        const name = canonicalCssIdentifierName(at.name)
         if (name === 'media') {
           const parsed = widthConditions(at.params)
           if (!parsed) readable = false

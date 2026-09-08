@@ -4,7 +4,11 @@ import { evaluateLength, splitComponents } from './evaluate.js'
 import { rootGutterReferenceRanges } from './fixed.js'
 import { allMatch, boundaryOf, widthConditions } from './media.js'
 import { collectTokens } from './tokens.js'
-import { canonicalCssPropertyName, canonicalizeCssIdentifierEscapes } from './syntax.js'
+import {
+  canonicalCssIdentifierName,
+  canonicalCssPropertyName,
+  canonicalizeCssIdentifierEscapes,
+} from './syntax.js'
 
 /**
  * One place where a length moves backwards as the viewport grows.
@@ -131,7 +135,7 @@ function collect(root: Root): { entries: Entry[]; poisoned: Set<string> } {
         selector = (node as Rule).selector.trim()
       } else if (node.type === 'atrule') {
         const at = node as AtRule
-        const name = at.name.toLowerCase()
+        const name = canonicalCssIdentifierName(at.name)
         if (name === 'media') {
           const parsed = widthConditions(at.params)
           if (!parsed) readable = false

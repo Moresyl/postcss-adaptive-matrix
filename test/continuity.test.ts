@@ -7,6 +7,19 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it.each([
+  '.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }',
+  ':root { --gap: 10vw } @media (min-width: 768px) { :root { --gap: 5vw } } .a { width: var(--gap) }',
+])('recognizes escaped media names supplied by an AST producer in %s', (css) => {
+  const expected = findContinuityIssues(postcss.parse(css))
+  expect(expected).toHaveLength(1)
+  const root = postcss.parse(css)
+  root.walkAtRules('media', (atRule) => {
+    atRule.name = String.raw`m\65 dia`
+  })
+  expect(findContinuityIssues(root)).toEqual(expected)
+})
+
 it.each(['\n', '\r\n', '\f'])(
   'does not report valid-looking fragments around an invalid escaped newline %j',
   (newline) => {
