@@ -33,7 +33,7 @@ npm run check
 
 `npm run docs:build` 会构建站点，并离线检查生成的本地搜索索引：双语 API 查询、语言加载回退，以及每个索引页面和章节锚点。同时遍历静态 JavaScript 导入、再导出和 HTML 模块预加载，确保搜索与试验场代码不进入页面立即加载的依赖链。这些是构建检查，不等同于浏览器交互、网络耗时测量或视觉验收。默认部署前缀为 `/postcss-adaptive-matrix/`；部署到域名根路径时，在构建前设置 `DOCS_BASE=/`。修改前缀后需要重新构建，不要直接修改生成的 HTML。构建与自动检查需使用同一环境变量。
 
-`DOCS_BASE` 控制页面路径，`SITE_URL` 控制 AI 索引中的绝对链接和 schema 的 `$id`。自定义域名部署前须同时设置；`SITE_URL` 应包含相同的部署子路径，并以 `/` 结尾。例如 PowerShell：`$env:DOCS_BASE='/'; $env:SITE_URL='https://docs.example.com/'; npm run docs:build`。这些值只是部署配置，本地构建成功不证明该域名已提供文件。构建也会把生成的 Markdown、AI 索引、schema 和图标与源内容逐项比对。
+`DOCS_BASE` 控制页面路径，`SITE_URL` 控制 AI 索引中的绝对链接和 schema 的 `$id`。自定义域名部署前须同时设置；`SITE_URL` 应包含相同的部署子路径。例如 PowerShell：`$env:DOCS_BASE='/'; $env:SITE_URL='https://docs.example.com/'; npm run docs:build`。这些值只是部署配置，本地构建成功不证明该域名已提供文件。构建也会把生成的 Markdown、AI 索引、schema 和图标与源内容逐项比对。
 
 末尾 `/` 可以省略，构建会自动补齐。`SITE_URL` 仍为可选配置；显式值必须是 HTTP(S) 地址，且不能包含凭据、查询字符串或片段。
 
