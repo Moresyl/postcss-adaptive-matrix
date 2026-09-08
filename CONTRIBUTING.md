@@ -27,6 +27,10 @@ Code expectations:
 - never leak file contents, environment variables or credentials in an error;
 - run `npm run check` and `npm run pack:check` before committing.
 
+## Documentation builds
+
+`npm run docs:build` builds the site and checks the generated local-search index offline: bilingual API queries, locale loading fallback, and every indexed page/heading target. This is not browser interaction or visual acceptance. The default deployment base is `/postcss-adaptive-matrix/`; set `DOCS_BASE=/` for a domain-root deployment before building. A changed base requires rebuilding, not editing generated HTML in place. Keep the same environment for the build and its automatic search check.
+
 ## Performance measurements
 
 The throughput corpora are generated synthetic CSS shaped like component libraries, utility frameworks and applications, not downloaded bundles or browser-rendering benchmarks. Run `npm run bench:check -- --cache-churn` to add 4000 distinct custom properties with custom-property conversion enabled. Before timing, the built compiler must change every declaration value while retaining names and counts, without warnings, both with libraries disabled and with all built-ins enabled. This preflight is outside the timed region; separate tests check numeric output and idempotence. It does not prove arbitrary CSS is correct or represent every watch-build workload.
