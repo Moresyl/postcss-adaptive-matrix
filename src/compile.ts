@@ -76,6 +76,12 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
         stringify: processOptions.syntax.stringify,
       }
     }
+    if (processOptions.stringifier && typeof processOptions.stringifier === 'object') {
+      processOptions.stringifier = {
+        ...processOptions.stringifier,
+        stringify: processOptions.stringifier.stringify,
+      }
+    }
     // PostCSS consumes map settings during deferred stringification. Capture
     // the option bag, while preserving parser and previous-map object identity.
     if (processOptions.map && typeof processOptions.map === 'object') {
