@@ -72,8 +72,8 @@ The three prefixes marked `*` are not enabled in automatic mode; why is below. �
 "Prefix hit rate" is the number of rules containing that prefix in the library's **published stylesheet** ÷ the total rule count — measured, not copied from documentation. The verification script is in the repository and you can run it yourself:
 
 ```bash
-npx tsx scripts/verify-libraries.ts          # all of them
-npx tsx scripts/verify-libraries.ts vant     # one
+npm run verify:libraries              # all of them
+npm run verify:libraries -- vant      # one
 ```
 
 It downloads each library's published artifact (reusing existing `.libcheck` packages), prints the exact package version and whether it was cached, compiles it with a realistic `node_modules` path, and checks prefixes, routing, idempotence and static seam findings. Warnings are reported separately and do not fail this script. Unknown library names, download failures, missing required styles/prefixes, wrong routes, non-idempotent output or seam findings cause a nonzero exit code. Inspect the report rather than interpreting an exit code as browser or design-width certification; cached packages do not automatically track newer releases.

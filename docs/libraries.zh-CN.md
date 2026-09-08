@@ -72,8 +72,8 @@ Vant 的三项按 375 换算，Element Plus 原样保留，页面按 750 换算�
 「前缀命中率」是该库**已发布样式表**里含此前缀的规则数 ÷ 总规则数，实测得到，不是照文档抄的。核对脚本在仓库里，可以自己跑：
 
 ```bash
-npx tsx scripts/verify-libraries.ts          # 全部
-npx tsx scripts/verify-libraries.ts vant     # 单个
+npm run verify:libraries              # 全部
+npm run verify:libraries -- vant      # 单个
 ```
 
 它会下载每个库的发布产物（复用 `.libcheck` 中已有的包），打印确切的包版本和是否使用缓存，再用真实的 `node_modules` 路径编译，检查前缀、路由、幂等性和静态接缝结果。警告单独展示，不导致此脚本失败。未知库名、下载失败、缺少必要样式或前缀、路由错误、非幂等输出或接缝结果会产生非零退出码。应阅读具体报告，不要把退出码视为浏览器或设计宽度认证；缓存包不会自动跟踪新版本。
