@@ -560,8 +560,8 @@ function jsonCompatibility(audit: CompatAudit | null): CliCompatibilityReport | 
   }
 }
 
-function writeJson(value: unknown): void {
-  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+async function writeJson(value: unknown): Promise<void> {
+  await writeReportChunk(`${JSON.stringify(value, null, 2)}\n`)
 }
 
 async function writeReportChunk(chunk: string): Promise<void> {
@@ -589,14 +589,20 @@ async function writeReportChunk(chunk: string): Promise<void> {
   })
 }
 
-function writeCliError(error: unknown, json: boolean): void {
+async function writeCliError(error: unknown, json: boolean): Promise<void> {
   const message = error instanceof Error ? error.message : String(error)
   if (json) {
-    writeJson({
-      formatVersion: CLI_REPORT_FORMAT_VERSION,
-      ok: false,
-      error: { message },
-    } satisfies CliErrorReport)
+    try {
+      await writeJson({
+        formatVersion: CLI_REPORT_FORMAT_VERSION,
+        ok: false,
+        error: { message },
+      } satisfies CliErrorReport)
+    } catch (outputError) {
+      process.stderr.write(
+        `${outputError instanceof Error ? outputError.message : String(outputError)}\n`,
+      )
+    }
   } else {
     process.stderr.write(`${message}\n`)
   }
@@ -609,17 +615,18 @@ export async function runCli(argv: string[]): Promise<number> {
   } catch (error) {
     const terminator = argv.indexOf('--')
     const optionArgs = terminator === -1 ? argv : argv.slice(0, terminator)
-    if (optionArgs.includes('--json')) writeCliError(error, true)
+    if (optionArgs.includes('--json')) await writeCliError(error, true)
     else process.stderr.write(`${(error as Error).message}\n\n${HELP}`)
     return 1
   }
 
-  if (args.help) {
-    process.stdout.write(HELP)
-    return 0
-  }
-
+  let writingOutput = false
   try {
+    if (args.help) {
+      writingOutput = true
+      await writeReportChunk(HELP)
+      return 0
+    }
     if (args.json && args.css) {
       throw new CliError('--json and --css are different output formats; choose one.')
     }
@@ -763,7 +770,8 @@ export async function runCli(argv: string[]): Promise<number> {
       : null
 
     if (args.json) {
-      writeJson({
+      writingOutput = true
+      await writeJson({
         formatVersion: CLI_REPORT_FORMAT_VERSION,
         ok: true,
         profiles: {
@@ -789,8 +797,9 @@ export async function runCli(argv: string[]): Promise<number> {
         gate,
         files: jsonFiles,
       } satisfies CliSuccessReport)
+      writingOutput = false
     } else if (!args.css && inputs.length > 1) {
-      process.stdout.write(`${total} declarations converted across ${inputs.length} files\n`)
+      await writeReportChunk(`${total} declarations converted across ${inputs.length} files\n`)
     }
     if (gate && !gate.passed) {
       const failed = gate.failOn
@@ -802,7 +811,7 @@ export async function runCli(argv: string[]): Promise<number> {
     }
     return 0
   } catch (error) {
-    writeCliError(error, args.json)
+    await writeCliError(error, args.json && !writingOutput)
     return 1
   }
 }

@@ -54,9 +54,16 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
-  it.each(['close', 'error'])(
-    'stops on stdout %s while waiting for drain and removes listeners',
-    async (event) => {
+  it.each([
+    ['close', '--css'],
+    ['error', '--css'],
+    ['close', '--json'],
+    ['error', '--json'],
+    ['close', '--help'],
+    ['error', '--help'],
+  ])(
+    'stops on stdout %s in %s while waiting for drain and removes listeners',
+    async (event, mode) => {
       const path = await file('output.css', '.a { width: 24px }')
       const captureWrite = process.stdout.write
       const counts = ['drain', 'close', 'error'].map((name) => process.stdout.listenerCount(name))
@@ -71,7 +78,7 @@ describe('runCli', () => {
       restore.push(() => {
         process.stdout.write = captureWrite
       })
-      const pending = runCli([path, '--css', '--no-color'])
+      const pending = runCli([path, mode, '--no-color'])
       await written
       process.stdout.emit(event, new Error('downstream failed'))
       expect(await pending).toBe(1)

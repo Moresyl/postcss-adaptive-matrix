@@ -6,16 +6,16 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 
-it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
-  'fails promptly when a real downstream pipe closes during output',
-  async () => {
+it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url))).each(['--css', '--json'])(
+  'fails promptly when a real downstream pipe closes during %s output',
+  async (mode) => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-pipe-close-'))
     try {
       const path = join(directory, 'large.css')
-      await writeFile(path, `/* ${'x'.repeat(4 * 1024 * 1024)} */ .a { width: 24px }`)
+      await writeFile(path, `.${'x'.repeat(4 * 1024 * 1024)} { width: 24px }`)
       const child = spawn(
         process.execPath,
-        [fileURLToPath(new URL('../dist/cli.js', import.meta.url)), path, '--css', '--no-color'],
+        [fileURLToPath(new URL('../dist/cli.js', import.meta.url)), path, mode, '--no-color'],
         { stdio: ['ignore', 'pipe', 'pipe'] },
       )
       let errors = ''
