@@ -29,6 +29,12 @@ const CONFIG = {
 }
 
 describe('gutter reference source ranges', () => {
+  it('retains comments while composing converted offsets with the gutter', async () => {
+    const first = await run('.bar { position: fixed; left: calc(24px /* offset */ + 0px) }')
+    expect(first).toContain('/* offset */')
+    expect(first).toContain('var(--adaptive-root-gutter)')
+    expect(await run(first)).toBe(first)
+  })
   it('retains source order and exact escaped slices across nested sibling functions', () => {
     const first = String.raw`v\61 r(--adaptive-root-gutter)`
     const second = 'var(--adaptive-root-gutter, 0px)'

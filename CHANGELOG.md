@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Unit conversion preserves authored value comments when PostCSS raw text is current, without resurrecting stale values from earlier plugins. Comment-bearing fallback output remains idempotent, including fixed-offset gutter composition.
+
 - Conversion now traverses and serializes deeply nested value-parser functions iteratively, avoiding call-stack failures while retaining opaque URL/string handling.
 
 - Length evaluation rejects arithmetic outside CSS math functions and mismatched parentheses, including an opening parenthesis where a closing one is required.
