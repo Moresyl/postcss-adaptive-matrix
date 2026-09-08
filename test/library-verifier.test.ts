@@ -9,6 +9,11 @@ import { expect, it } from 'vitest'
 const require = createRequire(import.meta.url)
 
 it.each([
+  {
+    css: ':root { --van-size: 24px } .van-button { width: 1e309px }',
+    status: 1,
+    problems: 1,
+  },
   { css: '.unrelated { width: 24px }', status: 1, problems: 1 },
   {
     css: ':root { --van-size: 24px } .van-button { width: var(--van-size) }',
@@ -43,6 +48,7 @@ it.each([
       expect(result.status, result.stderr).toBe(status)
       expect(result.stdout).toContain(`1 checked, ${problems} needing attention`)
       expect(result.stdout).toContain('vant: vant@1.2.3-fixture (cached)')
+      if (css.includes('1e309px')) expect(result.stdout).toContain('0 seams, 1 warns')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
