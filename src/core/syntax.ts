@@ -88,7 +88,7 @@ export function decodeCssIdentifier(value: string): string {
  */
 export function canonicalCssPropertyName(value: string): string {
   const decoded = decodeCssIdentifier(value)
-  return decoded.startsWith('--')
+  return decoded.startsWith('--') || !/[A-Z]/.test(decoded)
     ? decoded
     : decoded.replace(/[A-Z]/g, (letter) => letter.toLowerCase())
 }
