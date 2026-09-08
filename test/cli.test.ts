@@ -54,6 +54,50 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it('emits one error document when a later input file cannot be read', async () => {
+    const first = await file('first.css', '.a { padding: 24px }')
+    const missing = join(directory, 'missing.css')
+    expect(await runCli([first, missing, '--json'])).toBe(1)
+    const report = JSON.parse(out)
+    expect(report.ok).toBe(false)
+    expect(report.formatVersion).toBe(1)
+    expect(report.error.message).toContain('missing.css')
+    expect(report.files).toBeUndefined()
+    expect(report.summary).toBeUndefined()
+    expect(err).toBe('')
+  })
+
+  it('reports unknown target failure as JSON before opening input files', async () => {
+    const missing = join(directory, 'not-created.css')
+    expect(
+      await runCli([missing, '--json', '--targets', 'netscape 4', '--fail-on', 'compatibility']),
+    ).toBe(1)
+    const report = JSON.parse(out)
+    expect(report.formatVersion).toBe(1)
+    expect(report.ok).toBe(false)
+    expect(report.error.message).toContain('No support data')
+    expect(report.error.message).not.toContain('ENOENT')
+    expect(report.files).toBeUndefined()
+    expect(err).toBe('')
+  })
+
+  it('aggregates a warning gate across clean and warning-producing files', async () => {
+    const clean = await file('clean.css', '.a { padding: 24px }')
+    const warning = await file('warning.css', '@adaptive missing { .b { padding: 24px } }')
+    expect(await runCli([clean, warning, '--json', '--fail-on', 'warnings'])).toBe(1)
+    const report = JSON.parse(out)
+    expect(report.ok).toBe(true)
+    expect(report.gate).toEqual({ failOn: ['warnings'], passed: false })
+    expect(report.summary.files).toBe(2)
+    expect(report.summary.warnings).toBe(1)
+    expect(report.files[0].warnings).toEqual([])
+    expect(report.files[1].warnings).toHaveLength(1)
+    expect(report.summary.converted).toBe(
+      report.files.reduce((sum: number, entry: { converted: number }) => sum + entry.converted, 0),
+    )
+    expect(err).toBe('')
+  })
+
   it('reports each converted declaration with its before and after', async () => {
     const path = await file('app.css', '.page { padding: 16px; border: 1px solid }')
 

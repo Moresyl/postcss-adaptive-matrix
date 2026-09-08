@@ -293,6 +293,8 @@ Errors remain machine-readable and keep exit code `1`:
 
 ## Seeing the whole output
 
+In a multi-file JSON run, a read or compilation error in any later file produces one error document, not a partial success report. Earlier per-file results are not returned in that case. In contrast, a requested quality gate failing after successful compilation retains the complete file list and summary with `ok: true` and `gate.passed: false`. Always inspect both the process exit code and this distinction.
+
 To hand the result to another tool, use `--css`:
 
 ```bash
