@@ -254,6 +254,9 @@ export function findContinuityIssues(
   // same step. Ascending order then means the last boundary to confirm it is
   // the width where the new canvas actually takes over — 768, not 767.98.
   const byTransition = new Map<string, ContinuityIssue>()
+  // All groups use the same declaration/token boundaries. Sort once rather
+  // than allocating and sorting the same set for every selector/property.
+  const sortedBoundaries = [...boundaries].sort((a, b) => a - b)
 
   for (const [key, group] of groups) {
     // One declaration cannot disagree with itself — unless it reads a token
@@ -261,7 +264,7 @@ export function findContinuityIssues(
     // disagreement one level down and shows up as two different resolved
     // values below.
     if (group.length < 2 && !/var\(/i.test(group[0]!.value)) continue
-    for (const breakpoint of [...boundaries].sort((a, b) => a - b)) {
+    for (const breakpoint of sortedBoundaries) {
       // There is no viewport below zero. Probing the synthetic negative side
       // of `(max-width: 0px)` can invent a cascade transition no browser can
       // ever render, so it is not a continuity seam.
