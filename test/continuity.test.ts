@@ -373,6 +373,23 @@ describe('findContinuityIssues', () => {
     ).toHaveLength(1)
   })
 
+  it('matches nested named layers to dotted paths without merging sibling layers', () => {
+    const issues = check(`
+      @layer components { @layer cards { .a { width: ${fluid(40)} !important } } }
+      @layer components.cards {
+        @media (min-width: 768px) { .a { width: ${fluid(20)} !important } }
+      }
+      @layer components { @layer first { .b { width: ${fluid(40)} } } }
+      @layer components { @layer second {
+        @media (min-width: 768px) { .b { width: ${fluid(20)} } }
+      } }
+    `)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]!.selector).toBe('.a')
+    expect(issues[0]!.below.px).toBe(40)
+    expect(issues[0]!.above.px).toBe(20)
+  })
+
   it('applies declaration importance before source order', () => {
     expect(
       check(`
