@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- CSS conversion retains an authored dimension when intermediate arithmetic overflows, instead of emitting invalid `Infinity` or `NaN` values; other dimensions in the declaration still convert.
 - Migration guidance now documents verified edge-case differences from `postcss-px-to-viewport`, including protected mixed-unit bounds and uppercase units.
 - CLI configuration errors now explain when a PostCSS `plugins` wrapper was supplied instead of compiler options, before attempting to read CSS input.
 - Viewport height estimates now fall back to zero when finite host readings overflow during arithmetic, preventing infinite CSS offsets while allowing later valid readings to recover.

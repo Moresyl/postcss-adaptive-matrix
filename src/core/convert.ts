@@ -504,6 +504,9 @@ function convertResolvedValue(
       rootValue,
       unit,
     )
+    // A finite authored dimension can overflow intermediate multiplication or
+    // rounding. Keep that token instead of emitting an invalid CSS number.
+    if (converted.includes('Infinity') || converted.includes('NaN')) return authoredMatch
     if (
       converted.startsWith('clamp(') ||
       converted.startsWith('min(') ||

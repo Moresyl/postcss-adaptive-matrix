@@ -13,6 +13,27 @@ async function process(
 }
 
 describe('adaptiveMatrix', () => {
+  it.each(['viewport', 'clamp'] as const)(
+    'preserves authored dimensions when %s arithmetic overflows',
+    async (strategy) => {
+      const options: AdaptiveMatrixOptions = {
+        profiles: { app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 600 } } },
+        libraries: false,
+        strategy,
+      }
+      const result = await process(
+        '.a { width: 1e308px; margin: -1e308px 24px; font-size: 1e308px }',
+        options,
+      )
+      expect(result.css).toContain('width: 1e308px')
+      expect(result.css).toContain('margin: -1e308px ')
+      expect(result.css).toContain('font-size: 1e308px')
+      expect(result.css).toContain('6.4vw')
+      expect(result.css).not.toMatch(/Infinity|NaN/)
+      expect((await process(result.css, options)).css).toBe(result.css)
+    },
+  )
+
   it('preserves documented viewport migration boundaries on repeated compilation', async () => {
     const options: AdaptiveMatrixOptions = {
       profiles: { app: 375 },
