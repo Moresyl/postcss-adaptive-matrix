@@ -1,6 +1,27 @@
 import { expect, it } from 'vitest'
 import { measureAlternating } from '../bench/alternating.js'
 
+it('rejects an empty candidate list', async () => {
+  await expect(measureAlternating([], 1, 0)).rejects.toThrow('At least one')
+})
+
+it.each([Number.NaN, Infinity, -1])('rejects invalid measured duration %s', async (duration) => {
+  let reads = 0
+  await expect(
+    measureAlternating([() => Promise.resolve()], 1, 0, () => (reads++ ? duration : 0)),
+  ).rejects.toThrow('Invalid measurement duration')
+})
+
+it('rejects unsafe combined round counts before invoking a candidate', async () => {
+  await expect(
+    measureAlternating(
+      [() => Promise.reject(new Error('must not run'))],
+      Number.MAX_SAFE_INTEGER,
+      1,
+    ),
+  ).rejects.toThrow('Measurement counts')
+})
+
 it('rotates all candidates while keeping timing samples with their owner', async () => {
   const order: number[] = []
   let time = 0

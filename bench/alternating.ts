@@ -9,7 +9,8 @@ export async function measureAlternating(
     !Number.isSafeInteger(iterations) ||
     iterations < 1 ||
     !Number.isSafeInteger(warmup) ||
-    warmup < 0
+    warmup < 0 ||
+    !Number.isSafeInteger(warmup + iterations)
   ) {
     throw new RangeError('Measurement counts must be safe integers: iterations >= 1, warmup >= 0.')
   }
