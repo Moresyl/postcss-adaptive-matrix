@@ -33,7 +33,7 @@ describe('rewritten locale search compatibility', () => {
 
   it('splits and vacuums indexes without losing stored titles or base-relative IDs', async () => {
     const options = { fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'] }
-    for (const base of ['/', '/project/']) {
+    for (const base of ['/', '/project/', '/zh/project/']) {
       const index = new MiniSearch(options)
       index.addAll([
         { id: `${base}docs/api#api`, title: 'API', titles: [], text: 'englishonly common' },
@@ -50,6 +50,21 @@ describe('rewritten locale search compatibility', () => {
         expect(json).not.toContain(locale === 'zh' ? 'englishonly' : 'chineseonly')
       }
     }
+  })
+
+  it('supports an empty locale without leaking documents from the other language', async () => {
+    const options = { fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'] }
+    const index = new MiniSearch(options)
+    for (const populated of [false, true]) {
+      if (populated)
+        index.add({ id: '/docs/api#api', title: 'API', titles: [], text: 'onlyenglish' })
+      const json = await localeSearchIndex(JSON.stringify(index), 'zh', '/')
+      const split = MiniSearch.loadJSON(json, options)
+      expect(split.documentCount).toBe(0)
+      expect(split.search('onlyenglish')).toEqual([])
+      expect(json).not.toContain('onlyenglish')
+    }
+    await expect(localeSearchIndex('invalid JSON', 'root', '/')).rejects.toThrow()
   })
 
   it('shares the root loader without eagerly loading its index', () => {

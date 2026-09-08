@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Production documentation search now loads separate English and Chinese indexes on demand, retaining section anchors and stored titles. Development keeps the shared live index for native hot updates. Offline build checks verify locale isolation and lazy loading for root and subpath deployments.
+
 - Continuity diagnostics now recognize escaped `var()` and math-function names and viewport units. Component splitting preserves escape terminators and escaped punctuation; gutter removal is reused within each analysis without retaining values across calls.
 
 - CI now runs the full verification and runtime smoke checks on Windows with Node 24, covering the platform-specific CLI and filesystem path surface alongside the Linux matrix.

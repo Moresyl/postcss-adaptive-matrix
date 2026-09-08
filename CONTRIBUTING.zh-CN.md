@@ -33,7 +33,7 @@ npm run check
 
 `npm run docs:typecheck` 对 Vue 脚本和模板进行严格模板类型检查，也会随 `npm run typecheck` 执行。回归夹具验证非法模板表达式确实被拒绝。这不包含 Vue 专项 ESLint 规则。
 
-`npm run docs:build` 会构建站点，并离线检查生成的本地搜索索引：双语 API 查询、语言加载回退，以及每个索引页面和章节锚点。同时遍历静态 JavaScript 导入、再导出和 HTML 模块预加载，确保搜索与试验场代码不进入页面立即加载的依赖链。这些是构建检查，不等同于浏览器交互、网络耗时测量或视觉验收。默认部署前缀为 `/postcss-adaptive-matrix/`；部署到域名根路径时，在构建前设置 `DOCS_BASE=/`。修改前缀后需要重新构建，不要直接修改生成的 HTML。构建与自动检查需使用同一环境变量。
+`npm run docs:build` 会构建站点，并离线检查生成的本地搜索索引：双语 API 查询、语言隔离，以及每个索引页面和章节锚点。生产模式只加载当前语言的索引；开发模式保留共享索引以支持实时更新。同时遍历静态 JavaScript 导入、再导出和 HTML 模块预加载，确保搜索与试验场代码不进入页面立即加载的依赖链。这些是构建检查，不等同于浏览器交互、网络耗时测量或视觉验收。默认部署前缀为 `/postcss-adaptive-matrix/`；部署到域名根路径时，在构建前设置 `DOCS_BASE=/`。修改前缀后需要重新构建，不要直接修改生成的 HTML。构建与自动检查需使用同一环境变量。
 
 `DOCS_BASE` 控制页面路径，`SITE_URL` 控制 AI 索引中的绝对链接和 schema 的 `$id`。自定义域名部署前须同时设置；`SITE_URL` 应包含相同的部署子路径。例如 PowerShell：`$env:DOCS_BASE='/'; $env:SITE_URL='https://docs.example.com/'; npm run docs:build`。这些值只是部署配置，本地构建成功不证明该域名已提供文件。构建也会把生成的 Markdown、AI 索引、schema 和图标与源内容逐项比对。
 
