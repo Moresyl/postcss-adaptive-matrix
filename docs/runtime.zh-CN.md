@@ -82,6 +82,15 @@ observeAdaptiveViewport({
 
 所有选项都不是必填。省略 `window`、`document` 或 `target` 时会使用对应的浏览器全局对象/默认元素；显式传 `null` 属于错误配置，不会被当成“省略”的另一种写法。只有需要让宿主生命周期接管清理时才传 `AbortSignal`；触发 abort 等同于调用 `destroy()`，已经 abort 的 signal 会得到不写入、不注册监听的惰性观察器。
 
+使用同源 iframe 或其他窗口时，应同时传入该窗口的 `document`（或显式 `target`）和 `window`。这些默认值独立解析：只注入 `window` 不会把 CSS 写入目标从当前页面切换到该窗口的文档。
+
+```js
+const observer = observeAdaptiveViewport({
+  window: frameWindow,
+  document: frameWindow.document,
+})
+```
+
 返回：
 
 ```ts

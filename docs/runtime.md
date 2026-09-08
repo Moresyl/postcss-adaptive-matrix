@@ -82,6 +82,15 @@ observeAdaptiveViewport({
 
 Every option is optional. Omit `window`, `document` or `target` to use the matching browser global/default element; an explicit `null` is treated as malformed configuration rather than as another spelling of omission. Pass an `AbortSignal` only when a host lifecycle should own cleanup; aborting it is equivalent to calling `destroy()`, and an already-aborted signal creates an inert observer without writing or registering listeners.
 
+For a same-origin iframe or another window, pass its `document` (or an explicit `target`) together with `window`. These defaults are independent: injecting `window` alone does not redirect CSS writes from the current page to that window's document.
+
+```js
+const observer = observeAdaptiveViewport({
+  window: frameWindow,
+  document: frameWindow.document,
+})
+```
+
 Returns:
 
 ```ts
