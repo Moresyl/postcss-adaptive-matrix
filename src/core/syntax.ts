@@ -49,6 +49,7 @@ export function isCssLayerName(value: string): boolean {
 
 /** Decodes CSS identifier escapes without changing case. */
 export function decodeCssIdentifier(value: string): string {
+  if (!value.includes('\\')) return value
   let output = ''
   for (let index = 0; index < value.length; index += 1) {
     const character = value[index]!
