@@ -3,6 +3,29 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each(['parser', 'stringifier'] as const)(
+    'recovers after a custom %s throws',
+    async (phase) => {
+      const compile = createAdaptiveCompiler({
+        profiles: { app: 400 },
+        strategy: 'viewport',
+        libraries: false,
+      })
+      const source = '.a { width: 40px }'
+      const process = {
+        [phase]: () => {
+          throw new Error(`Custom ${phase} failed`)
+        },
+      }
+      await expect(compile(source, { process })).rejects.toThrow(`Custom ${phase} failed`)
+      const recovered = await compile(source, { failOn: ['warnings'] })
+      expect(recovered.css).toBe('.a { width: 10vw }')
+      expect(recovered.warnings).toEqual([])
+      expect(recovered.gate?.passed).toBe(true)
+      expect(recovered.map).toBeUndefined()
+    },
+  )
+
   it('isolates an in-flight compiler from a replacement created with edited configuration', async () => {
     const config = {
       profiles: { app: { designWidth: 400, fluid: { maxWidth: 600 } } },
