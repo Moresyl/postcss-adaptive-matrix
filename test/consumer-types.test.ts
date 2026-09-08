@@ -25,5 +25,7 @@ describe.skipIf(!built)('consumer type resolution', () => {
       getNewLine: () => '\n',
     })
     expect(diagnostics.length, formatted).toBe(0)
-  })
+    // A real TypeScript program with dependency declarations is materially more
+    // expensive under coverage than an ordinary unit test on a loaded CI runner.
+  }, 30000)
 })

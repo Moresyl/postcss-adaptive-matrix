@@ -142,6 +142,7 @@ export function observeAdaptiveViewport(
   // Teardown must address the same event source used during registration,
   // even if an embedded host replaces its VisualViewport object later.
   const eventViewport = browserWindow?.visualViewport
+  const signal = options.signal
   // A requestAnimationFrame handle is an unsigned counter and may eventually
   // wrap to zero. `null`, rather than a valid handle value, means idle.
   let frame: number | null = null
@@ -207,7 +208,7 @@ export function observeAdaptiveViewport(
     return { update, destroy() {} }
   }
 
-  if (options.signal?.aborted) {
+  if (signal?.aborted) {
     destroyed = true
     return { update, destroy() {} }
   }
@@ -225,7 +226,7 @@ export function observeAdaptiveViewport(
       browserWindow.removeEventListener('orientationchange', schedule)
       eventViewport?.removeEventListener('resize', schedule)
       eventViewport?.removeEventListener('scroll', schedule)
-      options.signal?.removeEventListener('abort', abort)
+      signal?.removeEventListener('abort', abort)
     },
   }
   const abort = () => observer.destroy()
@@ -238,7 +239,7 @@ export function observeAdaptiveViewport(
     eventViewport?.addEventListener('scroll', schedule, {
       passive: true,
     })
-    options.signal?.addEventListener('abort', abort, { once: true })
+    signal?.addEventListener('abort', abort, { once: true })
     update()
   } catch (error) {
     // Construction is transactional: callers cannot destroy an observer that

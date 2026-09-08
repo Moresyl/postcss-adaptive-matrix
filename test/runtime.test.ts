@@ -56,6 +56,21 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('cleans up the original abort signal if the options object changes', () => {
+    const first = new AbortController()
+    const second = new AbortController()
+    const removeFirst = vi.spyOn(first.signal, 'removeEventListener')
+    const removeSecond = vi.spyOn(second.signal, 'removeEventListener')
+    const host = stubWindow(null)
+    const target = stubTarget()
+    const options = { window: host.window, target: target.element, signal: first.signal }
+    const observer = observeAdaptiveViewport(options)
+    options.signal = second.signal
+    observer.destroy()
+    expect(removeFirst).toHaveBeenCalledWith('abort', expect.any(Function))
+    expect(removeSecond).not.toHaveBeenCalled()
+  })
+
   it('removes listeners from the original viewport when a host replaces it', () => {
     const original = {
       width: 390,
