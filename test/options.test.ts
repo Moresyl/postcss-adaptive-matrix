@@ -23,6 +23,29 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it('retains converter unit patterns after the shared pattern cache is cleared', () => {
+    const options = resolveOptions({ profiles: { app: 400 }, strategy: 'viewport' })
+    const converter = createConverter(options)
+    for (let index = 0; index < 300; index++) {
+      const custom = resolveOptions({
+        profiles: { app: 400 },
+        strategy: 'viewport',
+        unitToConvert: `custom${index}`,
+      })
+      expect(
+        createConverter(custom).convert(
+          `40custom${index}`,
+          'width',
+          'app',
+          custom.profiles.app!,
+          '',
+        ),
+      ).toBe('10vw')
+    }
+    converter.beginFile()
+    expect(converter.convert('80px', 'width', 'app', options.profiles.app!, '')).toBe('20vw')
+  })
+
   it.each([0, 5, 12])('preserves large finite values when rounding to %i places', (precision) => {
     expect(round(1e307, precision)).toBe(1e307)
     expect(round(-1e307, precision)).toBe(-1e307)

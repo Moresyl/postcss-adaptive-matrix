@@ -64,6 +64,7 @@ function unitPattern(units: string[]): RegExp {
     `(^|[^.${IDENT_CONTINUATION_SOURCE}])(${CSS_NUMBER_SOURCE})(${escaped})(?![${IDENT_CONTINUATION_SOURCE}])`,
     'gi',
   )
+  if (UNIT_PATTERNS.size >= 256) UNIT_PATTERNS.clear()
   UNIT_PATTERNS.set(key, pattern)
   return pattern
 }
@@ -473,8 +474,8 @@ function convertResolvedValue(
   profile: AdaptiveProfile,
   options: ResolvedAdaptiveMatrixOptions,
   rootValue: number,
+  pattern: RegExp = unitPattern(options.unitToConvert),
 ): ValueConversion {
-  const pattern = unitPattern(options.unitToConvert)
   const parsed = valueParser(value)
   const outputUnit = (profile.unit ?? options.unit).toLowerCase()
   const staticText = accessibleText && (profile.fontFluidity ?? options.fontFluidity) === 0
@@ -639,6 +640,7 @@ const MAX_CACHE_ENTRIES = 20_000
  */
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
   const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
+  const pattern = unitPattern(options.unitToConvert)
   const widths = new Map<
     string,
     Map<
@@ -711,6 +713,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       profile,
       options,
       rootValue,
+      pattern,
     )
     if (values.size >= MAX_CACHE_ENTRIES) values.clear()
     values.set(key, converted)
