@@ -49,6 +49,8 @@ Run `npm run verify:libraries -- vant nutui` to inspect selected published compo
 
 ## Pull requests
 
+Library seam details include the selector, property, breakpoint and sampled values. `pre-existing` means the complete finding matches analysis of the original stylesheet; `new/changed` means it does not. Neither label proves design intent or causality, and both still fail the seam gate.
+
 For an isolated compatibility-detector comparison, run `npx tsx bench/compat-compare.ts <commit-sha>`. Only use a trusted repository commit: the tool bundles and executes that revision's detector with current dependencies in memory. It checks output equality on the synthetic corpora before alternating old/new timed calls. It neither checks out that commit nor measures a complete historical package, and its ratios are not whole-build speedups.
 
 Keep a PR focused, and state: the problem, the approach, the compatibility impact, and how you verified it. The default conversion formula, the output order, the public types and the minimum Node/PostCSS versions are all part of the compatibility contract.

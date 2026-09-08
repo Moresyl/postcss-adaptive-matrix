@@ -8,6 +8,36 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('labels unchanged source seams without suppressing the failing gate', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-origin-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'quasar', 'package', 'dist')
+    await mkdir(packaged, { recursive: true })
+    const css =
+      '.q-notification { max-width: 95vw } @media (min-width: 600px) { .q-notification { max-width: 65vw } }'
+    await writeFile(join(packaged, 'quasar.css'), css)
+    await writeFile(join(packaged, 'quasar.rtl.css'), css)
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'quasar',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout.match(/\[pre-existing\]/g)).toHaveLength(2)
+    expect(result.stdout).not.toContain('[new/changed]')
+    expect(result.stdout).toContain('.q-notification max-width at 600px: 95vw')
+    expect(result.stdout).toContain('2 reviewed, 2 needing attention')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('continues to the RTL check after a compiler exception in the LTR file', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-compile-'))
   try {
