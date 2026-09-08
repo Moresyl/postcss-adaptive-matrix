@@ -411,24 +411,33 @@ describe('findContinuityIssues', () => {
     expect(issues[0]!.above.value).toBe('5vw')
   })
 
-  it('finds an unbounded canvas seam in actual compiler output', async () => {
-    const result = await postcss([
-      adaptiveMatrix({
-        profiles: { app: 375, desktop: 1440 },
-        routes: [{ media: { minWidth: 768 }, profile: 'desktop' }],
-        libraries: false,
-      }),
-    ]).process('.card { width: 24px } @media (min-width: 768px) { .card { width: 24px } }', {
-      from: 'unbounded.css',
-    })
-    expect(result.warnings()).toEqual([])
-    expect(result.css).toContain('6.4vw')
-    expect(result.css).toContain('1.66667vw')
-    const issues = findContinuityIssues(result.root)
-    expect(issues).toHaveLength(1)
-    expect(issues[0]).toMatchObject({ selector: '.card', prop: 'width', breakpoint: 768 })
-    expect(issues[0]!.below.px).toBeGreaterThan(issues[0]!.above.px)
-  })
+  it.each(['clamp', 'viewport'] as const)(
+    'finds an unbounded canvas seam with %s output',
+    async (strategy) => {
+      const result = await postcss([
+        adaptiveMatrix({
+          profiles: { app: 375, desktop: 1440 },
+          routes: [{ media: { minWidth: 768 }, profile: 'desktop' }],
+          libraries: false,
+          strategy,
+        }),
+      ]).process('.card { width: 24px } @media (min-width: 768px) { .card { width: 24px } }', {
+        from: 'unbounded.css',
+      })
+      expect(result.warnings()).toEqual([])
+      const values: string[] = []
+      result.root.walkDecls('width', (declaration) => {
+        values.push(declaration.value)
+      })
+      expect(values).toEqual(
+        strategy === 'clamp' ? ['calc(6.4vw)', 'calc(1.66667vw)'] : ['6.4vw', '1.66667vw'],
+      )
+      const issues = findContinuityIssues(result.root)
+      expect(issues).toHaveLength(1)
+      expect(issues[0]).toMatchObject({ selector: '.card', prop: 'width', breakpoint: 768 })
+      expect(issues[0]!.below.px).toBeGreaterThan(issues[0]!.above.px)
+    },
+  )
 
   it('reports a breakpoint once, not once per boundary that straddles it', () => {
     // `(max-width: 767.98px)` and `(min-width: 768px)` are two boundaries
