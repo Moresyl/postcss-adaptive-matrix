@@ -35,6 +35,15 @@ if (missing.length) {
   )
   process.exit(1)
 }
+const allowed = new Set([...targets, 'package.json'])
+for (const target of targets) {
+  if (/\.(?:js|cjs)$/.test(target)) allowed.add(`${target}.map`)
+}
+const unexpected = [...files].filter((file) => !allowed.has(file))
+if (unexpected.length) {
+  console.error(`Package contains undeclared files: ${unexpected.join(', ')}.`)
+  process.exit(1)
+}
 console.log(
   `OK: ${manifest.name}@${manifest.version}, ${files.size} files; all declared entrypoints included.`,
 )
