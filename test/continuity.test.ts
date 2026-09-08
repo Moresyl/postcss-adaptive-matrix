@@ -7,6 +7,19 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it.each([
+  [String.raw`c\61 lc(10vw)`, String.raw`c\61 lc(5vw)`],
+  [String.raw`10v\77`, String.raw`5v\77`],
+])('recognizes escaped fluid expressions %s', (before, after) => {
+  const root = postcss.parse(
+    `.a { width: ${before}; } @media (min-width: 768px) { .a { width: ${after}; } }`,
+  )
+  const issues = findContinuityIssues(root)
+  expect(issues).toHaveLength(1)
+  expect(issues[0]!.below.value).toBe(before)
+  expect(issues[0]!.above.value).toBe(after)
+})
+
 it('checks a single declaration using an escaped var function across token breakpoints', () => {
   const css = String.raw`:root { --gap: 10vw }
     @media (min-width: 768px) { :root { --gap: 5vw } }

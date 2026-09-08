@@ -4,7 +4,7 @@ import { evaluateLength, splitComponents } from './evaluate.js'
 import { rootGutterReferenceRanges } from './fixed.js'
 import { allMatch, boundaryOf, widthConditions } from './media.js'
 import { collectTokens } from './tokens.js'
-import { canonicalCssPropertyName } from './syntax.js'
+import { canonicalCssPropertyName, canonicalizeCssIdentifierEscapes } from './syntax.js'
 
 /**
  * One place where a length moves backwards as the viewport grows.
@@ -51,6 +51,10 @@ const EPSILON = 0.01
  * intentional layout decision rather than a fluid canvas transition.
  */
 const COMPILED = /\b(?:clamp|min|max|calc)\s*\(|[\d.](?:[sld]?v(?:w|h|i|b|min|max))\b/i
+
+function isFluidExpression(value: string): boolean {
+  return COMPILED.test(value.includes('\\') ? canonicalizeCssIdentifierEscapes(value).text : value)
+}
 
 /**
  * Drops the fixed-position gutter out of a value before it is compared.
@@ -284,7 +288,7 @@ export function findContinuityIssues(
       if (lowValue === null || highValue === null || lowValue === highValue) continue
       // Substitution happens first: a token can hold the generated formula
       // while the declaration reading it is a bare `var()`.
-      if (!COMPILED.test(lowValue) && !COMPILED.test(highValue)) continue
+      if (!isFluidExpression(lowValue) && !isFluidExpression(highValue)) continue
 
       const lowParts = splitComponents(lowValue)
       const highParts = splitComponents(highValue)

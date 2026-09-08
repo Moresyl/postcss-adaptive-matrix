@@ -370,6 +370,19 @@ export function splitComponents(value: string): string[] {
       }
       continue
     }
+    if (character === '\\' && next !== undefined) {
+      let end = index + 1
+      while (end < value.length && end < index + 7 && /[0-9a-f]/i.test(value[end]!)) end++
+      if (end > index + 1) {
+        if (isCssWhitespace(value[end] ?? '')) {
+          if (value[end] === '\r' && value[end + 1] === '\n') end++
+          end++
+        }
+      } else end++
+      current += value.slice(index, end)
+      index = end - 1
+      continue
+    }
     if (character === '/' && next === '*') {
       current += '/*'
       comment = true
