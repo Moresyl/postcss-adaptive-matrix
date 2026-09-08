@@ -29,6 +29,20 @@ assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
 for (const api of [esm, cjs]) {
+  for (const filter of ['include', 'exclude']) {
+    const files = [filter === 'include' ? 'card.css' : 'vendor.css']
+    const reusable = api.createAdaptiveCompiler({
+      profiles: { app: 400 },
+      libraries: false,
+      [filter]: files,
+    })
+    files.splice(0, 1, filter === 'include' ? 'vendor.css' : 'card.css')
+    const captured = await reusable('.card { padding: 40px }', {
+      process: { from: 'src/card.css' },
+    })
+    assert.match(captured.css, /10vw/, `${filter} must be captured by the built compiler`)
+    assert.deepEqual(captured.warnings, [])
+  }
   const escapedMedia = postcss.parse(
     '.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }',
   )
