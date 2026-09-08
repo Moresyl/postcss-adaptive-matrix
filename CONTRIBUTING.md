@@ -29,7 +29,9 @@ Code expectations:
 
 ## Documentation builds
 
-`npm run docs:build` builds the site and checks the generated local-search index offline: bilingual API queries, locale loading fallback, and every indexed page/heading target. This is not browser interaction or visual acceptance. The default deployment base is `/postcss-adaptive-matrix/`; set `DOCS_BASE=/` for a domain-root deployment before building. A changed base requires rebuilding, not editing generated HTML in place. Keep the same environment for the build and its automatic search check.
+`npm run docs:typecheck` checks Vue scripts and templates with strict template checking; it also runs inside `npm run typecheck`. A regression fixture proves that invalid template expressions are rejected. This does not add Vue-specific ESLint rules.
+
+`npm run docs:build` builds the site and checks the generated local-search index offline: bilingual API queries, locale loading fallback, and every indexed page/heading target. It also traverses static JavaScript imports, re-exports and HTML module preloads to keep search and playground code outside eager page dependency graphs. These are build checks, not browser interaction, network timing or visual acceptance. The default deployment base is `/postcss-adaptive-matrix/`; set `DOCS_BASE=/` for a domain-root deployment before building. A changed base requires rebuilding, not editing generated HTML in place. Keep the same environment for the build and its automatic checks.
 
 ## Performance measurements
 
