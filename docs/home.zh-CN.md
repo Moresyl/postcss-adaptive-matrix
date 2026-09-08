@@ -23,12 +23,12 @@ features:
     details: 页面、移动端组件库、桌面端组件库来自三张不同的稿子。每张稿子一张画布，每个 px 按自己画布的宽度换算——不用在「页面会缩放但组件不动」和「组件被按错的比例拉变形」之间二选一。
     link: /zh/docs/architecture
     linkText: 数字是怎么算出来的
-  - title: 有上下界的流体输出
-    details: 产物是 clamp()，不是裸的 vw。在你指定的两个宽度之间继续缩放，两端各自停住，所以 4K 屏不会得到 90px 的正文，320px 的手机也不会得到 9px 的。
+  - title: 按需设置流体边界
+    details: 只配置设计真正需要的限制。双边界输出 clamp()，单边界输出 min() 或 max()，不设边界则保留无界流体表达式。minWidth 和 maxWidth 均可独立省略。
     link: /zh/docs/configuration
     linkText: 全部选项
   - title: 文字保持可缩放
-    details: 只用 vw 定字号会让浏览器缩放失效，这是 WCAG 1.4.4 的失败项。rem + vw 的混合写法让字号既是流体的，又仍然跟随读者自己的字号设置。流体度设为 0 就是纯 rem。
+    details: rem 与视口单位的混合写法让部分字号跟随读者的字体设置；流体度设为 0 即为纯 rem。实际项目仍需验证文字放大和布局重排，不能仅凭转换公式认定满足无障碍标准。
     link: /zh/docs/compatibility
     linkText: 支持情况与降级
   - title: 组件库已经适配好了

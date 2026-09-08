@@ -28,7 +28,7 @@ https://moresyl.github.io/postcss-adaptive-matrix/docs/configuration.md
 
 目录首页是 `index.md`——`/zh/docs/` 对应 `/zh/docs/index.md`。这就是仓库里的那个文件本身，而不是把渲染结果反推回文本：没有导航、没有主题、也没有需要剥掉的代码块外壳。
 
-每一页大纲上方的三个按钮用的就是这条路径：**复制为 Markdown**、**查看原始 Markdown**，以及**用 Claude 提问**——它会把这一页连同问题一起带进对话。
+正文上方的操作区使用这条路径：**复制为 Markdown**、**查看原始 Markdown**，以及**用 Claude 提问**——将页面 URL 放入新对话的提示中。窄屏和没有侧栏的页面也能使用这些操作。复制会显示成功或失败；切换页面时取消等待中的下载，并拒绝把静态站点返回的 HTML 回退页当作 Markdown 复制。
 
 ## 全部配置项，以数据形式提供
 

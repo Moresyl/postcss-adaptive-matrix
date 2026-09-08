@@ -28,7 +28,7 @@ https://moresyl.github.io/postcss-adaptive-matrix/zh/docs/configuration.md
 
 A directory index is `index.md` — `/docs/` is `/docs/index.md`. This is the same file the repository holds, not a rendering of it turned back into text: no navigation, no theme, no code-block chrome to strip.
 
-Three buttons above the outline on every page use this: **Copy as Markdown**, **View raw Markdown**, and **Ask Claude**, which opens the page in a conversation with the question already attached.
+The actions above the document body use this: **Copy as Markdown**, **View raw Markdown**, and **Ask Claude**, which opens a conversation with the page URL in its prompt. These actions are available on narrow screens and pages without a sidebar too. Copying reports success or failure; navigation cancels pending downloads, and an HTML fallback is rejected instead of copied as Markdown.
 
 ## Every option, as data
 

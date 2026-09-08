@@ -9,7 +9,7 @@
  * what these three actions hand over — copied to the clipboard, opened raw, or
  * handed to an assistant with the URL and a question already written.
  */
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useData, withBase } from 'vitepress'
 
 const { page, lang, site } = useData()
@@ -28,6 +28,7 @@ const text = computed(() =>
   chinese.value
     ? {
         copy: '复制为 Markdown',
+        copying: '正在复制…',
         copied: '已复制',
         failed: '复制失败',
         raw: '查看原始 Markdown',
@@ -35,6 +36,7 @@ const text = computed(() =>
       }
     : {
         copy: 'Copy as Markdown',
+        copying: 'Copying…',
         copied: 'Copied',
         failed: 'Copy failed',
         raw: 'View raw Markdown',
@@ -42,18 +44,41 @@ const text = computed(() =>
       },
 )
 
-const state = ref<'idle' | 'copied' | 'failed'>('idle')
+const state = ref<'idle' | 'copying' | 'copied' | 'failed'>('idle')
+let controller: AbortController | undefined
+let resetTimer: ReturnType<typeof setTimeout> | undefined
+
+function reset() {
+  controller?.abort()
+  controller = undefined
+  clearTimeout(resetTimer)
+  state.value = 'idle'
+}
+watch(rawPath, reset, { flush: 'sync' })
+onBeforeUnmount(reset)
 
 async function copy() {
+  reset()
+  const current = new AbortController()
+  controller = current
+  state.value = 'copying'
   try {
-    const response = await fetch(rawPath.value)
+    const response = await fetch(rawPath.value, { signal: current.signal })
     if (!response.ok) throw new Error(String(response.status))
-    await navigator.clipboard.writeText(await response.text())
+    const markdown = await response.text()
+    if (controller !== current) return
+    // Static hosts may return the HTML fallback with status 200 for missing files.
+    if (/text\/html/i.test(response.headers.get('content-type') ?? '')) {
+      throw new Error('Expected Markdown, received an HTML fallback.')
+    }
+    await navigator.clipboard.writeText(markdown)
+    if (controller !== current) return
     state.value = 'copied'
   } catch {
+    if (controller !== current) return
     state.value = 'failed'
   }
-  setTimeout(() => (state.value = 'idle'), 2000)
+  resetTimer = setTimeout(reset, 2000)
 }
 
 const ask = computed(() => {
@@ -66,8 +91,16 @@ const ask = computed(() => {
 
 <template>
   <div class="copy-page">
-    <button class="copy-page-action" type="button" @click="copy">
-      {{ state === 'copied' ? text.copied : state === 'failed' ? text.failed : text.copy }}
+    <button class="copy-page-action" type="button" :disabled="state === 'copying'" @click="copy">
+      <span role="status">{{
+        state === 'copying'
+          ? text.copying
+          : state === 'copied'
+            ? text.copied
+            : state === 'failed'
+              ? text.failed
+              : text.copy
+      }}</span>
     </button>
     <a class="copy-page-action" :href="rawPath" target="_blank" rel="noreferrer">{{ text.raw }}</a>
     <a class="copy-page-action" :href="ask" target="_blank" rel="noreferrer">{{ text.ask }}</a>
@@ -77,16 +110,16 @@ const ask = computed(() => {
 <style scoped>
 .copy-page {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
   padding-bottom: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
 .copy-page-action {
-  padding: 0;
+  padding: 6px 0;
   font-size: 13px;
   line-height: 22px;
   font-weight: 500;
@@ -99,5 +132,9 @@ const ask = computed(() => {
 
 .copy-page-action:hover {
   color: var(--vp-c-brand-1);
+}
+
+.copy-page-action:disabled {
+  cursor: progress;
 }
 </style>

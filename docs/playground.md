@@ -7,7 +7,9 @@ outline: false
 
 **English** · [简体中文](./playground.zh-CN.md)
 
-The compiler itself, running in this tab. Nothing is sent anywhere: the plugin has one runtime dependency and no Node API in its path, so the published source is imported straight into the page and PostCSS runs in your browser. What appears on the right is what your build would emit.
+The compiler runs locally in a dedicated browser Worker using the same source as the package. The playground does not upload your CSS or configuration. Configuration expressions are executable JavaScript and can make their own network requests: run only code you trust. A Worker keeps compilation away from the document but is not a security sandbox.
+
+Each edit starts a fresh compilation after a short pause. Work that exceeds five seconds is terminated, and leaving the page stops pending work. The displayed duration measures configuration evaluation and compilation, excluding Worker startup; it is not a cross-machine benchmark. Previous output is dimmed while compiling or after an error.
 
 Edit either pane and the output follows. The options pane is a JavaScript expression rather than JSON, so a regular expression in `selectorExclude` or a function `designWidth` works here exactly as it does in a config file — and so does `appPcPreset({ app: 375, pc: 1440 })` on its own.
 
@@ -17,9 +19,9 @@ Edit either pane and the output follows. The options pane is a JavaScript expres
 
 ## Reading the output
 
-`clamp(min, fluid, max)` is three numbers with three jobs. The middle one is the design value expressed against the canvas width — 24px on a 375 canvas is `6.4vw`. The outer two are that same ratio evaluated at the canvas's `fluid.minWidth` and `fluid.maxWidth`, which is what stops a 4K monitor from getting a 90px body font.
+Both `fluid.minWidth` and `fluid.maxWidth` are optional. Two bounds produce `clamp(min, fluid, max)`, one produces `min()` or `max()`, and no bounds leave the fluid expression unbounded. For example, 24px on a 375 canvas is `6.4vw` before bounds are applied. Try the maximum-only and container-unit samples to see these differences.
 
-Text is different on purpose. It compiles to `rem + vw` rather than `vw` alone, because a size expressed only in viewport units ignores the reader's own font-size setting and stops responding to browser zoom — a WCAG 1.4.4 failure. `fontFluidity` is the ratio between the two halves; set it to `0` and text is plain `rem`, fluid layout with fixed type.
+Text combines rem and viewport units so part of its size follows the reader's root font setting. `fontFluidity` controls that balance; set it to `0` for plain rem. Verify text resizing and reflow in the actual page rather than treating a generated formula as proof of accessibility compliance.
 
 A `1px` border stays `1px`. Hairlines are a rendering decision rather than a measurement, and scaling them produces the blurry half-pixel edges the `hairline` option exists to prevent.
 

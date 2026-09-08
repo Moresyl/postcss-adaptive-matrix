@@ -11,14 +11,12 @@
  * The options pane evaluates as JavaScript rather than parsing as JSON, because
  * half of what is worth trying cannot be written in JSON: a regular expression
  * in `selectorExclude`, a function `designWidth`, a spread of `appPcPreset`.
- * It runs in the reader's own tab with the reader's own text, which is the same
- * trust boundary as the console sitting one keystroke away.
+ * It runs in a disposable worker with a five-second deadline. This protects
+ * document responsiveness, not confidentiality: only run trusted expressions.
  */
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useData } from 'vitepress'
-import postcss from 'postcss'
-import type { Result } from 'postcss'
-import * as matrix from '../../../src/index'
+import { createCompilerTask } from './compiler-task'
 
 const { lang } = useData()
 const chinese = computed(() => lang.value.startsWith('zh'))
@@ -31,6 +29,29 @@ interface Sample {
 }
 
 const SAMPLES: Sample[] = [
+  {
+    label: 'Zero configuration',
+    labelZh: '零配置',
+    css: `.card { padding: 24px; font-size: 16px; border: 1px solid #ddd; }`,
+    options: `{}`,
+  },
+  {
+    label: 'Only a maximum',
+    labelZh: '只设上限',
+    css: `.card { padding: 24px; font-size: 16px; }`,
+    options: `{
+  profiles: { app: { designWidth: 375, fluid: { maxWidth: 600 } } },
+}`,
+  },
+  {
+    label: 'Container sizing',
+    labelZh: '容器内缩放',
+    css: `.container { container-type: inline-size; }
+.card { padding: 24px; font-size: 16px; }`,
+    options: `{
+  profiles: { card: { designWidth: 375, unit: 'cqi' } },
+}`,
+  },
   {
     label: 'One canvas',
     labelZh: '单画布',
@@ -154,8 +175,30 @@ const active = ref(0)
 
 /** `null` until the first client-side run; SSR renders the input, not a result. */
 const output = shallowRef<string | null>(null)
-const warnings = shallowRef<Result['messages']>([])
+const warnings = shallowRef<{ text: string }[]>([])
 const failure = ref<string | null>(null)
+const compiling = ref(false)
+const duration = ref<number | null>(null)
+const task = createCompilerTask(
+  () => new Worker(new URL('./compiler.worker.ts', import.meta.url), { type: 'module' }),
+  (result) => {
+    failure.value = result.error ?? null
+    if (result.css !== undefined) output.value = result.css
+    warnings.value = result.warnings ?? []
+    duration.value = result.duration ?? null
+    compiling.value = false
+  },
+  (reason) => {
+    failure.value =
+      reason instanceof Error
+        ? reason.message
+        : reason === 'timeout'
+          ? text.value.timeout
+          : text.value.workerFailed
+    compiling.value = false
+  },
+)
+const stop = task.stop
 
 function load(index: number): void {
   const sample = SAMPLES[index]
@@ -166,52 +209,33 @@ function load(index: number): void {
 }
 
 /**
- * The package's exports, minus the ones that cannot be a parameter name.
- *
- * A module namespace has a `default` key, and `default` is a reserved word, so
- * naming it as a parameter is a syntax error that takes the whole pane down
- * with it. Asking the engine which names it will accept is cheaper to keep
- * right than a hand-written list of reserved words.
+ * Use a fresh worker for each run so authored code cannot leave state behind
+ * and stale messages cannot overwrite a newer compilation.
  */
-const SCOPE = Object.keys(matrix).filter((name) => {
-  try {
-    new Function(name, '')
-    return true
-  } catch {
-    return false
-  }
-})
-
-/**
- * Evaluate the options pane. The helpers the package exports are in scope by
- * name, so `appPcPreset({ app: 375, pc: 1440 })` is a valid whole answer.
- */
-function evaluateOptions(source: string): unknown {
-  const values = SCOPE.map((name) => (matrix as Record<string, unknown>)[name])
-  const build = new Function(...SCOPE, `"use strict"; return (${source});`)
-  return build(...values)
-}
-
 function run(): void {
-  try {
-    const config = evaluateOptions(options.value) as matrix.AdaptiveMatrixOptions
-    const result = postcss([matrix.adaptiveMatrix(config)]).process(css.value, {
-      from: 'playground.css',
-    })
-    output.value = result.css
-    warnings.value = result.messages.filter((message) => message.type === 'warning')
-    failure.value = null
-  } catch (error) {
-    failure.value = error instanceof Error ? error.message : String(error)
-  }
+  stop()
+  compiling.value = true
+  failure.value = null
+  warnings.value = []
+  duration.value = null
+  task.run({ css: css.value, options: options.value })
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined
 watch([css, options], () => {
+  stop()
+  compiling.value = true
+  duration.value = null
+  failure.value = null
+  warnings.value = []
   clearTimeout(timer)
   timer = setTimeout(run, 180)
 })
 onMounted(run)
+onBeforeUnmount(() => {
+  clearTimeout(timer)
+  stop()
+})
 
 const text = computed(() =>
   chinese.value
@@ -221,8 +245,10 @@ const text = computed(() =>
         options: '配置（JavaScript 表达式）',
         output: '编译结果',
         warnings: '告警',
-        failed: '这份配置没有通过校验',
+        failed: '编译未完成',
         empty: '正在编译…',
+        timeout: '编译超过 5 秒，已停止。请简化输入或检查配置中的循环。',
+        workerFailed: '编译 Worker 无法运行，请检查浏览器支持或刷新重试。',
         hint: '配置里可以直接用 appPcPreset、presets、withAtomicCss、defineLibraries——包导出的东西都在作用域里。',
       }
     : {
@@ -231,8 +257,11 @@ const text = computed(() =>
         options: 'Options (a JavaScript expression)',
         output: 'Compiled',
         warnings: 'Warnings',
-        failed: 'That configuration did not pass validation',
+        failed: 'Compilation did not complete',
         empty: 'Compiling…',
+        timeout:
+          'Compilation exceeded 5 seconds and was stopped. Simplify the input or check for loops.',
+        workerFailed: 'The compiler worker could not run. Check browser support or reload.',
         hint: 'appPcPreset, presets, withAtomicCss and defineLibraries are in scope — everything the package exports is.',
       },
 )
@@ -248,6 +277,7 @@ const text = computed(() =>
         type="button"
         class="playground-sample"
         :class="{ 'is-active': active === index }"
+        :aria-pressed="active === index"
         @click="load(index)"
       >
         {{ chinese ? sample.labelZh : sample.label }}
@@ -270,12 +300,17 @@ const text = computed(() =>
       </div>
 
       <div class="playground-pane">
-        <span class="playground-title">{{ text.output }}</span>
-        <pre class="playground-output" :class="{ 'is-stale': failure }">{{
-          output ?? text.empty
-        }}</pre>
+        <span class="playground-title" role="status"
+          >{{ compiling ? text.empty : text.output
+          }}<template v-if="duration !== null"> · {{ duration.toFixed(1) }} ms</template></span
+        >
+        <pre
+          class="playground-output"
+          :aria-busy="compiling"
+          :class="{ 'is-stale': failure || compiling }"
+          >{{ output ?? text.empty }}</pre>
 
-        <p v-if="failure" class="playground-failure">
+        <p v-if="failure" class="playground-failure" role="alert">
           <strong>{{ text.failed }}</strong
           ><br />{{ failure }}
         </p>

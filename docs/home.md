@@ -23,12 +23,12 @@ features:
     details: Pages, a mobile component library and a desktop component library come from three different design files. Each gets its own canvas, and every px is converted against the width of the canvas it belongs to — no choosing between a page that scales and components that do not.
     link: /docs/architecture
     linkText: How the numbers are derived
-  - title: Bounded fluid output
-    details: The output is clamp(), not a bare vw. Layout keeps scaling between the two widths you name and stops at both ends, so a 4K monitor does not get a 90px body font and a 320px phone does not get a 9px one.
+  - title: Fluid sizing with optional bounds
+    details: Choose only the limits your design needs. Two bounds produce clamp(), one bound produces min() or max(), and no bounds leave the fluid expression unbounded. minWidth and maxWidth are independently optional.
     link: /docs/configuration
     linkText: Every option
   - title: Text stays zoomable
-    details: Sizing text in vw alone breaks browser zoom, which is a WCAG 1.4.4 failure. A rem + vw hybrid keeps type fluid and keeps it responsive to the reader's own font size. Set fluidity to zero and it is plain rem.
+    details: A rem + viewport hybrid keeps a portion of the font size responsive to the reader's font settings. Set fluidity to zero for plain rem. Verify text resizing and reflow in your actual layout; a formula alone cannot establish accessibility compliance.
     link: /docs/compatibility
     linkText: Support and degradation
   - title: Component libraries already handled
