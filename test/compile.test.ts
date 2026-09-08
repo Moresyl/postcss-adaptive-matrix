@@ -3,6 +3,22 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('captures nested profile and route settings when the compiler is created', async () => {
+    const profile = { designWidth: 375, fluid: { maxWidth: 600 } }
+    const route = { selector: ['.fixed'], profile: false as const }
+    const compile = createAdaptiveCompiler({
+      profiles: { app: profile },
+      routes: [route],
+      libraries: false,
+    })
+    const css = '.a { width: 24px } .fixed { width: 24px }'
+    const before = await compile(css)
+    profile.designWidth = 750
+    profile.fluid.maxWidth = 900
+    route.selector[0] = '.a'
+    expect((await compile(css)).css).toBe(before.css)
+  })
+
   it.each([
     { css: '.a { /* adaptive-ignore-next */ width: 1e308px }', options: {} },
     { css: '.a { width: 1e308px }', options: { propList: 'height' } },

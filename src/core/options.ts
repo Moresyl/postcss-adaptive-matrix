@@ -142,7 +142,21 @@ function normaliseProfiles(
   // `Object.fromEntries` uses data-property creation, which safely owns that
   // key while retaining the ordinary-object shape this public API has shipped.
   const normalised: Array<[string, AdaptiveProfile]> = []
-  for (const [name, profile] of Object.entries(profiles)) {
+  for (const [name, supplied] of Object.entries(profiles)) {
+    // Capture configuration values, but retain resolver functions: their
+    // per-file behavior is intentional. Never freeze caller-owned objects.
+    const profile =
+      supplied && typeof supplied === 'object' && isPlainObject(supplied)
+        ? {
+            ...supplied,
+            ...(isPlainObject(supplied.fluid) ? { fluid: { ...supplied.fluid } } : {}),
+            ...(supplied.query &&
+            typeof supplied.query === 'object' &&
+            isPlainObject(supplied.query)
+              ? { query: { ...supplied.query } }
+              : {}),
+          }
+        : supplied
     if (typeof profile === 'number' || typeof profile === 'function') {
       normalised.push([name, { designWidth: profile }])
       continue
