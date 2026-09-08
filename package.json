@@ -76,7 +76,8 @@
   },
   "scripts": {
     "build": "node scripts/clean-dist.mjs && tsup && tsx scripts/postbuild.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && npm run docs:typecheck",
+    "docs:typecheck": "vue-tsc --noEmit -p docs/.vitepress/tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -119,7 +120,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.11"
   },
   "overrides": {
     "tsup": {

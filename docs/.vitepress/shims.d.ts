@@ -1,11 +1,7 @@
 /**
- * Single-file components have no types of their own until `vue-tsc` runs, and
- * `vue-tsc` is a second type checker to install, configure and keep in step
- * with the first one for the sake of one 60-line component. This shim buys the
- * rest of the configuration — which is where the logic lives — full checking
- * under the same `tsc --noEmit` as `src`, at the cost of not checking the
- * component's own template. VitePress compiles the component either way, so a
- * mistake in it fails `npm run docs:build`.
+ * Plain tsc uses this shim for configuration imports. Component scripts and
+ * templates are independently checked by docs:typecheck (vue-tsc with strict
+ * templates), which is included in the main typecheck gate.
  */
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'
