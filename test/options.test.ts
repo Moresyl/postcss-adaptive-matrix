@@ -33,6 +33,21 @@ it('evicts cached strings on aggregate size before the entry-count limit', () =>
   expect(convert('24px')).toBe(renewed)
 })
 
+it('does not retain a small input whose converted output exceeds the cache value limit', () => {
+  const options = resolveOptions({ profiles: { app: 375 } })
+  const converter = createConverter(options)
+  const value = Array.from({ length: 2_000 }, () => '24px').join(' ')
+  expect(value.length).toBeLessThan(16_384)
+  const convert = () =>
+    converter.convertWithMetadata(value, 'margin', 'app', options.profiles.app!, '')
+  const first = convert()
+  expect(first.value.length).toBeGreaterThan(16_384)
+  expect(first.value).toBe(Array.from({ length: 2_000 }, () => 'calc(6.4vw)').join(' '))
+  const second = convert()
+  expect(second).toEqual(first)
+  expect(second).not.toBe(first)
+})
+
 it('bounds property classification caching and reclassifies evicted entries correctly', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)
