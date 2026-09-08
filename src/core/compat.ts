@@ -406,6 +406,13 @@ function compatibilitySyntax(css: string): { syntax: string; positions?: number[
       continue
     }
 
+    // In an identifier, escaped punctuation is data, not the start of a
+    // quoted string or comment. Preserve both code units for canonicalization.
+    if (character === '\\' && next !== undefined) {
+      index += 1
+      continue
+    }
+
     if (character === '/' && next === '*') {
       syntax[index] = ' '
       syntax[index + 1] = ' '

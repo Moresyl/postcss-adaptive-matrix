@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Fixed compatibility audit false negatives after escaped quotes or slashes in identifiers; escaped punctuation no longer starts a string or comment that hides subsequent features.
 - Compatibility detection skips character-position mapping when no identifier escapes require it, retaining original diagnostic excerpts and comment/string masking.
 - Added optional programmatic warning/compatibility gates. Failed gates retain output and diagnostics; unknown browser targets fail an explicitly requested compatibility gate.
 - Added `compileAdaptiveCss()` and reusable `createAdaptiveCompiler()` helpers with optional processing options, source maps, warnings and browser compatibility reports.

@@ -289,6 +289,15 @@ describe('detection', () => {
     expect(ids(css)).not.toContain('has-pseudo')
   })
 
+  it.each([
+    String.raw`.a\"b { width: clamp(1px, 2vw, 3px) }`,
+    String.raw`.a\'b { width: clamp(1px, 2vw, 3px) }`,
+    String.raw`.a { --name: a\/*; width: clamp(1px, 2vw, 3px) }`,
+  ])('does not treat escaped identifier punctuation as quoted/comment data: %s', (css) => {
+    expect(ids(css)).toContain('math-functions')
+    expect(ids(css)).toContain('viewport-units')
+  })
+
   it('starts from the beginning on every call', () => {
     // A shared global regex would carry lastIndex forward and start missing
     // matches from the second audit onwards.
