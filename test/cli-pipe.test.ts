@@ -7,6 +7,49 @@ import { fileURLToPath } from 'node:url'
 import { expect, it } from 'vitest'
 
 it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
+  'fails promptly when a real downstream pipe closes during output',
+  async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'adaptive-pipe-close-'))
+    try {
+      const path = join(directory, 'large.css')
+      await writeFile(path, `/* ${'x'.repeat(4 * 1024 * 1024)} */ .a { width: 24px }`)
+      const child = spawn(
+        process.execPath,
+        [fileURLToPath(new URL('../dist/cli.js', import.meta.url)), path, '--css', '--no-color'],
+        { stdio: ['ignore', 'pipe', 'pipe'] },
+      )
+      let errors = ''
+      child.stderr.setEncoding('utf8')
+      child.stderr.on('data', (chunk: string) => {
+        errors += chunk
+      })
+      child.stdout.once('data', () => child.stdout.destroy())
+      let timedOut = false
+      const deadline = setTimeout(() => {
+        timedOut = true
+        child.kill()
+      }, 10_000)
+      try {
+        const code = await new Promise<number | null>((resolve, reject) => {
+          child.once('error', reject)
+          child.once('close', resolve)
+        })
+        expect(timedOut).toBe(false)
+        expect(code, errors).toBe(1)
+        expect(errors).toMatch(/EPIPE|Output stream closed|ECONNRESET/)
+        expect(errors).not.toContain('Unhandled')
+      } finally {
+        clearTimeout(deadline)
+        if (child.exitCode === null && child.signalCode === null) child.kill()
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+  15_000,
+)
+
+it.skipIf(!existsSync(new URL('../dist/cli.js', import.meta.url)))(
   'delivers complete ordered CSS through a paused real output pipe',
   async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-pipe-'))
