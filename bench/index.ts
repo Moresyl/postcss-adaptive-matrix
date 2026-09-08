@@ -25,6 +25,7 @@ import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import postcss, { type AcceptedPlugin } from 'postcss'
 import { CORPORA } from './corpus.js'
+import { benchmarkSettings } from './settings.js'
 import type { adaptiveMatrix as AdaptiveMatrix } from '../src/index.js'
 
 const DIST = new URL('../dist/index.js', import.meta.url)
@@ -46,8 +47,7 @@ const dist = (await import(DIST.href)) as {
 }
 const adaptiveMatrix = dist.default
 
-const ITERATIONS = Number(process.env.BENCH_ITERATIONS ?? 20)
-const WARMUP = Number(process.env.BENCH_WARMUP ?? 5)
+const { iterations: ITERATIONS, warmup: WARMUP } = benchmarkSettings(process.env)
 const FILES_PER_CORPUS = 40
 
 /**
