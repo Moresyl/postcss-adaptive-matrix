@@ -99,7 +99,20 @@ const TARGETS: Target[] = [
     canvas: 'unconverted',
     runtimeStyles: true,
   },
-  { library: 'quasar', npm: 'quasar', prefix: 'q-', canvas: 'unconverted' },
+  {
+    library: 'quasar',
+    npm: 'quasar',
+    prefix: 'q-',
+    canvas: 'unconverted',
+    stylesheet: 'dist/quasar.css',
+  },
+  {
+    library: 'quasar',
+    npm: 'quasar',
+    prefix: 'q-',
+    canvas: 'unconverted',
+    stylesheet: 'dist/quasar.rtl.css',
+  },
   {
     library: 'mui',
     npm: '@mui/material',
