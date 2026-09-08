@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url'
 import postcss, { type AcceptedPlugin } from 'postcss'
 import { CORPORA } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
+import { measureAlternating } from './alternating.js'
 import type {
   adaptiveMatrix as AdaptiveMatrix,
   createAdaptiveCompiler as CreateAdaptiveCompiler,
@@ -167,14 +168,17 @@ for (const corpus of CORPORA) {
       }
       return printed
     }
-    const api = await measure(apiPass(false))
-    const audited = await measure(apiPass(true))
+    const [plugin, api, audited] = await measureAlternating(
+      [pass([adaptiveMatrix({ libraries: false })], files), apiPass(false), apiPass(true)],
+      ITERATIONS,
+      WARMUP,
+    )
     apiRows.push({
       corpus: corpus.name,
-      'plugin (ms)': total.toFixed(2),
-      'reused API (ms)': api.toFixed(2),
-      'API + audit (ms)': audited.toFixed(2),
-      'audit delta (ms)': (audited - api).toFixed(2),
+      'plugin (ms)': plugin!.toFixed(2),
+      'reused API (ms)': api!.toFixed(2),
+      'API + audit (ms)': audited!.toFixed(2),
+      'audit delta (ms)': (audited! - api!).toFixed(2),
     })
   }
 
@@ -200,6 +204,7 @@ console.table(rows)
 if (includeApi) {
   console.table(apiRows)
   console.log('API measurements are observational; no API budget is established yet.')
+  console.log('API candidates rotate order each round; plugin timing above is measured separately.')
 }
 console.log('\n"compiler" is total minus parse+print — the only part this project controls.')
 

@@ -35,6 +35,8 @@ Record the Node version, machine, configuration and corpus when comparing result
 
 Use `npm run bench:api` to additionally compare the reusable programmatic compiler, with and without the optional Safari 14 / Chrome 90 compatibility audit. These extra measurements use the same files and warmup/median settings; they are observational and do not yet have a CI budget. Negative deltas can result from measurement noise.
 
+The API comparison rotates plugin/API/audited-API execution order each round to reduce time-order bias. Its plugin median is measured in that rotation, separately from the main throughput table. Rotation cannot eliminate system load, garbage collection or thermal noise; repeat unexpected results before attributing them to the compiler.
+
 Run `npm run verify:libraries -- vant nutui` to inspect selected published component-library styles. The report includes the package version and cache provenance. Existing `.libcheck` packages are reused; `CLEAN=1` removes the scratch directory after the run, not before it, so it does not refresh that run's inputs. This optional network check returns nonzero for unknown names, missing prefixes, wrong routes, non-idempotent output or seam findings. It does not certify design widths or browser rendering.
 
 ## Pull requests
