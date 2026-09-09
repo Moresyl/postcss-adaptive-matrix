@@ -301,7 +301,7 @@ export function isBrowserVersion(value: string): boolean {
  * work", so that is the end this reads.
  */
 export function compareVersions(a: string, b: string): number {
-  const parse = (value: string): number[] => {
+  const parse = (value: string): string[] => {
     const text = String(value)
     if (!isBrowserVersion(text)) {
       throw new RangeError(
@@ -311,14 +311,16 @@ export function compareVersions(a: string, b: string): number {
     return text
       .split('-')[0]!
       .split('.')
-      .map((part) => Number.parseInt(part, 10))
+      .map((part) => part.replace(/^0+/, '') || '0')
   }
   const left = parse(a)
   const right = parse(b)
   const length = Math.max(left.length, right.length)
   for (let index = 0; index < length; index += 1) {
-    const difference = (left[index] ?? 0) - (right[index] ?? 0)
-    if (difference !== 0) return difference < 0 ? -1 : 1
+    const leftPart = left[index] ?? '0'
+    const rightPart = right[index] ?? '0'
+    if (leftPart.length !== rightPart.length) return leftPart.length < rightPart.length ? -1 : 1
+    if (leftPart !== rightPart) return leftPart < rightPart ? -1 : 1
   }
   return 0
 }

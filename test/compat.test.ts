@@ -344,6 +344,16 @@ describe('detection', () => {
 })
 
 describe('version comparison', () => {
+  it('compares long decimal segments exactly without floating-point rounding', () => {
+    expect(compareVersions('1.9007199254740992', '1.9007199254740993')).toBe(-1)
+    expect(compareVersions('1.9007199254740993', '1.9007199254740992')).toBe(1)
+    const huge = '9'.repeat(400)
+    expect(compareVersions(huge, huge)).toBe(0)
+    expect(compareVersions(huge, `1${'0'.repeat(400)}`)).toBe(-1)
+    expect(compareVersions('00014.000.00', '14')).toBe(0)
+    expect(compareVersions(`000${huge}.0`, huge)).toBe(0)
+  })
+
   it('reads the low end of a caniuse range', () => {
     // `13.4-13.7` means "from 13.4", so 13.4 is enough and 13.3 is not.
     expect(compareVersions('13.4', '13.4-13.7')).toBe(0)
