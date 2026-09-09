@@ -119,6 +119,15 @@
 
 .vp-doc td {
   line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+/* Inline examples in reference tables must not set the minimum column width
+ * to an entire configuration call. Standalone code blocks keep their layout. */
+.vp-doc td > code,
+.vp-doc td :not(pre) > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* Long reference headings must remain distinguishable in the page outline. */
