@@ -278,6 +278,7 @@ for (const target of TARGETS) {
   let seams: number
   let warnings: number
   let preserved: boolean
+  let converted: boolean
   try {
     const originalFindings = new Set(
       findContinuityIssues(root).map((issue) => JSON.stringify(issue)),
@@ -286,6 +287,7 @@ for (const target of TARGETS) {
     const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
     idempotent = first.css === second.css
     preserved = expected !== 'unconverted' || first.css === css
+    converted = first.css !== css
     const findings = findContinuityIssues(first.root)
     seams = findings.length
     for (const finding of findings) {
@@ -306,7 +308,16 @@ for (const target of TARGETS) {
   staticChecked += 1
 
   const missing = prefixed === 0 || (target.tokenPrefix ? tokens === 0 : false)
-  if (missing || !idempotent || !preserved || seams > 0 || warnings > 0 || !canvasOk) problems += 1
+  if (
+    missing ||
+    !idempotent ||
+    !preserved ||
+    (!converted && expected !== 'unconverted') ||
+    seams > 0 ||
+    warnings > 0 ||
+    !canvasOk
+  )
+    problems += 1
 
   rows.push([
     target.library,
@@ -315,7 +326,7 @@ for (const target of TARGETS) {
     target.tokenPrefix ? String(tokens) : '—',
     canvasOk ? canvas : `${canvas} ≠ ${expected}`,
     idempotent ? 'yes' : 'NO',
-    `${seams} seams, ${warnings} warns${!preserved ? ', UNEXPECTED REWRITE' : ''}`,
+    `${seams} seams, ${warnings} warns${!preserved ? ', UNEXPECTED REWRITE' : ''}${!converted && expected !== 'unconverted' ? ', NO CONVERSION' : ''}`,
   ])
 }
 

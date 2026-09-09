@@ -226,6 +226,7 @@ it('reports a missing pinned stylesheet and continues checking remaining targets
 }, 20_000)
 
 it.each([
+  { css: ':root { --van-size: 1px } .van-button { width: 1px }', status: 1, problems: 1 },
   {
     css: ':root { --van-size: 24px } .van-button { width: 1e309px }',
     status: 1,
@@ -266,6 +267,7 @@ it.each([
       expect(result.stdout).toContain(`1 reviewed, ${problems} needing attention`)
       expect(result.stdout).toContain('vant: vant@1.2.3-fixture (cached)')
       if (css.includes('1e309px')) expect(result.stdout).toContain('0 seams, 1 warns')
+      if (css.includes('--van-size: 1px')) expect(result.stdout).toContain('NO CONVERSION')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }
