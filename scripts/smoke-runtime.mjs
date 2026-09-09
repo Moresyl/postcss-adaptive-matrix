@@ -29,6 +29,17 @@ const cjs = require('../dist/index.cjs')
 assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
+// Exercise the public export map, not only the generated files behind it.
+const manifest = require('../package.json')
+assert.equal((await import(manifest.name)).default, esm.default)
+assert.equal(require(manifest.name), cjs)
+assert.equal(require(`${manifest.name}/package.json`).version, manifest.version)
+const publicRuntime = await import(`${manifest.name}/runtime`)
+const commonJsRuntime = require(`${manifest.name}/runtime`)
+for (const api of [publicRuntime, commonJsRuntime]) {
+  assert.equal(typeof api.observeAdaptiveViewport, 'function')
+  assert.equal(api.observeAdaptiveViewport().update(), null)
+}
 for (const api of [esm, cjs]) {
   for (const filter of ['include', 'exclude']) {
     const files = [filter === 'include' ? 'card.css' : 'vendor.css']
