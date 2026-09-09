@@ -175,4 +175,18 @@ describe('disposable compiler task', () => {
     expect(terminate).toHaveBeenCalledOnce()
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  it.each(['startup', 'postMessage'])('handles unreadable %s exceptions', (phase) => {
+    const { task, create, fail } = fixture()
+    const terminate = vi.fn()
+    const reject = () => {
+      throw Object.create(null)
+    }
+    if (phase === 'startup') create.mockImplementation(reject)
+    else create.mockReturnValue({ terminate, postMessage: reject } as unknown as Worker)
+    expect(() => task.run(input)).not.toThrow()
+    expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+    expect(vi.getTimerCount()).toBe(0)
+    expect(terminate).toHaveBeenCalledTimes(phase === 'startup' ? 0 : 1)
+  })
 })

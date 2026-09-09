@@ -85,7 +85,13 @@ export function createCompilerTask(
       current.postMessage(input)
     } catch (error) {
       stop()
-      fail(error instanceof Error ? error : new Error(String(error)))
+      let reason: 'worker' | Error = 'worker'
+      try {
+        reason = error instanceof Error ? error : new Error(String(error))
+      } catch {
+        // A host shim may throw a value that cannot describe itself.
+      }
+      fail(reason)
     }
   }
 
