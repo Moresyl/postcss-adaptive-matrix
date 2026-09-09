@@ -69,6 +69,10 @@ const accepted = output.gate?.passed !== false && seams.length === 0
 
 包内包含 ESM 与 CommonJS 类型声明。可直接导入 `AdaptiveCompileOptions`、`AdaptiveCompileResult`、`AdaptiveCompileGate` 和 `AdaptiveCompileGateCategory`，无需重复声明结果契约。
 
+### 纯服务端 TypeScript 项目
+
+主入口 `postcss-adaptive-matrix` 支持 NodeNext 模块解析及 `lib: ["ES2022"]`，无需 DOM 类型库。消费者测试覆盖开启 `exactOptionalPropertyTypes` 的 ESM 和 CommonJS。独立入口 `postcss-adaptive-matrix/runtime` 描述 `Window`、`HTMLElement` 等浏览器对象，使用它的浏览器项目需要 DOM 类型。仅在 Node 服务中编译 CSS 时，不必导入该辅助入口。
+
 ## 异常与恢复
 
 连续性诊断的 token 替换按每次解析设限：最多 4,096 次替换调用、累计 1,048,576 个输入 UTF-16 码元及 65,536 个输出码元。超限返回未知并跳过该比较；下一次解析重新计数。这些是诊断限制，不是 CSS 编译限制或进程内存保证。

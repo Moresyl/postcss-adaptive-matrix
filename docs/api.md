@@ -69,6 +69,10 @@ This is a static check for backwards length steps at resolvable viewport breakpo
 
 The package includes ESM and CommonJS type declarations. Import `AdaptiveCompileOptions`, `AdaptiveCompileResult`, `AdaptiveCompileGate` and `AdaptiveCompileGateCategory` instead of restating the result contract.
 
+### Server-only TypeScript projects
+
+The main `postcss-adaptive-matrix` entry can be used with NodeNext resolution and `lib: ["ES2022"]` without the DOM library. Consumer tests cover both ESM and CommonJS with `exactOptionalPropertyTypes` enabled. The separate `postcss-adaptive-matrix/runtime` entry describes browser objects such as `Window` and `HTMLElement`; browser projects using it need DOM types. Do not import that helper just to compile CSS in a Node service.
+
 ## Errors and recovery
 
 Token substitution in continuity diagnostics is bounded per resolution: at most 4,096 substitution calls, 1,048,576 cumulative input UTF-16 code units and 65,536 output code units. Exceeding a budget returns unknown and skips that comparison. Budgets reset for the next resolution; these are diagnostic limits, not CSS compilation limits or process-memory guarantees.
