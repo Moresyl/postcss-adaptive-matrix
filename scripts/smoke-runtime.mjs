@@ -51,9 +51,9 @@ for (const group of readdirSync(casesDirectory, { withFileTypes: true })) {
     const metadata = JSON.parse(readFileSync(join(path, 'case.json'), 'utf8'))
     const input = readFileSync(join(path, 'input.css'), 'utf8')
     const expected = normalizeCss(readFileSync(join(path, 'expected.css'), 'utf8'))
-    for (const [format, plugin] of [
-      ['ESM', esm.default],
-      ['CommonJS', cjs],
+    for (const [format, plugin, createCompiler] of [
+      ['ESM', esm.default, esm.createAdaptiveCompiler],
+      ['CommonJS', cjs, cjs.createAdaptiveCompiler],
     ]) {
       const label = `${format} ${group.name}/${entry.name}`
       const options = reviveCaseOptions(metadata.options ?? {})
@@ -67,12 +67,26 @@ for (const group of readdirSync(casesDirectory, { withFileTypes: true })) {
       }
       const second = await postcss([plugin(options)]).process(result.css, processOptions)
       assert.equal(normalizeCss(second.css), expected, `${label} idempotence`)
+      const compile = createCompiler(reviveCaseOptions(metadata.options ?? {}))
+      const compiledCase = await compile(input, { process: processOptions })
+      assert.equal(normalizeCss(compiledCase.css), expected, `${label} compile API`)
+      assert.deepEqual(
+        compiledCase.warnings.map((warning) => warning.text),
+        warnings,
+        label,
+      )
+      assert.equal(compiledCase.gate, null, label)
+      assert.equal(compiledCase.compatibility, null, label)
+      const compiledAgain = await compile(compiledCase.css, { process: processOptions })
+      assert.equal(normalizeCss(compiledAgain.css), expected, `${label} reusable API idempotence`)
     }
     checkedCases += 1
   }
 }
 assert.ok(checkedCases > 0, 'No built conformance cases found')
-process.stdout.write(`OK: ${checkedCases} conformance cases passed for ESM and CommonJS\n`)
+process.stdout.write(
+  `OK: ${checkedCases} conformance cases passed for ESM/CommonJS plugins and compile APIs\n`,
+)
 
 // Exercise the public export map, not only the generated files behind it.
 const manifest = require('../package.json')
