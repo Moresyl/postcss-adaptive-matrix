@@ -15,6 +15,43 @@ const run = (cwd: string) =>
     timeout: 15_000,
   })
 
+it.each(['index.cjs', 'index.d.cts'])(
+  'preserves the other artifact when %s is missing and recovers after it is supplied',
+  async (missing) => {
+    const directory = await mkdtemp(join(tmpdir(), 'adaptive-postbuild-missing-'))
+    const sources: Record<string, string> = {
+      'index.cjs': 'exports.default = function plugin() {};\n',
+      'index.d.cts': 'declare function plugin(): void; export { plugin as default };\n',
+    }
+    try {
+      const dist = join(directory, 'dist')
+      await mkdir(dist)
+      const existing = missing === 'index.cjs' ? 'index.d.cts' : 'index.cjs'
+      await writeFile(join(dist, existing), sources[existing]!)
+      const result = run(directory)
+      expect(result.error).toBeUndefined()
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain('ENOENT')
+      expect(result.stderr).toContain(missing)
+      expect(await readFile(join(dist, existing), 'utf8')).toBe(sources[existing])
+      await expect(readFile(join(dist, missing), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+      await writeFile(join(dist, missing), sources[missing]!)
+      const retry = run(directory)
+      expect(retry.error).toBeUndefined()
+      expect(retry.status, retry.stderr).toBe(0)
+      expect(await readFile(join(dist, 'index.d.cts'), 'utf8')).toContain('export = _cjs;')
+      expect(
+        (await readFile(join(dist, 'index.cjs'), 'utf8')).match(
+          /\/\* callable module\.exports \*\//g,
+        ),
+      ).toHaveLength(1)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  },
+  35_000,
+)
+
 it('postprocesses callable CJS declarations and remains byte-identical on repeat', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-postbuild-'))
   try {
