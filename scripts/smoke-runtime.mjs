@@ -237,6 +237,28 @@ const version = spawnSync(
 assert.equal(version.status, 0, version.stderr)
 assert.equal(version.stdout, `${require('../package.json').version}\n`)
 
+for (const targets of [
+  ['--targets', 'safari 12', '--targets=safari 17, chrome 120'],
+  ['--targets=safari 17, chrome 120', '--targets', 'safari 12'],
+]) {
+  const audited = spawnSync(
+    process.execPath,
+    ['dist/cli.js', '-', '--json', ...targets, '--fail-on', 'compatibility'],
+    {
+      cwd: new URL('..', import.meta.url),
+      encoding: 'utf8',
+      input: '.card { width: clamp(1px, 2vw, 3px) }',
+      timeout: 15_000,
+    },
+  )
+  assert.equal(audited.status, 1, audited.stderr)
+  assert.equal(audited.stderr, '')
+  const report = JSON.parse(audited.stdout)
+  assert.equal(report.ok, true)
+  assert.deepEqual(report.targets, { safari: '12', chrome: '120' })
+  assert.deepEqual(report.gate, { failOn: ['compatibility'], passed: false })
+}
+
 const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
 try {
