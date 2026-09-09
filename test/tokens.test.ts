@@ -7,6 +7,16 @@ function table(css: string): ReturnType<typeof collectTokens> {
 }
 
 describe('theme token resolution', () => {
+  it('bounds repeated empty substitutions independently of output size', () => {
+    const tokens = table(':root { --empty: ; }')
+    // Include the top-level call: 4095 leaf substitutions exactly fit 4096.
+    expect(tokens.resolve('var(--empty)'.repeat(4095), 400)).toBe('')
+    expect(tokens.resolve('var(--empty)'.repeat(4096), 400)).toBeNull()
+    expect(tokens.resolve('var(--absent,)'.repeat(4095), 400)).toBe('')
+    expect(tokens.resolve('var(--absent,)'.repeat(4096), 400)).toBeNull()
+    expect(tokens.resolve('var(--empty)', 400)).toBe('')
+  })
+
   it('bounds cumulative input even when repeated long definitions expand to short values', () => {
     const padding = ' '.repeat(16000)
     const tokens = table(`:root { --short: 1px; --long: var(${padding}--short) }`)
