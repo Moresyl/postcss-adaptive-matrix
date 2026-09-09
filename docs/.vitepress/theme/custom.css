@@ -121,6 +121,15 @@
   line-height: 1.75;
 }
 
+/* Long reference headings must remain distinguishable in the page outline. */
+.VPDoc .aside .outline-link {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  line-height: 1.5;
+  padding-block: 6px;
+}
+
 .vp-doc div[class*='language-'] {
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
