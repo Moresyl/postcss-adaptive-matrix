@@ -86,6 +86,8 @@ npm run verify:libraries -- vant      # 单个
 
 `naive-ui` 与 `mui` 在运行时生成样式，静态检查器会跳过它们。要验证真实 Naive UI SSR 样例，先运行 `npm run verify:libraries -- naive-ui` 准备缓存，再执行 `npm run build` 和 `npm run verify:naive-ssr`。这个独立离线检查使用缓存包与 Vue SSR 渲染 NSpace、NButton、NInput、NCard，收集生成的 CSS，并验证原文保留、零警告和二次处理稳定性。NSpace 的内联布局参与渲染，但不属于收集的样式表。这只是四组件 SSR 样例，不是全库或浏览器交互认证；MUI 仍未验证。输出记录缓存包版本，不代表已覆盖最新版本。
 
+SSR 检查通过 NConfigProvider 分别运行默认及暗色/禁用/加载场景，验证渲染出的状态类，并拒绝 bundle 与 manifest 版本不一致的缓存。它不模拟点击或 hydration。
+
 清单可以从代码读取：
 
 ```js

@@ -86,6 +86,8 @@ Known source finding in cached Quasar 2.24.0: both `dist/quasar.css` and `dist/q
 
 `naive-ui` and `mui` generate their styles at runtime, so the static verifier skips them. To check a real Naive UI SSR sample, first run `npm run verify:libraries -- naive-ui` to populate the cache, then `npm run build` and `npm run verify:naive-ssr`. The separate offline check renders NSpace, NButton, NInput and NCard using the cached bundle and Vue SSR, collects generated CSS, and verifies unchanged output, zero warnings and second-pass stability. NSpace's inline layout is rendered but is not part of the collected stylesheet. This is a four-component SSR sample, not whole-library or browser-interaction certification; MUI remains unverified. Output records the cached package version and does not imply latest-version coverage.
 
+The SSR check runs both default and dark/disabled/loading scenarios through NConfigProvider, verifies rendered state classes, and rejects a cache whose bundle version differs from its manifest. It does not simulate clicks or hydration.
+
 The list is readable from code:
 
 ```js
