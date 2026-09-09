@@ -212,9 +212,15 @@ for (const target of TARGETS) {
   }
   console.log(`${target.library}: ${target.npm}@${version} (${cached ? 'cached' : 'downloaded'})`)
 
-  const stylesheet = target.stylesheet
-    ? join(packaged, target.stylesheet)
-    : largestStylesheet(packaged)
+  let stylesheet: string | null
+  try {
+    stylesheet = target.stylesheet ? join(packaged, target.stylesheet) : largestStylesheet(packaged)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0] : 'Unknown error'
+    rows.push([target.library, `STYLESHEET DISCOVERY FAILED: ${reason}`, '—', '—', '—', '—', '—'])
+    problems += 1
+    continue
+  }
   if (!stylesheet || !existsSync(stylesheet)) {
     rows.push([
       target.library,

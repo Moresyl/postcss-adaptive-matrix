@@ -8,6 +8,40 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('continues after a corrupt cached package prevents stylesheet discovery', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-discovery-'))
+  try {
+    const cache = join(directory, '.libcheck')
+    await mkdir(join(cache, 'vant'), { recursive: true })
+    await writeFile(join(cache, 'vant', 'package'), 'not a directory')
+    const packaged = join(cache, '_nutui_nutui', 'package')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(
+      join(packaged, 'index.css'),
+      ':root { --nut-size: 24px } .nut-button { width: 24px }',
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'vant',
+        'nutui',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('STYLESHEET DISCOVERY FAILED:')
+    expect(result.stdout).toContain('library:nutui')
+    expect(result.stdout).toContain('2 reviewed, 1 needing attention')
+    expect(result.stdout).toContain('1 static stylesheet checks completed')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('rejects formatting-only output as evidence of mobile library conversion', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-format-'))
   try {

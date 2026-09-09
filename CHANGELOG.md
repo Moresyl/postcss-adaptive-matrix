@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Library verification records stylesheet-discovery failures, including malformed cache directories, and continues reviewing remaining targets instead of aborting the batch.
+
 - CLI failures with empty or whitespace-only exception messages now provide a nonempty fallback diagnostic in both terminal and JSON output.
 
 - Playground now reports a visible fallback error when authored configuration throws an empty or whitespace-only message, preventing the previous output from appearing current after a silent failure.
