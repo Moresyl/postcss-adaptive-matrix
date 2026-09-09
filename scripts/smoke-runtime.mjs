@@ -102,6 +102,24 @@ for (const api of [publicRuntime, commonJsRuntime]) {
   assert.equal(writes, 10)
 }
 for (const api of [esm, cjs]) {
+  const auditedCss = '.card { width: clamp(10px, 5vw, 30px) }'
+  const expectedAudit = api.auditCompatibility(auditedCss, { safari: 12 })
+  const metadata = api.compatFeature('math-functions')
+  metadata.title = 'caller modified'
+  metadata.detect.compile('never-match-caller-pattern')
+  const returnedAudit = api.auditCompatibility(auditedCss, { safari: 12 })
+  const returnedFeature = returnedAudit.findings.find(
+    ({ feature }) => feature.id === 'math-functions',
+  ).feature
+  returnedFeature.source = 'css-variables'
+  const support = api.FEATURE_SUPPORT['css-math-functions']
+  const savedSafari = support.safari
+  try {
+    support.safari = '1'
+    assert.deepEqual(api.auditCompatibility(auditedCss, { safari: 12 }), expectedAudit)
+  } finally {
+    support.safari = savedSafari
+  }
   const sparseLibraries = new Array(2)
   sparseLibraries[0] = 'vant'
   assert.throws(
