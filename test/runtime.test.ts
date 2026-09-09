@@ -56,6 +56,35 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('keeps prepared variable names isolated between observers', () => {
+    const host = stubWindow(null)
+    const first = stubTarget()
+    const second = stubTarget()
+    const observers = [first, second].map((target, index) =>
+      observeAdaptiveViewport({
+        window: host.window,
+        target: target.element,
+        prefix: index === 0 ? 'first' : '--second',
+      }),
+    )
+    try {
+      Object.assign(host.window, { innerHeight: 600 })
+      for (const observer of observers) observer.update()
+      for (const [index, target] of [first, second].entries()) {
+        const prefix = index === 0 ? 'first' : 'second'
+        expect([...target.values.keys()]).toEqual(
+          ['width', 'height', 'layout-height', 'keyboard-height', 'scale', 'vh', 'vw'].map(
+            (name) => `--${prefix}-${name}`,
+          ),
+        )
+        expect(target.values.get(`--${prefix}-layout-height`)).toBe('600')
+        expect(target.values.get(`--${prefix}-vh`)).toBe('6px')
+      }
+    } finally {
+      for (const observer of observers) observer.destroy()
+    }
+  })
+
   it('rolls back partial registration when the host rejects a later listener', () => {
     const host = stubWindow(null)
     const target = stubTarget()

@@ -140,6 +140,16 @@ export function observeAdaptiveViewport(
       : options.document
   const target = options.target === undefined ? browserDocument?.documentElement : options.target
   const prefix = variablePrefix(options.prefix)
+  // Names depend only on configuration, not on each viewport reading.
+  const metrics = (['width', 'height', 'layoutHeight', 'keyboardHeight', 'scale'] as const).map(
+    (key) =>
+      [
+        key,
+        `--${prefix}-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
+      ] as const,
+  )
+  const vhName = `--${prefix}-vh`
+  const vwName = `--${prefix}-vw`
   // Teardown must address the same event source used during registration,
   // even if an embedded host replaces its VisualViewport object later.
   const eventViewport = browserWindow?.visualViewport
@@ -179,14 +189,13 @@ export function observeAdaptiveViewport(
       finite(layoutHeight / scale - height - (zoomed ? 0 : offsetTop), 0),
     )
     const snapshot = { width, height, layoutHeight, keyboardHeight, scale }
-    for (const [name, value] of Object.entries(snapshot)) {
-      const cssName = name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
-      publish(`--${prefix}-${cssName}`, String(value))
+    for (const [key, name] of metrics) {
+      publish(name, String(snapshot[key]))
       if (destroyed) return null
     }
-    publish(`--${prefix}-vh`, `${height / 100}px`)
+    publish(vhName, `${height / 100}px`)
     if (destroyed) return null
-    publish(`--${prefix}-vw`, `${width / 100}px`)
+    publish(vwName, `${width / 100}px`)
     return destroyed ? null : snapshot
   }
 
