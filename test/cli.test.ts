@@ -1075,6 +1075,35 @@ describe('runCli', () => {
     await runCli([path, '--color'])
     expect(out.includes(ESC)).toBe(true)
   })
+
+  it('honours terminal detection, NO_COLOR and explicit flag ordering', async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY')
+    const originalNoColor = process.env['NO_COLOR']
+    restore.push(() => {
+      if (descriptor) Object.defineProperty(process.stdout, 'isTTY', descriptor)
+      else Reflect.deleteProperty(process.stdout, 'isTTY')
+      if (originalNoColor === undefined) delete process.env['NO_COLOR']
+      else process.env['NO_COLOR'] = originalNoColor
+    })
+    const path = await file('color.css', '.page { padding: 16px }')
+    const cases = [
+      { tty: false, noColor: undefined, flags: [], colored: false },
+      { tty: true, noColor: undefined, flags: [], colored: true },
+      { tty: true, noColor: '0', flags: [], colored: false },
+      { tty: true, noColor: '', flags: [], colored: true },
+      { tty: false, noColor: '1', flags: ['--color'], colored: true },
+      { tty: true, noColor: undefined, flags: ['--color', '--no-color'], colored: false },
+      { tty: true, noColor: '1', flags: ['--no-color', '--color'], colored: true },
+    ]
+    for (const entry of cases) {
+      Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: entry.tty })
+      if (entry.noColor === undefined) delete process.env['NO_COLOR']
+      else process.env['NO_COLOR'] = entry.noColor
+      out = ''
+      expect(await runCli([path, ...entry.flags])).toBe(0)
+      expect(out.includes(String.fromCharCode(27)), JSON.stringify(entry)).toBe(entry.colored)
+    }
+  })
 })
 
 describe('runCli --targets', () => {

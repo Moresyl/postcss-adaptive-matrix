@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- CLI colour behavior now has regression coverage for non-TTY output, `NO_COLOR`, forced colour, and flag ordering; explicit `--color`/`--no-color` remains the final authority.
 - CLI value-taking options now reject an explicitly empty separate argument, matching `--option=` instead of silently ignoring empty config/from/profile values.
 - Benchmark preflights now verify expected property-level conversion states for the component, utility and application corpora, catching partial conversions or accidental rewrites of inert declarations before timing begins.
 - Performance-gate benchmarks now preflight every default corpus and require actual conversion while permitting intentionally inert declarations. This prevents a no-op or skipped workload from appearing faster; the application corpus's expected routing warnings remain observable rather than hidden.
