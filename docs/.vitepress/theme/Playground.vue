@@ -18,6 +18,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { useData } from 'vitepress'
 import { createCompilerTask } from './compiler-task'
 import { SAMPLES } from './playground-samples'
+import { playgroundStatus } from './playground-status'
 
 const { lang } = useData()
 const chinese = computed(() => lang.value.startsWith('zh'))
@@ -34,6 +35,9 @@ const warnings = shallowRef<{ text: string }[]>([])
 const failure = ref<string | null>(null)
 const compiling = ref(false)
 const duration = ref<number | null>(null)
+const status = computed(() =>
+  playgroundStatus(compiling.value, failure.value !== null, output.value),
+)
 const task = createCompilerTask(
   () => new Worker(new URL('./compiler.worker.ts', import.meta.url), { type: 'module' }),
   (result) => {
@@ -99,6 +103,7 @@ const text = computed(() =>
         css: '输入 CSS',
         options: '配置（JavaScript 表达式）',
         output: '编译结果',
+        stale: '以下是上次成功结果，不代表当前输入。',
         warnings: '告警',
         failed: '编译未完成',
         empty: '正在编译…',
@@ -113,6 +118,7 @@ const text = computed(() =>
         css: 'Input CSS',
         options: 'Options (a JavaScript expression)',
         output: 'Compiled',
+        stale: 'Last successful output below; it does not represent the current input.',
         warnings: 'Warnings',
         failed: 'Compilation did not complete',
         empty: 'Compiling…',
@@ -163,13 +169,14 @@ const text = computed(() =>
 
       <div class="playground-pane">
         <span class="playground-title" role="status"
-          >{{ compiling ? text.empty : text.output
+          >{{ text[status.title]
           }}<template v-if="duration !== null"> · {{ duration.toFixed(1) }} ms</template></span
         >
+        <p v-if="status.stale" class="playground-hint" role="status">{{ text.stale }}</p>
         <pre
           class="playground-output"
           :aria-busy="compiling"
-          :class="{ 'is-stale': failure || compiling }"
+          :class="{ 'is-stale': status.stale }"
           >{{ output ?? (compiling ? text.empty : text.noOutput) }}</pre>
 
         <p v-if="failure" class="playground-failure" role="alert">
