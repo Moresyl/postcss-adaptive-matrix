@@ -19,6 +19,7 @@ import { useData } from 'vitepress'
 import { createCompilerTask } from './compiler-task'
 import { SAMPLES } from './playground-samples'
 import { playgroundStatus } from './playground-status'
+import { createOutputCopy, type CopyState } from './output-copy'
 
 const { lang } = useData()
 const chinese = computed(() => lang.value.startsWith('zh'))
@@ -35,6 +36,14 @@ const warnings = shallowRef<{ text: string }[]>([])
 const failure = ref<string | null>(null)
 const compiling = ref(false)
 const duration = ref<number | null>(null)
+const copyState = ref<CopyState>('idle')
+const outputCopy = createOutputCopy(
+  (value) => navigator.clipboard.writeText(value),
+  (state) => {
+    copyState.value = state
+  },
+)
+watch([css, options], outputCopy.reset, { flush: 'sync' })
 const status = computed(() =>
   playgroundStatus(compiling.value, failure.value !== null, output.value),
 )
@@ -71,6 +80,7 @@ function load(index: number): void {
  * and stale messages cannot overwrite a newer compilation.
  */
 function run(): void {
+  outputCopy.reset()
   clearTimeout(timer)
   stop()
   compiling.value = true
@@ -92,6 +102,7 @@ watch([css, options], () => {
 })
 onMounted(run)
 onBeforeUnmount(() => {
+  outputCopy.reset()
   clearTimeout(timer)
   stop()
 })
@@ -103,6 +114,10 @@ const text = computed(() =>
         css: '输入 CSS',
         options: '配置（JavaScript 表达式）',
         output: '编译结果',
+        copy: '复制 CSS',
+        copying: '正在复制…',
+        copied: '已复制 CSS',
+        copyFailed: '复制失败，请手动选择结果复制。',
         stale: '以下是上次成功结果，不代表当前输入。',
         warnings: '告警',
         failed: '编译未完成',
@@ -118,6 +133,10 @@ const text = computed(() =>
         css: 'Input CSS',
         options: 'Options (a JavaScript expression)',
         output: 'Compiled',
+        copy: 'Copy CSS',
+        copying: 'Copying…',
+        copied: 'CSS copied',
+        copyFailed: 'Copy failed. Select and copy the output manually.',
         stale: 'Last successful output below; it does not represent the current input.',
         warnings: 'Warnings',
         failed: 'Compilation did not complete',
@@ -172,6 +191,21 @@ const text = computed(() =>
           >{{ text[status.title]
           }}<template v-if="duration !== null"> · {{ duration.toFixed(1) }} ms</template></span
         >
+        <button
+          type="button"
+          class="playground-sample"
+          :disabled="output === null || compiling || failure !== null || copyState === 'copying'"
+          @click="outputCopy.copy(output, compiling || failure !== null)"
+        >
+          {{ copyState === 'copying' ? text.copying : text.copy }}
+        </button>
+        <p
+          v-if="copyState === 'copied' || copyState === 'failed'"
+          class="playground-hint"
+          role="status"
+        >
+          {{ copyState === 'copied' ? text.copied : text.copyFailed }}
+        </p>
         <p v-if="status.stale" class="playground-hint" role="status">{{ text.stale }}</p>
         <pre
           class="playground-output"

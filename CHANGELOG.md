@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Playground adds a guarded Copy CSS action that only copies a current successful result, handles empty CSS and clipboard permission failures, and suppresses stale completion feedback after input changes or disposal.
+
 - Library verification records stylesheet-discovery failures, including malformed cache directories, and continues reviewing remaining targets instead of aborting the batch.
 
 - CLI failures with empty or whitespace-only exception messages now provide a nonempty fallback diagnostic in both terminal and JSON output.
