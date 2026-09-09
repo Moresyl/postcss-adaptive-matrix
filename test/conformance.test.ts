@@ -56,7 +56,9 @@ function collectCases(): ConformanceCase[] {
         dir,
         meta: JSON.parse(readFileSync(join(dir, 'case.json'), 'utf8')) as CaseFile,
         input: readFileSync(join(dir, 'input.css'), 'utf8'),
-        expected: existsSync(expectedPath) ? readFileSync(expectedPath, 'utf8') : '',
+        // Only snapshot creation may begin without an expectation. An empty
+        // result must never conceal a missing contract during normal testing.
+        expected: UPDATE && !existsSync(expectedPath) ? '' : readFileSync(expectedPath, 'utf8'),
       })
     }
   }
@@ -68,6 +70,33 @@ const cases = collectCases()
 describe('conformance suite', () => {
   it('discovers cases', () => {
     expect(cases.length).toBeGreaterThan(0)
+  })
+
+  it('requires meaningful metadata rather than silently defaulting malformed contracts', () => {
+    for (const { id, meta } of cases) {
+      expect(meta, id).toBeTypeOf('object')
+      expect(meta, id).not.toBeNull()
+      expect(Array.isArray(meta), id).toBe(false)
+      expect(
+        Object.keys(meta).filter(
+          (key) => !['description', 'from', 'options', 'warnings'].includes(key),
+        ),
+        id,
+      ).toEqual([])
+      expect(meta.description, id).toBeTypeOf('string')
+      expect(meta.description.trim().length, id).toBeGreaterThan(0)
+      if (meta.from !== undefined) {
+        expect(meta.from, id).toBeTypeOf('string')
+        expect(meta.from.trim().length, id).toBeGreaterThan(0)
+      }
+      if (meta.warnings !== undefined) {
+        expect(Array.isArray(meta.warnings), id).toBe(true)
+        for (const warning of meta.warnings) {
+          expect(warning, id).toBeTypeOf('string')
+          expect(warning.trim().length, id).toBeGreaterThan(0)
+        }
+      }
+    }
   })
 
   for (const testCase of cases) {
