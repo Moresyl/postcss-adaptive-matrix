@@ -233,15 +233,31 @@ export function observeAdaptiveViewport(
     destroy() {
       if (destroyed) return
       destroyed = true
-      if (frame !== null) browserWindow.cancelAnimationFrame(frame)
+      const pendingFrame = frame
       // Cleared so a second destroy cannot cancel whatever the host has since
       // reissued this handle to.
       frame = null
-      browserWindow.removeEventListener('resize', schedule)
-      browserWindow.removeEventListener('orientationchange', schedule)
-      eventViewport?.removeEventListener('resize', schedule)
-      eventViewport?.removeEventListener('scroll', schedule)
-      signal?.removeEventListener('abort', abort)
+      // Embedded hosts may reject an individual teardown operation. Still
+      // attempt the remaining releases, and never mask a setup/write error
+      // with a secondary cleanup failure. Any retained callback is inert
+      // because destroyed was set before entering host code.
+      const releases = [
+        () => {
+          if (pendingFrame !== null) browserWindow.cancelAnimationFrame(pendingFrame)
+        },
+        () => browserWindow.removeEventListener('resize', schedule),
+        () => browserWindow.removeEventListener('orientationchange', schedule),
+        () => eventViewport?.removeEventListener('resize', schedule),
+        () => eventViewport?.removeEventListener('scroll', schedule),
+        () => signal?.removeEventListener('abort', abort),
+      ]
+      for (const release of releases) {
+        try {
+          release()
+        } catch {
+          // Best-effort teardown; one broken host API must not strand others.
+        }
+      }
     },
   }
   const abort = () => observer.destroy()

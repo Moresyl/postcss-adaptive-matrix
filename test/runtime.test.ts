@@ -56,6 +56,64 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it.each(['frame', 'window', 'viewport', 'signal'])(
+    'continues teardown when the host rejects %s cleanup',
+    (failure) => {
+      const visual = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+      const host = stubWindow(visual)
+      const target = stubTarget()
+      const controller = new AbortController()
+      const removeSignal = vi.spyOn(controller.signal, 'removeEventListener')
+      const cancelFrame = vi.spyOn(host.window, 'cancelAnimationFrame')
+      const observer = observeAdaptiveViewport({
+        window: host.window,
+        target: target.element,
+        signal: controller.signal,
+      })
+      const reject = () => {
+        throw new Error('host teardown rejected')
+      }
+      if (failure === 'frame') cancelFrame.mockImplementationOnce(reject)
+      if (failure === 'window') host.listeners.remove.mockImplementationOnce(reject)
+      if (failure === 'viewport') visual.removeEventListener.mockImplementationOnce(reject)
+      if (failure === 'signal') removeSignal.mockImplementationOnce(reject)
+      host.fire('resize')
+      expect(() => observer.destroy()).not.toThrow()
+      expect(cancelFrame).toHaveBeenCalledTimes(1)
+      expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+      expect(visual.removeEventListener).toHaveBeenCalledTimes(2)
+      expect(removeSignal).toHaveBeenCalledTimes(1)
+      const writes = target.setProperty.mock.calls.length
+      Object.assign(host.window, { innerWidth: 500 })
+      host.flush()
+      host.fire('resize')
+      expect(observer.update()).toBeNull()
+      expect(host.pending()).toBe(0)
+      expect(target.setProperty).toHaveBeenCalledTimes(writes)
+      observer.destroy()
+      expect(cancelFrame).toHaveBeenCalledTimes(1)
+      removeSignal.mockRestore()
+    },
+  )
+
+  it('preserves the original setup failure when rollback also fails', () => {
+    const visual = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+    const host = stubWindow(visual)
+    const target = stubTarget()
+    const original = new Error('initial publication rejected')
+    target.setProperty.mockImplementationOnce(() => {
+      throw original
+    })
+    host.listeners.remove.mockImplementationOnce(() => {
+      throw new Error('secondary cleanup failure')
+    })
+    expect(() => observeAdaptiveViewport({ window: host.window, target: target.element })).toThrow(
+      original,
+    )
+    expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+    expect(visual.removeEventListener).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps an injected window independent from the default document', () => {
     const outer = stubTarget()
     const inner = stubTarget()
