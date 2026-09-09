@@ -31,7 +31,28 @@
 | `root` | `false` | 可选根布局基础样式 |
 | `unknownProfile` | `warn` | `warn`、`error`、`ignore` |
 
-内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段；空的 `profiles: {}` 也与省略等价，让条件拼装出的配置保持无信息状态。不需要覆盖项的 profile 可只写宽度：`profiles: { mobile: 375 }`；只有还需 `fluid`、`query`、`unit` 等设置时才写 `{ designWidth: 375, ... }`。主动写出嵌套对象后，也只有决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。对象组合产生的顶层可选字段若为 `undefined`，会与省略完全等价；`null` 仍是明确错误，不会静默套默认值。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
+### 到底哪些需要填写？
+
+顶层没有必填配置。直接调用 `adaptiveMatrix()` 即可使用内置预设，空的 `profiles: {}` 也与省略等价。示例中同时出现两个流体边界，不代表它们是必填模板。
+
+| 需求 | 最小配置 |
+| --- | --- |
+| 使用内置 App/PC 预设 | `adaptiveMatrix()` |
+| 自定义一张画布，不限制边界 | `adaptiveMatrix({ profiles: { mobile: 375 } })` |
+| 只限制上界 | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { maxWidth: 600 } } } })` |
+| 只限制下界 | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { minWidth: 320 } } } })` |
+
+`fluid`、`fluid.minWidth`、`fluid.maxWidth` 都可以独立省略，`fluid: {}` 同样表示不限制边界。只有一张自定义 profile 时，它自动成为 `defaultProfile`；有多张且没有 `app` 时才需要指定默认项，因为此时不存在唯一答案。
+
+主动写出相应嵌套对象后，只有决定身份或计算方式的字段才必填：
+
+- profile 对象需要 `designWidth`；没有其他覆盖项时可直接简写为数字。
+- 对象形式的 `query` 需要 `condition`。
+- 路由需要 `profile` 和至少一种匹配通道。
+- 独立自定义组件库需要 `name` 和 `designWidth`；`extends` 条目会继承它们。
+- `fluid` 和 `root` 内没有任何必填成员。
+
+对象组合产生的顶层可选字段若为 `undefined`，会与省略完全等价；`null` 仍是明确错误，不会静默套默认值。
 
 字符串文件匹配不受路径分隔符影响：`src/components/` 同样匹配 `C:\\repo\\src\\components\\card.css`，反斜杠写法也能匹配 POSIX 路径。正则与谓词函数仍收到未经修改的原始路径，已有的宿主平台逻辑不会被偷偷改写。
 
