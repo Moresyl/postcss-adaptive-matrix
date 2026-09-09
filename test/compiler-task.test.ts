@@ -19,6 +19,18 @@ const input = { css: '.a {}', options: '{}' }
 const event = { data: { css: '.a {}' } } as MessageEvent
 
 describe('disposable compiler task', () => {
+  it.each(['', '   ', new Error(''), new Error('\n')])(
+    'uses a visible fallback for blank startup errors: %j',
+    (error) => {
+      const { task, create, fail } = fixture()
+      create.mockImplementationOnce(() => {
+        throw error
+      })
+      task.run(input)
+      expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+      expect(vi.getTimerCount()).toBe(0)
+    },
+  )
   it.each([
     null,
     undefined,
@@ -34,6 +46,8 @@ describe('disposable compiler task', () => {
     { css: '', warnings: {} },
     { css: '', warnings: new Array(1) },
     { error: 123 },
+    { error: '' },
+    { error: ' \n\t' },
   ])('rejects malformed Worker payloads without publishing: %j', (data) => {
     const { task, workers, receive, fail } = fixture()
     task.run(input)
