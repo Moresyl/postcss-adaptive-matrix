@@ -22,6 +22,15 @@ adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: '320px'
 // @ts-expect-error optional does not accept null instead of a numeric bound
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: null } } } })
 observeAdaptiveViewport().destroy()
+observeAdaptiveViewport({}).destroy()
+observeAdaptiveViewport({ signal: new AbortController().signal }).destroy()
+observeAdaptiveViewport({ prefix: 'shell' }).destroy()
+// @ts-expect-error omission does not permit null signals
+observeAdaptiveViewport({ signal: null })
+// @ts-expect-error abort controllers must supply their signal
+observeAdaptiveViewport({ signal: new AbortController() })
+// @ts-expect-error viewport options are closed, not an arbitrary property bag
+observeAdaptiveViewport({ windw: window })
 const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: ['compatibility'] }
 const compile = createAdaptiveCompiler()
 const output: AdaptiveCompileResult = await compile('.a { width: 24px }', request)

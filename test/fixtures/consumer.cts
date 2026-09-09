@@ -15,6 +15,15 @@ adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { minWidth: '320px'
 adaptiveMatrix({ profiles: { app: { designWidth: 375, fluid: { maxWidth: null } } } })
 adaptiveMatrix({ profiles: { app: 375 } })
 runtime.observeAdaptiveViewport().destroy()
+runtime.observeAdaptiveViewport({}).destroy()
+runtime.observeAdaptiveViewport({ signal: new AbortController().signal }).destroy()
+runtime.observeAdaptiveViewport({ prefix: 'shell' }).destroy()
+// @ts-expect-error omission does not permit null signals
+runtime.observeAdaptiveViewport({ signal: null })
+// @ts-expect-error abort controllers must supply their signal
+runtime.observeAdaptiveViewport({ signal: new AbortController() })
+// @ts-expect-error viewport options are closed, not an arbitrary property bag
+runtime.observeAdaptiveViewport({ windw: window })
 const request: adaptiveMatrix.AdaptiveCompileOptions = { failOn: ['warnings'] }
 const compile = adaptiveMatrix.createAdaptiveCompiler()
 const pending: Promise<adaptiveMatrix.AdaptiveCompileResult> = compile('', request)
