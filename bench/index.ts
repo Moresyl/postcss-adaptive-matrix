@@ -29,6 +29,7 @@ import { CORPORA, CUSTOM_PROPERTY_CORPUS } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
 import { measureAlternating } from './alternating.js'
 import { verifyConversion } from './verify-conversion.js'
+import { relativeAddedCost } from './ratios.js'
 import type {
   adaptiveMatrix as AdaptiveMatrix,
   createAdaptiveCompiler as CreateAdaptiveCompiler,
@@ -239,8 +240,8 @@ for (const corpus of corpora) {
 
   ratios.push({
     corpus: corpus.name,
-    compiler: compiler / parseOnly,
-    libraries: (withLibraries - total) / parseOnly,
+    compiler: relativeAddedCost(total, parseOnly),
+    libraries: relativeAddedCost(withLibraries, total, parseOnly),
   })
   rows.push({
     corpus: corpus.name,
