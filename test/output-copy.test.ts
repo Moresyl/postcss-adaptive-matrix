@@ -1,13 +1,52 @@
 import { expect, it, vi } from 'vitest'
 import { createOutputCopy } from '../docs/.vitepress/theme/output-copy'
 
-it('copies exact output including an empty successful stylesheet', async () => {
-  const write = vi.fn(async () => {})
+it.each(['', '/* 中文 */\r\n.card {\n  content: "\\263a";\n}\n'.repeat(4096)])(
+  'copies exact output without trimming or truncation (%#)',
+  async (output) => {
+    const write = vi.fn(async () => {})
+    const update = vi.fn()
+    const task = createOutputCopy(write, update)
+    await task.copy(output, false)
+    expect(write).toHaveBeenCalledExactlyOnceWith(output)
+    expect(update.mock.calls).toEqual([['copying'], ['copied']])
+  },
+)
+
+it('releases the write lock after a synchronous clipboard failure', async () => {
+  const write = vi
+    .fn<() => Promise<void>>()
+    .mockImplementationOnce(() => {
+      throw new Error('unavailable')
+    })
+    .mockResolvedValue(undefined)
   const update = vi.fn()
   const task = createOutputCopy(write, update)
-  await task.copy('', false)
-  expect(write).toHaveBeenCalledExactlyOnceWith('')
-  expect(update.mock.calls).toEqual([['copying'], ['copied']])
+  await task.copy('CSS', false)
+  expect(update).toHaveBeenLastCalledWith('failed')
+  await task.copy('retry', false)
+  expect(write).toHaveBeenCalledTimes(2)
+  expect(update).toHaveBeenLastCalledWith('copied')
+})
+
+it('suppresses a delayed rejection after reset and permits a fresh copy', async () => {
+  let reject!: (error: Error) => void
+  const write = vi.fn(
+    () =>
+      new Promise<void>((_, fail) => {
+        reject = fail
+      }),
+  )
+  const update = vi.fn()
+  const task = createOutputCopy(write, update)
+  const first = task.copy('old CSS', false)
+  task.reset()
+  reject(new Error('late rejection'))
+  await first
+  expect(update.mock.calls).toEqual([['copying'], ['copying'], ['idle']])
+  write.mockResolvedValueOnce(undefined)
+  await task.copy('new CSS', false)
+  expect(update).toHaveBeenLastCalledWith('copied')
 })
 
 it('does not copy missing or stale output', async () => {
