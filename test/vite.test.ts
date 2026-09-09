@@ -36,7 +36,11 @@ function write(root: string, relative: string, contents: string): void {
   writeFileSync(file, contents)
 }
 
-function scaffold(root: string, route: string): void {
+function scaffold(
+  root: string,
+  route: string,
+  mobileProfile = '{ designWidth: 375, fluid: { minWidth: 320, maxWidth: 600 } }',
+): void {
   rmSync(root, { recursive: true, force: true })
 
   // Imported by absolute URL so the fixture needs no install of the package
@@ -53,7 +57,7 @@ export default {
       defaultProfile: 'app',
       profiles: {
         app: { designWidth: 750, fluid: { minWidth: 320, maxWidth: 600 } },
-        mobile: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 600 } },
+        mobile: ${mobileProfile},
       },
       routes: [{ profile: 'mobile', file: [${route}] }],
     }),
@@ -131,6 +135,29 @@ describeBuilt('a real Vite build', () => {
     scaffold(root, CONTAINMENT_ROUTE)
     css = await buildCss(root)
   }, 120_000)
+
+  it.each([
+    ['no-fluid', '{ designWidth: 375 }', 'calc(6.4vw)'],
+    ['empty-fluid', '{ designWidth: 375, fluid: {} }', 'calc(6.4vw)'],
+    ['minimum-only', '{ designWidth: 375, fluid: { minWidth: 320 } }', 'max(6.4vw, 20.48px)'],
+    ['maximum-only', '{ designWidth: 375, fluid: { maxWidth: 600 } }', 'min(6.4vw, 38.4px)'],
+  ])(
+    'supports optional bounds through discovered configuration: %s',
+    async (name, profile, expected) => {
+      const optionalRoot = join(scratch, name)
+      scaffold(optionalRoot, CONTAINMENT_ROUTE, profile)
+      const output = await buildCss(optionalRoot)
+      expect(declaration(output, '.sfc-card', 'padding')).toBe(expected)
+      // The per-route override must not change another profile or dependency.
+      expect(declaration(output, '.page-hero', 'padding')).toBe(
+        declaration(css, '.page-hero', 'padding'),
+      )
+      expect(declaration(output, '.van-button', 'padding')).toBe(
+        declaration(css, '.van-button', 'padding'),
+      )
+    },
+    120_000,
+  )
 
   it('runs the plugin at all, through a config file Vite discovered itself', () => {
     // If `postcss.config.mjs` were not picked up the build would still succeed
