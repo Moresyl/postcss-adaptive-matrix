@@ -21,6 +21,21 @@ const INCOMPLETE_LIBRARY: LibraryAdaptation = { prefix: 'incomplete-' }
 void INCOMPLETE_LIBRARY
 
 describe('resolveLibrary', () => {
+  it('rejects sparse library lists before duplicate-name validation', () => {
+    for (const missingIndex of [0, 1]) {
+      const libraries: LibraryEntry[] = new Array(2)
+      libraries[missingIndex === 0 ? 1 : 0] = 'vant'
+      for (const resolve of [
+        resolveLibraries,
+        (value: LibraryEntry[]) => resolveOptions({ libraries: value }),
+      ]) {
+        expect(() => resolve(libraries)).toThrow(
+          'A library entry must be a built-in name or options object, not undefined.',
+        )
+      }
+    }
+  })
+
   it('looks up a built-in by name', () => {
     expect(resolveLibrary('vant').designWidth).toBe(375)
   })

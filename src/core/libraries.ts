@@ -398,7 +398,7 @@ export function resolveLibraries(
   if (input === false) return []
   if (input === undefined || input === 'auto') return autoLibraries()
   const entries: readonly LibraryEntry[] = Array.isArray(input) ? input : [input as LibraryEntry]
-  return assertUniqueLibraryNames(entries.map(resolveLibrary))
+  return assertUniqueLibraryNames(Array.from(entries, resolveLibrary))
 }
 
 /**
