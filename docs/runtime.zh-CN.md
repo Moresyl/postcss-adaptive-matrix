@@ -110,4 +110,4 @@ interface AdaptiveViewportObserver {
 
 ## 开销
 
-更新走 `requestAnimationFrame` 合并，一帧最多读一次；监听全部是 `passive`。每个值还会单独缓存：视口实际未变化时，即使收到噪声 resize 事件也不会写 DOM；只有高度变化时，只改高度、键盘高度与 `--adaptive-vh`。不使用时不引入——它是独立入口，不会被主包带进去。
+视口事件通过 `requestAnimationFrame` 合并；显式调用 `update()` 会立即读取，不受帧合并限制。视口监听使用 `passive`。变量名在观察器初始化时准备一次，每个值单独缓存：读数未变化就不写 DOM。高度变化时只写实际改变的指标，根据宿主读数，可能涉及 `height`、`layout-height`、`keyboard-height` 和 `--adaptive-vh`。此辅助工具是独立入口，不会被主编译器包导入。

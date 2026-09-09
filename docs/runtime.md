@@ -110,4 +110,4 @@ But the server-rendered first paint will not have these variables, so **write a 
 
 ## Cost
 
-Updates are coalesced through `requestAnimationFrame`, so it reads at most once per frame, and every listener is `passive`. Values are cached individually: a noisy resize event whose viewport did not actually change performs no DOM writes, while a height-only change updates only height, keyboard height and `--adaptive-vh`. Not using it costs nothing — it is a separate entry point and is never pulled into the main bundle.
+Viewport events are coalesced through `requestAnimationFrame`; explicit `update()` calls read immediately and are not frame-limited. Viewport listeners are `passive`. Variable names are prepared once per observer, and values are cached individually: unchanged readings perform no DOM writes. A height change writes only the metrics that actually changed, which can include `height`, `layout-height`, `keyboard-height` and `--adaptive-vh`, depending on the host readings. The helper is a separate entry point and is not imported by the main compiler bundle.
