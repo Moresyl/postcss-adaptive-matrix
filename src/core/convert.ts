@@ -207,6 +207,10 @@ export function isAccessibleTextProperty(
   property: string,
   options: ResolvedAdaptiveMatrixOptions,
 ): boolean {
+  return matchesTextProperty(property, options.textProperties.map(canonicalCssPropertyName))
+}
+
+function matchesTextProperty(property: string, patterns: readonly string[]): boolean {
   // A custom property is named, not standardised, so its meaning lives inside
   // the name. Libraries theme their typography through tokens like
   // `--van-font-size-md`; treating those as plain lengths would emit pure `vw`
@@ -216,8 +220,7 @@ export function isAccessibleTextProperty(
   // the former so `FONT-SIZE` cannot silently lose the zoomable text formula.
   const subject = canonicalCssPropertyName(property)
   const isToken = subject.startsWith('--')
-  return options.textProperties.some((candidate) => {
-    const pattern = canonicalCssPropertyName(candidate)
+  return patterns.some((pattern) => {
     if (pattern.endsWith('*')) {
       const prefix = pattern.slice(0, -1)
       return subject.startsWith(prefix) || (isToken && hasSegment(subject, prefix))
@@ -689,6 +692,7 @@ const MAX_CACHE_CHARACTERS = 4 * 1024 * 1024
  * share cache entries too.
  */
 export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
+  const textPatterns = options.textProperties.map(canonicalCssPropertyName)
   const unitsLower = options.unitToConvert.map((unit) => unit.toLowerCase())
   const pattern = unitPattern(options.unitToConvert)
   const widths = new Map<
@@ -740,7 +744,7 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
 
     let accessibleText = textProperties.get(property)
     if (accessibleText === undefined) {
-      accessibleText = isAccessibleTextProperty(property, options)
+      accessibleText = matchesTextProperty(property, textPatterns)
       // Generated custom-property names are unbounded across rebuilds, just
       // like values. Eviction only costs a classification on the next use.
       if (property.length <= MAX_CACHED_PROPERTY_LENGTH) {

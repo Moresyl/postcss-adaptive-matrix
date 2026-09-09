@@ -48,10 +48,24 @@ it('does not retain a small input whose converted output exceeds the cache value
   expect(second).not.toBe(first)
 })
 
+it('prepares escaped text patterns once for a reusable converter', () => {
+  const options = resolveOptions({
+    profiles: { app: 375 },
+    textProperties: [String.raw`F\4f NT-SIZE`, '--Theme-*'],
+  })
+  const converter = createConverter(options)
+  for (const property of ['font-size', 'FONT-SIZE', '--Theme-large']) {
+    expect(converter.convert('24px', property, 'app', options.profiles.app!, '')).toContain('rem')
+  }
+  expect(
+    converter.convert('24px', '--theme-large', 'app', options.profiles.app!, ''),
+  ).not.toContain('rem')
+})
+
 it('does not retain oversized property classification keys', () => {
   const options = resolveOptions({ profiles: { app: 375 }, textProperties: ['--text-*'] })
   const converter = createConverter(options)
-  const classifications = vi.spyOn(options.textProperties, 'some')
+  const classifications = vi.spyOn(Map.prototype, 'set')
   try {
     for (const length of [256, 257, 10000]) {
       classifications.mockClear()
@@ -59,7 +73,9 @@ it('does not retain oversized property classification keys', () => {
       const first = converter.convert('24px', property, 'app', options.profiles.app!, '')
       expect(converter.convert('24px', property, 'app', options.profiles.app!, '')).toBe(first)
       expect(first).toContain('rem')
-      expect(classifications).toHaveBeenCalledTimes(length <= 256 ? 1 : 2)
+      expect(classifications.mock.calls.filter(([key]) => key === property)).toHaveLength(
+        length <= 256 ? 1 : 0,
+      )
     }
   } finally {
     classifications.mockRestore()
@@ -70,16 +86,16 @@ it('bounds property classification caching and reclassifies evicted entries corr
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)
   const profile = options.profiles.app!
-  const classifications = vi.spyOn(options.textProperties, 'some')
+  const classifications = vi.spyOn(Map.prototype, 'set')
   try {
     const expected = converter.convert('24px', 'font-size', 'app', profile, '')
     expect(converter.convert('24px', 'font-size', 'app', profile, '')).toBe(expected)
-    expect(classifications).toHaveBeenCalledTimes(1)
+    expect(classifications.mock.calls.filter(([key]) => key === 'font-size')).toHaveLength(1)
     for (let index = 0; index < 20_000; index++) {
       converter.convert('24px', `--generated-${index}`, 'app', profile, '')
     }
     expect(converter.convert('24px', 'font-size', 'app', profile, '')).toBe(expected)
-    expect(classifications).toHaveBeenCalledTimes(20_002)
+    expect(classifications.mock.calls.filter(([key]) => key === 'font-size')).toHaveLength(2)
   } finally {
     classifications.mockRestore()
   }
