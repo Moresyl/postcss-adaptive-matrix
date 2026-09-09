@@ -680,7 +680,15 @@ export async function runCli(argv: string[]): Promise<number> {
     // Resolved before anything is read: a bad defaultProfile or an inverted
     // fluid window fails here, with the compiler's own message, rather than
     // after stdin has been drained or a screen of output already printed.
-    const resolved = resolveOptions(options)
+    const resolved = (() => {
+      try {
+        return resolveOptions(options)
+      } catch (cause) {
+        if (!args.config) throw cause
+        const detail = cause instanceof Error ? cause.message : String(cause)
+        throw new CliError(`Invalid config ${args.config}: ${detail}`)
+      }
+    })()
 
     // `library:*` canvases are synthesised from the registry, one per adapted
     // component library. Listing all eleven would bury the two or three

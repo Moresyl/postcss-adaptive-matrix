@@ -1037,6 +1037,7 @@ describe('runCli', () => {
 
     expect(await runCli([path, '-c', config, '--no-color'])).toBe(1)
     expect(err).toContain('defaultProfile "ghost" does not exist')
+    expect(err).toContain(`Invalid config ${config}:`)
     expect(out).toBe('')
   })
 
@@ -1050,6 +1051,7 @@ describe('runCli', () => {
 
     expect(await runCli([join(directory, 'absent.css'), '-c', config, '--no-color'])).toBe(1)
     expect(err).toContain('routes[0].profile targets unknown profile "ghost"')
+    expect(err).toContain(`Invalid config ${config}:`)
     expect(err).not.toContain('absent.css')
     expect(out).toBe('')
   })
@@ -1068,6 +1070,7 @@ describe('runCli', () => {
       error: { message: expect.stringMatching(/minPixeValue.*Did you mean "minPixelValue"/) },
     })
     expect(out).not.toContain('absent.css')
+    expect(JSON.parse(out).error.message).toContain(`Invalid config ${config}:`)
   })
 
   it('reports the exact path of a malformed JSON option without a stack trace', async () => {
