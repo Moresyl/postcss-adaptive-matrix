@@ -90,7 +90,8 @@ function fakeVuePlugin(root: string) {
   return {
     name: 'fake-sfc-styles',
     resolveId: (id: string) => (id.includes('index.vue?vue') ? resolved : null),
-    load: (id: string) => (id === resolved ? '.sfc-card { padding: 24px; font-size: 24px }' : null),
+    load: (id: string) =>
+      id === resolved ? '.sfc-card { padding: 24px; font-size: 24px; margin-left: -24px }' : null,
   }
 }
 
@@ -137,17 +138,28 @@ describeBuilt('a real Vite build', () => {
   }, 120_000)
 
   it.each([
-    ['no-fluid', '{ designWidth: 375 }', 'calc(6.4vw)'],
-    ['empty-fluid', '{ designWidth: 375, fluid: {} }', 'calc(6.4vw)'],
-    ['minimum-only', '{ designWidth: 375, fluid: { minWidth: 320 } }', 'max(6.4vw, 20.48px)'],
-    ['maximum-only', '{ designWidth: 375, fluid: { maxWidth: 600 } }', 'min(6.4vw, 38.4px)'],
+    ['no-fluid', '{ designWidth: 375 }', 'calc(6.4vw)', 'calc(-6.4vw)'],
+    ['empty-fluid', '{ designWidth: 375, fluid: {} }', 'calc(6.4vw)', 'calc(-6.4vw)'],
+    [
+      'minimum-only',
+      '{ designWidth: 375, fluid: { minWidth: 320 } }',
+      'max(6.4vw, 20.48px)',
+      'min(-6.4vw, -20.48px)',
+    ],
+    [
+      'maximum-only',
+      '{ designWidth: 375, fluid: { maxWidth: 600 } }',
+      'min(6.4vw, 38.4px)',
+      'max(-6.4vw, -38.4px)',
+    ],
   ])(
     'supports optional bounds through discovered configuration: %s',
-    async (name, profile, expected) => {
+    async (name, profile, expected, negative) => {
       const optionalRoot = join(scratch, name)
       scaffold(optionalRoot, CONTAINMENT_ROUTE, profile)
       const output = await buildCss(optionalRoot)
       expect(declaration(output, '.sfc-card', 'padding')).toBe(expected)
+      expect(declaration(output, '.sfc-card', 'margin-left')).toBe(negative)
       // The per-route override must not change another profile or dependency.
       expect(declaration(output, '.page-hero', 'padding')).toBe(
         declaration(css, '.page-hero', 'padding'),
