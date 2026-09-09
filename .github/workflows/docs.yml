@@ -32,7 +32,7 @@ jobs:
       - name: Verify code and documentation before deployment
         run: npm run check
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/.vitepress/dist
 
