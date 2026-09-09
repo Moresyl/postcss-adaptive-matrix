@@ -1,5 +1,7 @@
 # Contributing
 
+Use `npx tsx bench/index.ts --fresh` after building to compare a reused plugin against a new plugin instance for each corpus pass, with libraries disabled and enabled. Initialization is inside the fresh measurement; each instance still processes all files in its pass. CSS equivalence is checked first. The process and modules stay warm, so this is not cold process startup. These optional results are observational and do not change CI budgets.
+
 For a local viewport-observer comparison, run `npx tsx bench/runtime.ts <trusted-commit-hash>`. It compares the baseline runtime source with the working tree using current shared dependencies. Output equivalence is checked before alternating timings. Setup/teardown and direct unchanged/changing updates use a simulated host; results do not measure browser event dispatch, layout or rendering.
 
 Token lookup changes can be compared with `npm run bench:tokens -- <trusted-commit-hash>`.

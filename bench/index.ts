@@ -128,6 +128,8 @@ interface Ratio {
 const ratios: Ratio[] = []
 const rows: Record<string, string | number>[] = []
 const apiRows: Record<string, string | number>[] = []
+const freshRows: Record<string, string | number>[] = []
+const includeFresh = process.argv.includes('--fresh')
 const includeApi = process.argv.includes('--api')
 const corpora = process.argv.includes('--cache-churn')
   ? [...CORPORA, CUSTOM_PROPERTY_CORPUS]
@@ -171,6 +173,34 @@ for (const corpus of corpora) {
   )
   const [parseOnly, total, withLibraries] = timings as [number, number, number]
   const compiler = total - parseOnly
+
+  if (includeFresh) {
+    for (const libraries of [false, ALL_LIBRARIES] as const) {
+      const options = { ...corpusOptions, libraries }
+      const reusedPlugin = adaptiveMatrix(options)
+      const reused = postcss([reusedPlugin])
+      // A fresh instance must produce the same CSS before comparing costs.
+      for (const file of files) {
+        const expected = await reused.process(file.css, { from: file.from })
+        const actual = await postcss([adaptiveMatrix(options)]).process(file.css, {
+          from: file.from,
+        })
+        assert.equal(actual.css, expected.css, `Fresh plugin output differs in ${file.from}`)
+      }
+      const [warm, fresh] = await measureAlternating(
+        [pass([reusedPlugin], files), () => pass([adaptiveMatrix(options)], files)()],
+        ITERATIONS,
+        WARMUP,
+      )
+      freshRows.push({
+        corpus: corpus.name,
+        libraries: libraries === false ? 'off' : 'all',
+        'reused (ms)': warm!.toFixed(2),
+        'fresh instance (ms)': fresh!.toFixed(2),
+        'delta (ms)': (fresh! - warm!).toFixed(2),
+      })
+    }
+  }
 
   if (includeApi) {
     const compile = dist.createAdaptiveCompiler({ ...corpusOptions, libraries: false })
@@ -226,6 +256,12 @@ for (const corpus of corpora) {
 }
 
 console.table(rows)
+if (includeFresh) {
+  console.table(freshRows)
+  console.log(
+    'Fresh instances include plugin creation once per pass, not per file. The Node process and modules stay warm; this is not process startup timing or a CI budget.',
+  )
+}
 console.log('Baseline, compiler and library candidates rotate order each round.')
 if (includeApi) {
   console.table(apiRows)
