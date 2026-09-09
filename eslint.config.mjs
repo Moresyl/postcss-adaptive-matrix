@@ -30,9 +30,11 @@ export default tseslint.config(
       'examples/*/dist',
       'examples/*/*.config.js',
       '.probe-*.mts',
-      // Deliberately invalid calls checked by the independent NodeNext consumer test.
+      // Independently compiled NodeNext consumers, outside the main TS program.
       'test/fixtures/consumer.mts',
       'test/fixtures/consumer.cts',
+      'test/fixtures/server-consumer.mts',
+      'test/fixtures/server-consumer.cts',
     ],
   },
   js.configs.recommended,
