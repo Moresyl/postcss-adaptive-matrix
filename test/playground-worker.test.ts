@@ -19,6 +19,16 @@ async function compile(css: string, options: string) {
 }
 
 describe('playground compiler worker', () => {
+  it.each(["''", "'   '", "new Error('')", "new Error('\\n\\t')"])(
+    'reports an observable failure for a blank thrown message: %s',
+    async (value) => {
+      const result = await compile('.card { padding: 24px }', `(() => { throw ${value} })()`)
+      expect(result).toEqual({
+        error: 'Configuration or compilation failed with an unreadable error.',
+      })
+    },
+  )
+
   it('recovers on the same worker after an unprintable thrown value', async () => {
     const postMessage = vi.fn()
     const scope = { postMessage, onmessage: undefined as unknown as (event: unknown) => void }

@@ -27,7 +27,8 @@ self.onmessage = (event: MessageEvent<{ css: string; options: string }>) => {
   } catch (error) {
     let message = 'Configuration or compilation failed with an unreadable error.'
     try {
-      message = error instanceof Error ? String(error.message) : String(error)
+      const description = error instanceof Error ? String(error.message) : String(error)
+      if (description.trim()) message = description
     } catch {
       // Authored expressions may throw objects whose string conversion throws.
       // Keep the worker protocol usable even when describing the error fails.

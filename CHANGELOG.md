@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Playground now reports a visible fallback error when authored configuration throws an empty or whitespace-only message, preventing the previous output from appearing current after a silent failure.
+
 - Explicit nonempty profile maps no longer construct and validate an unused default App/PC preset during initialization. Omitted and empty maps retain their existing defaults; authored configuration validation is unchanged.
 
 - Compile API quality gates accept a single category (`failOn: 'warnings'` or `'compatibility'`) as well as an array. The option remains optional, results normalize categories to an array, and compatibility gates still require browser targets.
