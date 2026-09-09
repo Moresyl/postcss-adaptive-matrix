@@ -189,6 +189,12 @@ it.each([0, -1, Number.NaN, Infinity, -Infinity, '16', null])(
   },
 )
 
+it.each([null, undefined, '', {}, { type: 'rule' }])('rejects a non-root AST input: %s', (root) => {
+  expect(() => findContinuityIssues(root as never)).toThrow(
+    'root must be a PostCSS Root or Document',
+  )
+})
+
 /**
  * A fixed pixel value written the way the compiler writes one.
  *
