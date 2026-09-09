@@ -55,40 +55,43 @@ describe('documentation asset delivery', () => {
     },
   )
 
-  it('checks production assets and rejects stale or missing content', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-gate-'))
-    try {
-      await writeGeneratedAssets(directory)
-      const page = join(directory, 'index.html')
-      const link = (href: string) => `<a class="copy-page-action" href="${href}">Raw</a>`
-      await writeFile(page, link('/postcss-adaptive-matrix/docs/configuration.md'))
-      const check = () =>
-        execFileSync(
-          process.execPath,
-          [
-            '--import',
-            'tsx',
-            fileURLToPath(new URL('../scripts/check-docs-assets.ts', import.meta.url)),
-            directory,
-          ],
-          { encoding: 'utf8', stdio: 'pipe' },
-        )
-      expect(check()).toContain('assets match their sources')
-      await writeFile(page, link('docs/configuration.md'))
-      expect(check).toThrow('Raw Markdown link loses deployment base')
-      await writeFile(page, link('/postcss-adaptive-matrix/missing.md'))
-      expect(check).toThrow('Missing raw Markdown target')
-      await writeFile(page, '<p>No links</p>')
-      expect(check).toThrow('No raw Markdown links found')
-      await writeFile(page, link('/postcss-adaptive-matrix/docs/configuration.md'))
-      await writeFile(join(directory, 'docs/configuration.md'), 'stale')
-      expect(check).toThrow('Stale generated asset: docs/configuration.md')
-      await rm(join(directory, 'docs/configuration.md'))
-      expect(check).toThrow('ENOENT')
-    } finally {
-      await rm(directory, { recursive: true, force: true })
-    }
-  })
+  it.each(['/', '/postcss-adaptive-matrix/'])(
+    'checks production assets under %s and rejects stale or missing content',
+    async (base) => {
+      const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-gate-'))
+      try {
+        await writeGeneratedAssets(directory)
+        const page = join(directory, 'index.html')
+        const link = (href: string) => `<a class="copy-page-action" href="${href}">Raw</a>`
+        await writeFile(page, link(`${base}docs/configuration.md`))
+        const check = () =>
+          execFileSync(
+            process.execPath,
+            [
+              '--import',
+              'tsx',
+              fileURLToPath(new URL('../scripts/check-docs-assets.ts', import.meta.url)),
+              directory,
+            ],
+            { encoding: 'utf8', stdio: 'pipe', env: { ...process.env, DOCS_BASE: base } },
+          )
+        expect(check()).toContain('assets match their sources')
+        await writeFile(page, link('docs/configuration.md'))
+        expect(check).toThrow('Raw Markdown link loses deployment base')
+        await writeFile(page, link(`${base}missing.md`))
+        expect(check).toThrow('Missing raw Markdown target')
+        await writeFile(page, '<p>No links</p>')
+        expect(check).toThrow('No raw Markdown links found')
+        await writeFile(page, link(`${base}docs/configuration.md`))
+        await writeFile(join(directory, 'docs/configuration.md'), 'stale')
+        expect(check).toThrow('Stale generated asset: docs/configuration.md')
+        await rm(join(directory, 'docs/configuration.md'))
+        expect(check).toThrow('ENOENT')
+      } finally {
+        await rm(directory, { recursive: true, force: true })
+      }
+    },
+  )
 
   it('writes every generated asset byte-for-byte into a production directory', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'adaptive-docs-assets-'))
