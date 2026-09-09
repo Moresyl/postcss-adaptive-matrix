@@ -200,7 +200,12 @@ export function findContinuityIssues(
   root: Root | Document,
   rootFontSize: number = ROOT_FONT_SIZE,
 ): ContinuityIssue[] {
-  if (!root || (root.type !== 'root' && root.type !== 'document')) {
+  if (
+    !root ||
+    (root.type !== 'root' && root.type !== 'document') ||
+    !Array.isArray(root.nodes) ||
+    typeof root.walkDecls !== 'function'
+  ) {
     throw new TypeError('root must be a PostCSS Root or Document')
   }
   if (!Number.isFinite(rootFontSize) || rootFontSize <= 0) {
