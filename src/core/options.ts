@@ -388,7 +388,9 @@ function validateInputShape(input: unknown): void {
   }
   if (input.routes !== undefined) {
     if (Array.isArray(input.routes)) {
-      input.routes.forEach((route, index) => validateRouteShape(route, `routes[${index}]`))
+      for (const [index, route] of input.routes.entries()) {
+        validateRouteShape(route, `routes[${index}]`)
+      }
     } else {
       validateRouteShape(input.routes, 'routes')
     }

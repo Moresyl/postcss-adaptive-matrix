@@ -3,6 +3,16 @@ import { convertLength, convertValue, createConverter, round } from '../src/core
 import { createPropertyMatcher, matchesFile, matchesPattern } from '../src/core/matchers.js'
 import { resolveOptions } from '../src/core/options.js'
 
+it('reports missing route array entries at their exact indexes', () => {
+  for (const missingIndex of [0, 1]) {
+    const routes: Array<{ profile: string; selector: string } | undefined> = new Array(2)
+    routes[missingIndex === 0 ? 1 : 0] = { profile: 'app', selector: '.card' }
+    expect(() => resolveOptions({ routes })).toThrow(
+      `routes[${missingIndex}] must be an object, not undefined.`,
+    )
+  }
+})
+
 it('converts oversized values without retaining them in the value cache', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)
