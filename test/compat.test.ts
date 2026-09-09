@@ -159,6 +159,35 @@ describe('the feature table', () => {
 })
 
 describe('detection', () => {
+  it('isolates feature metadata and regex mutations from future detection', () => {
+    const css = '.card { width: clamp(10px, 5vw, 30px) }'
+    const original = compatFeature('math-functions')
+    const publicEntry = COMPAT_FEATURES.find((feature) => feature.id === 'math-functions')!
+    const saved = { ...publicEntry }
+    try {
+      const returned = detectFeatures(css).find(
+        ({ feature }) => feature.id === 'math-functions',
+      )!.feature
+      returned.title = 'caller title'
+      returned.detect!.compile('never-match-this')
+      const queried = compatFeature('math-functions')
+      queried.source = 'css-variables'
+      queried.detect!.compile('never-match-this-either')
+      publicEntry.title = 'public mutation'
+      publicEntry.detect = /never-match-public/
+      const fresh = detectFeatures(css).find(({ feature }) => feature.id === 'math-functions')!
+      expect(fresh.feature.title).toBe(original.title)
+      expect(compatFeature('math-functions').source).toBe(original.source)
+      expect(
+        auditCompatibility(css, { safari: 12 }).findings.some(
+          ({ feature }) => feature.id === 'math-functions',
+        ),
+      ).toBe(true)
+    } finally {
+      Object.assign(publicEntry, saved)
+    }
+  })
+
   it('finds each feature in output the compiler actually produced', async () => {
     for (const [id, { css, on }] of Object.entries(EMITTERS)) {
       expect(ids(await compile(css, on)), id).toContain(id)

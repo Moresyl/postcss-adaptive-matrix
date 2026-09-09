@@ -243,7 +243,16 @@ export const COMPAT_FEATURES: readonly CompatFeature[] = Object.freeze([
   },
 ])
 
-const BY_ID = new Map(COMPAT_FEATURES.map((feature) => [feature.id, feature]))
+function copyFeature(feature: CompatFeature): CompatFeature {
+  return {
+    ...feature,
+    ...(feature.detect ? { detect: new RegExp(feature.detect.source, feature.detect.flags) } : {}),
+  }
+}
+
+// Public metadata remains editable, but must not reconfigure later audits.
+const INTERNAL_FEATURES = COMPAT_FEATURES.map(copyFeature)
+const BY_ID = new Map(INTERNAL_FEATURES.map((feature) => [feature.id, feature]))
 
 /** Human-readable names for the browsers the support data covers. */
 export const BROWSER_NAMES: Readonly<Record<string, string>> = Object.freeze({
@@ -479,7 +488,7 @@ export function detectFeatures(css: string): { feature: CompatFeature; sample: s
     /(^|[^-_a-z0-9\\\u0080-\uFFFF])url\([^)]*\)/gi,
     (match, before: string) => before + ' '.repeat(match.length - before.length),
   )
-  for (const feature of COMPAT_FEATURES) {
+  for (const feature of INTERNAL_FEATURES) {
     if (!feature.detect) continue
     // Rebuilt per call rather than shared: a `g`-flagged literal would carry
     // `lastIndex` between audits and start skipping matches.
@@ -490,7 +499,10 @@ export function detectFeatures(css: string): { feature: CompatFeature; sample: s
     const originalEnd = positions
       ? (positions[match.index + match[0].length] ?? css.length)
       : match.index + match[0].length
-    found.push({ feature, sample: sampleAt(css, originalStart, originalEnd - originalStart) })
+    found.push({
+      feature: copyFeature(feature),
+      sample: sampleAt(css, originalStart, originalEnd - originalStart),
+    })
   }
   return found
 }
@@ -572,7 +584,7 @@ export function auditCompatibility(
 export function compatFeature(id: CompatFeatureId): CompatFeature {
   const feature = BY_ID.get(id)
   if (!feature) throw new RangeError(`[postcss-adaptive-matrix] Unknown feature ${id}.`)
-  return feature
+  return copyFeature(feature)
 }
 
 export { FEATURE_SUPPORT }
