@@ -1,0 +1,12 @@
+{
+  "description": "empty-bounds: optional fluid bounds preserve signed lengths and remain idempotent",
+  "options": {
+    "libraries": false,
+    "profiles": {
+      "app": {
+        "designWidth": 375,
+        "fluid": {}
+      }
+    }
+  }
+}
