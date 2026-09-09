@@ -67,6 +67,8 @@ The package includes ESM and CommonJS type declarations. Import `AdaptiveCompile
 
 ## Errors and recovery
 
+Token substitution in continuity diagnostics is bounded per resolution: at most 4,096 substitution calls, 1,048,576 cumulative input UTF-16 code units and 65,536 output code units. Exceeding a budget returns unknown and skips that comparison. Budgets reset for the next resolution; these are diagnostic limits, not CSS compilation limits or process-memory guarantees.
+
 A syntax error, invalid request or throwing configuration callback rejects the compile promise. A diagnostic gate failure does not: inspect `output.gate?.passed === false` before accepting output into a build. Warnings and PostCSS results belong to each call, so a failed or warning-producing request does not contaminate later requests on the same compiler. Dynamic rulers are refreshed on the next compilation even after a callback throws.
 
 ```ts

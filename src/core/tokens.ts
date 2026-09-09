@@ -215,7 +215,7 @@ export function collectTokens(root: Root): TokenTable {
     size: definitions.size,
     boundaries: [...boundaries],
     resolve(value: string, width: number): string | null {
-      return substitute(value, width, lookup, new Set(), 0)
+      return substitute(value, width, lookup, new Set(), 0, { calls: 4096, characters: 1048576 })
     },
   }
 }
@@ -423,14 +423,20 @@ function substitute(
   lookup: Lookup,
   active: Set<string>,
   depth: number,
+  budget: { calls: number; characters: number },
 ): string | null {
   if (depth > MAX_DEPTH) return null
+  // A shallow dependency graph can still expand exponentially. Share limits
+  // across sibling substitutions, not just recursive depth; reset per resolve.
+  if (--budget.calls < 0 || value.length > budget.characters) return null
+  budget.characters -= value.length
 
   let result = ''
   let cursor = 0
   for (;;) {
     const found = findVar(value, cursor)
     if (found === null) {
+      if (result.length + value.length - cursor > 65536) return null
       result += value.slice(cursor)
       return result
     }
@@ -453,14 +459,15 @@ function substitute(
     let replacement: string | null
     if (resolution.status === 'value') {
       active.add(canonicalName)
-      replacement = substitute(resolution.value, width, lookup, active, depth + 1)
+      replacement = substitute(resolution.value, width, lookup, active, depth + 1, budget)
       active.delete(canonicalName)
     } else if (fallback !== null) {
-      replacement = substitute(fallback, width, lookup, active, depth + 1)
+      replacement = substitute(fallback, width, lookup, active, depth + 1, budget)
     } else {
       replacement = null
     }
     if (replacement === null) return null
+    if (result.length + start - cursor + replacement.length > 65536) return null
 
     result += value.slice(cursor, start) + replacement
     cursor = end + 1

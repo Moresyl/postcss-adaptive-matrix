@@ -7,6 +7,19 @@ function table(css: string): ReturnType<typeof collectTokens> {
 }
 
 describe('theme token resolution', () => {
+  it('bounds branching expansion and resets its budget for subsequent resolutions', () => {
+    const declarations = ['--v0: 1px']
+    for (let index = 1; index <= 20; index++) {
+      declarations.push(`--v${index}: var(--v${index - 1}) var(--v${index - 1})`)
+    }
+    const tokens = table(`:root { ${declarations.join(';')} }`)
+    expect(tokens.resolve('var(--v20)', 400)).toBeNull()
+    expect(tokens.resolve('var(--v2)', 400)).toBe('1px 1px 1px 1px')
+    expect(tokens.resolve('x'.repeat(65536), 400)).toHaveLength(65536)
+    expect(tokens.resolve('x'.repeat(65537), 400)).toBeNull()
+    expect(tokens.resolve('var(--missing, 8px)', 400)).toBe('8px')
+  })
+
   it('skips inactive important definitions and keeps the latest applicable priority', () => {
     const tokens = table(`
       :root { --gap: 8px }

@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Token diagnostics bound branching substitution work and expanded output, returning unknown on budget exhaustion instead of expanding repeated references without limit. Normal compilation remains unaffected.
 - Token diagnostics pre-sort definitions by importance and source order, allowing repeated width lookups to stop at the first applicable definition while preserving boundary discovery order.
 - Property filtering and text-classification caches no longer retain property names longer than 256 UTF-16 code units. Longer names still match and convert normally; the limit controls cache retention, not valid CSS input.
 - Property glob filters now match ordered literal segments instead of generating backtracking regular expressions, avoiding combinatorial wildcard retries. Differential tests cover inclusion semantics and overlapping anchored segments.
