@@ -54,3 +54,37 @@ it.each(['ordinary escape', 'other key', 'still open', 'focus moved', 'disposed'
     task.dispose()
   },
 )
+
+it('restores focus after the mobile back button or backdrop closes search', () => {
+  for (const selector of ['.back-button', '.backdrop']) {
+    const task = fixture()
+    const click = task.doc.addEventListener.mock.calls[1]![1] as (event: {
+      target: Element
+    }) => void
+    click({
+      target: {
+        closest: (value: string) => value.includes(`.VPLocalSearchBox ${selector}`),
+      } as unknown as Element,
+    })
+    task.close()
+    vi.runAllTimers()
+    expect(task.focus).toHaveBeenCalledOnce()
+    task.dispose()
+  }
+})
+
+it('ignores result clicks and cancels pending pointer restoration on disposal', () => {
+  const task = fixture()
+  const click = task.doc.addEventListener.mock.calls[1]![1] as (event: { target: unknown }) => void
+  click({ target: { closest: () => null } })
+  expect(vi.getTimerCount()).toBe(0)
+  click({ target: null })
+  click({ target: {} })
+  expect(vi.getTimerCount()).toBe(0)
+  click({ target: { closest: () => ({}) } })
+  task.close()
+  task.dispose()
+  vi.runAllTimers()
+  expect(task.focus).not.toHaveBeenCalled()
+  expect(task.doc.removeEventListener).toHaveBeenCalledWith('click', click, true)
+})
