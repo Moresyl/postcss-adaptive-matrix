@@ -159,6 +159,21 @@ describe('the feature table', () => {
 })
 
 describe('detection', () => {
+  it('does not let mutations of exported support tables rewrite audit verdicts', () => {
+    const table = FEATURE_SUPPORT['css-math-functions'] as Record<string, string>
+    const original = table.safari!
+    const css = '.card { width: clamp(10px, 5vw, 30px) }'
+    const before = auditCompatibility(css, { safari: 12 })
+    try {
+      table.safari = '1'
+      expect(auditCompatibility(css, { safari: 12 })).toEqual(before)
+      delete table.safari
+      expect(auditCompatibility(css, { safari: 12 })).toEqual(before)
+    } finally {
+      table.safari = original
+    }
+  })
+
   it('isolates feature metadata and regex mutations from future detection', () => {
     const css = '.card { width: clamp(10px, 5vw, 30px) }'
     const original = compatFeature('math-functions')

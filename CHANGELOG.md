@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Compatibility audits now isolate internal feature metadata and support tables from public objects. Editing returned features, detection regexes or exported support metadata no longer changes later audit verdicts.
 - Compatibility targets now reject arrays, BigInts and objects instead of coercing them to version strings. Programmatic compilation validates targets before invoking dynamic configuration callbacks.
 - CLI configuration validation errors now include the supplied config file path while retaining field-level diagnostics and spelling suggestions, in both text and JSON reports.
 - Sparse library configuration arrays now fail entry validation instead of reaching duplicate-name checks with an undefined entry and throwing an internal property-access error.

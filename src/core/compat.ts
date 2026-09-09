@@ -253,6 +253,9 @@ function copyFeature(feature: CompatFeature): CompatFeature {
 // Public metadata remains editable, but must not reconfigure later audits.
 const INTERNAL_FEATURES = COMPAT_FEATURES.map(copyFeature)
 const BY_ID = new Map(INTERNAL_FEATURES.map((feature) => [feature.id, feature]))
+const INTERNAL_SUPPORT = Object.fromEntries(
+  Object.entries(FEATURE_SUPPORT).map(([source, versions]) => [source, { ...versions }]),
+)
 
 /** Human-readable names for the browsers the support data covers. */
 export const BROWSER_NAMES: Readonly<Record<string, string>> = Object.freeze({
@@ -336,7 +339,7 @@ export function compareVersions(a: string, b: string): number {
 
 /** The first version of `browser` supporting `feature`, or null if none does. */
 export function supportedSince(feature: CompatFeature, browser: string): string | null {
-  const table = FEATURE_SUPPORT[feature.source] as Record<string, string>
+  const table = INTERNAL_SUPPORT[feature.source] as Record<string, string>
   return Object.hasOwn(table, browser) ? table[browser]! : null
 }
 
