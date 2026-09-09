@@ -38,6 +38,25 @@ const output = await compile(source, {
 
 解析回调会保留函数本身，不会在创建时求值一次后固定。`designWidth` 或 `rootValue` 回调仍可按文件或重新构建返回不同标尺。回调闭包中的状态由调用方管理，并发请求重叠时也不例外。
 
+### 修改 AST 后重新生成结果
+
+使用修改后的结果前，先序列化 AST，再审计新 CSS：
+
+```ts
+import { compileAdaptiveCss, auditCompatibility } from 'postcss-adaptive-matrix'
+
+const targets = { safari: 12 }
+const output = await compileAdaptiveCss('.card { width: 40px }', {}, { targets })
+output.result.root.walkDecls('width', (declaration) => {
+  declaration.value = '40px'
+})
+const edited = output.result.root.toResult({ map: false })
+const compatibility = auditCompatibility(edited.css, targets)
+// 使用 edited.css 和 compatibility，而不是 output.css 或旧的审计。
+```
+
+此例有意禁用映射。如果流水线需要源码映射，请在生成新结果时传入对应路径与上游映射。构建策略也应重新计算；单独调用审计不会更新 `output.gate`。
+
 ## 门禁与映射
 
 分析会规范化 PostCSS AST 提供的完整转义 at-rule 名称，包括媒体条件和属性注册。这不会修复默认解析器已将名称拆入参数的源文本；支持范围取决于上游解析器或插件提供的 AST。

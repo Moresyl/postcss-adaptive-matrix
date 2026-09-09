@@ -19,6 +19,25 @@ console.log(output.css)
 
 Each compilation returns its own AST, warnings, compatibility report and gate. Mutating those returned collections does not reconfigure the compiler or change later results. However, `css`, `map`, diagnostics and the gate describe the compilation as returned: they are not live views of `result.root`. If a downstream transform edits the AST, serialize and regenerate source maps through PostCSS, then rerun any audits or gates required for the edited output. Changing the AST alone does not refresh `output.css` or the earlier verdict.
 
+### Regenerate an edited AST
+
+Before reusing an edited result, serialize the changed AST and audit that new CSS:
+
+```ts
+import { compileAdaptiveCss, auditCompatibility } from 'postcss-adaptive-matrix'
+
+const targets = { safari: 12 }
+const output = await compileAdaptiveCss('.card { width: 40px }', {}, { targets })
+output.result.root.walkDecls('width', (declaration) => {
+  declaration.value = '40px'
+})
+const edited = output.result.root.toResult({ map: false })
+const compatibility = auditCompatibility(edited.css, targets)
+// Use edited.css and compatibility, not output.css or its earlier audit.
+```
+
+This example deliberately disables maps. If your pipeline needs source maps, pass the appropriate paths and upstream map when generating the new result. Recompute your build policy too; this standalone audit does not update `output.gate`.
+
 ## Reuse a compiler
 
 ```ts

@@ -1,8 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import postcss from 'postcss'
-import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
+import {
+  auditCompatibility,
+  compileAdaptiveCss,
+  createAdaptiveCompiler,
+  findContinuityIssues,
+} from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('regenerates edited AST output and audits it independently of the original result', async () => {
+    const targets = { safari: 12 }
+    const output = await compileAdaptiveCss('.card { width: 40px }', {}, { targets })
+    const originalCss = output.css
+    expect(output.compatibility!.findings.length).toBeGreaterThan(0)
+    output.result.root.walkDecls('width', (declaration) => {
+      declaration.value = '40px'
+    })
+    const edited = output.result.root.toResult({ map: false })
+    const compatibility = auditCompatibility(edited.css, targets)
+    expect(edited.css).toBe('.card { width: 40px }')
+    expect(edited.map).toBeUndefined()
+    expect(compatibility.findings).toEqual([])
+    expect(output.css).toBe(originalCss)
+    expect(output.compatibility!.findings.length).toBeGreaterThan(0)
+  })
+
   it('rejects coercible target values before callbacks and recovers on the next request', async () => {
     let calls = 0
     const compile = createAdaptiveCompiler({
