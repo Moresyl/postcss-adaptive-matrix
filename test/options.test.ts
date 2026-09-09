@@ -311,6 +311,22 @@ describe('configuration validation', () => {
     expect(options.profiles).toHaveProperty('pc')
   })
 
+  it.each([{}, { profiles: {} }])('isolates default configuration graphs: %j', (input) => {
+    const baseline = resolveOptions(input)
+    const changed = resolveOptions(input)
+    changed.profiles.app!.designWidth = 999
+    changed.profiles.app!.fluid!.minWidth = 123
+    changed.profiles.pc!.fluid!.maxWidth = 9999
+    changed.routes.length = 0
+    changed.libraries.length = 0
+    changed.unitToConvert.push('rem')
+    changed.textProperties.length = 0
+    changed.propList[0] = 'margin'
+    changed.selectorExclude.push('.ignored')
+    changed.valueExclude.push('24px')
+    expect(resolveOptions(input)).toEqual(baseline)
+  })
+
   it('rejects missing profiles and invalid numeric ranges', () => {
     expect(() => resolveOptions({ defaultProfile: 'missing' })).toThrow(
       'defaultProfile "missing" does not exist',
