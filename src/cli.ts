@@ -62,6 +62,7 @@ Options
                        colour follows the terminal and honours NO_COLOR
       --               treat every remaining argument as a file path
   -h, --help
+  -v, --version       print the installed package version without compiling
 
 Long options that take a value also accept --option=value.
 
@@ -97,6 +98,7 @@ interface CliArgs {
   json: boolean
   color: boolean
   help: boolean
+  version: boolean
 }
 
 /** One declaration the compiler touched, or deliberately did not. */
@@ -188,6 +190,7 @@ function parseArgs(argv: string[]): CliArgs {
     json: false,
     color: process.stdout.isTTY === true && !process.env['NO_COLOR'],
     help: false,
+    version: false,
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -215,6 +218,10 @@ function parseArgs(argv: string[]): CliArgs {
       case '-h':
       case '--help':
         args.help = true
+        break
+      case '-v':
+      case '--version':
+        args.version = true
         break
       case '-c':
       case '--config':
@@ -625,6 +632,19 @@ export async function runCli(argv: string[]): Promise<number> {
     if (args.help) {
       writingOutput = true
       await writeReportChunk(HELP)
+      return 0
+    }
+    if (args.version) {
+      // src/cli.ts and dist/cli.js are both one directory below the installed
+      // manifest. Resolve relative to this module, never the caller's cwd.
+      const manifest = JSON.parse(
+        await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+      ) as { version?: unknown }
+      if (typeof manifest.version !== 'string' || !manifest.version.trim()) {
+        throw new CliError('Installed package metadata has no valid version.')
+      }
+      writingOutput = true
+      await writeReportChunk(`${manifest.version}\n`)
       return 0
     }
     if (args.json && args.css) {

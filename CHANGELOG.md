@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- CLI now supports `-v`/`--version`, reading the installed package metadata and exiting before configuration, CSS or stdin handling.
 - Reusable converters normalize text-property patterns once at creation instead of repeating that work for every newly encountered property name. Escaped standard names and case-sensitive custom names retain their matching rules.
 - Token diagnostics bound branching substitution work and expanded output, returning unknown on budget exhaustion instead of expanding repeated references without limit. Normal compilation remains unaffected.
 - Token diagnostics pre-sort definitions by importance and source order, allowing repeated width lookups to stop at the first applicable definition while preserving boundary discovery order.

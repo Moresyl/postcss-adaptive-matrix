@@ -44,6 +44,9 @@ cat app.css | adaptive-matrix --from src/app.css
 | `--color` / `--no-color` | Force colour on/off; with neither it follows the terminal and honours `NO_COLOR` |
 | `--` | Stop option parsing; every remaining argument is a file path, including names beginning with `-` |
 | `-h, --help` | Help |
+| `-v, --version` | Print the installed package version without compiling |
+
+Like help, version output is informational: it prints a plain version line even with `--json`, and does not load configuration or input files. If both help and version are requested, help takes precedence.
 
 Long options that take a value accept either spelling: `--profile app` or `--profile=app`.
 

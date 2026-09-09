@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -54,6 +54,25 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(['-v', '--version'])(
+    'prints the package version with %s without reading input or config',
+    async (flag) => {
+      const manifest = JSON.parse(
+        await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+      ) as { version: string }
+      expect(
+        await runCli([
+          flag,
+          '--config',
+          join(directory, 'missing.json'),
+          join(directory, 'missing.css'),
+        ]),
+      ).toBe(0)
+      expect(out).toBe(`${manifest.version}\n`)
+      expect(err).toBe('')
+    },
+  )
+
   it.each(['parse', 'config'])(
     'handles a broken pipe while reporting a %s error as JSON',
     async (phase) => {

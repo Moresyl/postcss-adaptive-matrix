@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import postcss from 'postcss'
 
@@ -127,6 +128,18 @@ const cli = spawnSync(process.execPath, ['dist/cli.js', '--help'], {
 assert.equal(cli.status, 0, cli.stderr)
 assert.match(cli.stdout, /adaptive-matrix/)
 assert.match(cli.stdout, /--option=value/)
+
+const version = spawnSync(
+  process.execPath,
+  [fileURLToPath(new URL('../dist/cli.js', import.meta.url)), '--version'],
+  {
+    cwd: tmpdir(),
+    encoding: 'utf8',
+    timeout: 15000,
+  },
+)
+assert.equal(version.status, 0, version.stderr)
+assert.equal(version.stdout, `${require('../package.json').version}\n`)
 
 const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
