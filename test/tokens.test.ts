@@ -7,6 +7,15 @@ function table(css: string): ReturnType<typeof collectTokens> {
 }
 
 describe('theme token resolution', () => {
+  it('bounds cumulative input even when repeated long definitions expand to short values', () => {
+    const padding = ' '.repeat(16000)
+    const tokens = table(`:root { --short: 1px; --long: var(${padding}--short) }`)
+    // Each expansion returns three characters, so output size alone cannot
+    // bound the repeated scanning of the much larger authored definition.
+    expect(tokens.resolve(Array(70).fill('var(--long)').join(' '), 400)).toBeNull()
+    expect(tokens.resolve('var(--long)', 400)).toBe('1px')
+  })
+
   it('bounds branching expansion and resets its budget for subsequent resolutions', () => {
     const declarations = ['--v0: 1px']
     for (let index = 1; index <= 20; index++) {

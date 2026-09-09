@@ -7,6 +7,28 @@ import { evaluateLength, splitComponents } from '../src/core/evaluate.js'
 const AT = { width: 768, height: 800, rootFontSize: 16 }
 const px = (value: string, width = AT.width) => evaluateLength(value, { ...AT, width })
 
+it('isolates exhausted token expansion from other seams in the same stylesheet', async () => {
+  const definitions = ['--v0: 10vw']
+  for (let index = 1; index <= 20; index++) {
+    definitions.push(`--v${index}: calc(var(--v${index - 1}) + var(--v${index - 1}))`)
+  }
+  const source = `:root { ${definitions.join(';')} }
+    .expensive { width: var(--v20) }
+    .valid { width: 10vw }
+    @media (min-width: 768px) {
+      .expensive { width: 1vw }
+      .valid { width: 5vw }
+    }`
+  const result = await postcss([adaptiveMatrix({ libraries: false })]).process(source, {
+    from: 'budget.css',
+  })
+  expect(result.css).toContain('var(--v20)')
+  const issues = findContinuityIssues(result.root)
+  expect(issues).toHaveLength(1)
+  expect(issues[0]).toMatchObject({ selector: '.valid', prop: 'width', breakpoint: 768 })
+  expect(findContinuityIssues(result.root)).toEqual(issues)
+})
+
 it.each([
   '.a { width: 10vw } @media (min-width: 768px) { .a { width: 5vw } }',
   ':root { --gap: 10vw } @media (min-width: 768px) { :root { --gap: 5vw } } .a { width: var(--gap) }',
