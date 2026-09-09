@@ -87,7 +87,9 @@ export function matchesFile(
 
 function globToRegExp(glob: string): RegExp {
   const escaped = glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^${escaped.replace(/\*/g, '.*')}$`)
+  // Adjacent stars mean the same thing as one. Expanding each separately
+  // creates redundant backtracking paths on a failed suffix match.
+  return new RegExp(`^${escaped.replace(/\*+/g, '.*')}$`)
 }
 
 /**

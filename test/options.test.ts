@@ -1005,6 +1005,17 @@ describe('matchers and math helpers', () => {
     expect(custom(String.raw`--\74 heme-gap`)).toBe(false)
   })
 
+  it('collapses adjacent property wildcards while retaining exclusions and case rules', () => {
+    const compact = createPropertyMatcher(['*', '!margin-*', '!--Theme-*'])
+    const repeated = createPropertyMatcher(['***', '!margin-****', '!--Theme-***'])
+    for (const property of ['width', 'MARGIN-LEFT', '--Theme-gap', '--theme-gap', 'padding']) {
+      expect(repeated(property)).toBe(compact(property))
+    }
+    const suffix = createPropertyMatcher([`--${'*'.repeat(1000)}-size`])
+    expect(suffix(`--${'a'.repeat(10000)}-gap`)).toBe(false)
+    expect(suffix(`--${'a'.repeat(10000)}-size`)).toBe(true)
+  })
+
   it('supports reusable regexes, strings, arrays, and functions', () => {
     const global = /src/g
     global.lastIndex = 2
