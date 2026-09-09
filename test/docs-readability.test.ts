@@ -58,3 +58,19 @@ it('declares dark color-scheme when the dark theme variables are active', () => 
   const css = readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8')
   expect(css).toMatch(/\.dark\s*\{[^}]*color-scheme:\s*dark;/s)
 })
+
+it('allows long table headings to wrap on narrow screens', () => {
+  const root = postcss.parse(
+    readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8'),
+  )
+  const declarations: Record<string, string> = {}
+  root.walkAtRules('media', (rule) => {
+    if (rule.params !== '(max-width: 640px)') return
+    rule.walkRules('.vp-doc th', (heading) => {
+      heading.walkDecls((declaration) => {
+        declarations[declaration.prop] = declaration.value
+      })
+    })
+  })
+  expect(declarations).toEqual({ 'white-space': 'normal', 'overflow-wrap': 'anywhere' })
+})

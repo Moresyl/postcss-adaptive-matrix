@@ -153,6 +153,11 @@
 }
 
 @media (max-width: 640px) {
+  .vp-doc th {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .vp-doc h1 {
     font-size: 28px;
   }
