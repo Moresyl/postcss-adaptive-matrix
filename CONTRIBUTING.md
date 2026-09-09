@@ -1,5 +1,7 @@
 # Contributing
 
+For a local viewport-observer comparison, run `npx tsx bench/runtime.ts <trusted-commit-hash>`. It compares the baseline runtime source with the working tree using current shared dependencies. Output equivalence is checked before alternating timings. Setup/teardown and direct unchanged/changing updates use a simulated host; results do not measure browser event dispatch, layout or rendering.
+
 Token lookup changes can be compared with `npm run bench:tokens -- <trusted-commit-hash>`.
 The comparison compiles that revision's token module against current shared dependencies,
 checks identical query results, and measures collection plus queries for small and larger
