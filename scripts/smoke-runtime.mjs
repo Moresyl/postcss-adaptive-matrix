@@ -8,6 +8,16 @@ import { fileURLToPath } from 'node:url'
 
 import postcss from 'postcss'
 
+const loadedPostCssVersion = createRequire(import.meta.url)('postcss/package.json').version
+const expectedPostCss = process.env.EXPECTED_POSTCSS_VERSION
+if (expectedPostCss && loadedPostCssVersion !== expectedPostCss) {
+  throw new Error(
+    `Smoke loaded PostCSS ${loadedPostCssVersion}, expected ${expectedPostCss}. ` +
+      'The peer-floor check would otherwise be a false positive.',
+  )
+}
+console.log(`Smoke host: PostCSS ${loadedPostCssVersion}`)
+
 const esm = await import('../dist/index.js')
 assert.equal(typeof esm.default, 'function')
 assert.equal(typeof esm.appPcPreset, 'function')
