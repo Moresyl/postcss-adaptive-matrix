@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+- Configuration-key validation avoids allocating a temporary Set for each small allowed-key list while retaining unknown-field rejection and spelling suggestions.
+- Configuration guides now separate truly required nested fields from optional settings and show zero-configuration, shorthand-canvas and one-sided-bound examples. Tests compile the examples in both languages and verify second-pass stability.
+- Reference table cells and narrow-screen headings wrap long content. The English component-library shortcut moves into the More menu to prevent tablet-width navigation overflow; sidebar and page links remain available.
+- Markdown page copying serializes clipboard writes across navigation, cancels obsolete downloads, and suppresses feedback after disposal. Integration tests cover request timeout recovery, late responses and exact Markdown payloads.
+
 - Node 18 CI now reruns shipped-artifact smoke checks against the declared PostCSS 8.4.0 peer minimum, alongside the locked dependency version. This is compatibility coverage, not a recommendation to install an old PostCSS release.
 
 - Playground adds a guarded Copy CSS action that only copies a current successful result, handles empty CSS and clipboard permission failures, and suppresses stale completion feedback after input changes or disposal.
