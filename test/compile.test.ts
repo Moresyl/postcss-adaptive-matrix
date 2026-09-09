@@ -3,6 +3,34 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('does not reuse caller-mutated result state across compilations', async () => {
+    const compile = createAdaptiveCompiler({
+      profiles: { app: { designWidth: 400, fluid: { minWidth: 320, maxWidth: 600 } } },
+      libraries: false,
+    })
+    const source = '.card { padding: 40px }'
+    const request = { targets: { safari: 12 }, failOn: ['compatibility'] as const }
+    const first = await compile(source, request)
+    const css = first.css
+    expect(first.gate?.passed).toBe(false)
+    expect(first.compatibility!.findings.length).toBeGreaterThan(0)
+    first.result.root.removeAll()
+    first.warnings.push(first.result.warn('caller-added warning'))
+    first.compatibility!.findings.length = 0
+    first.compatibility!.unknownBrowsers.push('caller-browser')
+    first.gate!.failOn.length = 0
+    first.gate!.passed = true
+
+    const second = await compile(source, request)
+    expect(second.css).toBe(css)
+    expect(second.result.root.nodes.length).toBeGreaterThan(0)
+    expect(second.warnings).toEqual([])
+    expect(second.compatibility!.findings.length).toBeGreaterThan(0)
+    expect(second.compatibility!.unknownBrowsers).toEqual([])
+    expect(second.gate).toEqual({ failOn: ['compatibility'], passed: false })
+    expect(second.result).not.toBe(first.result)
+  })
+
   it('distinguishes an omitted include filter from an empty one', async () => {
     const source = '.card { padding: 40px }'
     const options = { profiles: { app: 400 }, libraries: false as const }
