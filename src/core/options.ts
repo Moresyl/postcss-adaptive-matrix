@@ -797,14 +797,16 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   // route that silently replaces `defaultProfile` — and reversed bounds match
   // nothing at all. Both read as working configuration, so neither may be
   // discovered from the output.
-  for (const route of options.routes) {
+  for (const [routeIndex, route] of options.routes.entries()) {
     if (route.media === undefined) continue
     const matchers = Array.isArray(route.media) ? route.media : [route.media]
-    for (const matcher of matchers as MediaMatcher[]) {
+    for (const [matcherIndex, matcher] of (matchers as MediaMatcher[]).entries()) {
+      const routePath = Array.isArray(input.routes) ? `routes[${routeIndex}]` : 'routes'
+      const mediaPath = `${routePath}.media${Array.isArray(route.media) ? `[${matcherIndex}]` : ''}`
       const { minWidth, maxWidth } = matcher ?? {}
       if (minWidth === undefined && maxWidth === undefined) {
         throw new TypeError(
-          `[postcss-adaptive-matrix] Route media needs minWidth, maxWidth or both. ` +
+          `[postcss-adaptive-matrix] ${mediaPath} needs minWidth, maxWidth or both. ` +
             `An empty band matches every rule, which is a slower way of changing defaultProfile.`,
         )
       }
@@ -814,13 +816,13 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
       ] as const) {
         if (bound !== undefined && (!Number.isFinite(bound) || bound < 0)) {
           throw new RangeError(
-            `[postcss-adaptive-matrix] Route media.${field} must be a width in pixels, not ${String(bound)}.`,
+            `[postcss-adaptive-matrix] ${mediaPath}.${field} must be a width in pixels, not ${String(bound)}.`,
           )
         }
       }
       if (minWidth !== undefined && maxWidth !== undefined && maxWidth < minWidth) {
         throw new RangeError(
-          `[postcss-adaptive-matrix] Route media band ${minWidth}px–${maxWidth}px is empty, so it can never match.`,
+          `[postcss-adaptive-matrix] ${mediaPath} band ${minWidth}px–${maxWidth}px is empty, so it can never match.`,
         )
       }
     }

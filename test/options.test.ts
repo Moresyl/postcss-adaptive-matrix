@@ -102,6 +102,27 @@ it('bounds property classification caching and reclassifies evicted entries corr
 })
 
 describe('configuration validation', () => {
+  it('locates invalid numeric media bands inside route arrays', () => {
+    for (const [band, expected] of [
+      [{ minWidth: -1 }, 'routes[1].media[1].minWidth'],
+      [{ maxWidth: Infinity }, 'routes[1].media[1].maxWidth'],
+      [{}, 'routes[1].media[1] needs'],
+      [{ minWidth: 600, maxWidth: 320 }, 'routes[1].media[1] band'],
+    ] as const) {
+      expect(() =>
+        resolveOptions({
+          routes: [
+            { profile: 'app', selector: '.first' },
+            { profile: 'app', media: [{ minWidth: 0 }, band] },
+          ],
+        }),
+      ).toThrow(expected)
+    }
+    expect(() => resolveOptions({ routes: { profile: 'app', media: { minWidth: -1 } } })).toThrow(
+      'routes.media.minWidth',
+    )
+  })
+
   it('alternates simple and complex values without leaking unit-pattern state', () => {
     const options = resolveOptions({
       profiles: { app: 400 },

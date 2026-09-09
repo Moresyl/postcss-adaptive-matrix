@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Invalid route media bounds now report their exact configuration path, including route and matcher array indexes, so nested numeric and empty-band errors can be located directly.
 - CLI now supports `-v`/`--version`, reading the installed package metadata and exiting before configuration, CSS or stdin handling.
 - Reusable converters normalize text-property patterns once at creation instead of repeating that work for every newly encountered property name. Escaped standard names and case-sensitive custom names retain their matching rules.
 - Token diagnostics bound branching substitution work and expanded output, returning unknown on budget exhaustion instead of expanding repeated references without limit. Normal compilation remains unaffected.
