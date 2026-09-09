@@ -28,6 +28,7 @@ describe('publication preflight', () => {
       'npm run check',
       'npm run pack:check',
       'npm run smoke:runtime',
+      'npm run bench:check',
       'npm run audit:check',
     ])
   })
