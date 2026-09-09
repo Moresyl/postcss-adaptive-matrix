@@ -166,6 +166,20 @@ for (const api of [publicRuntime, commonJsRuntime]) {
   }
   observer.destroy()
   assert.equal(events.size, 0)
+  // Exercise host scheduling failure through both published module formats,
+  // including CI's minimum Node runtime rather than only the source tests.
+  host.requestAnimationFrame = () => {
+    throw new Error('host refused frame scheduling')
+  }
+  const failed = api.observeAdaptiveViewport({
+    window: host,
+    target: { style: { setProperty() {} } },
+  })
+  assert.equal(events.size, 2)
+  assert.doesNotThrow(() => events.get('resize')())
+  assert.equal(events.size, 0)
+  assert.equal(failed.update(), null)
+  assert.doesNotThrow(() => failed.destroy())
   assert.equal(frames.size, 0)
   assert.equal(observer.update(), null)
   assert.equal(writes, 10)
