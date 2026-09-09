@@ -27,6 +27,7 @@ describe('resolveLibrary', () => {
       libraries[missingIndex === 0 ? 1 : 0] = 'vant'
       for (const resolve of [
         resolveLibraries,
+        defineLibraries,
         (value: LibraryEntry[]) => resolveOptions({ libraries: value }),
       ]) {
         expect(() => resolve(libraries)).toThrow(

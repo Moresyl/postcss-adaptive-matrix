@@ -4,7 +4,7 @@
 
 ## Unreleased
 
-- Sparse library configuration arrays now report the missing entry instead of silently skipping it during route expansion.
+- Sparse library configuration arrays now fail entry validation instead of reaching duplicate-name checks with an undefined entry and throwing an internal property-access error.
 - Invalid route media bounds now report their exact configuration path, including route and matcher array indexes, so nested numeric and empty-band errors can be located directly.
 - CLI now supports `-v`/`--version`, reading the installed package metadata and exiting before configuration, CSS or stdin handling.
 - Reusable converters normalize text-property patterns once at creation instead of repeating that work for every newly encountered property name. Escaped standard names and case-sensitive custom names retain their matching rules.

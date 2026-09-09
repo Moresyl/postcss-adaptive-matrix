@@ -41,6 +41,12 @@ for (const api of [publicRuntime, commonJsRuntime]) {
   assert.equal(api.observeAdaptiveViewport().update(), null)
 }
 for (const api of [esm, cjs]) {
+  const sparseLibraries = new Array(2)
+  sparseLibraries[0] = 'vant'
+  assert.throws(
+    () => api.defineLibraries(sparseLibraries),
+    /A library entry must be a built-in name or options object, not undefined/,
+  )
   for (const filter of ['include', 'exclude']) {
     const files = [filter === 'include' ? 'card.css' : 'vendor.css']
     const reusable = api.createAdaptiveCompiler({
