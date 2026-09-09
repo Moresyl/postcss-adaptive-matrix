@@ -102,7 +102,7 @@ watch([css, options], () => {
 })
 onMounted(run)
 onBeforeUnmount(() => {
-  outputCopy.reset()
+  outputCopy.dispose()
   clearTimeout(timer)
   stop()
 })

@@ -28,7 +28,7 @@ it('reports permission failures and allows retry', async () => {
   expect(update).toHaveBeenLastCalledWith('copied')
 })
 
-it('suppresses duplicate writes and stale feedback after input changes or disposal', async () => {
+it('suppresses duplicate writes and stale feedback after input changes', async () => {
   let finish!: () => void
   const write = vi.fn(
     () =>
@@ -46,6 +46,30 @@ it('suppresses duplicate writes and stale feedback after input changes or dispos
   await pending
   expect(update.mock.calls).toEqual([['copying'], ['copying'], ['idle']])
 })
+
+it.each([false, true])(
+  'never publishes or starts new writes after disposal (reject=%s)',
+  async (reject) => {
+    let finish!: () => void
+    const write = vi.fn(
+      () =>
+        new Promise<void>((resolve, fail) => {
+          finish = () => (reject ? fail(new Error('denied')) : resolve())
+        }),
+    )
+    const update = vi.fn()
+    const task = createOutputCopy(write, update)
+    const pending = task.copy('CSS', false)
+    task.dispose()
+    task.dispose()
+    task.reset()
+    finish()
+    await pending
+    await task.copy('new CSS', false)
+    expect(write).toHaveBeenCalledOnce()
+    expect(update.mock.calls).toEqual([['copying']])
+  },
+)
 
 it('serializes a retry until an invalidated clipboard write settles', async () => {
   let finish!: () => void

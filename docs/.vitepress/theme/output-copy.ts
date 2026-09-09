@@ -7,12 +7,14 @@ export function createOutputCopy(
 ) {
   let generation = 0
   let pending = false
+  let disposed = false
   function reset() {
+    if (disposed) return
     generation++
     update(pending ? 'copying' : 'idle')
   }
   async function copy(output: string | null, unavailable: boolean) {
-    if (output === null || unavailable || pending) return
+    if (disposed || output === null || unavailable || pending) return
     const current = ++generation
     pending = true
     update('copying')
@@ -23,8 +25,12 @@ export function createOutputCopy(
       if (current === generation) update('failed')
     } finally {
       pending = false
-      if (current !== generation) update('idle')
+      if (!disposed && current !== generation) update('idle')
     }
   }
-  return { copy, reset }
+  function dispose() {
+    disposed = true
+    generation++
+  }
+  return { copy, reset, dispose }
 }
