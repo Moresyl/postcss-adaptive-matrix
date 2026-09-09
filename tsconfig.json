@@ -26,5 +26,10 @@
     "vitest.config.ts"
   ],
   // Independently compiled with NodeNext by test/consumer-types.test.ts.
-  "exclude": ["test/fixtures/consumer.mts", "test/fixtures/consumer.cts"]
+  "exclude": [
+    "test/fixtures/consumer.mts",
+    "test/fixtures/consumer.cts",
+    "test/fixtures/server-consumer.mts",
+    "test/fixtures/server-consumer.cts"
+  ]
 }

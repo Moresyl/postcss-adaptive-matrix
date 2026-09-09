@@ -5,6 +5,30 @@ import { describe, expect, it } from 'vitest'
 
 const built = existsSync(new URL('../dist/index.d.cts', import.meta.url))
 describe.skipIf(!built)('consumer type resolution', () => {
+  it('typechecks server-only consumers without the DOM library', () => {
+    const files = ['server-consumer.mts', 'server-consumer.cts'].map((file) =>
+      fileURLToPath(new URL(`./fixtures/${file}`, import.meta.url)),
+    )
+    const program = ts.createProgram(files, {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      lib: ['lib.es2022.d.ts'],
+      types: ['node'],
+      strict: true,
+      exactOptionalPropertyTypes: true,
+      noEmit: true,
+      skipLibCheck: false,
+    })
+    const diagnostics = ts.getPreEmitDiagnostics(program)
+    expect(
+      diagnostics.map((diagnostic) =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+      ),
+    ).toEqual([])
+    expect(program.getSourceFiles().some((file) => /lib\.dom\./.test(file.fileName))).toBe(false)
+  }, 30000)
+
   it.each([false, true])(
     'typechecks NodeNext consumers with exactOptionalPropertyTypes=%s',
     (exactOptionalPropertyTypes) => {
