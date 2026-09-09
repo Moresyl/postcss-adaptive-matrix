@@ -57,6 +57,41 @@ const SPANS = [120, 200, 480, 896, 1536]
 const VALUES = [1, 2, 4, 12, 16, 20, 32, 48, 100, 187.5, 375, -4, -16, -48]
 const PROPERTIES = ['width', 'font-size', 'margin-top', 'letter-spacing', 'border-radius']
 
+it.each([
+  { fluid: undefined, doubled: 26.4 },
+  { fluid: {}, doubled: 26.4 },
+  { fluid: { minWidth: 320 }, doubled: 30.35733 },
+  { fluid: { maxWidth: 600 }, doubled: 26.4 },
+  { fluid: { minWidth: 320, maxWidth: 600 }, doubled: 30.35733 },
+])('preserves the documented root-size response for $fluid', async ({ fluid, doubled }) => {
+  const profile = { designWidth: 375, fontFluidity: 0.35, fluid }
+  const css = await compile('.a { font-size: 16px }', profile)
+  const value = converted(css)!
+  // Independent arithmetic: the preferred value is 0.65rem + 1.49333vw.
+  // A configured lower bound is 0.94867rem, not the original 1rem.
+  expect(evaluateLength(value, { ...CONTEXT, width: 375 })).toBeCloseTo(16, 3)
+  expect(evaluateLength(value, { ...CONTEXT, width: 375, rootFontSize: 32 })).toBeCloseTo(
+    doubled,
+    3,
+  )
+  expect(await compile(css, profile)).toBe(css)
+})
+
+it('allows root-relative-only text without requiring fluid bounds', async () => {
+  const css = await compile('.a { font-size: 16px }', {
+    designWidth: 375,
+    fontFluidity: 0,
+  })
+  let value = ''
+  postcss.parse(css).walkDecls('font-size', (declaration) => {
+    value = declaration.value
+  })
+  for (const width of [320, 375, 1440]) {
+    expect(evaluateLength(value, { ...CONTEXT, width })).toBe(16)
+    expect(evaluateLength(value, { ...CONTEXT, width, rootFontSize: 32 })).toBe(32)
+  }
+})
+
 it('single-dimension fast path agrees with full parsing across 600 seeded configurations', () => {
   const pick = generator(529104)
   for (let index = 0; index < 600; index++) {
