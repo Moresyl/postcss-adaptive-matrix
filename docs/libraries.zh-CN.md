@@ -84,7 +84,7 @@ npm run verify:libraries -- vant      # 单个
 
 缓存中的 Quasar 2.24.0 有一项已知源文件诊断：`dist/quasar.css` 和 `dist/quasar.rtl.css` 均在 600px 处将 `.q-notification` 的 `max-width` 从 `95vw` 改为 `65vw`。编译前已有相同变化，因此验证器标记为 `pre-existing`。它们仍会使严格接缝门禁失败，但不证明编译器引入了回归；编译器不会为了消除报告而改写该库原有的响应式行为。升级依赖后应重新核对。
 
-`naive-ui` 与 `mui` 的样式在运行时生成，磁盘上没有样式表——不经过 PostCSS，也就无从核对。条目仍然有用：它们是「保留像素」，所以你手写的 `.n-button` 覆盖样式不会被缩放。
+`naive-ui` 与 `mui` 在运行时生成样式，静态检查器会跳过它们。要验证真实 Naive UI SSR 样例，先运行 `npm run verify:libraries -- naive-ui` 准备缓存，再执行 `npm run build` 和 `npm run verify:naive-ssr`。这个独立离线检查使用缓存包与 Vue SSR 渲染 NSpace、NButton、NInput、NCard，收集生成的 CSS，并验证原文保留、零警告和二次处理稳定性。NSpace 的内联布局参与渲染，但不属于收集的样式表。这只是四组件 SSR 样例，不是全库或浏览器交互认证；MUI 仍未验证。输出记录缓存包版本，不代表已覆盖最新版本。
 
 清单可以从代码读取：
 
