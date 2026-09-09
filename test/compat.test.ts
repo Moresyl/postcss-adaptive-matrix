@@ -453,6 +453,23 @@ describe('auditCompatibility', () => {
     }
   })
 
+  it('rejects coercible non-version types without invoking their conversion hooks', () => {
+    const object = {
+      toString() {
+        throw new Error('must not coerce')
+      },
+    }
+    for (const version of [[14], 14n, object, null, true]) {
+      for (const browser of ['safari', 'unknown-browser']) {
+        expect(() => auditCompatibility('', { [browser]: version } as never)).toThrow(
+          `Browser target "${browser}" must be a version string or number`,
+        )
+      }
+    }
+    expect(auditCompatibility('', { safari: 14 }).unknownBrowsers).toEqual([])
+    expect(auditCompatibility('', { safari: '14' }).unknownBrowsers).toEqual([])
+  })
+
   it('deduplicates browser aliases conservatively and independently of order', () => {
     const css = '.a { width: clamp(1px, 2vw, 3px) }'
     const first = auditCompatibility(css, { chrome: '120', android: '70', webview: '80' })

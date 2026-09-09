@@ -518,6 +518,11 @@ export function auditCompatibility(
   const unknownBrowsers: string[] = []
   const resolvedTargets = new Map<string, string>()
   for (const [name, version] of Object.entries(targets)) {
+    if (typeof version !== 'string' && typeof version !== 'number') {
+      throw new TypeError(
+        `[postcss-adaptive-matrix] Browser target "${name}" must be a version string or number, not ${valueKind(version)}.`,
+      )
+    }
     const target = String(version)
     // Validate even for an unknown browser and when the stylesheet happens to
     // contain no recognised feature. A malformed target cannot become valid
