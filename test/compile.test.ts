@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import postcss from 'postcss'
+import { readFileSync } from 'node:fs'
+import { runInThisContext } from 'node:vm'
 import {
   auditCompatibility,
   compileAdaptiveCss,
@@ -8,6 +10,37 @@ import {
 } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each(['api.md', 'api.zh-CN.md'])('executes the AST re-audit example from %s', async (page) => {
+    const markdown = readFileSync(new URL(`../docs/${page}`, import.meta.url), 'utf8')
+    const examples = [...markdown.matchAll(/```ts\r?\n([\s\S]*?)```/g)]
+      .map((match) => match[1]!)
+      .filter((code) => code.includes('const edited ='))
+    expect(examples).toHaveLength(1)
+    const importLine =
+      "import { compileAdaptiveCss, auditCompatibility } from 'postcss-adaptive-matrix'"
+    expect(examples[0]).toContain(importLine)
+    // Execute trusted repository documentation in this realm so ordinary
+    // option objects retain the same Object prototype as the compiler.
+    const execute = runInThisContext(
+      `(async (compileAdaptiveCss, auditCompatibility) => {
+        ${examples[0]!.replace(importLine, '')}
+        return [edited.css, compatibility.findings.length, output.css, output.compatibility.findings.length]
+      })`,
+      { filename: page, timeout: 1000 },
+    ) as (
+      compile: typeof compileAdaptiveCss,
+      audit: typeof auditCompatibility,
+    ) => Promise<[string, number, string, number]>
+    const [css, findings, originalCss, originalFindings] = await execute(
+      compileAdaptiveCss,
+      auditCompatibility,
+    )
+    expect(css).toBe('.card { width: 40px }')
+    expect(findings).toBe(0)
+    expect(originalCss).not.toBe(css)
+    expect(originalFindings).toBeGreaterThan(0)
+  })
+
   it('regenerates edited AST output and audits it independently of the original result', async () => {
     const targets = { safari: 12 }
     const output = await compileAdaptiveCss('.card { width: 40px }', {}, { targets })
