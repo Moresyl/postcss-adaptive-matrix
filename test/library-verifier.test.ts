@@ -8,6 +8,36 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('rejects formatting-only output as evidence of mobile library conversion', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-format-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'vant', 'package')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(
+      join(packaged, 'index.css'),
+      ':root { --van-size: 24px } .van-button { width: 24px }',
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        '--import',
+        new URL('./fixtures/format-only-library-compile.mjs', import.meta.url).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'vant',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('NO CONVERSION')
+    expect(result.stdout).toContain('1 reviewed, 1 needing attention')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('rejects an idempotent rewrite of a library that should remain unconverted', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-preserve-'))
   try {

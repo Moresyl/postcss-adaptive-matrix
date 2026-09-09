@@ -287,7 +287,15 @@ for (const target of TARGETS) {
     const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
     idempotent = first.css === second.css
     preserved = expected !== 'unconverted' || first.css === css
-    converted = first.css !== css
+    // Formatting and comment edits alone are not evidence of unit conversion.
+    const declarations = (tree: postcss.Root): string[] => {
+      const values: string[] = []
+      tree.walkDecls((declaration) => {
+        values.push(JSON.stringify([declaration.prop, declaration.value, declaration.important]))
+      })
+      return values
+    }
+    converted = JSON.stringify(declarations(first.root)) !== JSON.stringify(declarations(root))
     const findings = findContinuityIssues(first.root)
     seams = findings.length
     for (const finding of findings) {
