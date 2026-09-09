@@ -1016,6 +1016,26 @@ describe('matchers and math helpers', () => {
     expect(suffix(`--${'a'.repeat(10000)}-size`)).toBe(true)
   })
 
+  it('matches a bounded reference corpus without regex backtracking', () => {
+    const words = ['']
+    for (let size = 0; size < 4; size++) {
+      for (const word of words.filter((value) => value.length === size)) {
+        for (const letter of ['a', 'b', '*']) words.push(word + letter)
+      }
+    }
+    const names = words.filter((word) => !word.includes('*'))
+    for (const word of words) {
+      const pattern = `--${word}`
+      const expected = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`)
+      const match = createPropertyMatcher([pattern])
+      for (const name of names) expect(match(`--${name}`)).toBe(expected.test(`--${name}`))
+    }
+    const pathological = createPropertyMatcher([`--${'a*'.repeat(1000)}b`])
+    expect(pathological(`--${'a'.repeat(10000)}c`)).toBe(false)
+    expect(pathological(`--${'a'.repeat(10000)}b`)).toBe(true)
+    expect(createPropertyMatcher(['--ab*bc'])('--abc')).toBe(false)
+  })
+
   it('supports reusable regexes, strings, arrays, and functions', () => {
     const global = /src/g
     global.lastIndex = 2

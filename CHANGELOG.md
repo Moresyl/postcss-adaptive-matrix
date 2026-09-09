@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- Property glob filters now match ordered literal segments instead of generating backtracking regular expressions, avoiding combinatorial wildcard retries. Differential tests cover inclusion semantics and overlapping anchored segments.
 - Property filters collapse adjacent `*` wildcards before compiling their regular expressions, avoiding redundant backtracking paths while preserving inclusion, exclusion and custom-property case semantics.
 - CLI colour behavior now has regression coverage for non-TTY output, `NO_COLOR`, forced colour, and flag ordering; explicit `--color`/`--no-color` remains the final authority.
 - CLI value-taking options now reject an explicitly empty separate argument, matching `--option=` instead of silently ignoring empty config/from/profile values.

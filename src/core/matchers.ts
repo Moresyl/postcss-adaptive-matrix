@@ -85,11 +85,25 @@ export function matchesFile(
   return false
 }
 
-function globToRegExp(glob: string): RegExp {
-  const escaped = glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-  // Adjacent stars mean the same thing as one. Expanding each separately
-  // creates redundant backtracking paths on a failed suffix match.
-  return new RegExp(`^${escaped.replace(/\*+/g, '.*')}$`)
+function compilePropertyGlob(glob: string): (value: string) => boolean {
+  const parts = glob.split(/\*+/)
+  if (parts.length === 1) return (value) => value === glob
+  const prefix = parts[0]!
+  const suffix = parts[parts.length - 1]!
+  const middle = parts.slice(1, -1)
+  return (value) => {
+    if (!value.startsWith(prefix) || !value.endsWith(suffix)) return false
+    let position = prefix.length
+    const end = value.length - suffix.length
+    // Literal segments are located monotonically. Unlike .* chains this
+    // never revisits combinations of earlier matches when a suffix fails.
+    for (const part of middle) {
+      const found = value.indexOf(part, position)
+      if (found < 0 || found + part.length > end) return false
+      position = found + part.length
+    }
+    return position <= end
+  }
 }
 
 /**
@@ -112,22 +126,22 @@ export function createPropertyMatcher(propList: readonly string[]) {
   const patterns = propList.map(canonical)
   const includes = patterns.filter((item) => !item.startsWith('!'))
   const excludes = patterns.filter((item) => item.startsWith('!')).map((item) => item.slice(1))
-  const includeRegex = includes.map(globToRegExp)
-  const excludeRegex = excludes.map(globToRegExp)
+  const includeMatchers = includes.map(compilePropertyGlob)
+  const excludeMatchers = excludes.map(compilePropertyGlob)
   const cache = new Map<string, boolean>()
 
   const match = (property: string): boolean => {
     const subject = canonicalCssPropertyName(property)
     let included = false
-    for (const pattern of includeRegex) {
-      if (pattern.test(subject)) {
+    for (const pattern of includeMatchers) {
+      if (pattern(subject)) {
         included = true
         break
       }
     }
     if (!included) return false
-    for (const pattern of excludeRegex) {
-      if (pattern.test(subject)) return false
+    for (const pattern of excludeMatchers) {
+      if (pattern(subject)) return false
     }
     return true
   }
