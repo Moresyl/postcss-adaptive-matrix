@@ -49,7 +49,7 @@ const rows = []
 for (const corpus of CORPORA) {
   assert.deepEqual(after(corpus.css), before(corpus.css), `${corpus.name}: outputs differ`)
   const timings = await measureAlternating(
-    [before, after].map((detect) => async () => detect(corpus.css)),
+    [before, after].map((detect) => () => Promise.resolve(detect(corpus.css))),
     iterations,
     warmup,
   )
