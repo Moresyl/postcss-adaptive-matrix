@@ -1,10 +1,12 @@
 /** Controlled historical comparison: no checkout or working-tree mutation. */
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
 import { CORPORA } from './corpus.js'
 import { benchmarkSettings } from './settings.js'
+import { measureAlternating } from './alternating.js'
 import type { detectFeatures } from '../src/core/compat.js'
 
 const reference = process.argv[2]
@@ -39,27 +41,20 @@ async function detector(source?: string): Promise<typeof detectFeatures> {
   return module.detectFeatures
 }
 const before = await detector(previous)
-const after = await detector()
+const after = await detector(
+  readFileSync(new URL('../src/core/compat.ts', import.meta.url), 'utf8'),
+)
 const { iterations, warmup } = benchmarkSettings(process.env)
-function median(values: number[]) {
-  values.sort((a, b) => a - b)
-  const middle = Math.floor(values.length / 2)
-  return values.length % 2 ? values[middle]! : (values[middle - 1]! + values[middle]!) / 2
-}
 const rows = []
 for (const corpus of CORPORA) {
   assert.deepEqual(after(corpus.css), before(corpus.css), `${corpus.name}: outputs differ`)
-  const samples = [[], []] as [number[], number[]]
-  for (let index = -warmup; index < iterations; index++) {
-    // Alternate order to reduce systematic JIT/cache/thermal ordering bias.
-    for (const which of index % 2 === 0 ? [0, 1] : [1, 0]) {
-      const start = performance.now()
-      ;(which === 0 ? before : after)(corpus.css)
-      if (index >= 0) samples[which as 0 | 1].push(performance.now() - start)
-    }
-  }
-  const oldTime = median(samples[0])
-  const newTime = median(samples[1])
+  const timings = await measureAlternating(
+    [before, after].map((detect) => async () => detect(corpus.css)),
+    iterations,
+    warmup,
+  )
+  const oldTime = timings[0]!
+  const newTime = timings[1]!
   rows.push({
     corpus: corpus.name,
     'before ms': oldTime.toFixed(2),
