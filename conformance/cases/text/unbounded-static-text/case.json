@@ -1,0 +1,7 @@
+{
+  "description": "A shorthand profile needs no fluid bounds for root-relative text and fluid spacing",
+  "options": {
+    "profiles": { "app": 375 },
+    "fontFluidity": 0
+  }
+}
