@@ -1,6 +1,6 @@
 export type CopyState = 'idle' | 'copying' | 'copied' | 'failed'
 
-/** Invalidating a pending copy suppresses stale feedback, not a clipboard write already issued. */
+/** Invalidating a pending copy suppresses stale feedback and keeps writes serialized. */
 export function createOutputCopy(
   write: (text: string) => Promise<void>,
   update: (state: CopyState) => void,
@@ -9,8 +9,7 @@ export function createOutputCopy(
   let pending = false
   function reset() {
     generation++
-    pending = false
-    update('idle')
+    update(pending ? 'copying' : 'idle')
   }
   async function copy(output: string | null, unavailable: boolean) {
     if (output === null || unavailable || pending) return
@@ -23,7 +22,8 @@ export function createOutputCopy(
     } catch {
       if (current === generation) update('failed')
     } finally {
-      if (current === generation) pending = false
+      pending = false
+      if (current !== generation) update('idle')
     }
   }
   return { copy, reset }
