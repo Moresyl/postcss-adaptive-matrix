@@ -18,7 +18,7 @@ const { page, lang, site } = useData()
 const chinese = computed(() => lang.value.startsWith('zh'))
 
 /** `relativePath` is already the site-side path, so this is the served file. */
-const rawPath = computed(() => withBase(page.value.relativePath))
+const rawPath = computed(() => withBase('/' + page.value.relativePath.replace(/^\/+/, '')))
 
 const absolute = computed(() => {
   const origin = typeof window === 'undefined' ? '' : window.location.origin
