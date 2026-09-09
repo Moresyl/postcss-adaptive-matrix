@@ -29,7 +29,7 @@ jobs:
       # Kept separate from security: this old release is a compatibility target,
       # not the recommended dependency version for consumers.
       - name: Install minimum supported PostCSS
-        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund postcss@8.4.0
+        run: npm install --no-save --package-lock=false --legacy-peer-deps --ignore-scripts --no-audit --no-fund postcss@8.4.0
       - name: Smoke test minimum PostCSS on Node 18
         run: npm run smoke:runtime
 
