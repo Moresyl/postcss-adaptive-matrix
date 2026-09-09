@@ -45,6 +45,12 @@ describe('playground compiler worker', () => {
       expect(result.css).toContain('3.33333vw')
       expect(result.css).toContain('min-width: 768px')
     }
+    if (sample.label === 'Static text') {
+      expect(result.css).toContain('font-size: calc(2rem)')
+      expect(result.css).toContain('line-height: calc(2.75rem)')
+      expect(result.css).toContain('margin-bottom: calc(4.26667vw)')
+      expect(result.css).not.toContain('clamp(')
+    }
   })
 
   it('compiles optional-bound configuration into serializable results', async () => {

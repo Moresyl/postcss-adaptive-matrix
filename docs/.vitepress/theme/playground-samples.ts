@@ -65,17 +65,14 @@ export const SAMPLES: Sample[] = [
   {
     label: 'Static text',
     labelZh: '文字不流体',
-    css: `/* fontFluidity: 0 makes text plain rem — fluid layout, fixed type. */
+    css: `/* fontFluidity: 0 makes text root-relative; spacing stays fluid. */
 .title {
   font-size: 32px;
   line-height: 44px;
   margin-bottom: 16px;
 }`,
     options: `{
-  profiles: {
-    app: { designWidth: 375, fluid: { minWidth: 320, maxWidth: 480 } },
-  },
-  defaultProfile: 'app',
+  profiles: { app: 375 },
   fontFluidity: 0,
 }`,
   },
