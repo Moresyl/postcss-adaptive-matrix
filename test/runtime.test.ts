@@ -56,6 +56,33 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('tears down when an event cannot schedule an animation frame', () => {
+    const requestAnimationFrame = vi.fn(() => {
+      throw new Error('host scheduling rejected')
+    })
+    const visual = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+    const host = stubWindow(visual, { requestAnimationFrame })
+    const target = stubTarget()
+    const controller = new AbortController()
+    const removeSignal = vi.spyOn(controller.signal, 'removeEventListener')
+    const observer = observeAdaptiveViewport({
+      window: host.window,
+      target: target.element,
+      signal: controller.signal,
+    })
+    const writes = target.setProperty.mock.calls.length
+    expect(() => host.fire('resize')).not.toThrow()
+    expect(host.listeners.remove).toHaveBeenCalledTimes(2)
+    expect(visual.removeEventListener).toHaveBeenCalledTimes(2)
+    expect(removeSignal).toHaveBeenCalledTimes(1)
+    host.fire('orientationchange')
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1)
+    expect(observer.update()).toBeNull()
+    expect(target.setProperty).toHaveBeenCalledTimes(writes)
+    expect(host.window.cancelAnimationFrame).not.toHaveBeenCalled()
+    removeSignal.mockRestore()
+  })
+
   it.each(['frame', 'window', 'viewport', 'signal'])(
     'continues teardown when the host rejects %s cleanup',
     (failure) => {

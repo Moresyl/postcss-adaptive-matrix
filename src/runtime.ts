@@ -205,18 +205,24 @@ export function observeAdaptiveViewport(
   // and the write landed on a torn-down observer one tick later.
   const schedule = () => {
     if (destroyed || !browserWindow || frame !== null) return
-    frame = browserWindow.requestAnimationFrame(() => {
-      frame = null
-      try {
-        update()
-      } catch {
-        // There is no promise or return value through which an animation-frame
-        // callback can hand an update failure back to the caller. Tear down
-        // before swallowing the host error, otherwise every later viewport
-        // event repeats it and keeps a broken observer alive indefinitely.
-        observer.destroy()
-      }
-    })
+    try {
+      frame = browserWindow.requestAnimationFrame(() => {
+        frame = null
+        try {
+          update()
+        } catch {
+          // There is no promise or return value through which an animation-frame
+          // callback can hand an update failure back to the caller. Tear down
+          // before swallowing the host error, otherwise every later viewport
+          // event repeats it and keeps a broken observer alive indefinitely.
+          observer.destroy()
+        }
+      })
+    } catch {
+      // Scheduling itself can fail in an injected host. Like a failed frame
+      // callback, an event handler has no result channel for that error.
+      observer.destroy()
+    }
   }
 
   if (!browserWindow || !target) {
