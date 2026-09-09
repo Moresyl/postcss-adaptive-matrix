@@ -98,6 +98,27 @@ function documentedDefaults(file: string): Map<string, unknown> {
 const REFERENCES = ['docs/configuration.md', 'docs/configuration.zh-CN.md']
 
 describe('the published options schema', () => {
+  it('offers independently optional fluid-bound examples without inventing defaults', () => {
+    const profile = ((options.profiles!.additionalProperties as Subschema).oneOf as Subschema[])[1]!
+    const fluid = profile.properties!.fluid!
+    const examples = fluid.examples as Array<{ minWidth?: number; maxWidth?: number }>
+    expect(examples).toEqual([
+      {},
+      { minWidth: 320 },
+      { maxWidth: 600 },
+      { minWidth: 320, maxWidth: 600 },
+    ])
+    for (const example of examples) {
+      const resolved = resolveOptions({ profiles: { app: { designWidth: 375, fluid: example } } })
+      expect(resolved.profiles.app!.fluid).toEqual(example)
+    }
+    for (const name of ['minWidth', 'maxWidth']) {
+      expect(fluid.properties![name]!.default).toBeUndefined()
+      expect(fluid.properties![name]!.description).toContain('Optional')
+      expect(fluid.properties![name]!['x-description-zh']).toContain('可选')
+    }
+  })
+
   it('rejects blank query conditions without requiring an optional query', () => {
     const profile = ((options.profiles!.additionalProperties as Subschema).oneOf as Subschema[])[1]!
     const variants = profile.properties!.query!.oneOf as Subschema[]

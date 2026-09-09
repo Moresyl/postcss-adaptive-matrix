@@ -139,16 +139,19 @@ const PROFILE: Fields<AdaptiveProfile> = {
       '自适应模式的可选缩放边界。两端都省略则不设边界，只写一端则单侧限制，两端都写则输出 clamp()。viewport 策略忽略这些边界。',
     type: 'object',
     additionalProperties: false,
+    examples: [{}, { minWidth: 320 }, { maxWidth: 600 }, { minWidth: 320, maxWidth: 600 }],
     properties: {
       minWidth: {
-        description: 'Below this width, every converted length holds still.',
-        'x-description-zh': '低于该宽度后，转换出来的长度不再变化。',
+        description:
+          'Optional lower bound. Omit it to leave shrinking unbounded; no default is inserted.',
+        'x-description-zh': '可选下界。省略时不限制缩小范围，不会自动填入默认下界。',
         type: 'number',
         exclusiveMinimum: 0,
       },
       maxWidth: {
-        description: 'Above this width, every converted length holds still.',
-        'x-description-zh': '高于该宽度后，转换出来的长度不再变化。',
+        description:
+          'Optional upper bound. Omit it to leave growth unbounded; when both bounds are supplied, this must exceed minWidth.',
+        'x-description-zh': '可选上界。省略时不限制增长范围；同时提供两端时，必须大于 minWidth。',
         type: 'number',
         exclusiveMinimum: 0,
       },
