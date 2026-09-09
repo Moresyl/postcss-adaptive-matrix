@@ -19,6 +19,25 @@ async function compile(css: string, options: string) {
 }
 
 describe('playground compiler worker', () => {
+  it('recovers on the same worker after an unprintable thrown value', async () => {
+    const postMessage = vi.fn()
+    const scope = { postMessage, onmessage: undefined as unknown as (event: unknown) => void }
+    vi.stubGlobal('self', scope)
+    await import('../docs/.vitepress/theme/compiler.worker')
+    const css = '.card { padding: 24px }'
+    scope.onmessage({ data: { css, options: '(() => { throw Object.create(null) })()' } })
+    scope.onmessage({ data: { css, options: '{ profiles: { app: 375 } }' } })
+    expect(postMessage).toHaveBeenCalledTimes(2)
+    expect(postMessage.mock.calls[0]![0]).toEqual({
+      error: 'Configuration or compilation failed with an unreadable error.',
+    })
+    const recovered = postMessage.mock.calls[1]![0]
+    expect(recovered.error).toBeUndefined()
+    expect(recovered.css).toBe('.card { padding: calc(6.4vw) }')
+    expect(recovered.warnings).toEqual([])
+    expect(recovered.duration).toBeGreaterThanOrEqual(0)
+  })
+
   it.each(['playground.md', 'playground.zh-CN.md'])(
     'compiles the preset expression documented in %s',
     async (page) => {
