@@ -65,6 +65,12 @@ The main throughput measurement rotates baseline/compiler/library execution orde
 
 Run `npm run verify:libraries -- vant nutui` to inspect selected published component-library styles. The report includes the package version and cache provenance. Existing `.libcheck` packages are reused; `CLEAN=1` removes the scratch directory after the run, not before it, so it does not refresh that run's inputs. This optional network check returns nonzero for unknown names, missing or unreadable styles, malformed CSS, missing prefixes, wrong routes, compiler warnings, non-idempotent output or seam findings. Runtime-only libraries without stylesheets are reported as skipped, not statically verified. It does not certify design widths or browser rendering.
 
+## Publication preflight without publishing
+
+Run `npm run prepublishOnly` to validate locally without uploading a package, pushing commits or creating a release. It sequentially runs `check` (including a fresh build, coverage and documentation build), `pack:check`, `smoke:runtime`, `bench:check` and `audit:check`, stopping at the first failure. The audit needs network access. Runtime smoke uses the current Node executable; it does not replace the CI platform matrix.
+
+Normal `npm publish` also invokes this lifecycle script, but is a separate publishing action. Do not use it merely to validate a build. Passing this preflight does not prove real-browser behavior, live deployment or release availability.
+
 ## Pull requests
 
 Library seam details include the selector, property, breakpoint and sampled values. `pre-existing` means the complete finding matches analysis of the original stylesheet; `new/changed` means it does not. Neither label proves design intent or causality, and both still fail the seam gate.
