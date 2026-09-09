@@ -21,14 +21,24 @@ it('postprocesses callable CJS declarations and remains byte-identical on repeat
     await mkdir(join(directory, 'dist'))
     const js = join(directory, 'dist/index.cjs')
     const types = join(directory, 'dist/index.d.cts')
-    await writeFile(js, 'exports.default = function plugin() {};\n')
-    await writeFile(types, 'declare function plugin(): void;\nexport { plugin as default };\n')
+    await writeFile(js, 'exports.default = function plugin() {}; exports.helper = () => 42;\n')
+    await writeFile(
+      types,
+      'declare function plugin(): void;\ndeclare function helper(): number;\ninterface Options { enabled?: boolean }\nexport { plugin as default, helper, type Options };\n',
+    )
     const first = run(directory)
     expect(first.error).toBeUndefined()
     expect(first.status, first.stderr).toBe(0)
     const before = await Promise.all([readFile(js, 'utf8'), readFile(types, 'utf8')])
     expect(before[0]).toContain('/* callable module.exports */')
     expect(before[1]).toContain('export = _cjs;')
+    expect(before[1]).toContain('helper: typeof helper;')
+    expect(before[1]).toContain('export { type Options };')
+    const exported = require(js) as { (): void; default: unknown; helper(): number }
+    expect(typeof exported).toBe('function')
+    expect(exported.default).toBe(exported)
+    expect(exported.helper()).toBe(42)
+    delete require.cache[js]
     const second = run(directory)
     expect(second.error).toBeUndefined()
     expect(second.status, second.stderr).toBe(0)
