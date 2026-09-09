@@ -15,6 +15,8 @@ describe('programmatic compiler', () => {
     expect(first.gate?.passed).toBe(false)
     expect(first.compatibility!.findings.length).toBeGreaterThan(0)
     first.result.root.removeAll()
+    expect(first.result.root.toString()).toBe('')
+    expect(first.css).toBe(css)
     first.warnings.push(first.result.warn('caller-added warning'))
     first.compatibility!.findings.length = 0
     first.compatibility!.unknownBrowsers.push('caller-browser')

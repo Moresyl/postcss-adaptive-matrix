@@ -15,6 +15,10 @@ console.log(output.css)
 
 `output` 包含 `css`、`warnings`、`map`、`compatibility`、`gate` 和完整 PostCSS `result`。未传 `targets` 时 `compatibility` 为 `null`；未传 `failOn`（或传 `[]`）时 `gate` 为 `null`。语法和配置错误会拒绝 Promise。
 
+## 结果归属
+
+每次编译都有独立的 AST、警告、兼容性报告和门禁结果。修改这些返回的集合不会重新配置编译器，也不会改变后续结果。但 `css`、`map`、诊断和门禁描述的是返回时的编译状态，不是 `result.root` 的实时视图。下游转换修改 AST 后，应通过 PostCSS 重新序列化并生成源码映射，再对修改后的输出重新运行所需审计或门禁。仅修改 AST 不会自动刷新 `output.css` 或之前的判定。
+
 ## 复用编译器
 
 ```ts

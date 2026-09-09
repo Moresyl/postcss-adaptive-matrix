@@ -15,6 +15,10 @@ console.log(output.css)
 
 `output` contains `css`, `warnings`, `map`, `compatibility`, `gate` and the full PostCSS `result`. Without `targets`, `compatibility` is `null`; without `failOn` (or with `[]`), `gate` is `null`. Syntax and configuration errors reject the promise.
 
+## Result ownership
+
+Each compilation returns its own AST, warnings, compatibility report and gate. Mutating those returned collections does not reconfigure the compiler or change later results. However, `css`, `map`, diagnostics and the gate describe the compilation as returned: they are not live views of `result.root`. If a downstream transform edits the AST, serialize and regenerate source maps through PostCSS, then rerun any audits or gates required for the edited output. Changing the AST alone does not refresh `output.css` or the earlier verdict.
+
 ## Reuse a compiler
 
 ```ts
