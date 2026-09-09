@@ -270,6 +270,27 @@ for (const api of [esm, cjs]) {
   )
   assert.equal(gated.gate.passed, false)
   assert.match(gated.css, /6\.4vw/)
+  for (const category of ['warnings', 'compatibility']) {
+    const source = '@adaptive missing { .card { padding: 24px } }'
+    const targets = { safari: 12 }
+    const shorthand = await compile(source, { targets, failOn: category })
+    const array = await compile(source, { targets, failOn: [category] })
+    assert.deepEqual(shorthand.gate, { failOn: [category], passed: category === 'warnings' })
+    assert.deepEqual(shorthand.gate, array.gate)
+    assert.equal(shorthand.css, array.css)
+    assert.deepEqual(
+      shorthand.warnings.map((warning) => warning.text),
+      array.warnings.map((warning) => warning.text),
+    )
+    const clean = await compile('', { targets: { chrome: 100 }, failOn: category })
+    assert.deepEqual(clean.gate, { failOn: [category], passed: true })
+  }
+  await assert.rejects(compile('', { failOn: 'compatibility' }), /requires targets/)
+  for (const failOn of [null, 'continuity', ['warnings', undefined], new Array(1)]) {
+    await assert.rejects(compile('', { failOn }), /Compile options.failOn/)
+  }
+  assert.equal((await compile('')).gate, null)
+  assert.equal((await compile('', { failOn: [] })).gate, null)
 }
 
 const runtime = await import('../dist/runtime.js')
