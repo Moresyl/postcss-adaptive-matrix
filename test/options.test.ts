@@ -5,7 +5,7 @@ import { resolveOptions } from '../src/core/options.js'
 
 it('reports missing route array entries at their exact indexes', () => {
   for (const missingIndex of [0, 1]) {
-    const routes: Array<{ profile: string; selector: string } | undefined> = new Array(2)
+    const routes: Array<{ profile: string; selector: string }> = new Array(2)
     routes[missingIndex === 0 ? 1 : 0] = { profile: 'app', selector: '.card' }
     expect(() => resolveOptions({ routes })).toThrow(
       `routes[${missingIndex}] must be an object, not undefined.`,
