@@ -29,6 +29,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --vp-c-brand-1: #a8b8ff;
   --vp-c-brand-2: #748ffc;
   --vp-c-brand-3: #5c7cfa;

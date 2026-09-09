@@ -24,3 +24,8 @@ it('wraps long reading content without imposing wrapping on code blocks or table
   )
   expect([...balanced]).toEqual(['.vp-doc h1', '.vp-doc h2', '.vp-doc h3'])
 })
+
+it('declares dark color-scheme when the dark theme variables are active', () => {
+  const css = readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8')
+  expect(css).toMatch(/\.dark\s*\{[^}]*color-scheme:\s*dark;/s)
+})
