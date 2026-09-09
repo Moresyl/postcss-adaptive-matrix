@@ -1,6 +1,9 @@
 import type { FileMatcher, Pattern } from './types.js'
 import { canonicalCssPropertyName } from './syntax.js'
 
+/** Retention limit only; longer property names remain supported. */
+export const MAX_CACHED_PROPERTY_LENGTH = 256
+
 /**
  * One value or several, always as a fresh mutable array.
  *
@@ -149,6 +152,7 @@ export function createPropertyMatcher(propList: readonly string[]) {
     const cached = cache.get(property)
     if (cached !== undefined) return cached
     const result = match(property)
+    if (property.length > MAX_CACHED_PROPERTY_LENGTH) return result
     // Custom-property names can be generated without bound during watch builds.
     if (cache.size >= 1024) cache.clear()
     cache.set(property, result)

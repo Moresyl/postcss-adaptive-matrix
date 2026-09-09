@@ -48,6 +48,24 @@ it('does not retain a small input whose converted output exceeds the cache value
   expect(second).not.toBe(first)
 })
 
+it('does not retain oversized property classification keys', () => {
+  const options = resolveOptions({ profiles: { app: 375 }, textProperties: ['--text-*'] })
+  const converter = createConverter(options)
+  const classifications = vi.spyOn(options.textProperties, 'some')
+  try {
+    for (const length of [256, 257, 10000]) {
+      classifications.mockClear()
+      const property = '--text-' + 'a'.repeat(length - 7)
+      const first = converter.convert('24px', property, 'app', options.profiles.app!, '')
+      expect(converter.convert('24px', property, 'app', options.profiles.app!, '')).toBe(first)
+      expect(first).toContain('rem')
+      expect(classifications).toHaveBeenCalledTimes(length <= 256 ? 1 : 2)
+    }
+  } finally {
+    classifications.mockRestore()
+  }
+})
+
 it('bounds property classification caching and reclassifies evicted entries correctly', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)

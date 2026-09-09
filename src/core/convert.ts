@@ -1,4 +1,5 @@
 import valueParser, { type Node } from 'postcss-value-parser'
+import { MAX_CACHED_PROPERTY_LENGTH } from './matchers.js'
 import type {
   AdaptiveProfile,
   OutputStrategy,
@@ -742,8 +743,10 @@ export function createConverter(options: ResolvedAdaptiveMatrixOptions) {
       accessibleText = isAccessibleTextProperty(property, options)
       // Generated custom-property names are unbounded across rebuilds, just
       // like values. Eviction only costs a classification on the next use.
-      if (textProperties.size >= MAX_CACHE_ENTRIES) textProperties.clear()
-      textProperties.set(property, accessibleText)
+      if (property.length <= MAX_CACHED_PROPERTY_LENGTH) {
+        if (textProperties.size >= MAX_CACHE_ENTRIES) textProperties.clear()
+        textProperties.set(property, accessibleText)
+      }
     }
 
     // The anchor and resolved root ruler belong in the key alongside the design
