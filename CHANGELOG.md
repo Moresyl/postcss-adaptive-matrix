@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+- Repeated CLI `--targets` options now merge browser entries and retain the oldest version across aliases and argument order instead of replacing earlier targets. Empty repeated lists remain errors; built CLI smoke checks exercise the resulting compatibility gate on Node 18 and 24.
+- The library verifier now rejects first-pass CSS rewrites for libraries expected to remain unconverted, even when the output is idempotent. Original Quasar seam findings remain visible and still fail the strict seam gate.
+- Node-only ESM and CommonJS consumer fixtures now check the main entrypoint with ES2022 and no DOM library; browser runtime types still require DOM declarations.
 - Public compatibility helpers now reject non-string CSS input with the same actionable error as the compile API, before inspecting browser targets or coercing caller objects.
 - Compatibility audits now isolate internal feature metadata and support tables from public objects. Editing returned features, detection regexes or exported support metadata no longer changes later audit verdicts.
 - Compatibility targets now reject arrays, BigInts and objects instead of coercing them to version strings. Programmatic compilation validates targets before invoking dynamic configuration callbacks.
@@ -16,7 +19,6 @@
 - Token diagnostics pre-sort definitions by importance and source order, allowing repeated width lookups to stop at the first applicable definition while preserving boundary discovery order.
 - Property filtering and text-classification caches no longer retain property names longer than 256 UTF-16 code units. Longer names still match and convert normally; the limit controls cache retention, not valid CSS input.
 - Property glob filters now match ordered literal segments instead of generating backtracking regular expressions, avoiding combinatorial wildcard retries. Differential tests cover inclusion semantics and overlapping anchored segments.
-- Property filters collapse adjacent `*` wildcards before compiling their regular expressions, avoiding redundant backtracking paths while preserving inclusion, exclusion and custom-property case semantics.
 - CLI colour behavior now has regression coverage for non-TTY output, `NO_COLOR`, forced colour, and flag ordering; explicit `--color`/`--no-color` remains the final authority.
 - CLI value-taking options now reject an explicitly empty separate argument, matching `--option=` instead of silently ignoring empty config/from/profile values.
 - Benchmark preflights now verify expected property-level conversion states for the component, utility and application corpora, catching partial conversions or accidental rewrites of inert declarations before timing begins.
@@ -100,7 +102,7 @@
 - Reduced repeated cache-key serialization on the conversion hot path while retaining per-file dynamic ruler refreshes.
 - Fixed viewport observer teardown when a host replaces its VisualViewport object.
 - Package inspection now fails when declared exports, CLI, types or required documentation are missing, even if npm's dry run succeeds.
-- The npm publication preflight now runs package-entrypoint validation and runtime smoke checks after the full build/test gate, before the security audit.
+- The npm publication preflight now runs package-entrypoint validation, runtime smoke checks and performance budgets after the full build/test gate, before the security audit. Running `npm run prepublishOnly` performs validation without publishing.
 
 ## 0.8.0 — 2026-08-27
 
