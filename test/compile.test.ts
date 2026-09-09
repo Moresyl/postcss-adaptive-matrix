@@ -3,6 +3,33 @@ import postcss from 'postcss'
 import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it('rejects coercible target values before callbacks and recovers on the next request', async () => {
+    let calls = 0
+    const compile = createAdaptiveCompiler({
+      profiles: {
+        app: () => {
+          calls++
+          return 400
+        },
+      },
+      libraries: false,
+    })
+    for (const version of [[14], 14n, { toString: () => '14' }]) {
+      await expect(
+        compile('.card { width: 40px }', { targets: { safari: version } } as never),
+      ).rejects.toThrow('must be a version string or number')
+      expect(calls).toBe(0)
+    }
+    const output = await compile('.card { width: 40px }', {
+      targets: { safari: '14' },
+      process: { from: 'card.css' },
+    })
+    expect(calls).toBeGreaterThan(0)
+    expect(output.css).toContain('10vw')
+    expect(output.warnings).toEqual([])
+    expect(output.compatibility?.unknownBrowsers).toEqual([])
+  })
+
   it('does not reuse caller-mutated result state across compilations', async () => {
     const compile = createAdaptiveCompiler({
       profiles: { app: { designWidth: 400, fluid: { minWidth: 320, maxWidth: 600 } } },
