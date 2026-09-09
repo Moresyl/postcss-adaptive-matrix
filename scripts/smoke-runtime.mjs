@@ -321,6 +321,34 @@ for (const targets of [
 const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
 try {
+  for (const [name, source, expected] of [
+    ['throw.mjs', 'throw Object.create(null)', 'Could not load config'],
+    [
+      'callback.mjs',
+      'export default { profiles: { app: () => { throw Object.create(null) } } }',
+      'Command failed with an unreadable error.',
+    ],
+  ]) {
+    const throwingConfig = join(configDirectory, name)
+    writeFileSync(throwingConfig, source)
+    const failed = spawnSync(
+      process.execPath,
+      ['dist/cli.js', '-', '--config', throwingConfig, '--json'],
+      {
+        cwd: new URL('..', import.meta.url),
+        encoding: 'utf8',
+        input: '.card { padding: 24px }',
+        timeout: 15_000,
+      },
+    )
+    assert.equal(failed.status, 1, failed.stderr)
+    assert.equal(failed.stderr, '')
+    const failure = JSON.parse(failed.stdout)
+    assert.equal(failure.ok, false)
+    assert.equal(failure.formatVersion, esm.CLI_REPORT_FORMAT_VERSION)
+    assert.ok(failure.error.message.includes(expected))
+    if (name === 'throw.mjs') assert.ok(failure.error.message.includes(throwingConfig))
+  }
   const config = join(configDirectory, 'broken.json')
   writeFileSync(config, JSON.stringify({ minPixeValue: 2 }))
   const invalidOptions = spawnSync(
