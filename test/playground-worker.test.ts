@@ -86,6 +86,18 @@ describe('playground compiler worker', () => {
     expect(result.error).toContain('Unclosed block')
   })
 
+  it.each([
+    'Object.create(null)',
+    '{ toString() { throw new Error("conversion failed") } }',
+    'Object.defineProperty(new Error(), "message", { get() { throw 42 } })',
+  ])('reports thrown values even when their description fails: %s', async (value) => {
+    const result = await compile('.card { padding: 24px }', `(() => { throw ${value} })()`)
+    expect(result).toEqual({
+      error: 'Configuration or compilation failed with an unreadable error.',
+    })
+    expect(structuredClone(result)).toEqual(result)
+  })
+
   it.each(['null', '42', '"options"', '[]', 'new Date(0)', 'Promise.resolve({})', '() => ({})'])(
     'rejects a non-configuration expression result: %s',
     async (options) => {
