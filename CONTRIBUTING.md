@@ -1,5 +1,11 @@
 # Contributing
 
+Token lookup changes can be compared with `npm run bench:tokens -- <trusted-commit-hash>`.
+The comparison compiles that revision's token module against current shared dependencies,
+checks identical query results, and measures collection plus queries for small and larger
+definition sets. It excludes CSS parsing and is observational, not a performance gate or
+a whole-release comparison. Only use revisions whose code you trust.
+
 **English** · [简体中文](./CONTRIBUTING.zh-CN.md)
 
 Thank you for wanting to improve postcss-adaptive-matrix.

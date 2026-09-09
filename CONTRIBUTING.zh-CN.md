@@ -1,5 +1,10 @@
 # 贡献指南
 
+Token 查询改动可用 `npm run bench:tokens -- <可信提交哈希>` 对比。
+该命令会把指定版本的 token 模块与当前共享依赖一起编译，先检查查询结果一致，再测量
+小型及较大定义集的建表与查询成本。不包含 CSS 解析，仅用于观察，不是性能门禁或
+整个发布版本的对比。只运行你信任的提交代码。
+
 [English](./CONTRIBUTING.md) · **简体中文**
 
 感谢你愿意改进 postcss-adaptive-matrix。
