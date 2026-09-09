@@ -271,11 +271,12 @@ for (const api of [esm, cjs]) {
   assert.equal(gated.gate.passed, false)
   assert.match(gated.css, /6\.4vw/)
   for (const category of ['warnings', 'compatibility']) {
-    const source = '@adaptive missing { .card { padding: 24px } }'
+    const source =
+      '.compat { width: clamp(1rem, 10vw, 20rem) } @adaptive missing { .card { padding: 24px } }'
     const targets = { safari: 12 }
     const shorthand = await compile(source, { targets, failOn: category })
     const array = await compile(source, { targets, failOn: [category] })
-    assert.deepEqual(shorthand.gate, { failOn: [category], passed: category === 'warnings' })
+    assert.deepEqual(shorthand.gate, { failOn: [category], passed: false })
     assert.deepEqual(shorthand.gate, array.gate)
     assert.equal(shorthand.css, array.css)
     assert.deepEqual(
