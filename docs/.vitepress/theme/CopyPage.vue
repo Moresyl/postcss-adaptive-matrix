@@ -12,6 +12,8 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useData, withBase } from 'vitepress'
 import { readMarkdown } from './markdown-request.js'
+import { createMarkdownCopy } from './markdown-copy'
+import type { CopyState } from './output-copy'
 
 const { page, lang, site } = useData()
 
@@ -45,35 +47,30 @@ const text = computed(() =>
       },
 )
 
-const state = ref<'idle' | 'copying' | 'copied' | 'failed'>('idle')
-let controller: AbortController | undefined
+const state = ref<CopyState>('idle')
 let resetTimer: ReturnType<typeof setTimeout> | undefined
+const copyTask = createMarkdownCopy(
+  readMarkdown,
+  (value) => navigator.clipboard.writeText(value),
+  (value) => {
+    state.value = value
+    if (value === 'copied' || value === 'failed') resetTimer = setTimeout(reset, 2000)
+  },
+)
 
 function reset() {
-  controller?.abort()
-  controller = undefined
   clearTimeout(resetTimer)
-  state.value = 'idle'
+  copyTask.reset()
 }
 watch(rawPath, reset, { flush: 'sync' })
-onBeforeUnmount(reset)
+onBeforeUnmount(() => {
+  clearTimeout(resetTimer)
+  copyTask.dispose()
+})
 
 async function copy() {
-  reset()
-  const current = new AbortController()
-  controller = current
-  state.value = 'copying'
-  try {
-    const markdown = await readMarkdown(rawPath.value, current.signal)
-    if (controller !== current) return
-    await navigator.clipboard.writeText(markdown)
-    if (controller !== current) return
-    state.value = 'copied'
-  } catch {
-    if (controller !== current) return
-    state.value = 'failed'
-  }
-  resetTimer = setTimeout(reset, 2000)
+  clearTimeout(resetTimer)
+  await copyTask.copy(rawPath.value)
 }
 
 const ask = computed(() => {
