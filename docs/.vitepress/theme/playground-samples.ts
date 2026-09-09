@@ -21,6 +21,14 @@ export const SAMPLES: Sample[] = [
 }`,
   },
   {
+    label: 'Unbounded fluid',
+    labelZh: '无边界流体',
+    css: `.card { padding: 24px; font-size: 16px; }`,
+    options: `{
+  profiles: { app: 375 },
+}`,
+  },
+  {
     label: 'Container sizing',
     labelZh: '容器内缩放',
     css: `.container { container-type: inline-size; }
