@@ -24,6 +24,8 @@ describe('disposable compiler task', () => {
     (error) => {
       const { task, create, fail } = fixture()
       create.mockImplementationOnce(() => {
+        // Deliberately simulate host shims throwing non-Error values.
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw error
       })
       task.run(input)
