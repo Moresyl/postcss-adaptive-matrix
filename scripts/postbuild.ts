@@ -40,10 +40,8 @@ const CJS_DEFAULT_EXPORT =
   `\n${MARKER}\nif (module.exports.default) ` +
   'module.exports = Object.assign(module.exports.default, module.exports);\n'
 
-async function makeCjsCallable(): Promise<void> {
-  const source = await readFile(JS_PATH, 'utf8')
-  if (source.includes(MARKER)) return
-  await writeFile(JS_PATH, source + CJS_DEFAULT_EXPORT, 'utf8')
+function makeCjsCallable(source: string): string {
+  return source.includes(MARKER) ? source : source + CJS_DEFAULT_EXPORT
 }
 
 /**
@@ -65,9 +63,8 @@ async function makeCjsCallable(): Promise<void> {
  * Rewriting generated output is only safe if it fails loudly, so every
  * assumption here throws rather than guessing.
  */
-async function declareCjsCallable(): Promise<void> {
-  const source = await readFile(TYPES_PATH, 'utf8')
-  if (source.includes('export = _cjs')) return
+function declareCjsCallable(source: string): string {
+  if (source.includes('export = _cjs')) return source
 
   const statement = /export \{([^{}]*)\};?\s*$/.exec(source)
   if (!statement) throw new Error(`${TYPES_PATH}: no trailing export statement to rewrite`)
@@ -97,15 +94,22 @@ async function declareCjsCallable(): Promise<void> {
     ? `declare namespace _cjs {\n  export { ${types.join(', ')} };\n}\n`
     : ''
 
-  await writeFile(
-    TYPES_PATH,
+  return (
     source.slice(0, statement.index) +
-      `declare const _cjs: typeof ${callable} & {\n${properties}\n};\n` +
-      namespace +
-      'export = _cjs;\n',
-    'utf8',
+    `declare const _cjs: typeof ${callable} & {\n${properties}\n};\n` +
+    namespace +
+    'export = _cjs;\n'
   )
 }
 
-await makeCjsCallable()
-await declareCjsCallable()
+// Read and prepare both outputs before writing either. Missing inputs and
+// unsupported declaration layouts must leave both artifacts untouched.
+// This does not make the two filesystem writes an atomic transaction.
+const [jsSource, typeSource] = await Promise.all([
+  readFile(JS_PATH, 'utf8'),
+  readFile(TYPES_PATH, 'utf8'),
+])
+const jsOutput = makeCjsCallable(jsSource)
+const typeOutput = declareCjsCallable(typeSource)
+if (jsOutput !== jsSource) await writeFile(JS_PATH, jsOutput, 'utf8')
+if (typeOutput !== typeSource) await writeFile(TYPES_PATH, typeOutput, 'utf8')

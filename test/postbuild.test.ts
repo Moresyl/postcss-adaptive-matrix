@@ -66,8 +66,10 @@ it.each([
       expect(result.status).toBe(1)
       expect(result.stderr).toContain(reason)
       expect(await readFile(types, 'utf8')).toBe(source)
-      // The JS rewrite precedes declaration validation. A later successful
-      // retry must reuse that wrapper, not append another one.
+      expect(await readFile(join(directory, 'dist/index.cjs'), 'utf8')).toBe(
+        'exports.default = function() {};',
+      )
+      // A later successful retry must then create exactly one wrapper.
       await writeFile(types, 'declare function plugin(): void; export { plugin as default };')
       const retry = run(directory)
       expect(retry.error).toBeUndefined()
