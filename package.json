@@ -93,6 +93,7 @@
     "bench:check": "tsx bench/index.ts --check",
     "verify:libraries": "tsx scripts/verify-libraries.ts",
     "verify:naive-ssr": "node scripts/verify-naive-ssr.mjs",
+    "verify:mui-ssr": "node scripts/verify-mui-ssr.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs && node scripts/check-docs-search.mjs && node scripts/check-docs-loading.mjs && tsx scripts/check-docs-assets.ts",

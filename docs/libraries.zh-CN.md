@@ -88,6 +88,8 @@ npm run verify:libraries -- vant      # 单个
 
 SSR 检查通过 NConfigProvider 分别运行默认及暗色/禁用/加载场景，验证渲染出的状态类，并拒绝 bundle 与 manifest 版本不一致的缓存。它不模拟点击或 hydration。
 
+MUI 的独立 SSR 样例可在构建后运行 `npm run verify:mui-ssr -- <依赖目录>`。该目录须有 package.json，并安装 `@mui/material`、`react`、`react-dom`、`@emotion/react`、`@emotion/styled`、`@emotion/cache` 与 `@emotion/server`；脚本不自动安装依赖。它在明暗主题下渲染 Button、TextField、Card（暗色场景包含禁用与错误状态），提取真实 Emotion CSS，检查原文保留、警告和幂等性，并打印已安装版本。此可选 SSR 检查独立于静态检查器，不验证浏览器交互或 hydration。
+
 清单可以从代码读取：
 
 ```js

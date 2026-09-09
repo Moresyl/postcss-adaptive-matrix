@@ -88,6 +88,8 @@ Known source finding in cached Quasar 2.24.0: both `dist/quasar.css` and `dist/q
 
 The SSR check runs both default and dark/disabled/loading scenarios through NConfigProvider, verifies rendered state classes, and rejects a cache whose bundle version differs from its manifest. It does not simulate clicks or hydration.
 
+For a separate MUI SSR sample, run `npm run verify:mui-ssr -- <dependency-directory>` after building. That directory must contain a package.json and installed `@mui/material`, `react`, `react-dom`, `@emotion/react`, `@emotion/styled`, `@emotion/cache` and `@emotion/server`. The script does not install dependencies. It renders Button, TextField and Card in light/dark themes (with disabled/error states in the dark case), extracts real Emotion CSS, and checks preservation, warnings and idempotence. It prints the installed versions; this optional SSR check is separate from the static verifier and does not validate browser interaction or hydration.
+
 The list is readable from code:
 
 ```js
