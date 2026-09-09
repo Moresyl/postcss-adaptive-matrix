@@ -7,6 +7,21 @@ function table(css: string): ReturnType<typeof collectTokens> {
 }
 
 describe('theme token resolution', () => {
+  it('skips inactive important definitions and keeps the latest applicable priority', () => {
+    const tokens = table(`
+      :root { --gap: 8px }
+      @media (min-width: 600px) { :root { --gap: 16px !important } }
+      @media (min-width: 900px) { :root { --gap: 24px !important } }
+      :root { --gap: 12px }
+      @media (min-width: 2000px) { :root { --gap: 48px !important } }
+    `)
+    expect(tokens.resolve('var(--gap)', 400)).toBe('12px')
+    expect(tokens.resolve('var(--gap)', 700)).toBe('16px')
+    expect(tokens.resolve('var(--gap)', 1000)).toBe('24px')
+    expect(tokens.resolve('var(--gap)', 2200)).toBe('48px')
+    expect(tokens.boundaries).toEqual([600, 900, 2000])
+  })
+
   it('selects the correct token at exclusive and inclusive range endpoints', () => {
     const tokens = table(`
       :root { --gap: 8px }

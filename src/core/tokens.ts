@@ -189,18 +189,11 @@ export function collectTokens(root: Root): TokenTable {
     if (rejected.has(name)) return { status: 'unknown' }
     const group = definitions.get(name)
     if (!group) return { status: 'unset' }
-    let winner: Definition | undefined
     for (const definition of group) {
       if (!allMatch(definition.conditions, width)) continue
-      if (
-        !winner ||
-        (definition.important && !winner.important) ||
-        (definition.important === winner.important && definition.order > winner.order)
-      ) {
-        winner = definition
-      }
+      return { status: 'value', value: definition.value }
     }
-    return winner ? { status: 'value', value: winner.value } : { status: 'unset' }
+    return { status: 'unset' }
   }
 
   const boundaries = new Set<number>()
@@ -213,6 +206,11 @@ export function collectTokens(root: Root): TokenTable {
     }
   }
 
+  // Preserve boundary discovery order, then prepare width-independent priority
+  // once so repeated lookups can stop at their first applicable definition.
+  for (const group of definitions.values()) {
+    group.sort((a, b) => Number(!!b.important) - Number(!!a.important) || b.order - a.order)
+  }
   return {
     size: definitions.size,
     boundaries: [...boundaries],
