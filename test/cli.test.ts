@@ -63,6 +63,7 @@ describe('runCli', () => {
       expect(
         await runCli([
           flag,
+          '--json',
           '--config',
           join(directory, 'missing.json'),
           join(directory, 'missing.css'),
@@ -72,6 +73,13 @@ describe('runCli', () => {
       expect(err).toBe('')
     },
   )
+
+  it('gives help precedence over version without processing input', async () => {
+    expect(await runCli(['--version', '--help', join(directory, 'missing.css')])).toBe(0)
+    expect(out).toContain('Options')
+    expect(out).toContain('--version')
+    expect(err).toBe('')
+  })
 
   it.each(['parse', 'config'])(
     'handles a broken pipe while reporting a %s error as JSON',
@@ -116,6 +124,8 @@ describe('runCli', () => {
     ['error', '--json'],
     ['close', '--help'],
     ['error', '--help'],
+    ['close', '--version'],
+    ['error', '--version'],
   ])(
     'stops on stdout %s in %s while waiting for drain and removes listeners',
     async (event, mode) => {
