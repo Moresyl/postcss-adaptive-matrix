@@ -207,7 +207,7 @@ src/styles/app.css
 
 No build to start, no browser to open.
 
-That last line is the seam check. The app file says 16px and the desktop file says 18px; both are reasonable on their own. But the app canvas has already grown to 17.57px by the time it hands over, and the desktop canvas starts at 16.18px — so widening the window by one pixel makes the body text jump *down*. Every formula this compiler emits is non-decreasing in viewport width, so a size going backwards can only mean the canvas changed underneath it: two design files that were never compared at that width.
+That last line is the seam check. The app file says 16px and the desktop file says 18px; both are reasonable on their own. But the app canvas has already grown to 17.57px by the time it hands over, and the desktop canvas starts at 16.18px — so widening the window across the breakpoint makes the body text jump *down*. For an individual converted length on a fixed viewport canvas, its magnitude does not decrease as the viewport widens; a negative margin grows by becoming more negative. The checker compares magnitudes around known breakpoints and flags possible handoff problems, including authored CSS expressions. A finding is a reason to inspect the cascade and canvas selection, not proof that switching canvases is the only cause. Unresolved expressions and conditions can be skipped, so a clean report is not a layout guarantee.
 
 `--from` also lets you rehearse file-based routing, which is the easiest thing to misconfigure and the hardest to notice. See [CLI preview](./docs/cli.md).
 
