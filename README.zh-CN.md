@@ -54,7 +54,17 @@ const { css, warnings } = await compileAdaptiveCss('.card { padding: 24px }')
 
 ## 快速开始
 
-`postcss.config.mjs`：
+在 `postcss.config.mjs` 中先零配置接入：
+
+```js
+import adaptiveMatrix from 'postcss-adaptive-matrix'
+
+export default {
+  plugins: [adaptiveMatrix()],
+}
+```
+
+这会使用内置画布和组件库路由，不注入全局根样式。开始使用不需要填写任何配置字段。只覆盖与设计稿或布局不同的部分即可；例如下面的移动端/桌面端预设使用 `#app` 根容器基础样式：
 
 ```js
 import adaptiveMatrix, { appPcPreset } from 'postcss-adaptive-matrix'

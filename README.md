@@ -54,7 +54,17 @@ Only the CSS input is required. Use `createAdaptiveCompiler()` to reuse configur
 
 ## Quick start
 
-`postcss.config.mjs`:
+Start with no options in `postcss.config.mjs`:
+
+```js
+import adaptiveMatrix from 'postcss-adaptive-matrix'
+
+export default {
+  plugins: [adaptiveMatrix()],
+}
+```
+
+This uses the built-in profiles and library routes without injecting global root styles. No configuration field is required to get started. Customise only what differs from your design or layout; for example, the app/desktop preset below uses a `#app` root foundation:
 
 ```js
 import adaptiveMatrix, { appPcPreset } from 'postcss-adaptive-matrix'
