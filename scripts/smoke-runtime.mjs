@@ -223,6 +223,19 @@ const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
 try {
   const config = join(configDirectory, 'broken.json')
+  writeFileSync(config, JSON.stringify({ minPixeValue: 2 }))
+  const invalidOptions = spawnSync(
+    process.execPath,
+    ['dist/cli.js', '--config', config, '--json', join(configDirectory, 'absent.css')],
+    { cwd: new URL('..', import.meta.url), encoding: 'utf8', timeout: 15_000 },
+  )
+  assert.equal(invalidOptions.status, 1, invalidOptions.stderr)
+  assert.equal(invalidOptions.stderr, '')
+  const invalidReport = JSON.parse(invalidOptions.stdout)
+  assert.equal(invalidReport.ok, false)
+  assert.ok(invalidReport.error.message.includes(`Invalid config ${config}:`))
+  assert.match(invalidReport.error.message, /minPixeValue.*Did you mean "minPixelValue"/)
+  assert.ok(!invalidReport.error.message.includes('absent.css'))
   for (const source of [`{ "token": "${secret}" invalid }`, secret]) {
     writeFileSync(config, source)
     const malformed = spawnSync(process.execPath, ['dist/cli.js', '--config', config, '--json'], {
