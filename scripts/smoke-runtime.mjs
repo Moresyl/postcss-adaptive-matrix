@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,6 +29,51 @@ const cjs = require('../dist/index.cjs')
 assert.equal(typeof cjs, 'function')
 assert.equal(cjs.default, cjs)
 assert.equal(cjs.postcss, true)
+
+// The language-neutral contract must hold for shipped bundles, not only source.
+function reviveCaseOptions(value) {
+  if (Array.isArray(value)) return value.map(reviveCaseOptions)
+  if (value === null || typeof value !== 'object') return value
+  if (typeof value.$regex === 'string') return new RegExp(value.$regex, value.$flags)
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, reviveCaseOptions(entry)]),
+  )
+}
+const normalizeCss = (css) => css.replace(/\r\n/g, '\n').replace(/\n$/, '')
+const casesDirectory = fileURLToPath(new URL('../conformance/cases/', import.meta.url))
+let checkedCases = 0
+for (const group of readdirSync(casesDirectory, { withFileTypes: true })) {
+  if (!group.isDirectory()) continue
+  const directory = join(casesDirectory, group.name)
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const path = join(directory, entry.name)
+    const metadata = JSON.parse(readFileSync(join(path, 'case.json'), 'utf8'))
+    const input = readFileSync(join(path, 'input.css'), 'utf8')
+    const expected = normalizeCss(readFileSync(join(path, 'expected.css'), 'utf8'))
+    for (const [format, plugin] of [
+      ['ESM', esm.default],
+      ['CommonJS', cjs],
+    ]) {
+      const label = `${format} ${group.name}/${entry.name}`
+      const options = reviveCaseOptions(metadata.options ?? {})
+      const processOptions = { from: metadata.from ?? '/project/src/app.css' }
+      const result = await postcss([plugin(options)]).process(input, processOptions)
+      assert.equal(normalizeCss(result.css), expected, label)
+      const warnings = result.warnings().map((warning) => warning.text)
+      assert.equal(warnings.length, (metadata.warnings ?? []).length, label)
+      for (const warning of metadata.warnings ?? []) {
+        assert.equal(warnings.filter((text) => text.includes(warning)).length, 1, label)
+      }
+      const second = await postcss([plugin(options)]).process(result.css, processOptions)
+      assert.equal(normalizeCss(second.css), expected, `${label} idempotence`)
+    }
+    checkedCases += 1
+  }
+}
+assert.ok(checkedCases > 0, 'No built conformance cases found')
+process.stdout.write(`OK: ${checkedCases} conformance cases passed for ESM and CommonJS\n`)
+
 // Exercise the public export map, not only the generated files behind it.
 const manifest = require('../package.json')
 assert.equal((await import(manifest.name)).default, esm.default)

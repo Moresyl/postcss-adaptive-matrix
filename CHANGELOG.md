@@ -7,6 +7,7 @@
 - Repeated CLI `--targets` options now merge browser entries and retain the oldest version across aliases and argument order instead of replacing earlier targets. Empty repeated lists remain errors; built CLI smoke checks exercise the resulting compatibility gate on Node 18 and 24.
 - The library verifier now rejects first-pass CSS rewrites for libraries expected to remain unconverted, even when the output is idempotent. Original Quasar seam findings remain visible and still fail the strict seam gate.
 - Node-only ESM and CommonJS consumer fixtures now check the main entrypoint with ES2022 and no DOM library; browser runtime types still require DOM declarations.
+- Node 18/24 runtime smoke now executes all 86 language-neutral conformance cases through both shipped ESM and CommonJS entrypoints, including warning counts and second-pass idempotence.
 - Public compatibility helpers now reject non-string CSS input with the same actionable error as the compile API, before inspecting browser targets or coercing caller objects.
 - Compatibility audits now isolate internal feature metadata and support tables from public objects. Editing returned features, detection regexes or exported support metadata no longer changes later audit verdicts.
 - Compatibility targets now reject arrays, BigInts and objects instead of coercing them to version strings. Programmatic compilation validates targets before invoking dynamic configuration callbacks.
