@@ -314,7 +314,7 @@ async function loadConfig(path: string): Promise<AdaptiveMatrixOptions> {
   try {
     loaded = await import(pathToFileURL(absolute).href)
   } catch (cause) {
-    const detail = cause instanceof Error ? cause.message : String(cause)
+    const detail = errorMessage(cause)
     throw new CliError(`Could not load config ${path}: ${detail}`)
   }
   // Deliberately no `?? loaded` fallback. A module namespace object is still an
@@ -600,13 +600,17 @@ async function writeReportChunk(chunk: string): Promise<void> {
   })
 }
 
-async function writeCliError(error: unknown, json: boolean): Promise<void> {
-  let message = 'Command failed with an unreadable error.'
+function errorMessage(error: unknown): string {
   try {
-    message = error instanceof Error ? String(error.message) : String(error)
+    return error instanceof Error ? String(error.message) : String(error)
   } catch {
     // Executable configs and callbacks can throw values with broken coercion.
+    return 'Command failed with an unreadable error.'
   }
+}
+
+async function writeCliError(error: unknown, json: boolean): Promise<void> {
+  const message = errorMessage(error)
   if (json) {
     try {
       await writeJson({
@@ -615,9 +619,7 @@ async function writeCliError(error: unknown, json: boolean): Promise<void> {
         error: { message },
       } satisfies CliErrorReport)
     } catch (outputError) {
-      process.stderr.write(
-        `${outputError instanceof Error ? outputError.message : String(outputError)}\n`,
-      )
+      process.stderr.write(`${errorMessage(outputError)}\n`)
     }
   } else {
     process.stderr.write(`${message}\n`)
@@ -694,7 +696,7 @@ export async function runCli(argv: string[]): Promise<number> {
         return resolveOptions(options)
       } catch (cause) {
         if (!args.config) throw cause
-        const detail = cause instanceof Error ? cause.message : String(cause)
+        const detail = errorMessage(cause)
         throw new CliError(`Invalid config ${args.config}: ${detail}`)
       }
     })()

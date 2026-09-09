@@ -54,6 +54,15 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it('retains the config path when module evaluation throws an unreadable value', async () => {
+    const config = await file('unreadable.mjs', 'throw Object.create(null)')
+    expect(await runCli(['-c', config, '--json'])).toBe(1)
+    expect(JSON.parse(out).error.message).toBe(
+      `Could not load config ${config}: Command failed with an unreadable error.`,
+    )
+    expect(err).toBe('')
+  })
+
   it.each([false, true])('reports unprintable config exceptions (json=%s)', async (json) => {
     const config = await file(
       'throws.mjs',
