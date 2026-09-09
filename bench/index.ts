@@ -8,18 +8,18 @@
  *     `result.css`. `postcss([])` returns a NoWorkResult, which by design
  *     parses and stringifies nothing — an empty plugin list cannot measure
  *     parse cost, it can only report zero.
- *  2. One plugin instance processes many files, which is how a build actually
- *     runs. A fresh instance per file would hide the memoisation; re-processing
- *     one file repeatedly would exaggerate it.
+ *  2. Each candidate reuses one plugin instance across files and sampling
+ *     rounds. This measures warmed repeated builds, not cold initialization.
+ *     Each pass creates a processor and processes every file in the corpus.
  *
  *   npm run build && npm run bench
  *
  * With `--check` it is also a gate. The budgets are ratios against PostCSS's
  * own parse-and-print time rather than milliseconds, because a CI runner's
  * absolute speed is not knowable in advance and a millisecond threshold would
- * either fail on a slow morning or never fail at all. Dividing by the cost of
- * the work PostCSS does regardless cancels the machine out; what is left is
- * this project's share of it, which is the thing a regression would change.
+ * either fail on a slow morning or never fail at all. Relative costs reduce
+ * hardware sensitivity but do not eliminate noise, JIT or GC effects. These
+ * corpus-specific budgets are not guarantees for arbitrary stylesheets.
  */
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
@@ -101,21 +101,21 @@ function pass(plugins: AcceptedPlugin[], files: BenchFile[]): () => Promise<numb
 }
 
 console.log(`node ${process.version} · ${ITERATIONS} iterations (median), ${WARMUP} warmup`)
-console.log(`${FILES_PER_CORPUS} files per corpus, one plugin instance per pass\n`)
+console.log(
+  `${FILES_PER_CORPUS} files per corpus; plugin instances reused across sampling rounds\n`,
+)
 
 /**
- * Library adaptation costs a selector test per rule, so it is measured rather
- * than assumed. Every built-in is enabled at once, which is the worst case and
- * more than any real project configures.
+ * Enable every built-in explicitly to measure added routing work. This is a
+ * repeatable registry workload, not a worst-case bound for all configurations.
  */
 const ALL_LIBRARIES = [...dist.BUILT_IN_LIBRARIES]
 
 /**
  * Ceilings on this project's cost, as multiples of parse+print.
  *
- * Measured worst case at the time of writing is 0.73 and 0.34; the headroom is
- * for a loaded runner, not for a regression. A change that doubles either
- * number lands above the budget and fails the build.
+ * Fixed ceilings catch regressions that cross them, not every relative
+ * slowdown. Compare revisions separately to quantify smaller regressions.
  */
 const BUDGET = { compiler: 1.5, libraries: 1.0 }
 
@@ -232,7 +232,7 @@ if (includeApi) {
   console.log('API measurements are observational; no API budget is established yet.')
   console.log('API candidates rotate order each round; plugin timing above is measured separately.')
 }
-console.log('\n"compiler" is total minus parse+print — the only part this project controls.')
+console.log('\n"compiler" estimates added cost as total minus parse+print; timing noise remains.')
 
 if (process.argv.includes('--check')) {
   const over: string[] = []
