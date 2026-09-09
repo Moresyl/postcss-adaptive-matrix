@@ -602,7 +602,8 @@ async function writeReportChunk(chunk: string): Promise<void> {
 
 function errorMessage(error: unknown): string {
   try {
-    return error instanceof Error ? String(error.message) : String(error)
+    const message = error instanceof Error ? String(error.message) : String(error)
+    return message.trim() ? message : 'Command failed without an error message.'
   } catch {
     // Executable configs and callbacks can throw values with broken coercion.
     return 'Command failed with an unreadable error.'
