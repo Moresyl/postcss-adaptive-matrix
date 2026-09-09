@@ -481,6 +481,7 @@ function compatibilitySyntax(css: string): { syntax: string; positions?: number[
 
 /** Which of the compiler's features appear in a stylesheet, in table order. */
 export function detectFeatures(css: string): { feature: CompatFeature; sample: string }[] {
+  if (typeof css !== 'string') throw new TypeError('CSS input must be a string.')
   const found: { feature: CompatFeature; sample: string }[] = []
   const prepared = compatibilitySyntax(css)
   const positions = prepared.positions
@@ -522,6 +523,7 @@ export function auditCompatibility(
   css: string,
   targets: Readonly<Record<string, string | number>>,
 ): CompatAudit {
+  if (typeof css !== 'string') throw new TypeError('CSS input must be a string.')
   if (!isPlainObject(targets)) {
     throw new TypeError(
       `[postcss-adaptive-matrix] Compatibility targets must be an object, not ${valueKind(targets)}.`,

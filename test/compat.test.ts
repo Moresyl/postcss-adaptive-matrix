@@ -159,6 +159,26 @@ describe('the feature table', () => {
 })
 
 describe('detection', () => {
+  it('rejects non-string CSS before coercion or target enumeration', () => {
+    const coercible = {
+      toString() {
+        throw new Error('unexpected coercion')
+      },
+    }
+    const targets = Object.defineProperty({}, 'safari', {
+      enumerable: true,
+      get() {
+        throw new Error('unexpected target access')
+      },
+    })
+    for (const css of [null, undefined, 42, [], coercible]) {
+      expect(() => detectFeatures(css as never)).toThrow('CSS input must be a string.')
+      expect(() => auditCompatibility(css as never, targets)).toThrow('CSS input must be a string.')
+    }
+    expect(detectFeatures('')).toEqual([])
+    expect(auditCompatibility('', { safari: 14 }).findings).toEqual([])
+  })
+
   it('does not let mutations of exported support tables rewrite audit verdicts', () => {
     const table = FEATURE_SUPPORT['css-math-functions'] as Record<string, string>
     const original = table.safari!
