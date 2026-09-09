@@ -182,7 +182,18 @@ SFC 的 `from` 带 query 串（`index.vue?vue&type=style&index=0&lang.css`），
 .title { font-size: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem) }
 ```
 
-静态部分用 `rem`，因此浏览器的文字缩放设置依然有效（WCAG 1.4.4）。纯 `vw` 文字会把用户的缩放选择完全吃掉。混合比例由 `fontFluidity` 控制，默认 `0.35`；在设计宽度处结果仍严格等于设计值。
+静态部分使用 `rem`，因此会响应根字号。混合比例由 `fontFluidity` 控制，默认 `0.35`；在设计宽度处结果仍严格等于设计值。但这不保证文字按比例放大：请在实际页面验证缩放、裁切和重排，参见[缩放示例及其限制](./architecture.zh-CN.md#文字长度与可访问性)。
+
+如果希望转换后的文字只跟随根字号，设置 `fontFluidity: 0` 即可。间距等非文字长度仍跟随视口缩放，不需要填写流体边界：
+
+```js
+adaptiveMatrix({
+  profiles: { app: 375 },
+  fontFluidity: 0,
+})
+```
+
+使用默认 `rootValue: 16` 时，`font-size: 16px` 会变成 `font-size: calc(1rem)`。函数包装用于保持重复构建稳定。这改变的是文字尺寸公式，不能替代对周围布局的实际测试。
 
 ## 根容器
 

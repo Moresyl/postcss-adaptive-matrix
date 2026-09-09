@@ -182,7 +182,18 @@ Font sizes do not use plain `vw`; they use a `rem + vw` hybrid:
 .title { font-size: clamp(0.94867rem, calc(0.65rem + 1.49333vw), 1.098rem) }
 ```
 
-The static part is in `rem`, so the browser's text-zoom setting keeps working (WCAG 1.4.4). Text in plain `vw` swallows the user's zoom choice entirely. The mix is controlled by `fontFluidity`, default `0.35`; at the design width the result is still exactly the design value.
+The static part is in `rem`, so it responds to the root font size. The mix is controlled by `fontFluidity`, default `0.35`; at the design width the result is still exactly the design value. This is not a guarantee of proportional text resizing: test zoom, clipping and reflow on your actual page. See [the scaling example and its limits](./architecture.md#text-lengths-and-accessibility).
+
+To make converted text depend only on the root font size, set `fontFluidity: 0`. Spacing and other non-text lengths still scale with the viewport; no fluid bounds are required:
+
+```js
+adaptiveMatrix({
+  profiles: { app: 375 },
+  fontFluidity: 0,
+})
+```
+
+With the default `rootValue: 16`, `font-size: 16px` becomes `font-size: calc(1rem)`. The function wrapper preserves repeat-build stability. This changes the text-sizing formula, not the need to test the surrounding layout.
 
 ## The root container
 
