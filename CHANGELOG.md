@@ -4,10 +4,13 @@
 
 ## Unreleased
 
+- Playground now safely reports thrown values that cannot be converted to strings, both in authored configuration and worker startup/message delivery. Regression tests cover cleanup and subsequent compilation on the same worker.
+- Documentation outlines wrap long titles instead of truncating them. Added an unbounded-fluid playground sample and simplified the root-relative text sample to omit unnecessary bounds; guides clarify that root-relative text does not guarantee proportional resizing or accessibility conformance.
+- Pages deployment now runs the complete `npm run check` gate before uploading its artifact, including theme/worker tests, types, lint, formatting, coverage and documentation build checks. Performance and dependency audits remain separate CI jobs.
 - Repeated CLI `--targets` options now merge browser entries and retain the oldest version across aliases and argument order instead of replacing earlier targets. Empty repeated lists remain errors; built CLI smoke checks exercise the resulting compatibility gate on Node 18 and 24.
 - The library verifier now rejects first-pass CSS rewrites for libraries expected to remain unconverted, even when the output is idempotent. Original Quasar seam findings remain visible and still fail the strict seam gate.
 - Node-only ESM and CommonJS consumer fixtures now check the main entrypoint with ES2022 and no DOM library; browser runtime types still require DOM declarations.
-- Node 18/24 runtime smoke now executes all 86 language-neutral conformance cases through both shipped ESM and CommonJS entrypoints, including warning counts and second-pass idempotence.
+- Node 18/24 runtime smoke now executes all language-neutral conformance cases through both shipped ESM and CommonJS entrypoints, including warning counts and second-pass idempotence. The suite also covers a shorthand profile combining root-relative text with unbounded fluid spacing.
 - Public compatibility helpers now reject non-string CSS input with the same actionable error as the compile API, before inspecting browser targets or coercing caller objects.
 - Compatibility audits now isolate internal feature metadata and support tables from public objects. Editing returned features, detection regexes or exported support metadata no longer changes later audit verdicts.
 - Compatibility targets now reject arrays, BigInts and objects instead of coercing them to version strings. Programmatic compilation validates targets before invoking dynamic configuration callbacks.
