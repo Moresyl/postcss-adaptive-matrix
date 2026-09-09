@@ -54,6 +54,25 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each([false, true])('reports unprintable config exceptions (json=%s)', async (json) => {
+    const config = await file(
+      'throws.mjs',
+      'export default { profiles: { app: () => { throw Object.create(null) } } }',
+    )
+    const css = await file('input.css', '.a { width: 24px }')
+    expect(await runCli([css, '-c', config, ...(json ? ['--json'] : [])])).toBe(1)
+    if (json) {
+      expect(JSON.parse(out)).toMatchObject({
+        ok: false,
+        error: { message: 'Command failed with an unreadable error.' },
+      })
+      expect(err).toBe('')
+    } else {
+      expect(out).toBe('')
+      expect(err).toBe('Command failed with an unreadable error.\n')
+    }
+  })
+
   it.each(['-v', '--version'])(
     'prints the package version with %s without reading input or config',
     async (flag) => {

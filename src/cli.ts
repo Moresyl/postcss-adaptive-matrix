@@ -601,7 +601,12 @@ async function writeReportChunk(chunk: string): Promise<void> {
 }
 
 async function writeCliError(error: unknown, json: boolean): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error)
+  let message = 'Command failed with an unreadable error.'
+  try {
+    message = error instanceof Error ? String(error.message) : String(error)
+  } catch {
+    // Executable configs and callbacks can throw values with broken coercion.
+  }
   if (json) {
     try {
       await writeJson({
