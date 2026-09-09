@@ -76,6 +76,8 @@ npm run verify:libraries              # all of them
 npm run verify:libraries -- vant      # one
 ```
 
+For scaling libraries, the declaration sequence (property, value and importance) must change on the first pass. `NO CONVERSION` fails the check when it does not; formatting or comment changes alone do not qualify. This is a minimum activity check, not proof of correct conversion for every declaration. Desktop libraries expected to remain unconverted must retain the exact source CSS; `UNEXPECTED REWRITE` fails even for an idempotent rewrite.
+
 It downloads each library's published artifact (reusing existing `.libcheck` packages), prints the package version (or `unknown` if unavailable) and whether it was cached, compiles it with a realistic `node_modules` path, and checks prefixes, routing, idempotence and static seam findings. Compiler warnings also fail the check. Unknown library names, download failures, missing required styles/prefixes, unreadable or malformed CSS, wrong routes, non-idempotent output or seam findings cause a nonzero exit code. Missing pinned stylesheets and read/parse failures are recorded without stopping the remaining libraries. The summary separates completed static checks from skipped runtime-only libraries. Inspect the report rather than interpreting an exit code as browser or design-width certification; cached packages do not automatically track newer releases.
 
 **One column it does not cover: design width.** A stylesheet does not reveal how wide the file it was drawn on was; that column comes from each library's own documentation and the script cannot check it.
