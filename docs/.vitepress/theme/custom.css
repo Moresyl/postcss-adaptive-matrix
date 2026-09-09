@@ -89,6 +89,18 @@
   line-height: 1.3;
 }
 
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.vp-doc p,
+.vp-doc li {
+  overflow-wrap: anywhere;
+}
+
 .vp-doc p,
 .vp-doc li {
   line-height: 1.9;
