@@ -203,6 +203,8 @@ if (issues.length) throw new Error(`${issues.length} 处断点倒退`)
 
 `--targets` 收一串「浏览器 + 你打算支持的最低版本」，逐条对着**编译产物**核：
 
+可以重复传入 `--targets`；各次会按浏览器合并并保留最低版本，分段生成的目标列表也不会意外放宽兼容范围。
+
 ```bash
 npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
 ```

@@ -203,6 +203,8 @@ if (issues.length) throw new Error(`${issues.length} breakpoint regressions`)
 
 `--targets` takes a list of "browser + the oldest version you intend to support" and checks each one against the **compiled output**:
 
+You may repeat `--targets`; entries are merged by browser and the oldest version wins, so split shell-generated target lists remain conservative.
+
 ```bash
 npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, chrome 90"
 ```

@@ -1207,6 +1207,23 @@ describe('runCli --targets', () => {
     expect(await runCli([path, '--targets', 'safari@17', '--no-color'])).toBe(0)
   })
 
+  it.each([
+    ['--targets', 'chrome 120, safari 14', '--targets=android 79'],
+    ['--targets=android 79', '--targets', 'chrome 120, safari 14'],
+  ])('merges repeated target options conservatively: %j', async (...args) => {
+    const path = await file('app.css', '.page { padding: 16px }')
+    expect(await runCli([path, '--json', ...args, '--no-color'])).toBe(0)
+    expect((JSON.parse(out) as { targets: Record<string, string> }).targets).toEqual({
+      chrome: '79',
+      safari: '14',
+    })
+  })
+
+  it('rejects an empty repeated target list instead of reusing the previous list', async () => {
+    expect(await runCli(['--targets', 'chrome 120', '--targets', ' , '])).toBe(1)
+    expect(err).toContain('--targets needs at least one browser and version')
+  })
+
   it('keeps the oldest duplicate alias regardless of argument order', async () => {
     const path = await file('app.css', '.page { padding: 16px }')
 

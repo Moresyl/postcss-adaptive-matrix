@@ -142,7 +142,7 @@ function parseQualityGate(input: string): CliQualityGateCategory[] {
  * database to resolve, and changes meaning as the database updates — none of
  * which belongs inside a preview command. Name the versions you mean.
  */
-function parseTargets(input: string): Record<string, string> {
+function parseTargets(input: string, previous?: Record<string, string>): Record<string, string> {
   const targets: Record<string, string> = {}
   for (const entry of input.split(',')) {
     const text = entry.trim()
@@ -177,6 +177,10 @@ function parseTargets(input: string): Record<string, string> {
   }
   if (!Object.keys(targets).length) {
     throw new CliError('--targets needs at least one browser and version.')
+  }
+  for (const [browser, version] of Object.entries(previous ?? {})) {
+    const current = targets[browser]
+    if (current === undefined || compareVersions(version, current) < 0) targets[browser] = version
   }
   return targets
 }
@@ -234,7 +238,7 @@ function parseArgs(argv: string[]): CliArgs {
         args.profile = value()
         break
       case '--targets':
-        args.targets = parseTargets(value())
+        args.targets = parseTargets(value(), args.targets)
         break
       case '--fail-on':
         args.failOn = [...new Set([...args.failOn, ...parseQualityGate(value())])]
