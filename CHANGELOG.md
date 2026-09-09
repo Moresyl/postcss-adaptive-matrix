@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+- Viewport observers now attempt every cleanup operation even if an injected host rejects one, preserve the original initialization error when rollback fails, and tear down after animation-frame scheduling errors. Source regressions and ESM/CommonJS artifact smoke cover these failure paths.
+- Documentation search restores focus to its trigger after Escape, the mobile back button or backdrop dismissal without stealing focus from a selected result.
+- Real Vite builds now verify omitted, empty and one-sided fluid bounds for positive spacing and negative margins while keeping other profiles and library routing unchanged.
+- Bilingual API documentation demonstrates regenerating and re-auditing an edited AST. Tests execute the documentation snippets directly and verify that prior CSS and audit results remain snapshots.
+- CI and documentation workflows use checkout/setup-node v6, matching the existing publish workflow, while retaining the Node 18/20/22/24 compatibility checks. Pages-specific actions remain unchanged.
+
 - Configuration-key validation avoids allocating a temporary Set for each small allowed-key list while retaining unknown-field rejection and spelling suggestions.
 - Configuration guides now separate truly required nested fields from optional settings and show zero-configuration, shorthand-canvas and one-sided-bound examples. Tests compile the examples in both languages and verify second-pass stability.
 - Reference table cells and narrow-screen headings wrap long content. The English component-library shortcut moves into the More menu to prevent tablet-width navigation overflow; sidebar and page links remain available.
