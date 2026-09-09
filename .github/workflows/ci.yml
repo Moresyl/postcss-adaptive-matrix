@@ -25,6 +25,14 @@ jobs:
       - run: npm run build
       - run: npm run smoke:runtime
 
+      # Verify the declared peer floor without changing the committed lockfile.
+      # Kept separate from security: this old release is a compatibility target,
+      # not the recommended dependency version for consumers.
+      - name: Install minimum supported PostCSS
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund postcss@8.4.0
+      - name: Smoke test minimum PostCSS on Node 18
+        run: npm run smoke:runtime
+
   verify:
     strategy:
       fail-fast: false
