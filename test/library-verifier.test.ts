@@ -8,6 +8,35 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('rejects an idempotent rewrite of a library that should remain unconverted', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-preserve-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'quasar', 'package', 'dist')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(join(packaged, 'quasar.css'), '.q-button { width: 24px }')
+    await writeFile(join(packaged, 'quasar.rtl.css'), '.q-button { width: 32px }')
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        '--import',
+        new URL('./fixtures/rewrite-library-compile.mjs', import.meta.url).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'quasar',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout.match(/UNEXPECTED REWRITE/g)).toHaveLength(1)
+    expect(result.stdout).toContain('2 reviewed, 1 needing attention')
+    expect(result.stdout).toContain('2 static stylesheet checks completed')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('labels unchanged source seams without suppressing the failing gate', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-origin-'))
   try {

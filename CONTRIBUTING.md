@@ -75,6 +75,8 @@ Normal `npm publish` also invokes this lifecycle script, but is a separate publi
 
 Library seam details include the selector, property, breakpoint and sampled values. `pre-existing` means the complete finding matches analysis of the original stylesheet; `new/changed` means it does not. Neither label proves design intent or causality, and both still fail the seam gate.
 
+For libraries expected to remain unconverted, the verifier also compares the first output directly with the source CSS. An `UNEXPECTED REWRITE` fails the gate even if a second compilation is idempotent.
+
 For an isolated compatibility-detector comparison, run `npx tsx bench/compat-compare.ts <commit-sha>`. Only use a trusted repository commit: the tool bundles and executes that revision's detector with current dependencies in memory. It checks output equality on the synthetic corpora before alternating old/new timed calls. It neither checks out that commit nor measures a complete historical package, and its ratios are not whole-build speedups.
 
 Keep a PR focused, and state: the problem, the approach, the compatibility impact, and how you verified it. The default conversion formula, the output order, the public types and the minimum Node/PostCSS versions are all part of the compatibility contract.
