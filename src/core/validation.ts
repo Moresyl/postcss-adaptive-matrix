@@ -65,18 +65,23 @@ function editDistance(left: string, right: string): number {
 }
 
 function suggestion(key: string, allowed: readonly string[]): string | null {
+  // Two edits catches a missing letter and a transposition without pretending
+  // an unrelated setting was meant. Longer names can survive one extra typo.
+  const threshold = key.length >= 10 ? 3 : 2
+  const normalized = key.toLowerCase()
   let closest: string | null = null
   let distance = Number.POSITIVE_INFINITY
   for (const candidate of allowed) {
-    const next = editDistance(key.toLowerCase(), candidate.toLowerCase())
+    const target = candidate.toLowerCase()
+    // Edit distance cannot be smaller than the length difference. Avoid the
+    // dynamic-programming work for keys that cannot possibly be suggested.
+    if (Math.abs(normalized.length - target.length) > threshold) continue
+    const next = editDistance(normalized, target)
     if (next < distance) {
       closest = candidate
       distance = next
     }
   }
-  // Two edits catches a missing letter and a transposition without pretending
-  // an unrelated setting was meant. Longer names can survive one extra typo.
-  const threshold = key.length >= 10 ? 3 : 2
   return distance <= threshold ? closest : null
 }
 
