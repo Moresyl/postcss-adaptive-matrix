@@ -56,6 +56,47 @@ function stubTarget() {
 }
 
 describe('observeAdaptiveViewport', () => {
+  it('keeps an injected window independent from the default document', () => {
+    const outer = stubTarget()
+    const inner = stubTarget()
+    const host = stubWindow(null, { document: { documentElement: inner.element } })
+    vi.stubGlobal('document', { documentElement: outer.element })
+    let observer: ReturnType<typeof observeAdaptiveViewport> | undefined
+    try {
+      observer = observeAdaptiveViewport({ window: host.window })
+      expect(outer.values.get('--adaptive-width')).toBe('390')
+      expect(inner.setProperty).not.toHaveBeenCalled()
+      host.fire('resize')
+      observer.destroy()
+      expect(host.pending()).toBe(0)
+    } finally {
+      observer?.destroy()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('lets an explicit target override both injected and ambient documents', () => {
+    const outer = stubTarget()
+    const inner = stubTarget()
+    const target = stubTarget()
+    const host = stubWindow(null)
+    vi.stubGlobal('document', { documentElement: outer.element })
+    let observer: ReturnType<typeof observeAdaptiveViewport> | undefined
+    try {
+      observer = observeAdaptiveViewport({
+        window: host.window,
+        document: { documentElement: inner.element } as unknown as Document,
+        target: target.element,
+      })
+      expect(target.values.get('--adaptive-height')).toBe('800')
+      expect(outer.setProperty).not.toHaveBeenCalled()
+      expect(inner.setProperty).not.toHaveBeenCalled()
+    } finally {
+      observer?.destroy()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('keeps prepared variable names isolated between observers', () => {
     const host = stubWindow(null)
     const first = stubTarget()
