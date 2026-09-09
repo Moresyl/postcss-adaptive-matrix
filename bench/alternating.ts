@@ -30,6 +30,7 @@ export async function measureAlternating(
   return samples.map((values) => {
     values.sort((a, b) => a - b)
     const middle = values.length >> 1
-    return values.length % 2 ? values[middle]! : (values[middle - 1]! + values[middle]!) / 2
+    const lower = values[middle - 1]!
+    return values.length % 2 ? values[middle]! : lower + (values[middle]! - lower) / 2
   })
 }

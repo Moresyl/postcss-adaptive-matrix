@@ -44,6 +44,14 @@ it('excludes warmup values from the median', async () => {
   expect(await measureAlternating([run], 3, 1, () => time)).toEqual([2])
 })
 
+it('keeps an even-sample median finite when individual timings are near the limit', async () => {
+  let reads = 0
+  const readings = [0, Number.MAX_VALUE, 0, Number.MAX_VALUE]
+  expect(await measureAlternating([async () => {}], 2, 0, () => readings[reads++]!)).toEqual([
+    Number.MAX_VALUE,
+  ])
+})
+
 it('propagates candidate failures instead of returning partial timings', async () => {
   await expect(
     measureAlternating([() => Promise.reject(new Error('failed'))], 1, 0),
