@@ -102,6 +102,25 @@ interface AdaptiveViewportObserver {
 
 `destroy()` is idempotent and permanent: it cancels a queued animation frame even if the browser returned handle `0`, removes the listeners once, and later `update()` calls return `null` without writing.
 
+### Lifecycle and failures
+
+You can share the host's cancellation signal instead of remembering a separate cleanup call:
+
+```js
+const controller = new AbortController()
+const observer = observeAdaptiveViewport({ signal: controller.signal })
+
+// When this view is disposed:
+controller.abort()
+observer.update() // null; create a new observer to start observing again
+```
+
+Destroying an observer leaves its last published CSS variables in place; it does not remove or restore styles. If you reuse the target, the next observer publishes a fresh reading. Avoid multiple live observers writing the same prefix to the same target.
+
+Invalid options and failed initial CSS writes throw synchronously. Failed setup attempts to remove its listeners before rethrowing the original error. A later animation-frame write failure automatically destroys the observer; an explicit `update()` failure is thrown to its caller instead. Wrap manual updates in your application's error handling and call `destroy()` when abandoning the observer.
+
+Cleanup is best effort for injected or embedded hosts: if one cancellation or listener-removal method throws, the remaining releases are still attempted without throwing a secondary cleanup error. Callbacks a broken host retains cannot publish after destruction, but the observer cannot guarantee that the host actually released those references.
+
 ## SSR
 
 With no `window` the constructor does not throw; the returned observer does nothing and `update()` returns `null`. So it can be called unconditionally at module top level, with no `if (typeof window !== 'undefined')` wrapper.
