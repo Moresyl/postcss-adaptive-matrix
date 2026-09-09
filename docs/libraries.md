@@ -80,6 +80,8 @@ It downloads each library's published artifact (reusing existing `.libcheck` pac
 
 **One column it does not cover: design width.** A stylesheet does not reveal how wide the file it was drawn on was; that column comes from each library's own documentation and the script cannot check it.
 
+Known source finding in cached Quasar 2.24.0: both `dist/quasar.css` and `dist/quasar.rtl.css` change `.q-notification`'s `max-width` from `95vw` to `65vw` at 600px. The verifier labels these findings `pre-existing` because the same transition occurs before compilation. They still fail the strict seam gate; this is not evidence of a compiler-introduced regression, and the compiler does not rewrite that library's intended responsive behavior to silence the report. Recheck when upgrading the package.
+
 `naive-ui` and `mui` generate their styles at runtime, so there is no stylesheet on disk — nothing goes through PostCSS and there is nothing to check. The entries are still useful: they are "keep pixels", so your hand-written `.n-button` overrides are not scaled.
 
 The list is readable from code:
