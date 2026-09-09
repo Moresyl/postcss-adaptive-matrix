@@ -10,7 +10,7 @@ export interface AdaptiveCompileOptions {
   /** Optional oldest browser versions to audit against. */
   targets?: Readonly<Record<string, string | number>>
   /** Optional build gate. Compatibility gates require targets. */
-  failOn?: readonly AdaptiveCompileGateCategory[]
+  failOn?: AdaptiveCompileGateCategory | readonly AdaptiveCompileGateCategory[]
 }
 
 export type AdaptiveCompileGateCategory = 'warnings' | 'compatibility'
@@ -53,16 +53,19 @@ export function createAdaptiveCompiler(options: AdaptiveMatrixOptions = {}) {
     // Otherwise mutating a shared request could silently change its verdict.
     const targets = suppliedTargets === undefined ? undefined : { ...suppliedTargets }
     if (targets !== undefined) auditCompatibility('', targets)
+    const suppliedGate = request.failOn
+    const categories: readonly unknown[] =
+      suppliedGate === undefined ? [] : Array.isArray(suppliedGate) ? suppliedGate : [suppliedGate]
     if (
-      request.failOn !== undefined &&
-      (!Array.isArray(request.failOn) ||
-        Array.from(request.failOn as readonly unknown[]).some(
-          (category) => category !== 'warnings' && category !== 'compatibility',
-        ))
+      Array.from(categories).some(
+        (category) => category !== 'warnings' && category !== 'compatibility',
+      )
     ) {
-      throw new TypeError('Compile options.failOn must be an array of warnings or compatibility.')
+      throw new TypeError(
+        'Compile options.failOn must be warnings, compatibility, or an array of these categories.',
+      )
     }
-    const failOn = [...new Set((request.failOn ?? []) as readonly AdaptiveCompileGateCategory[])]
+    const failOn = [...new Set(categories as readonly AdaptiveCompileGateCategory[])]
     if (failOn.includes('compatibility') && targets === undefined) {
       throw new TypeError('Compile options.failOn compatibility requires targets.')
     }

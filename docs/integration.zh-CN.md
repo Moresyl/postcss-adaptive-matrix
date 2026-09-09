@@ -304,7 +304,7 @@ const result = await compile('.card { padding: 24px }', {
 ```ts
 const output = await compileAdaptiveCss(source, {}, {
   targets: { safari: 14 },
-  failOn: ['compatibility'],
+  failOn: 'compatibility',
 })
 if (output.gate?.passed === false) {
   console.error(output.compatibility)

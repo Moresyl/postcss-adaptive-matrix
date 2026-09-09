@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Compile API quality gates accept a single category (`failOn: 'warnings'` or `'compatibility'`) as well as an array. The option remains optional, results normalize categories to an array, and compatibility gates still require browser targets.
+
 - Playground now safely reports thrown values that cannot be converted to strings, both in authored configuration and worker startup/message delivery. Regression tests cover cleanup and subsequent compilation on the same worker.
 - Documentation outlines wrap long titles instead of truncating them. Added an unbounded-fluid playground sample and simplified the root-relative text sample to omit unnecessary bounds; guides clarify that root-relative text does not guarantee proportional resizing or accessibility conformance.
 - Pages deployment now runs the complete `npm run check` gate before uploading its artifact, including theme/worker tests, types, lint, formatting, coverage and documentation build checks. Performance and dependency audits remain separate CI jobs.

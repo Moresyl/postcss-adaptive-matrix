@@ -82,7 +82,7 @@ A syntax error, invalid request or throwing configuration callback rejects the c
 ```ts
 const compile = createAdaptiveCompiler()
 try {
-  const output = await compile('.card { padding: 24px }', { failOn: ['warnings'] })
+  const output = await compile('.card { padding: 24px }', { failOn: 'warnings' })
   if (output.gate?.passed === false) {
     console.error('CSS quality gate failed', output.warnings.map((warning) => warning.text))
   } else {

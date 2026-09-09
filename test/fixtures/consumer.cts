@@ -24,7 +24,7 @@ runtime.observeAdaptiveViewport({ signal: null })
 runtime.observeAdaptiveViewport({ signal: new AbortController() })
 // @ts-expect-error viewport options are closed, not an arbitrary property bag
 runtime.observeAdaptiveViewport({ windw: window })
-const request: adaptiveMatrix.AdaptiveCompileOptions = { failOn: ['warnings'] }
+const request: adaptiveMatrix.AdaptiveCompileOptions = { failOn: 'warnings' }
 const compile = adaptiveMatrix.createAdaptiveCompiler()
 const pending: Promise<adaptiveMatrix.AdaptiveCompileResult> = compile('', request)
 void pending

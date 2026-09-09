@@ -759,22 +759,47 @@ describe('programmatic compiler', () => {
     expect((await compileAdaptiveCss('', {}, { failOn: [] })).gate).toBeNull()
   })
 
-  it.each([null, 'warnings', ['continuity'], [1], new Array(1), ['compatibility']])(
-    'rejects invalid gates before dynamic callbacks: %j',
-    async (failOn) => {
-      let calls = 0
-      const compile = createAdaptiveCompiler({
-        profiles: {
-          app: {
-            designWidth: () => {
-              calls++
-              return 375
-            },
+  it.each(['warnings', 'compatibility'] as const)('accepts a single %s gate', async (failOn) => {
+    const request = { failOn, targets: { safari: 12 } }
+    const source = '@adaptive missing { .a { padding: 24px } }'
+    const shorthand = await compileAdaptiveCss(source, {}, request)
+    const array = await compileAdaptiveCss(source, {}, { ...request, failOn: [failOn] })
+    expect(shorthand.gate).toEqual(array.gate)
+    expect(shorthand.gate?.failOn).toEqual([failOn])
+    expect(shorthand.css).toBe(array.css)
+    expect(shorthand.warnings.map((warning) => warning.text)).toEqual(
+      array.warnings.map((warning) => warning.text),
+    )
+    expect(
+      (await compileAdaptiveCss('', {}, { failOn, targets: { chrome: 100 } })).gate?.passed,
+    ).toBe(true)
+  })
+
+  it.each([
+    null,
+    '',
+    'continuity',
+    'warnings,compatibility',
+    {},
+    1,
+    ['continuity'],
+    [1],
+    new Array(1),
+    'compatibility',
+    ['compatibility'],
+  ])('rejects invalid gates before dynamic callbacks: %j', async (failOn) => {
+    let calls = 0
+    const compile = createAdaptiveCompiler({
+      profiles: {
+        app: {
+          designWidth: () => {
+            calls++
+            return 375
           },
         },
-      })
-      await expect(compile('.a { padding: 24px }', { failOn } as never)).rejects.toThrow()
-      expect(calls).toBe(0)
-    },
-  )
+      },
+    })
+    await expect(compile('.a { padding: 24px }', { failOn } as never)).rejects.toThrow()
+    expect(calls).toBe(0)
+  })
 })

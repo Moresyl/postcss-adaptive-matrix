@@ -82,7 +82,7 @@ CSS 语法错误、非法请求或配置回调抛错会拒绝编译 Promise；�
 ```ts
 const compile = createAdaptiveCompiler()
 try {
-  const output = await compile('.card { padding: 24px }', { failOn: ['warnings'] })
+  const output = await compile('.card { padding: 24px }', { failOn: 'warnings' })
   if (output.gate?.passed === false) {
     console.error('CSS 质量门禁未通过', output.warnings.map((warning) => warning.text))
   } else {
