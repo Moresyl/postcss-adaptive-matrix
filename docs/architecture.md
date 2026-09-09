@@ -53,7 +53,7 @@ preferred = P × (1 - F) rem-part + P × F / D × 100vw
 
 The static part and both bounds use `rem`; the fluid part uses `vw`/`cqi`. The default `F = 0.35` is still exactly the design value at the design width, while balancing window changes against browser zoom.
 
-Using `rem` for the bounds too is the crucial step. When the user raises the default font size, the fluid part does not follow but the lower bound does — so at high zoom levels `clamp()` lands on its lower bound, the formula degenerates to pure `rem`, and zoom is fully effective again.
+Using `rem` for the bounds lets them respond to changes in the root font size. With a lower bound configured, the expression can reach that bound as the root font size grows and then scale proportionally with `rem`. This does not guarantee twice the original text size when the root font size doubles: the table below reaches only 190%. Without `fluid.minWidth`, there is no lower bound to take over; the preferred expression retains its mix of root-relative and viewport-relative terms. Changing the root font size is also not the same test as browser page zoom, which can change the CSS viewport width.
 
 Measured in Chrome (375px viewport, default configuration, `font-size: 16px`):
 

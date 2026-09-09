@@ -120,7 +120,7 @@ At this point component-library adaptation, safe-area variables, the centred roo
 | --- | --- |
 | **Multiple canvases** | App, desktop, tablet, in-car — each with its own design width, breakpoint, fluid range and unit |
 | **Bounded fluid sizing** | `clamp()` by default: no runaway growth on a wide screen, no collapse on a narrow one |
-| **Accessible text** | A `rem + vw` hybrid, so browser text zoom keeps working (WCAG 1.4.4) |
+| **Root-relative text** | A `rem + vw` hybrid retains a root-relative component; real zoom acceptance is still required |
 | **Component libraries built in** | 11 mainstream libraries, each converted on its own canvas — no ignore list |
 | **Theme tokens** | Library custom properties on `:root` are recognised by name; font sizes take the text formula automatically |
 | **Fixed-position correction** | `position: fixed` stops escaping to the viewport edge inside a centred column |
