@@ -39,6 +39,67 @@ const commonJsRuntime = require(`${manifest.name}/runtime`)
 for (const api of [publicRuntime, commonJsRuntime]) {
   assert.equal(typeof api.observeAdaptiveViewport, 'function')
   assert.equal(api.observeAdaptiveViewport().update(), null)
+  const events = new Map()
+  const frames = new Map()
+  const values = new Map()
+  let handle = 0
+  let writes = 0
+  const host = {
+    innerWidth: 390,
+    innerHeight: 800,
+    addEventListener(name, listener) {
+      events.set(name, listener)
+    },
+    removeEventListener(name, listener) {
+      assert.equal(events.get(name), listener)
+      events.delete(name)
+    },
+    requestAnimationFrame(callback) {
+      const id = handle++
+      frames.set(id, callback)
+      return id
+    },
+    cancelAnimationFrame(id) {
+      frames.delete(id)
+    },
+  }
+  const observer = api.observeAdaptiveViewport({
+    window: host,
+    target: {
+      style: {
+        setProperty(name, value) {
+          writes++
+          values.set(name, value)
+        },
+      },
+    },
+  })
+  try {
+    assert.equal(writes, 7)
+    assert.equal(values.get('--adaptive-vh'), '8px')
+    observer.update()
+    assert.equal(writes, 7)
+    host.innerHeight = 600
+    events.get('resize')()
+    events.get('orientationchange')()
+    assert.equal(frames.size, 1)
+    for (const [id, callback] of frames) {
+      frames.delete(id)
+      callback()
+    }
+    assert.equal(values.get('--adaptive-layout-height'), '600')
+    assert.equal(values.get('--adaptive-vh'), '6px')
+    assert.equal(writes, 10)
+    events.get('resize')()
+    assert.equal(frames.size, 1)
+  } finally {
+    observer.destroy()
+  }
+  observer.destroy()
+  assert.equal(events.size, 0)
+  assert.equal(frames.size, 0)
+  assert.equal(observer.update(), null)
+  assert.equal(writes, 10)
 }
 for (const api of [esm, cjs]) {
   const sparseLibraries = new Array(2)
