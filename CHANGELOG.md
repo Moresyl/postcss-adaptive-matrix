@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- Explicit nonempty profile maps no longer construct and validate an unused default App/PC preset during initialization. Omitted and empty maps retain their existing defaults; authored configuration validation is unchanged.
+
 - Compile API quality gates accept a single category (`failOn: 'warnings'` or `'compatibility'`) as well as an array. The option remains optional, results normalize categories to an array, and compatibility gates still require browser targets.
 
 - Playground now safely reports thrown values that cannot be converted to strings, both in authored configuration and worker startup/message delivery. Regression tests cover cleanup and subsequent compilation on the same worker.
