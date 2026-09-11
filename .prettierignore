@@ -11,5 +11,6 @@ node_modules
 docs/.vitepress/cache
 .firecrawl
 .libcheck
+.upgrade
 conformance/cases
 examples/*/dist
