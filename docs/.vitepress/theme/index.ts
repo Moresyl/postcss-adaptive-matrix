@@ -7,6 +7,7 @@ import type { Theme } from 'vitepress'
 import { defineAsyncComponent, h, onMounted, onUnmounted } from 'vue'
 import CopyPage from './CopyPage.vue'
 import CanvasDemo from './CanvasDemo.vue'
+import HomeStart from './HomeStart.vue'
 import { installSearchFocusRestore } from './search-focus'
 import './custom.css'
 
@@ -28,6 +29,7 @@ export default {
     h(DefaultTheme.Layout, null, {
       'doc-before': () => h(CopyPage),
       'home-hero-after': () => h(CanvasDemo),
+      'home-features-after': () => h(HomeStart),
       'layout-top': () => h(SearchFocusRestore),
     }),
   enhanceApp({ app }) {

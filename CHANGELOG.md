@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+- The documentation home now ends with a focused, responsive next-step panel that keeps installation and playground entry points visible after the feature overview, with bilingual labels and deployment-base-safe links.
 - Viewport observers now attempt every cleanup operation even if an injected host rejects one, preserve the original initialization error when rollback fails, and tear down after animation-frame scheduling errors. Source regressions and ESM/CommonJS artifact smoke cover these failure paths.
 - Documentation search restores focus to its trigger after Escape, the mobile back button or backdrop dismissal without stealing focus from a selected result.
 - Real Vite builds now verify omitted, empty and one-sided fluid bounds for positive spacing and negative margins while keeping other profiles and library routing unchanged.
