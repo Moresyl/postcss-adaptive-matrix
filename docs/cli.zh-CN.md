@@ -210,13 +210,12 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 ```
 
 ```
-  needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          from: root.layer, which appPcPreset sets to 'adaptive-matrix' ...
-          seen: @layer adaptive-matrix { :where(#app) {
-          if unsupported: The whole @layer block is dropped, so the entire root
-          foundation goes with it ...
-          instead: root.layer: false emits the same rules unwrapped. ...
-  needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
+  需要 @layer — iOS Safari 13 < 15.4，Chrome 90 < 99
+          来源：root.layer，appPcPreset 将其设置为 'adaptive-matrix' …
+          发现：@layer adaptive-matrix { :where(#app) {
+          不支持时：整个 @layer 块会被丢弃，连同根级基础样式一起消失 …
+          替代：root.layer: false 会输出不带包裹层的相同规则 …
+  需要 clamp()、min()、max() — iOS Safari 13 < 13.4-13.7
 ```
 
 四行的顺序是有意的：先说**丢什么**，再说**换成什么**。「iOS Safari 13 太老了」单独拿出来没法行动，而 CSS 支持缺口真正要紧的一直是「跟着一起消失的有多少」——值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。
@@ -226,7 +225,7 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 目标全都够用时只有一行：
 
 ```
-  every target reads all 7 CSS features in this output
+  所有目标浏览器都能读取本次输出中的 7 项 CSS 特性
 ```
 
 已知名字：`chrome`、`edge`、`safari`、`firefox`、`ios_saf`、`samsung`；`android`、`webview` 归到 `chrome`。名字不认识会报错并以 `1` 退出，不会静默跳过——被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
