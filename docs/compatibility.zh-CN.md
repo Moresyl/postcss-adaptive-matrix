@@ -169,7 +169,7 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 ```
   需要 @layer — iOS Safari 13 < 15.4，Chrome 90 < 99
           来源：root.layer；启用根级基础样式时 appPcPreset 会设置为 'adaptive-matrix'
-          seen: @layer adaptive-matrix { :where(#app) {
+          发现：@layer adaptive-matrix { :where(#app) {
           不支持时：整个 @layer 块会被丢弃，居中列、安全区变量和固定定位修正一起消失。
           替代：root.layer: false 会输出不带包裹层的相同规则 …
   需要 :where() — iOS Safari 13 < 14.0-14.4

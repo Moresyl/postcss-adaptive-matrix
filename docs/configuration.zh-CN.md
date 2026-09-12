@@ -255,7 +255,7 @@ routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
 上面这些你一条都不用先知道，也能发现问题。只要一条规则确实生成了带边界的长度、而它的生效区间又整个落在所属画布的流体区间之外，编译器就会说出来：
 
 ```
-Every converted length here is a constant: this rule is live from 1024px up, but canvas
+这里的每个换算长度都是常量：这条规则从 1024px 起生效，但画布
 "app" stops scaling outside 320px–600px, so its bounded expression is pinned to its maximum across
 that whole range. The numbers in a breakpoint are usually measured on a different design
 file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
