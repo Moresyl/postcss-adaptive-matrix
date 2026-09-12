@@ -218,12 +218,11 @@ npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"
 ```
 
 ```
-  needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          if unsupported: The whole @layer block is dropped, so the entire root
-          foundation goes with it — the centred column, the safe-area variables
-          and the fixed-position correction all vanish at once.
-          instead: root.layer: false emits the same rules unwrapped. ...
-  needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
+  需要 @layer — iOS Safari 13 < 15.4，Chrome 90 < 99
+          不支持时：整个 @layer 块会被丢弃，连同根级基础样式一起消失——
+          居中列、安全区变量和固定定位修正会同时失效。
+          替代：root.layer: false 会输出不带包裹层的相同规则 …
+  需要 clamp()、min()、max() — iOS Safari 13 < 13.4-13.7
 ```
 
 CSS 不会优雅降级，它**丢弃**，而且全程不说话：值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。所以审计读的是**编译产物**而不是配置——这是让两者永远不会走偏的唯一做法——并且对每一项先说丢什么，再说换成什么。
