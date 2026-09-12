@@ -130,11 +130,10 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 `:is()`、`:where()` 里的逗号是参数分隔符而非选择器边界，但它造成的歧义与上面完全是同一个——`:is(.van-cell, .page-hero)` 依然是一条声明想要两个画布——所以同样会告警。不同的只是修复的代价，而这笔账由告警替你算：`:is()` 以其**最高**的那一支的特异度匹配每一支，因此把分支拆开只有在它们本来就一致时才是免费的。不一致时，告警会说出来，并指明拆分要付什么：
 
 ```
-Selector list inside :is() spans more than one canvas: ".page-hero" belongs to app
-but the whole rule is compiled against library:vant, because one declaration can
-only have one result. Give each branch its own rule. Splitting is not
-specificity-neutral: :is() matches every branch at its highest, 1-1-0, so
-".page-hero" would drop to 0-1-0.
+`:is()` 中的选择器列表跨越了多个画布：`.page-hero` 属于 app，
+但整条规则按 library:vant 编译，因为一条声明只能有一个结果。
+请为每个分支单独写规则。拆分不会保持特异度：`:is()` 会按最高值
+1-1-0 匹配所有分支，因此 `.page-hero` 会降为 0-1-0。
 ```
 
 ## 一个选择器到底在说谁
