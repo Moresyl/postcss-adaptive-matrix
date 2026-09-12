@@ -167,16 +167,14 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 ```
 
 ```
-  needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          from: root.layer, which appPcPreset sets to 'adaptive-matrix' whenever its root foundation is enabled
+  需要 @layer — iOS Safari 13 < 15.4，Chrome 90 < 99
+          来源：root.layer；启用根级基础样式时 appPcPreset 会设置为 'adaptive-matrix'
           seen: @layer adaptive-matrix { :where(#app) {
-          if unsupported: The whole @layer block is dropped, so the entire root
-          foundation goes with it — the centred column, the safe-area variables
-          and the fixed-position correction all vanish at once.
-          instead: root.layer: false emits the same rules unwrapped. ...
-  needs :where() — iOS Safari 13 < 14.0-14.4
-  needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
-  needs inline-size, margin-inline, max-inline-size — iOS Safari 13 < 15.0-15.1
+          不支持时：整个 @layer 块会被丢弃，居中列、安全区变量和固定定位修正一起消失。
+          替代：root.layer: false 会输出不带包裹层的相同规则 …
+  需要 :where() — iOS Safari 13 < 14.0-14.4
+  需要 clamp()、min()、max() — iOS Safari 13 < 13.4-13.7
+  需要 inline-size、margin-inline、max-inline-size — iOS Safari 13 < 15.0-15.1
 ```
 
 （上面是本仓库 `examples/app-pc` 的真实输出，只截短了长句。注意 `clamp()` 那条：iOS Safari 13 差的不是一个大版本，是一个小版本——13.4 就有了。这种差距肉眼比对版本号时最容易看漏。）
@@ -184,7 +182,7 @@ npx adaptive-matrix src/app.css -c adaptive.config.mjs --targets "ios_saf 13, ch
 目标全都够用时只有一行：
 
 ```
-  every target reads all 7 CSS features in this output
+  所有目标浏览器都能读取本次输出中的 7 项 CSS 特性
 ```
 
 已知名字：`chrome`、`edge`、`safari`、`firefox`、`ios_saf`、`samsung`；`android` 和 `webview` 归到 `chrome`（那本来就是它们跑的东西）。名字不认识**会报错并以 1 退出**，不会静默跳过——一个被悄悄丢掉的目标比没有审计更糟，因为它读起来像通过了。
