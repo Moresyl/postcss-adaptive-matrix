@@ -110,7 +110,7 @@
     "postcss-value-parser": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.13.4",
     "@vitest/coverage-v8": "^4.1.11",
     "caniuse-lite": "^1.0.30001809",
     "esbuild": "^0.28.2",
