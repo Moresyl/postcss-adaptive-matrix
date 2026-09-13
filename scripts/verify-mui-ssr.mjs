@@ -9,12 +9,21 @@ assert.equal(process.argv.length, 3, 'Usage: npm run verify:mui-ssr -- <dependen
 let directory = resolve(process.argv[2])
 // Cached library downloads are unpacked under a `package/` directory by npm.
 // Accept both the cache root and the unpacked dependency directory.
-if (!existsSync(join(directory, 'package.json')) && existsSync(join(directory, 'package', 'package.json'))) {
+if (
+  !existsSync(join(directory, 'package.json')) &&
+  existsSync(join(directory, 'package', 'package.json'))
+) {
   directory = join(directory, 'package')
 }
 assert.ok(existsSync(join(directory, 'package.json')), 'Dependency directory needs package.json')
 const require = createRequire(join(directory, 'package.json'))
-const required = ['react', 'react-dom/server', '@emotion/react', '@emotion/cache', '@emotion/server/create-instance']
+const required = [
+  'react',
+  'react-dom/server',
+  '@emotion/react',
+  '@emotion/cache',
+  '@emotion/server/create-instance',
+]
 const missing = required.filter((specifier) => {
   try {
     require.resolve(specifier)
