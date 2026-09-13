@@ -6,7 +6,12 @@ import postcss from 'postcss'
 
 // Use a separately installed React/MUI/Emotion environment, never install here.
 assert.equal(process.argv.length, 3, 'Usage: npm run verify:mui-ssr -- <dependency-directory>')
-const directory = resolve(process.argv[2])
+let directory = resolve(process.argv[2])
+// Cached library downloads are unpacked under a `package/` directory by npm.
+// Accept both the cache root and the unpacked dependency directory.
+if (!existsSync(join(directory, 'package.json')) && existsSync(join(directory, 'package', 'package.json'))) {
+  directory = join(directory, 'package')
+}
 assert.ok(existsSync(join(directory, 'package.json')), 'Dependency directory needs package.json')
 const require = createRequire(join(directory, 'package.json'))
 const React = require('react')
