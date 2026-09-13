@@ -14,6 +14,20 @@ if (!existsSync(join(directory, 'package.json')) && existsSync(join(directory, '
 }
 assert.ok(existsSync(join(directory, 'package.json')), 'Dependency directory needs package.json')
 const require = createRequire(join(directory, 'package.json'))
+const required = ['react', 'react-dom/server', '@emotion/react', '@emotion/cache', '@emotion/server/create-instance']
+const missing = required.filter((specifier) => {
+  try {
+    require.resolve(specifier)
+    return false
+  } catch {
+    return true
+  }
+})
+assert.equal(
+  missing.length,
+  0,
+  `Missing MUI SSR dependencies in ${directory}: ${missing.join(', ')}. Install the documented peer dependencies in that isolated directory.`,
+)
 const React = require('react')
 const { renderToString } = require('react-dom/server')
 const { CacheProvider } = require('@emotion/react')
