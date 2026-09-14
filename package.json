@@ -1,6 +1,6 @@
 {
   "name": "postcss-adaptive-matrix",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Responsive CSS compiler for PostCSS 8 with per-design canvases, optional fluid bounds, rem-aware typography, container units, component-library routing, and CLI diagnostics.",
   "keywords": [
     "postcss",
