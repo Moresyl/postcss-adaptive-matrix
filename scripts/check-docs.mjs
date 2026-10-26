@@ -129,7 +129,7 @@ for (const file of files) {
     const target = path ? resolve(dirname(file), decodeURIComponent(path)) : file
 
     if (path) {
-      let stats = null
+      let stats
       try {
         stats = statSync(target)
       } catch {

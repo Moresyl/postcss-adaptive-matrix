@@ -110,6 +110,7 @@
     "postcss-value-parser": "^4.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.5",
     "@vitest/coverage-v8": "^5.0.5",
     "caniuse-lite": "^1.0.30001809",
@@ -121,7 +122,7 @@
     "prettier": "^3.9.6",
     "tsup": "^9.0.0",
     "tsx": "^4.23.11",
-    "typescript": "^7.0.2",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.67.0",
     "vitepress": "^1.6.4",
     "vitest": "^5.0.5",
@@ -132,7 +133,7 @@
       "esbuild": "0.28.2"
     },
     "vitepress": {
-      "vite": "6.4.3"
+      "vite": "6.4.5"
     }
   }
 }
