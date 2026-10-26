@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  # Vitest 4's runner needs Node 20+, while the shipped plugin supports Node 18.
+  # Build tools need current Node, while the shipped plugin supports Node 18.
   # Exercise the real ESM, CommonJS, runtime and CLI artefacts on that minimum
   # independently so a dev-tool engine cannot silently narrow the public one.
   runtime-node18:
@@ -19,10 +19,13 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run build
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 18
       - run: npm run smoke:runtime
 
       # Verify the declared peer floor without changing the committed lockfile.

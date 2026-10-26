@@ -66,12 +66,15 @@ function makeCjsCallable(source: string): string {
 function declareCjsCallable(source: string): string {
   if (source.includes('export = _cjs')) return source
 
-  const statement = /export \{([^{}]*)\};?\s*$/.exec(source)
+  const statement = /export \{([^{}]*)\};?\s*(?:export type \{([^{}]*)\};?\s*)?$/.exec(source)
   if (!statement) throw new Error(`${TYPES_PATH}: no trailing export statement to rewrite`)
 
   const types: string[] = []
   const values = new Map<string, string>()
   let callable: string | undefined
+  for (const entry of (statement[2] ?? '').split(',').map((part) => part.trim())) {
+    if (entry) types.push(`type ${entry}`)
+  }
   for (const entry of statement[1]!.split(',').map((part) => part.trim())) {
     if (!entry) continue
     if (entry.startsWith('type ')) {
