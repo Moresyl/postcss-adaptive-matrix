@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
+import postcss from 'postcss'
+import adaptiveMatrix from '../src/index.js'
 import { optionsSchema } from '../docs/.vitepress/schema.js'
 import { resolveOptions } from '../src/core/options.js'
 
@@ -98,6 +101,46 @@ function documentedDefaults(file: string): Map<string, unknown> {
 const REFERENCES = ['docs/configuration.md', 'docs/configuration.zh-CN.md']
 
 describe('the published options schema', () => {
+  it.each(REFERENCES)('compiles the minimal configuration examples in %s', async (file) => {
+    const text = readFileSync(new URL(file, root), 'utf8')
+    const examples = [...text.matchAll(/`(adaptiveMatrix\([^`]*\))`/g)].map((match) => match[1]!)
+    const unique = [...new Set(examples)]
+    expect(unique).toHaveLength(4)
+    const widths: string[] = []
+    for (const example of unique) {
+      // Evaluate only this checkout's documented calls, never downloaded content.
+      // Construct options in this realm so plain-object validation remains real.
+      let plugin: ReturnType<typeof adaptiveMatrix> | undefined
+      runInNewContext(
+        example,
+        {
+          adaptiveMatrix: (options: unknown) => {
+            plugin = adaptiveMatrix(
+              options === undefined ? undefined : JSON.parse(JSON.stringify(options)),
+            )
+          },
+        },
+        { timeout: 1000 },
+      )
+      expect(plugin).toBeDefined()
+      const result = await postcss([plugin!]).process('.card { width: 24px }', { from: undefined })
+      expect(result.warnings()).toEqual([])
+      const repeated = await postcss([plugin!]).process(result.css, { from: undefined })
+      expect(repeated.css).toBe(result.css)
+      result.root.walkDecls('width', (declaration) => {
+        if (declaration.parent?.type === 'rule' && declaration.parent.selector === '.card') {
+          widths.push(declaration.value)
+        }
+      })
+    }
+    expect(widths).toEqual([
+      'clamp(20.48px, 6.4vw, 30.72px)',
+      'calc(6.4vw)',
+      'min(6.4vw, 38.4px)',
+      'max(6.4vw, 20.48px)',
+    ])
+  })
+
   it('offers independently optional fluid-bound examples without inventing defaults', () => {
     const profile = ((options.profiles!.additionalProperties as Subschema).oneOf as Subschema[])[1]!
     const fluid = profile.properties!.fluid!

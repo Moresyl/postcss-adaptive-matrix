@@ -1,8 +1,63 @@
 import { describe, expect, it } from 'vitest'
 import postcss from 'postcss'
-import { compileAdaptiveCss, createAdaptiveCompiler, findContinuityIssues } from '../src/index.js'
+import { readFileSync } from 'node:fs'
+import { runInThisContext } from 'node:vm'
+import {
+  auditCompatibility,
+  compileAdaptiveCss,
+  createAdaptiveCompiler,
+  findContinuityIssues,
+} from '../src/index.js'
 
 describe('programmatic compiler', () => {
+  it.each(['api.md', 'api.zh-CN.md'])('executes the AST re-audit example from %s', async (page) => {
+    const markdown = readFileSync(new URL(`../docs/${page}`, import.meta.url), 'utf8')
+    const examples = [...markdown.matchAll(/```ts\r?\n([\s\S]*?)```/g)]
+      .map((match) => match[1]!)
+      .filter((code) => code.includes('const edited ='))
+    expect(examples).toHaveLength(1)
+    const importLine =
+      "import { compileAdaptiveCss, auditCompatibility } from 'postcss-adaptive-matrix'"
+    expect(examples[0]).toContain(importLine)
+    // Execute trusted repository documentation in this realm so ordinary
+    // option objects retain the same Object prototype as the compiler.
+    const execute = runInThisContext(
+      `(async (compileAdaptiveCss, auditCompatibility) => {
+        ${examples[0]!.replace(importLine, '')}
+        return [edited.css, compatibility.findings.length, output.css, output.compatibility.findings.length]
+      })`,
+      { filename: page, timeout: 1000 },
+    ) as (
+      compile: typeof compileAdaptiveCss,
+      audit: typeof auditCompatibility,
+    ) => Promise<[string, number, string, number]>
+    const [css, findings, originalCss, originalFindings] = await execute(
+      compileAdaptiveCss,
+      auditCompatibility,
+    )
+    expect(css).toBe('.card { width: 40px }')
+    expect(findings).toBe(0)
+    expect(originalCss).not.toBe(css)
+    expect(originalFindings).toBeGreaterThan(0)
+  })
+
+  it('regenerates edited AST output and audits it independently of the original result', async () => {
+    const targets = { safari: 12 }
+    const output = await compileAdaptiveCss('.card { width: 40px }', {}, { targets })
+    const originalCss = output.css
+    expect(output.compatibility!.findings.length).toBeGreaterThan(0)
+    output.result.root.walkDecls('width', (declaration) => {
+      declaration.value = '40px'
+    })
+    const edited = output.result.root.toResult({ map: false })
+    const compatibility = auditCompatibility(edited.css, targets)
+    expect(edited.css).toBe('.card { width: 40px }')
+    expect(edited.map).toBeUndefined()
+    expect(compatibility.findings).toEqual([])
+    expect(output.css).toBe(originalCss)
+    expect(output.compatibility!.findings.length).toBeGreaterThan(0)
+  })
+
   it('rejects coercible target values before callbacks and recovers on the next request', async () => {
     let calls = 0
     const compile = createAdaptiveCompiler({
@@ -759,22 +814,47 @@ describe('programmatic compiler', () => {
     expect((await compileAdaptiveCss('', {}, { failOn: [] })).gate).toBeNull()
   })
 
-  it.each([null, 'warnings', ['continuity'], [1], new Array(1), ['compatibility']])(
-    'rejects invalid gates before dynamic callbacks: %j',
-    async (failOn) => {
-      let calls = 0
-      const compile = createAdaptiveCompiler({
-        profiles: {
-          app: {
-            designWidth: () => {
-              calls++
-              return 375
-            },
+  it.each(['warnings', 'compatibility'] as const)('accepts a single %s gate', async (failOn) => {
+    const request = { failOn, targets: { safari: 12 } }
+    const source = '@adaptive missing { .a { padding: 24px } }'
+    const shorthand = await compileAdaptiveCss(source, {}, request)
+    const array = await compileAdaptiveCss(source, {}, { ...request, failOn: [failOn] })
+    expect(shorthand.gate).toEqual(array.gate)
+    expect(shorthand.gate?.failOn).toEqual([failOn])
+    expect(shorthand.css).toBe(array.css)
+    expect(shorthand.warnings.map((warning) => warning.text)).toEqual(
+      array.warnings.map((warning) => warning.text),
+    )
+    expect(
+      (await compileAdaptiveCss('', {}, { failOn, targets: { chrome: 100 } })).gate?.passed,
+    ).toBe(true)
+  })
+
+  it.each([
+    null,
+    '',
+    'continuity',
+    'warnings,compatibility',
+    {},
+    1,
+    ['continuity'],
+    [1],
+    new Array(1),
+    'compatibility',
+    ['compatibility'],
+  ])('rejects invalid gates before dynamic callbacks: %j', async (failOn) => {
+    let calls = 0
+    const compile = createAdaptiveCompiler({
+      profiles: {
+        app: {
+          designWidth: () => {
+            calls++
+            return 375
           },
         },
-      })
-      await expect(compile('.a { padding: 24px }', { failOn } as never)).rejects.toThrow()
-      expect(calls).toBe(0)
-    },
-  )
+      },
+    })
+    await expect(compile('.a { padding: 24px }', { failOn } as never)).rejects.toThrow()
+    expect(calls).toBe(0)
+  })
 })

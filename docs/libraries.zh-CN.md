@@ -76,13 +76,19 @@ npm run verify:libraries              # 全部
 npm run verify:libraries -- vant      # 单个
 ```
 
+对于应缩放的库，首次编译必须改变声明序列（属性、值和重要性标记），否则以 `NO CONVERSION` 判定失败；仅修改格式或注释不算转换。这只是最低活动检查，并不证明每个声明的转换都正确。预期不转换的桌面库则必须保留原始 CSS 的完整文本；即使改写满足幂等性，`UNEXPECTED REWRITE` 仍会使检查失败。
+
 它会下载每个库的发布产物（复用 `.libcheck` 中已有的包），打印包版本（无法获取时标为 `unknown`）和是否使用缓存，再用真实的 `node_modules` 路径编译，检查前缀、路由、幂等性和静态接缝结果。编译器警告也会导致检查失败。未知库名、下载失败、缺少必要样式或前缀、CSS 无法读取或解析、路由错误、非幂等输出或接缝结果会产生非零退出码。固定路径样式缺失及读取、解析失败会记录为问题，并继续检查其余库。汇总单独统计已完成的静态检查和跳过的仅运行时样式库。应阅读具体报告，不要把退出码视为浏览器或设计宽度认证；缓存包不会自动跟踪新版本。
 
 **未覆盖的一项：设计宽度。** 一张 CSS 里看不出它画在多宽的稿子上，这一列来自各库自己的文档，脚本核对不了。
 
 缓存中的 Quasar 2.24.0 有一项已知源文件诊断：`dist/quasar.css` 和 `dist/quasar.rtl.css` 均在 600px 处将 `.q-notification` 的 `max-width` 从 `95vw` 改为 `65vw`。编译前已有相同变化，因此验证器标记为 `pre-existing`。它们仍会使严格接缝门禁失败，但不证明编译器引入了回归；编译器不会为了消除报告而改写该库原有的响应式行为。升级依赖后应重新核对。
 
-`naive-ui` 与 `mui` 的样式在运行时生成，磁盘上没有样式表——不经过 PostCSS，也就无从核对。条目仍然有用：它们是「保留像素」，所以你手写的 `.n-button` 覆盖样式不会被缩放。
+`naive-ui` 与 `mui` 在运行时生成样式，静态检查器会跳过它们。要验证真实 Naive UI SSR 样例，先运行 `npm run verify:libraries -- naive-ui` 准备缓存，再执行 `npm run build` 和 `npm run verify:naive-ssr`。这个独立离线检查使用缓存包与 Vue SSR 渲染 NSpace、NButton、NInput、NCard，收集生成的 CSS，并验证原文保留、零警告和二次处理稳定性。NSpace 的内联布局参与渲染，但不属于收集的样式表。这只是四组件 SSR 样例，不是全库或浏览器交互认证；MUI 仍未验证。输出记录缓存包版本，不代表已覆盖最新版本。
+
+SSR 检查通过 NConfigProvider 分别运行默认及暗色/禁用/加载场景，验证渲染出的状态类，并拒绝 bundle 与 manifest 版本不一致的缓存。它不模拟点击或 hydration。
+
+MUI 的独立 SSR 样例可在构建后运行 `npm run verify:mui-ssr -- <依赖目录>`。这里既可以传隔离依赖根目录，也可以传 npm 解包后的 `package/` 目录；目录须有 package.json，并安装 `@mui/material`、`react`、`react-dom`、`@emotion/react`、`@emotion/styled`、`@emotion/cache` 与 `@emotion/server`；脚本不自动安装依赖。它在明暗主题下渲染 Button、TextField、Card（暗色场景包含禁用与错误状态），提取真实 Emotion CSS，检查原文保留、警告和幂等性，并打印已安装版本。此可选 SSR 检查独立于静态检查器，不验证浏览器交互或 hydration。
 
 清单可以从代码读取：
 
@@ -124,11 +130,10 @@ import { BUILT_IN_LIBRARIES } from 'postcss-adaptive-matrix'
 `:is()`、`:where()` 里的逗号是参数分隔符而非选择器边界，但它造成的歧义与上面完全是同一个——`:is(.van-cell, .page-hero)` 依然是一条声明想要两个画布——所以同样会告警。不同的只是修复的代价，而这笔账由告警替你算：`:is()` 以其**最高**的那一支的特异度匹配每一支，因此把分支拆开只有在它们本来就一致时才是免费的。不一致时，告警会说出来，并指明拆分要付什么：
 
 ```
-Selector list inside :is() spans more than one canvas: ".page-hero" belongs to app
-but the whole rule is compiled against library:vant, because one declaration can
-only have one result. Give each branch its own rule. Splitting is not
-specificity-neutral: :is() matches every branch at its highest, 1-1-0, so
-".page-hero" would drop to 0-1-0.
+`:is()` 中的选择器列表跨越了多个画布：`.page-hero` 属于 app，
+但整条规则按 library:vant 编译，因为一条声明只能有一个结果。
+请为每个分支单独写规则。拆分不会保持特异度：`:is()` 会按最高值
+1-1-0 匹配所有分支，因此 `.page-hero` 会降为 0-1-0。
 ```
 
 ## 一个选择器到底在说谁

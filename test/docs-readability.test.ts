@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import postcss from 'postcss'
 import { expect, it } from 'vitest'
 
-it('wraps long reading content without imposing wrapping on code blocks or tables', () => {
+it('wraps long reading content and table examples without imposing wrapping on code blocks', () => {
   const root = postcss.parse(
     readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8'),
   )
@@ -26,6 +26,9 @@ it('wraps long reading content without imposing wrapping on code blocks or table
       '.vp-doc h3',
       '.vp-doc p',
       '.vp-doc li',
+      '.vp-doc td',
+      '.vp-doc td > code',
+      '.vp-doc td :not(pre) > code',
       '.VPDoc .aside .outline-link',
     ].sort(),
   )
@@ -54,4 +57,20 @@ it('shows complete outline titles with space between multiline links', () => {
 it('declares dark color-scheme when the dark theme variables are active', () => {
   const css = readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8')
   expect(css).toMatch(/\.dark\s*\{[^}]*color-scheme:\s*dark;/s)
+})
+
+it('allows long table headings to wrap on narrow screens', () => {
+  const root = postcss.parse(
+    readFileSync(new URL('../docs/.vitepress/theme/custom.css', import.meta.url), 'utf8'),
+  )
+  const declarations: Record<string, string> = {}
+  root.walkAtRules('media', (rule) => {
+    if (rule.params !== '(max-width: 640px)') return
+    rule.walkRules('.vp-doc th', (heading) => {
+      heading.walkDecls((declaration) => {
+        declarations[declaration.prop] = declaration.value
+      })
+    })
+  })
+  expect(declarations).toEqual({ 'white-space': 'normal', 'overflow-wrap': 'anywhere' })
 })

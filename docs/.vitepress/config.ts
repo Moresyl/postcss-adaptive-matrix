@@ -57,10 +57,10 @@ export default defineConfig({
           { text: 'Guide', link: '/docs/getting-started' },
           { text: 'Playground', link: '/docs/playground' },
           { text: 'Configuration', link: '/docs/configuration' },
-          { text: 'Component libraries', link: '/docs/libraries' },
           {
             text: 'More',
             items: [
+              { text: 'Component libraries', link: '/docs/libraries' },
               { text: 'For AI agents', link: '/docs/agents' },
               { text: 'Changelog', link: '/CHANGELOG' },
               { text: 'Conformance suite', link: '/conformance/' },

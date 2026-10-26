@@ -26,6 +26,8 @@ export default tseslint.config(
       'docs/.vitepress/cache',
       'docs/.vitepress/dist',
       '.firecrawl',
+      // Local browser probes are disposable artifacts, not shipped sources.
+      '.upgrade',
       '.libcheck',
       'examples/*/dist',
       'examples/*/*.config.js',

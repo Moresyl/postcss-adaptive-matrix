@@ -31,7 +31,7 @@ observeAdaptiveViewport({ signal: null })
 observeAdaptiveViewport({ signal: new AbortController() })
 // @ts-expect-error viewport options are closed, not an arbitrary property bag
 observeAdaptiveViewport({ windw: window })
-const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: ['compatibility'] }
+const request: AdaptiveCompileOptions = { targets: { safari: 14 }, failOn: 'compatibility' }
 const compile = createAdaptiveCompiler()
 const output: AdaptiveCompileResult = await compile('.a { width: 24px }', request)
 const gate: AdaptiveCompileGate | null = output.gate

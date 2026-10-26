@@ -77,6 +77,8 @@ Library seam details include the selector, property, breakpoint and sampled valu
 
 For libraries expected to remain unconverted, the verifier also compares the first output directly with the source CSS. An `UNEXPECTED REWRITE` fails the gate even if a second compilation is idempotent.
 
+Scaling libraries must change the declaration sequence (property, value and importance), or fail with `NO CONVERSION`. Formatting and comment changes alone are insufficient. Keep the formatting-only compiler fixture in the verifier regression suite: it demonstrates why output-byte differences and idempotence alone are not conversion evidence. A changed sequence still does not prove every declaration's formula is correct.
+
 For an isolated compatibility-detector comparison, run `npx tsx bench/compat-compare.ts <commit-sha>`. Only use a trusted repository commit: the tool bundles and executes that revision's detector with current dependencies in memory. It checks output equality on the synthetic corpora before alternating old/new timed calls. It neither checks out that commit nor measures a complete historical package, and its ratios are not whole-build speedups.
 
 Keep a PR focused, and state: the problem, the approach, the compatibility impact, and how you verified it. The default conversion formula, the output order, the public types and the minimum Node/PostCSS versions are all part of the compatibility contract.

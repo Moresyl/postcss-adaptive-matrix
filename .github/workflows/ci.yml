@@ -16,14 +16,24 @@ jobs:
   runtime-node18:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 18
           cache: npm
       - run: npm ci
       - run: npm run build
       - run: npm run smoke:runtime
+
+      # Verify the declared peer floor without changing the committed lockfile.
+      # Kept separate from security: this old release is a compatibility target,
+      # not the recommended dependency version for consumers.
+      - name: Install minimum supported PostCSS
+        run: npm install --no-save --package-lock=false --legacy-peer-deps --ignore-scripts --no-audit --no-fund postcss@8.4.0
+      - name: Smoke test minimum PostCSS on Node 18
+        env:
+          EXPECTED_POSTCSS_VERSION: '8.4.0'
+        run: npm run smoke:runtime
 
   verify:
     strategy:
@@ -36,8 +46,8 @@ jobs:
             node: 24
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: npm
@@ -53,8 +63,8 @@ jobs:
   performance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -65,8 +75,8 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm

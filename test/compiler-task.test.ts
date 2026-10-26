@@ -19,6 +19,20 @@ const input = { css: '.a {}', options: '{}' }
 const event = { data: { css: '.a {}' } } as MessageEvent
 
 describe('disposable compiler task', () => {
+  it.each(['', '   ', new Error(''), new Error('\n')])(
+    'uses a visible fallback for blank startup errors: %j',
+    (error) => {
+      const { task, create, fail } = fixture()
+      create.mockImplementationOnce(() => {
+        // Deliberately simulate host shims throwing non-Error values.
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw error
+      })
+      task.run(input)
+      expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+      expect(vi.getTimerCount()).toBe(0)
+    },
+  )
   it.each([
     null,
     undefined,
@@ -34,6 +48,8 @@ describe('disposable compiler task', () => {
     { css: '', warnings: {} },
     { css: '', warnings: new Array(1) },
     { error: 123 },
+    { error: '' },
+    { error: ' \n\t' },
   ])('rejects malformed Worker payloads without publishing: %j', (data) => {
     const { task, workers, receive, fail } = fixture()
     task.run(input)
@@ -174,5 +190,19 @@ describe('disposable compiler task', () => {
     expect(fail.mock.calls[0]![0].message).toBe('cannot clone')
     expect(terminate).toHaveBeenCalledOnce()
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each(['startup', 'postMessage'])('handles unreadable %s exceptions', (phase) => {
+    const { task, create, fail } = fixture()
+    const terminate = vi.fn()
+    const reject = () => {
+      throw Object.create(null)
+    }
+    if (phase === 'startup') create.mockImplementation(reject)
+    else create.mockReturnValue({ terminate, postMessage: reject } as unknown as Worker)
+    expect(() => task.run(input)).not.toThrow()
+    expect(fail).toHaveBeenCalledExactlyOnceWith('worker')
+    expect(vi.getTimerCount()).toBe(0)
+    expect(terminate).toHaveBeenCalledTimes(phase === 'startup' ? 0 : 1)
   })
 })

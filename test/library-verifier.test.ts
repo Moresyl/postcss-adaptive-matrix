@@ -8,6 +8,70 @@ import { expect, it } from 'vitest'
 
 const require = createRequire(import.meta.url)
 
+it('continues after a corrupt cached package prevents stylesheet discovery', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-discovery-'))
+  try {
+    const cache = join(directory, '.libcheck')
+    await mkdir(join(cache, 'vant'), { recursive: true })
+    await writeFile(join(cache, 'vant', 'package'), 'not a directory')
+    const packaged = join(cache, '_nutui_nutui', 'package')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(
+      join(packaged, 'index.css'),
+      ':root { --nut-size: 24px } .nut-button { width: 24px }',
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'vant',
+        'nutui',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('STYLESHEET DISCOVERY FAILED:')
+    expect(result.stdout).toContain('library:nutui')
+    expect(result.stdout).toContain('2 reviewed, 1 needing attention')
+    expect(result.stdout).toContain('1 static stylesheet checks completed')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
+it('rejects formatting-only output as evidence of mobile library conversion', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-format-'))
+  try {
+    const packaged = join(directory, '.libcheck', 'vant', 'package')
+    await mkdir(packaged, { recursive: true })
+    await writeFile(
+      join(packaged, 'index.css'),
+      ':root { --van-size: 24px } .van-button { width: 24px }',
+    )
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        pathToFileURL(require.resolve('tsx')).href,
+        '--import',
+        new URL('./fixtures/format-only-library-compile.mjs', import.meta.url).href,
+        fileURLToPath(new URL('../scripts/verify-libraries.ts', import.meta.url)),
+        'vant',
+      ],
+      { cwd: directory, encoding: 'utf8', timeout: 15_000, env: { ...process.env, CLEAN: '' } },
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.status, result.stderr).toBe(1)
+    expect(result.stdout).toContain('NO CONVERSION')
+    expect(result.stdout).toContain('1 reviewed, 1 needing attention')
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+}, 20_000)
+
 it('rejects an idempotent rewrite of a library that should remain unconverted', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'adaptive-library-preserve-'))
   try {
@@ -226,6 +290,7 @@ it('reports a missing pinned stylesheet and continues checking remaining targets
 }, 20_000)
 
 it.each([
+  { css: ':root { --van-size: 1px } .van-button { width: 1px }', status: 1, problems: 1 },
   {
     css: ':root { --van-size: 24px } .van-button { width: 1e309px }',
     status: 1,
@@ -266,6 +331,7 @@ it.each([
       expect(result.stdout).toContain(`1 reviewed, ${problems} needing attention`)
       expect(result.stdout).toContain('vant: vant@1.2.3-fixture (cached)')
       if (css.includes('1e309px')) expect(result.stdout).toContain('0 seams, 1 warns')
+      if (css.includes('--van-size: 1px')) expect(result.stdout).toContain('NO CONVERSION')
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

@@ -305,7 +305,7 @@ Pass `failOn: ['warnings', 'compatibility']` to receive a `gate` with the select
 ```ts
 const output = await compileAdaptiveCss(source, {}, {
   targets: { safari: 14 },
-  failOn: ['compatibility'],
+  failOn: 'compatibility',
 })
 if (output.gate?.passed === false) {
   console.error(output.compatibility)

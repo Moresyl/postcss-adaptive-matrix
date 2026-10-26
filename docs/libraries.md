@@ -76,13 +76,19 @@ npm run verify:libraries              # all of them
 npm run verify:libraries -- vant      # one
 ```
 
+For scaling libraries, the declaration sequence (property, value and importance) must change on the first pass. `NO CONVERSION` fails the check when it does not; formatting or comment changes alone do not qualify. This is a minimum activity check, not proof of correct conversion for every declaration. Desktop libraries expected to remain unconverted must retain the exact source CSS; `UNEXPECTED REWRITE` fails even for an idempotent rewrite.
+
 It downloads each library's published artifact (reusing existing `.libcheck` packages), prints the package version (or `unknown` if unavailable) and whether it was cached, compiles it with a realistic `node_modules` path, and checks prefixes, routing, idempotence and static seam findings. Compiler warnings also fail the check. Unknown library names, download failures, missing required styles/prefixes, unreadable or malformed CSS, wrong routes, non-idempotent output or seam findings cause a nonzero exit code. Missing pinned stylesheets and read/parse failures are recorded without stopping the remaining libraries. The summary separates completed static checks from skipped runtime-only libraries. Inspect the report rather than interpreting an exit code as browser or design-width certification; cached packages do not automatically track newer releases.
 
 **One column it does not cover: design width.** A stylesheet does not reveal how wide the file it was drawn on was; that column comes from each library's own documentation and the script cannot check it.
 
 Known source finding in cached Quasar 2.24.0: both `dist/quasar.css` and `dist/quasar.rtl.css` change `.q-notification`'s `max-width` from `95vw` to `65vw` at 600px. The verifier labels these findings `pre-existing` because the same transition occurs before compilation. They still fail the strict seam gate; this is not evidence of a compiler-introduced regression, and the compiler does not rewrite that library's intended responsive behavior to silence the report. Recheck when upgrading the package.
 
-`naive-ui` and `mui` generate their styles at runtime, so there is no stylesheet on disk — nothing goes through PostCSS and there is nothing to check. The entries are still useful: they are "keep pixels", so your hand-written `.n-button` overrides are not scaled.
+`naive-ui` and `mui` generate their styles at runtime, so the static verifier skips them. To check a real Naive UI SSR sample, first run `npm run verify:libraries -- naive-ui` to populate the cache, then `npm run build` and `npm run verify:naive-ssr`. The separate offline check renders NSpace, NButton, NInput and NCard using the cached bundle and Vue SSR, collects generated CSS, and verifies unchanged output, zero warnings and second-pass stability. NSpace's inline layout is rendered but is not part of the collected stylesheet. This is a four-component SSR sample, not whole-library or browser-interaction certification; MUI remains unverified. Output records the cached package version and does not imply latest-version coverage.
+
+The SSR check runs both default and dark/disabled/loading scenarios through NConfigProvider, verifies rendered state classes, and rejects a cache whose bundle version differs from its manifest. It does not simulate clicks or hydration.
+
+For a separate MUI SSR sample, run `npm run verify:mui-ssr -- <dependency-directory>` after building. The directory may be either the isolated dependency root or npm's unpacked `package/` directory; it must contain a package.json and installed `@mui/material`, `react`, `react-dom`, `@emotion/react`, `@emotion/styled`, `@emotion/cache` and `@emotion/server`. The script does not install dependencies. It renders Button, TextField and Card in light/dark themes (with disabled/error states in the dark case), extracts real Emotion CSS, and checks preservation, warnings and idempotence. It prints the installed versions; this optional SSR check is separate from the static verifier and does not validate browser interaction or hydration.
 
 The list is readable from code:
 

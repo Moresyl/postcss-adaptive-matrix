@@ -611,14 +611,13 @@ export function resolveOptions(input: AdaptiveMatrixOptions = {}): ResolvedAdapt
   const definedInput = Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined),
   ) as AdaptiveMatrixOptions
-  const preset = appPcPreset()
   // An empty optional map carries no more information than omission. This is
   // common when a shared config builds profiles conditionally; requiring it to
   // special-case zero entries would make an otherwise optional option required
   // by object composition. A non-empty map remains a complete authored set.
   const profileInput =
     input.profiles === undefined || Object.keys(input.profiles).length === 0
-      ? preset.profiles!
+      ? appPcPreset().profiles!
       : input.profiles
   const authored = normaliseProfiles(profileInput)
   const libraries = resolveLibraries(input.libraries)

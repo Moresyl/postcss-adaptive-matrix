@@ -31,7 +31,28 @@ Every option, its type and its default. If you are just starting, read [Getting 
 | `root` | `false` | The optional root layout foundation |
 | `unknownProfile` | `warn` | `warn`, `error`, `ignore` |
 
-Most configurations require no user-supplied fields because the built-in preset fills the top level. An empty `profiles: {}` is therefore equivalent to omitting it, which keeps conditionally assembled configuration information-free. A profile with no overrides can be just its width — `profiles: { mobile: 375 }`; use `{ designWidth: 375, ... }` only when it also needs `fluid`, `query`, `unit`, or another override. Once you explicitly author a nested object, only values that define its identity or calculation are required: `profile.designWidth`, an object-form `query.condition`, a route's `profile` plus at least one matching channel, and a standalone custom library's `name` plus `designWidth` (an `extends` entry inherits them). `fluid` and `root` have no required members. Optional top-level fields set to `undefined` by object composition are treated exactly like omission; `null` remains an error rather than silently selecting a default. A sole custom profile also becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
+### What do I actually need to provide?
+
+No top-level option is required. Start with `adaptiveMatrix()` to use the built-in preset. An empty `profiles: {}` is also equivalent to omitting it. Examples that show both fluid bounds are not mandatory templates.
+
+| Intent | Smallest configuration |
+| --- | --- |
+| Use the built-in App/PC preset | `adaptiveMatrix()` |
+| Use one custom canvas without bounds | `adaptiveMatrix({ profiles: { mobile: 375 } })` |
+| Set only a ceiling | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { maxWidth: 600 } } } })` |
+| Set only a floor | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { minWidth: 320 } } } })` |
+
+`fluid`, `fluid.minWidth`, and `fluid.maxWidth` are independently optional. An empty `fluid: {}` also means no bounds. A sole custom profile becomes `defaultProfile` automatically; with several custom profiles and no `app`, name the default because there is no unambiguous choice.
+
+Only identity or calculation inputs are required when you author the corresponding nested object:
+
+- A profile object needs `designWidth`; a number is shorthand when no overrides are needed.
+- An object-form `query` needs `condition`.
+- A route needs `profile` and at least one matching channel.
+- A standalone custom library needs `name` and `designWidth`; an `extends` entry inherits them.
+- `fluid` and `root` have no required members.
+
+Optional top-level fields set to `undefined` by object composition are treated exactly like omission; `null` remains an error rather than silently selecting a default.
 
 String file matchers are separator-portable: `src/components/` also matches `C:\\repo\\src\\components\\card.css`, and a backslash spelling also matches a POSIX path. Regular expressions and predicate functions receive the original path unchanged, so existing host-specific logic keeps its exact contract.
 

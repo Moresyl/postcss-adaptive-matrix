@@ -43,6 +43,33 @@ it('evicts cached strings on aggregate size before the entry-count limit', () =>
   expect(convert('24px')).toBe(renewed)
 })
 
+it('bounds small-value cache entries across repeated file passes without changing output', () => {
+  const options = resolveOptions({ profiles: { app: 375 } })
+  const converter = createConverter(options)
+  const profile = options.profiles.app!
+  const convert = (value: string, file: string) =>
+    converter.convertWithMetadata(value, 'width', 'app', profile, file)
+  const original = convert('24px', 'first.css')
+  converter.beginFile()
+  expect(convert('24px', 'second.css')).toBe(original)
+  // Small entries stay below the aggregate character budget: this exercises
+  // the independent entry-count limit while the converter spans many files.
+  for (let file = 0; file < 200; file++) {
+    converter.beginFile()
+    for (let index = 0; index < 100; index++) {
+      const pixels = 100 + file * 100 + index
+      expect(convert(`${pixels}px`, `file-${file}.css`).value).toBe(
+        `calc(${round((pixels * 100) / 375, options.precision)}vw)`,
+      )
+    }
+  }
+  converter.beginFile()
+  const renewed = convert('24px', 'last.css')
+  expect(renewed).toEqual(original)
+  expect(renewed).not.toBe(original)
+  expect(convert('24px', 'last.css')).toBe(renewed)
+})
+
 it('does not retain a small input whose converted output exceeds the cache value limit', () => {
   const options = resolveOptions({ profiles: { app: 375 } })
   const converter = createConverter(options)
@@ -309,6 +336,22 @@ describe('configuration validation', () => {
     expect(options.defaultProfile).toBe('app')
     expect(options.profiles).toHaveProperty('app')
     expect(options.profiles).toHaveProperty('pc')
+  })
+
+  it.each([{}, { profiles: {} }])('isolates default configuration graphs: %j', (input) => {
+    const baseline = resolveOptions(input)
+    const changed = resolveOptions(input)
+    changed.profiles.app!.designWidth = 999
+    changed.profiles.app!.fluid!.minWidth = 123
+    changed.profiles.pc!.fluid!.maxWidth = 9999
+    changed.routes.length = 0
+    changed.libraries.length = 0
+    changed.unitToConvert.push('rem')
+    changed.textProperties.length = 0
+    changed.propList[0] = 'margin'
+    changed.selectorExclude.push('.ignored')
+    changed.valueExclude.push('24px')
+    expect(resolveOptions(input)).toEqual(baseline)
   })
 
   it('rejects missing profiles and invalid numeric ranges', () => {

@@ -102,6 +102,25 @@ interface AdaptiveViewportObserver {
 
 `destroy()` 可重复调用且永久生效：即使浏览器返回的动画帧句柄为 `0`，也会取消待执行帧；监听只解绑一次，之后再调用 `update()` 会返回 `null` 且不再写入。
 
+### 生命周期与异常
+
+可以复用宿主的取消信号，不必单独保存清理回调：
+
+```js
+const controller = new AbortController()
+const observer = observeAdaptiveViewport({ signal: controller.signal })
+
+// 当前视图销毁时：
+controller.abort()
+observer.update() // null；恢复观察需要创建新的 observer
+```
+
+销毁观察器会保留最后一次写入的 CSS 变量，不会删除或恢复样式。复用目标元素时，新观察器会写入最新读数。避免多个活跃观察器同时向同一目标写入相同前缀的变量。
+
+配置无效或首次 CSS 写入失败会同步抛错。初始化失败时，会先尝试移除监听器，再抛出原始错误。后续动画帧中的写入失败会自动销毁观察器；手动调用 `update()` 的失败则直接抛给调用方。请按应用的异常处理方式保护手动更新，并在放弃观察器时调用 `destroy()`。
+
+对于注入或嵌入式宿主，清理采用尽力释放策略：某个取消或移除监听器的方法抛错时，仍会尝试其余清理操作，不再抛出次生清理错误。异常宿主残留的回调在销毁后不能继续写入，但观察器无法保证宿主确实释放了这些引用。
+
 ## SSR
 
 没有 `window` 时构造函数不报错，返回的观察器什么也不做，`update()` 返回 `null`。所以可以无条件在模块顶层调用，不需要包 `if (typeof window !== 'undefined')`。

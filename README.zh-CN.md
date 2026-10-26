@@ -121,7 +121,7 @@ export default {
 | **多画布** | App、PC、平板、车机各有独立设计宽度、断点、流体区间与单位 |
 | **有界流体** | 默认输出 `clamp()`，不会无限放大或无限压缩 |
 | **根字号响应** | `rem + vw` 混合公式保留根字号相对分量；仍需真实缩放验收 |
-| **组件库开箱适配** | 内置 11 个主流库，按各自画布换算，无需忽略名单 |
+| **组件库开箱适配** | 11 个库、12 个适配条目：移动端库按各自画布换算，桌面端库默认保留原始像素 |
 | **主题 token** | `:root` 上的库变量按名字识别，字号自动走文字公式 |
 | **固定定位修正** | 居中列布局下 `position: fixed` 不再贴到视口边 |
 | **容器查询** | `unit: 'cqi'` + `@container`，尺寸依赖容器而非窗口 |
@@ -207,7 +207,7 @@ src/styles/app.css
 
 不用启动构建，不用开浏览器。
 
-最后那行是断点接缝检查：App 稿写 16px、PC 稿写 18px，两个数字单独看都合理，但把窗口拉宽一个像素，正文字号会突然变小。编译器输出的公式在视口宽度上都是单调不减的，所以尺寸倒退只可能来自跨断点换画布——两张稿子在这个元素上没对齐。
+最后那行是断点接缝检查：App 稿写 16px、PC 稿写 18px，两个数字单独看都合理，但窗口跨过断点时，正文字号会突然变小。同一固定视口画布中，单个转换长度的绝对值不会随视口变宽而减小；负外边距则是通过变得更负来增大。检查器比较已知断点两侧的绝对值，提示可能的交接问题，也会分析手写 CSS 表达式。发现问题后应检查层叠和画布选择，不能断言换画布是唯一原因；无法解析的表达式与条件可能被跳过，因此没有报告也不代表布局一定正确。
 
 `--from` 还能把文件路由先试一遍——这是最容易配错又最不容易发现的一项。详见[命令行预览](./docs/cli.zh-CN.md)。
 
@@ -218,12 +218,11 @@ npx adaptive-matrix src/app.css --targets "ios_saf 13, chrome 90"
 ```
 
 ```
-  needs @layer — iOS Safari 13 < 15.4, Chrome 90 < 99
-          if unsupported: The whole @layer block is dropped, so the entire root
-          foundation goes with it — the centred column, the safe-area variables
-          and the fixed-position correction all vanish at once.
-          instead: root.layer: false emits the same rules unwrapped. ...
-  needs clamp(), min(), max() — iOS Safari 13 < 13.4-13.7
+  需要 @layer — iOS Safari 13 < 15.4，Chrome 90 < 99
+          不支持时：整个 @layer 块会被丢弃，连同根级基础样式一起消失——
+          居中列、安全区变量和固定定位修正会同时失效。
+          替代：root.layer: false 会输出不带包裹层的相同规则 …
+  需要 clamp()、min()、max() — iOS Safari 13 < 13.4-13.7
 ```
 
 CSS 不会优雅降级，它**丢弃**，而且全程不说话：值读不懂丢一条声明，选择器读不懂丢一整条规则，`@` 规则读不懂丢一整块。所以审计读的是**编译产物**而不是配置——这是让两者永远不会走偏的唯一做法——并且对每一项先说丢什么，再说换成什么。

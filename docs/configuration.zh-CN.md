@@ -31,7 +31,28 @@
 | `root` | `false` | 可选根布局基础样式 |
 | `unknownProfile` | `warn` | `warn`、`error`、`ignore` |
 
-内置预设会补齐顶层配置，因此多数用法不要求用户先填写任何字段；空的 `profiles: {}` 也与省略等价，让条件拼装出的配置保持无信息状态。不需要覆盖项的 profile 可只写宽度：`profiles: { mobile: 375 }`；只有还需 `fluid`、`query`、`unit` 等设置时才写 `{ designWidth: 375, ... }`。主动写出嵌套对象后，也只有决定其身份或计算方式的值才必填：`profile.designWidth`、对象形式的 `query.condition`、路由的 `profile` 加至少一种匹配通道，以及不使用 `extends` 的自定义组件库 `name` 与 `designWidth`（`extends` 条目会继承它们）。`fluid` 和 `root` 内没有任何必填成员。对象组合产生的顶层可选字段若为 `undefined`，会与省略完全等价；`null` 仍是明确错误，不会静默套默认值。只写一张自定义 profile 时，它还会自动成为 `defaultProfile`；若有多张且没有 `app`，才需要指定默认项，因为此时不存在唯一答案。
+### 到底哪些需要填写？
+
+顶层没有必填配置。直接调用 `adaptiveMatrix()` 即可使用内置预设，空的 `profiles: {}` 也与省略等价。示例中同时出现两个流体边界，不代表它们是必填模板。
+
+| 需求 | 最小配置 |
+| --- | --- |
+| 使用内置 App/PC 预设 | `adaptiveMatrix()` |
+| 自定义一张画布，不限制边界 | `adaptiveMatrix({ profiles: { mobile: 375 } })` |
+| 只限制上界 | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { maxWidth: 600 } } } })` |
+| 只限制下界 | `adaptiveMatrix({ profiles: { mobile: { designWidth: 375, fluid: { minWidth: 320 } } } })` |
+
+`fluid`、`fluid.minWidth`、`fluid.maxWidth` 都可以独立省略，`fluid: {}` 同样表示不限制边界。只有一张自定义 profile 时，它自动成为 `defaultProfile`；有多张且没有 `app` 时才需要指定默认项，因为此时不存在唯一答案。
+
+主动写出相应嵌套对象后，只有决定身份或计算方式的字段才必填：
+
+- profile 对象需要 `designWidth`；没有其他覆盖项时可直接简写为数字。
+- 对象形式的 `query` 需要 `condition`。
+- 路由需要 `profile` 和至少一种匹配通道。
+- 独立自定义组件库需要 `name` 和 `designWidth`；`extends` 条目会继承它们。
+- `fluid` 和 `root` 内没有任何必填成员。
+
+对象组合产生的顶层可选字段若为 `undefined`，会与省略完全等价；`null` 仍是明确错误，不会静默套默认值。
 
 字符串文件匹配不受路径分隔符影响：`src/components/` 同样匹配 `C:\\repo\\src\\components\\card.css`，反斜杠写法也能匹配 POSIX 路径。正则与谓词函数仍收到未经修改的原始路径，已有的宿主平台逻辑不会被偷偷改写。
 
@@ -234,10 +255,10 @@ routes: [{ selector: ['.van-'], media: { minWidth: 1024 }, profile: 'pc' }]
 上面这些你一条都不用先知道，也能发现问题。只要一条规则确实生成了带边界的长度、而它的生效区间又整个落在所属画布的流体区间之外，编译器就会说出来：
 
 ```
-Every converted length here is a constant: this rule is live from 1024px up, but canvas
-"app" stops scaling outside 320px–600px, so its bounded expression is pinned to its maximum across
-that whole range. The numbers in a breakpoint are usually measured on a different design
-file — give it one with a route: { media: { minWidth: 1024 }, profile: '…' }.
+这里的每个换算长度都是常量：这条规则从 1024px 起生效，但画布
+`app` 在 320px–600px 之外停止缩放，因此有界表达式会在整个区间钉在最大值。
+断点数字通常来自另一张设计稿——请为它配置路由：
+`{ media: { minWidth: 1024 }, profile: '…' }`。
 ```
 
 这是算术，不是启发式：两个区间的数字压根不相交。每个文件里，同一张画布配同一段区间只报一次，而且只对换算后确实新增 `clamp()`、`min()` 或 `max()` 的声明报——只改 `display` 和 `color` 的断点、刻意保持静态的文字、无边界视口表达式，都没有可被钉住的生成边界。经 selector 或 property 路由的声明会按真正执行转换的画布检查，原生 CSS 嵌套也包含在内。

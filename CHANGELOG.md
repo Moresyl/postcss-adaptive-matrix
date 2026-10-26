@@ -4,10 +4,39 @@
 
 ## Unreleased
 
+- The documentation home now ends with a focused, responsive next-step panel that keeps installation and playground entry points visible after the feature overview, with bilingual labels and deployment-base-safe links.
+- Viewport observers now attempt every cleanup operation even if an injected host rejects one, preserve the original initialization error when rollback fails, and tear down after animation-frame scheduling errors. Source regressions and ESM/CommonJS artifact smoke cover these failure paths.
+- Documentation search restores focus to its trigger after Escape, the mobile back button or backdrop dismissal without stealing focus from a selected result.
+- Real Vite builds now verify omitted, empty and one-sided fluid bounds for positive spacing and negative margins while keeping other profiles and library routing unchanged.
+- Bilingual API documentation demonstrates regenerating and re-auditing an edited AST. Tests execute the documentation snippets directly and verify that prior CSS and audit results remain snapshots.
+- CI and documentation workflows use checkout/setup-node v6, matching the existing publish workflow, while retaining the Node 18/20/22/24 compatibility checks. Pages-specific actions remain unchanged.
+
+- Configuration-key validation avoids allocating a temporary Set for each small allowed-key list while retaining unknown-field rejection and spelling suggestions.
+- Configuration guides now separate truly required nested fields from optional settings and show zero-configuration, shorthand-canvas and one-sided-bound examples. Tests compile the examples in both languages and verify second-pass stability.
+- Reference table cells and narrow-screen headings wrap long content. The English component-library shortcut moves into the More menu to prevent tablet-width navigation overflow; sidebar and page links remain available.
+- Markdown page copying serializes clipboard writes across navigation, cancels obsolete downloads, and suppresses feedback after disposal. Integration tests cover request timeout recovery, late responses and exact Markdown payloads.
+
+- Node 18 CI now reruns shipped-artifact smoke checks against the declared PostCSS 8.4.0 peer minimum, alongside the locked dependency version. This is compatibility coverage, not a recommendation to install an old PostCSS release.
+
+- Playground adds a guarded Copy CSS action that only copies a current successful result, handles empty CSS and clipboard permission failures, and suppresses stale completion feedback after input changes or disposal.
+
+- Library verification records stylesheet-discovery failures, including malformed cache directories, and continues reviewing remaining targets instead of aborting the batch.
+
+- CLI failures with empty or whitespace-only exception messages now provide a nonempty fallback diagnostic in both terminal and JSON output.
+
+- Playground now reports a visible fallback error when authored configuration throws an empty or whitespace-only message, preventing the previous output from appearing current after a silent failure.
+
+- Explicit nonempty profile maps no longer construct and validate an unused default App/PC preset during initialization. Omitted and empty maps retain their existing defaults; authored configuration validation is unchanged.
+
+- Compile API quality gates accept a single category (`failOn: 'warnings'` or `'compatibility'`) as well as an array. The option remains optional, results normalize categories to an array, and compatibility gates still require browser targets.
+
+- Playground now safely reports thrown values that cannot be converted to strings, both in authored configuration and worker startup/message delivery. Regression tests cover cleanup and subsequent compilation on the same worker.
+- Documentation outlines wrap long titles instead of truncating them. Added an unbounded-fluid playground sample and simplified the root-relative text sample to omit unnecessary bounds; guides clarify that root-relative text does not guarantee proportional resizing or accessibility conformance.
+- Pages deployment now runs the complete `npm run check` gate before uploading its artifact, including theme/worker tests, types, lint, formatting, coverage and documentation build checks. Performance and dependency audits remain separate CI jobs.
 - Repeated CLI `--targets` options now merge browser entries and retain the oldest version across aliases and argument order instead of replacing earlier targets. Empty repeated lists remain errors; built CLI smoke checks exercise the resulting compatibility gate on Node 18 and 24.
 - The library verifier now rejects first-pass CSS rewrites for libraries expected to remain unconverted, even when the output is idempotent. Original Quasar seam findings remain visible and still fail the strict seam gate.
 - Node-only ESM and CommonJS consumer fixtures now check the main entrypoint with ES2022 and no DOM library; browser runtime types still require DOM declarations.
-- Node 18/24 runtime smoke now executes all 86 language-neutral conformance cases through both shipped ESM and CommonJS entrypoints, including warning counts and second-pass idempotence.
+- Node 18/24 runtime smoke now executes all language-neutral conformance cases through both shipped ESM and CommonJS entrypoints, including warning counts and second-pass idempotence. The suite also covers a shorthand profile combining root-relative text with unbounded fluid spacing.
 - Public compatibility helpers now reject non-string CSS input with the same actionable error as the compile API, before inspecting browser targets or coercing caller objects.
 - Compatibility audits now isolate internal feature metadata and support tables from public objects. Editing returned features, detection regexes or exported support metadata no longer changes later audit verdicts.
 - Compatibility targets now reject arrays, BigInts and objects instead of coercing them to version strings. Programmatic compilation validates targets before invoking dynamic configuration callbacks.

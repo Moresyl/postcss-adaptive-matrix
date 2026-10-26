@@ -73,7 +73,12 @@ describe('documentation asset delivery', () => {
               fileURLToPath(new URL('../scripts/check-docs-assets.ts', import.meta.url)),
               directory,
             ],
-            { encoding: 'utf8', stdio: 'pipe', env: { ...process.env, DOCS_BASE: base } },
+            {
+              encoding: 'utf8',
+              stdio: 'pipe',
+              timeout: 10_000,
+              env: { ...process.env, DOCS_BASE: base },
+            },
           )
         expect(check()).toContain('assets match their sources')
         await writeFile(page, link('docs/configuration.md'))
@@ -91,6 +96,8 @@ describe('documentation asset delivery', () => {
         await rm(directory, { recursive: true, force: true })
       }
     },
+    // Seven process startups plus filesystem fixtures can exceed 5s on Windows CI.
+    30_000,
   )
 
   it('writes every generated asset byte-for-byte into a production directory', async () => {

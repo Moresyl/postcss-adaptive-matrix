@@ -93,9 +93,8 @@ function suggestion(key: string, allowed: readonly string[]): string | null {
  * runtime validation must close the same object at every nesting level.
  */
 export function rejectUnknownKeys(path: string, value: object, allowed: readonly string[]): void {
-  const known = new Set(allowed)
   for (const key of Object.keys(value)) {
-    if (known.has(key)) continue
+    if (allowed.includes(key)) continue
     const guessed = suggestion(key, allowed)
     throw new TypeError(
       `[postcss-adaptive-matrix] ${path}.${key} is not a supported configuration field.` +

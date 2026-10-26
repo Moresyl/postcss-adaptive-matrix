@@ -8,6 +8,16 @@ import { fileURLToPath } from 'node:url'
 
 import postcss from 'postcss'
 
+const loadedPostCssVersion = createRequire(import.meta.url)('postcss/package.json').version
+const expectedPostCss = process.env.EXPECTED_POSTCSS_VERSION
+if (expectedPostCss && loadedPostCssVersion !== expectedPostCss) {
+  throw new Error(
+    `Smoke loaded PostCSS ${loadedPostCssVersion}, expected ${expectedPostCss}. ` +
+      'The peer-floor check would otherwise be a false positive.',
+  )
+}
+console.log(`Smoke host: PostCSS ${loadedPostCssVersion}`)
+
 const esm = await import('../dist/index.js')
 assert.equal(typeof esm.default, 'function')
 assert.equal(typeof esm.appPcPreset, 'function')
@@ -156,6 +166,20 @@ for (const api of [publicRuntime, commonJsRuntime]) {
   }
   observer.destroy()
   assert.equal(events.size, 0)
+  // Exercise host scheduling failure through both published module formats,
+  // including CI's minimum Node runtime rather than only the source tests.
+  host.requestAnimationFrame = () => {
+    throw new Error('host refused frame scheduling')
+  }
+  const failed = api.observeAdaptiveViewport({
+    window: host,
+    target: { style: { setProperty() {} } },
+  })
+  assert.equal(events.size, 2)
+  assert.doesNotThrow(() => events.get('resize')())
+  assert.equal(events.size, 0)
+  assert.equal(failed.update(), null)
+  assert.doesNotThrow(() => failed.destroy())
   assert.equal(frames.size, 0)
   assert.equal(observer.update(), null)
   assert.equal(writes, 10)
@@ -270,6 +294,28 @@ for (const api of [esm, cjs]) {
   )
   assert.equal(gated.gate.passed, false)
   assert.match(gated.css, /6\.4vw/)
+  for (const category of ['warnings', 'compatibility']) {
+    const source =
+      '.compat { width: clamp(1rem, 10vw, 20rem) } @adaptive missing { .card { padding: 24px } }'
+    const targets = { safari: 12 }
+    const shorthand = await compile(source, { targets, failOn: category })
+    const array = await compile(source, { targets, failOn: [category] })
+    assert.deepEqual(shorthand.gate, { failOn: [category], passed: false })
+    assert.deepEqual(shorthand.gate, array.gate)
+    assert.equal(shorthand.css, array.css)
+    assert.deepEqual(
+      shorthand.warnings.map((warning) => warning.text),
+      array.warnings.map((warning) => warning.text),
+    )
+    const clean = await compile('', { targets: { chrome: 100 }, failOn: category })
+    assert.deepEqual(clean.gate, { failOn: [category], passed: true })
+  }
+  await assert.rejects(compile('', { failOn: 'compatibility' }), /requires targets/)
+  for (const failOn of [null, 'continuity', ['warnings', undefined], new Array(1)]) {
+    await assert.rejects(compile('', { failOn }), /Compile options.failOn/)
+  }
+  assert.equal((await compile('')).gate, null)
+  assert.equal((await compile('', { failOn: [] })).gate, null)
 }
 
 const runtime = await import('../dist/runtime.js')
@@ -321,6 +367,34 @@ for (const targets of [
 const secret = 'smoke-private-config-48392'
 const configDirectory = mkdtempSync(join(tmpdir(), 'adaptive-cli-smoke-'))
 try {
+  for (const [name, source, expected] of [
+    ['throw.mjs', 'throw Object.create(null)', 'Could not load config'],
+    [
+      'callback.mjs',
+      'export default { profiles: { app: () => { throw Object.create(null) } } }',
+      'Command failed with an unreadable error.',
+    ],
+  ]) {
+    const throwingConfig = join(configDirectory, name)
+    writeFileSync(throwingConfig, source)
+    const failed = spawnSync(
+      process.execPath,
+      ['dist/cli.js', '-', '--config', throwingConfig, '--json'],
+      {
+        cwd: new URL('..', import.meta.url),
+        encoding: 'utf8',
+        input: '.card { padding: 24px }',
+        timeout: 15_000,
+      },
+    )
+    assert.equal(failed.status, 1, failed.stderr)
+    assert.equal(failed.stderr, '')
+    const failure = JSON.parse(failed.stdout)
+    assert.equal(failure.ok, false)
+    assert.equal(failure.formatVersion, esm.CLI_REPORT_FORMAT_VERSION)
+    assert.ok(failure.error.message.includes(expected))
+    if (name === 'throw.mjs') assert.ok(failure.error.message.includes(throwingConfig))
+  }
   const config = join(configDirectory, 'broken.json')
   writeFileSync(config, JSON.stringify({ minPixeValue: 2 }))
   const invalidOptions = spawnSync(

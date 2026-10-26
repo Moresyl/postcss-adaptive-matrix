@@ -212,9 +212,15 @@ for (const target of TARGETS) {
   }
   console.log(`${target.library}: ${target.npm}@${version} (${cached ? 'cached' : 'downloaded'})`)
 
-  const stylesheet = target.stylesheet
-    ? join(packaged, target.stylesheet)
-    : largestStylesheet(packaged)
+  let stylesheet: string | null
+  try {
+    stylesheet = target.stylesheet ? join(packaged, target.stylesheet) : largestStylesheet(packaged)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0] : 'Unknown error'
+    rows.push([target.library, `STYLESHEET DISCOVERY FAILED: ${reason}`, '—', '—', '—', '—', '—'])
+    problems += 1
+    continue
+  }
   if (!stylesheet || !existsSync(stylesheet)) {
     rows.push([
       target.library,
@@ -278,6 +284,7 @@ for (const target of TARGETS) {
   let seams: number
   let warnings: number
   let preserved: boolean
+  let converted: boolean
   try {
     const originalFindings = new Set(
       findContinuityIssues(root).map((issue) => JSON.stringify(issue)),
@@ -286,6 +293,15 @@ for (const target of TARGETS) {
     const second = await postcss([adaptiveMatrix({})]).process(first.css, { from })
     idempotent = first.css === second.css
     preserved = expected !== 'unconverted' || first.css === css
+    // Formatting and comment edits alone are not evidence of unit conversion.
+    const declarations = (tree: postcss.Root): string[] => {
+      const values: string[] = []
+      tree.walkDecls((declaration) => {
+        values.push(JSON.stringify([declaration.prop, declaration.value, declaration.important]))
+      })
+      return values
+    }
+    converted = JSON.stringify(declarations(first.root)) !== JSON.stringify(declarations(root))
     const findings = findContinuityIssues(first.root)
     seams = findings.length
     for (const finding of findings) {
@@ -306,7 +322,16 @@ for (const target of TARGETS) {
   staticChecked += 1
 
   const missing = prefixed === 0 || (target.tokenPrefix ? tokens === 0 : false)
-  if (missing || !idempotent || !preserved || seams > 0 || warnings > 0 || !canvasOk) problems += 1
+  if (
+    missing ||
+    !idempotent ||
+    !preserved ||
+    (!converted && expected !== 'unconverted') ||
+    seams > 0 ||
+    warnings > 0 ||
+    !canvasOk
+  )
+    problems += 1
 
   rows.push([
     target.library,
@@ -315,7 +340,7 @@ for (const target of TARGETS) {
     target.tokenPrefix ? String(tokens) : '—',
     canvasOk ? canvas : `${canvas} ≠ ${expected}`,
     idempotent ? 'yes' : 'NO',
-    `${seams} seams, ${warnings} warns${!preserved ? ', UNEXPECTED REWRITE' : ''}`,
+    `${seams} seams, ${warnings} warns${!preserved ? ', UNEXPECTED REWRITE' : ''}${!converted && expected !== 'unconverted' ? ', NO CONVERSION' : ''}`,
   ])
 }
 

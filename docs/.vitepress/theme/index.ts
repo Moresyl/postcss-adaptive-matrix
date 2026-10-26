@@ -4,10 +4,24 @@
  */
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Theme } from 'vitepress'
-import { defineAsyncComponent, h } from 'vue'
+import { defineAsyncComponent, h, onMounted, onUnmounted } from 'vue'
 import CopyPage from './CopyPage.vue'
 import CanvasDemo from './CanvasDemo.vue'
+import HomeStart from './HomeStart.vue'
+import { installSearchFocusRestore } from './search-focus'
 import './custom.css'
+
+/** VitePress closes local search without restoring focus to its trigger. */
+const SearchFocusRestore = {
+  setup() {
+    let dispose: (() => void) | undefined
+    onMounted(() => {
+      dispose = installSearchFocusRestore(document)
+    })
+    onUnmounted(() => dispose?.())
+    return () => null
+  },
+}
 
 export default {
   extends: DefaultTheme,
@@ -15,6 +29,8 @@ export default {
     h(DefaultTheme.Layout, null, {
       'doc-before': () => h(CopyPage),
       'home-hero-after': () => h(CanvasDemo),
+      'home-features-after': () => h(HomeStart),
+      'layout-top': () => h(SearchFocusRestore),
     }),
   enhanceApp({ app }) {
     // Async so that the compiler and PostCSS are downloaded by the one page

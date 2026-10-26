@@ -54,6 +54,55 @@ async function file(name: string, contents: string): Promise<string> {
 }
 
 describe('runCli', () => {
+  it.each(["''", "'  '", "new Error('')", "new Error('\\n')"])(
+    'reports blank callback exceptions in text and JSON: %s',
+    async (value) => {
+      const config = await file(
+        'blank.mjs',
+        `export default { profiles: { app: () => { throw ${value} } } }`,
+      )
+      const css = await file('input.css', '.a { width: 24px }')
+      expect(await runCli([css, '-c', config])).toBe(1)
+      expect(out).toBe('')
+      expect(err).toBe('Command failed without an error message.\n')
+      out = ''
+      err = ''
+      expect(await runCli([css, '-c', config, '--json'])).toBe(1)
+      expect(JSON.parse(out)).toMatchObject({
+        ok: false,
+        error: { message: 'Command failed without an error message.' },
+      })
+      expect(err).toBe('')
+    },
+  )
+  it('retains the config path when module evaluation throws an unreadable value', async () => {
+    const config = await file('unreadable.mjs', 'throw Object.create(null)')
+    expect(await runCli(['-c', config, '--json'])).toBe(1)
+    expect(JSON.parse(out).error.message).toBe(
+      `Could not load config ${config}: Command failed with an unreadable error.`,
+    )
+    expect(err).toBe('')
+  })
+
+  it.each([false, true])('reports unprintable config exceptions (json=%s)', async (json) => {
+    const config = await file(
+      'throws.mjs',
+      'export default { profiles: { app: () => { throw Object.create(null) } } }',
+    )
+    const css = await file('input.css', '.a { width: 24px }')
+    expect(await runCli([css, '-c', config, ...(json ? ['--json'] : [])])).toBe(1)
+    if (json) {
+      expect(JSON.parse(out)).toMatchObject({
+        ok: false,
+        error: { message: 'Command failed with an unreadable error.' },
+      })
+      expect(err).toBe('')
+    } else {
+      expect(out).toBe('')
+      expect(err).toBe('Command failed with an unreadable error.\n')
+    }
+  })
+
   it.each(['-v', '--version'])(
     'prints the package version with %s without reading input or config',
     async (flag) => {

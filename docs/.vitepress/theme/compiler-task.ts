@@ -12,6 +12,7 @@ function validResponse(value: unknown): value is CompilerResponse {
     return false
   if ('error' in response && response.error !== undefined && typeof response.error !== 'string')
     return false
+  if (typeof response.error === 'string' && !response.error.trim()) return false
   if (
     'duration' in response &&
     response.duration !== undefined &&
@@ -85,7 +86,14 @@ export function createCompilerTask(
       current.postMessage(input)
     } catch (error) {
       stop()
-      fail(error instanceof Error ? error : new Error(String(error)))
+      let reason: 'worker' | Error = 'worker'
+      try {
+        const message = error instanceof Error ? String(error.message) : String(error)
+        if (message.trim()) reason = new Error(message)
+      } catch {
+        // A host shim may throw a value that cannot describe itself.
+      }
+      fail(reason)
     }
   }
 
